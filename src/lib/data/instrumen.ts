@@ -228,7 +228,8 @@ export async function simpanSubBagian(p: Pengguna, bagianId: string, masukan: Ma
     where: { kode: data.kode, bagian: { versiId: bagian.versiId }, NOT: id ? { id } : undefined },
   });
   if (bentrok) throw new GalatPengguna(`Kode sub-bagian ${data.kode} sudah dipakai di versi ini.`);
-  const isi = { ...data, varian: data.varian as Prisma.InputJsonValue };
+  // form menampilkan jenjang efektif; saat disimpan, penimpaan jenjang diganti isian form
+  const isi = { ...data, varian: data.varian as Prisma.InputJsonValue, jenjangOverride: [] };
   const s = id
     ? await prisma.subBagian.update({ where: { id }, data: isi })
     : await prisma.subBagian.create({ data: { ...isi, bagianId } });

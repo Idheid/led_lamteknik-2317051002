@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 /**
  * F-06: impor instrumen dari berkas seed JSON (format: data/instrumen/README.md).
@@ -103,8 +103,8 @@ export async function imporInstrumen(
           catatan: seed.versi.catatan ?? null,
           aktif: opsi.aktif ?? true,
           jenjang: seed.jenjang,
-          statusAkreditasi: seed.statusAkreditasi ?? undefined,
-          anggaranBawaan: seed.anggaranBawaan as object,
+          statusAkreditasi: (seed.statusAkreditasi ?? undefined) as Prisma.InputJsonValue | undefined,
+          anggaranBawaan: seed.anggaranBawaan as Prisma.InputJsonValue,
         },
       });
 
