@@ -6,7 +6,12 @@ import { KODE_JENJANG } from "@/lib/domain/instrumen";
 const teksWajib = (label: string, maks = 300) =>
   z.string().trim().min(1, `${label} wajib diisi.`).max(maks, `${label} terlalu panjang.`);
 const teksOpsional = (maks = 300) =>
-  z.string().trim().max(maks, "Teks terlalu panjang.").transform((v) => (v === "" ? null : v)).nullable();
+  z
+    .string()
+    .trim()
+    .max(maks, "Teks terlalu panjang.")
+    .nullish()
+    .transform((v) => (v ? v : null));
 
 export const skemaUpps = z.object({
   kode: teksWajib("Kode UPPS", 40).regex(/^[A-Za-z0-9._-]+$/, "Kode hanya boleh huruf, angka, titik, garis bawah, atau tanda hubung."),
