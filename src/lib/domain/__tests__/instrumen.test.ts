@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   berlakuUntukJenjang, bacaVarian, jenjangBerlaku, kodeBersama, kodeSalinan, varianUntukJenjang,
 } from '../instrumen.ts';
-import { bacaAnggaran } from '../anggaran-proyek.ts';
+import { bacaAnggaran, targetKataSubBagian } from '../anggaran-proyek.ts';
 import { hitungAnggaran, usulanHalamanKriteria } from '../anggaran.ts';
 
 const seed = JSON.parse(readFileSync(new URL('../../../../data/instrumen/lamteknik-2025-pasca.json', import.meta.url), 'utf8'));
@@ -74,6 +74,26 @@ test('anggaran proyek dari salinan anggaranBawaan: C.1 4, C.2 8, C.3 29, C.4 11,
   assert.equal(h.totalHalaman, 150);
   const usulan = usulanHalamanKriteria(bagian, butir, pengaturan);
   assert.deepEqual(Object.fromEntries(Object.entries(usulan).map(([k, v]) => [k, Math.round(v)])), kriteria);
+});
+
+test('target kata sub-bagian: bersama dari kataBersama, IKU dari butirnya, bab narasi dibagi rata', () => {
+  const { pengaturan, bagian } = bacaAnggaran(seed.anggaranBawaan);
+  const butir = (seed.butir as { kode: string; bagian: string; bobot: number; jenis: 'narasi' | 'angka'; subBagian: string }[]);
+  const h = hitungAnggaran(bagian, butir.map((b) => ({ kode: b.kode, bagian: b.bagian, bobot: b.bobot, jenis: b.jenis })), pengaturan);
+  const c1 = (seed.bagian as BagianSeed[]).find((b) => b.kode === 'C.1') as BagianSeed;
+  const sub = c1.subBagian.filter((s) => berlakuUntukJenjang(s, 'S1')).map((s) => ({
+    kode: s.kode, tipe: s.tipe, butir: butir.filter((b) => b.subBagian === s.kode).map((b) => b.kode),
+  }));
+  const t = targetKataSubBagian(h, 'C.1', sub);
+  assert.equal(t['C.1-LB'], 120);
+  assert.equal(t['C.1-SWOT'], 180);
+  const iku = sub.filter((s) => s.tipe === 'iku');
+  const totalIku = iku.reduce((n, s) => n + (t[s.kode] ?? 0), 0);
+  // 65% dari 4 halaman x 425 kata = 1.105 kata, selisih pembulatan per butir maksimal 10 kata per butir
+  assert.ok(Math.abs(totalIku - 1105) <= 10 * iku.length);
+  const bab4 = targetKataSubBagian(h, 'IV', [{ kode: 'IV-1', tipe: 'narasi', butir: [] }, { kode: 'IV-D', tipe: 'data', butir: [] }]);
+  assert.equal(bab4['IV-1'], 850);
+  assert.equal(bab4['IV-D'], null);
 });
 
 test('bacaAnggaran tahan terhadap JSON rusak', () => {

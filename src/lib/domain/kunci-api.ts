@@ -117,7 +117,7 @@ export function tandaiSetelahGalat(k: KunciAPI, jenis: JenisGalat, sekarang: Dat
 }
 
 /** Pesan untuk pengguna saat tidak ada kunci yang bisa dipakai. */
-export function pesanKunciHabis(daftar: KunciAPI[], sekarang: Date): string {
+export function pesanKunciHabis(daftar: KunciAPI[], _sekarang: Date): string {
   const tunggu = daftar
     .filter((k) => k.status === 'kuota_habis' && k.habisSampai)
     .map((k) => k.habisSampai as Date)

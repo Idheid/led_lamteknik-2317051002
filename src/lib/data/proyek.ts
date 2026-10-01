@@ -80,7 +80,7 @@ export async function bagianProyek(p: Pengguna, proyekId: string) {
     select: { id: true, kode: true, nama: true, jenis: true },
   });
   const status = new Map(proyek.status.map((s) => [s.bagianKode, s.status]));
-  return bagian.map((b) => ({ ...b, status: status.get(b.kode) ?? "belum" }));
+  return { proyek, bagian: bagian.map((b) => ({ ...b, status: status.get(b.kode) ?? "belum" })) };
 }
 
 /** Isi halaman form satu kriteria/bagian: sub-bagian yang berlaku untuk jenjang proyek beserta butirnya. */
@@ -121,6 +121,29 @@ export async function simpanJawaban(p: Pengguna, masukan: { proyekId: string; su
     create: { proyekId: proyek.id, subBagianKode: data.subBagianKode, isi: data.isi },
     update: { isi: data.isi },
   });
+}
+
+/** Jumlah sub-bagian (yang berlaku untuk jenjang proyek) dan butir per bagian, untuk Beranda. */
+export async function ringkasanBagianProyek(p: Pengguna, proyekId: string) {
+  const proyek = await ambilProyek(p, proyekId);
+  const [sub, butir] = await Promise.all([
+    prisma.subBagian.findMany({
+      where: { bagian: { versiId: proyek.versiId } },
+      select: { berlakuUntuk: true, jenjangOverride: true, bagian: { select: { kode: true } } },
+    }),
+    prisma.butirPenilaian.groupBy({
+      by: ["bagianKode"],
+      where: { versiId: proyek.versiId, jenjang: proyek.jenjang },
+      _count: { _all: true },
+      _sum: { bobot: true },
+    }),
+  ]);
+  const jumlahSub = new Map<string, number>();
+  for (const s of sub) {
+    if (berlakuUntukJenjang(s, proyek.jenjang)) jumlahSub.set(s.bagian.kode, (jumlahSub.get(s.bagian.kode) ?? 0) + 1);
+  }
+  const jumlahButir = new Map(butir.map((b) => [b.bagianKode, { jumlah: b._count._all, bobot: Number(b._sum.bobot ?? 0) }]));
+  return { jumlahSub, jumlahButir };
 }
 
 /** Butir jenjang proyek untuk perhitungan anggaran. */

@@ -78,7 +78,7 @@ test("F-01 menonaktifkan akun menolak login; mengatur ulang kata sandi", async (
 test("F-07/UI sidebar C.1–C.7 sesuai versi; C.3 Sarjana = 19 IKU + 4 bersama; jawaban form tersimpan", async () => {
   const pj = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "pj.ti@uji.test" } })).id);
   const [proyek] = await daftarProyek(pj);
-  const bagian = await bagianProyek(pj, proyek.id);
+  const { bagian } = await bagianProyek(pj, proyek.id);
   assert.deepEqual(
     bagian.filter((b) => b.jenis === "kriteria").map((b) => b.kode),
     ["C.1", "C.2", "C.3", "C.4", "C.5", "C.6", "C.7"],

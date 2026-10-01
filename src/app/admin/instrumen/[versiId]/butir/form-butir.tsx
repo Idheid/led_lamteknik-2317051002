@@ -61,7 +61,8 @@ export function FormButir({
   const [cari, setCari] = useState("");
   const [n, setN] = useState<NilaiForm>({
     kode: awal.kode, no: String(awal.no ?? ""), sub: awal.sub ?? "", urutan: String(awal.urutan ?? ""),
-    bagianKode: awal.bagianKode, elemen: awal.elemen, indikator: awal.indikator, bobot: String(awal.bobot ?? ""),
+    bagianKode: awal.bagianKode, elemen: awal.elemen, indikator: awal.indikator,
+    bobot: id ? String(awal.bobot ?? "").replace(".", ",") : "",
     jenis: awal.jenis, tabelLkps: awal.tabelLkps.join(", "), deskriptorSkor4: awal.deskriptorSkor4,
     unsurSkor4: awal.unsurSkor4.join("\n"), pertanyaanPemandu: awal.pertanyaanPemandu ?? "",
     dokumenPendukung: awal.dokumenPendukung.join("\n"), subBagianIds: awal.subBagianIds, catatan: awal.catatan ?? "",

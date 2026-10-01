@@ -77,7 +77,7 @@ Dokumen rencana lengkap (Claude Doc): https://claude.ai/code/artifact/ba67e45c-5
 Pasang versi terbaru yang stabil saat mulai, lalu kunci di `package.json`. Bila API pustaka berbeda dari catatan di
 sini, ikuti dokumentasi resmi versi yang terpasang dan catat perbedaannya di `docs/CATATAN-PENGEMBANGAN.md`.
 
-## Isi repositori saat ini
+## Isi repositori (paket awal, sebelum iterasi 1)
 
 ```
 CLAUDE.md                      <- berkas ini
@@ -92,7 +92,7 @@ docs/
 data/instrumen/
   lamteknik-2025-pasca.json    <- seed instrumen: 14 bagian, 125 sub-bagian (instruksi template), 72 butir Sarjana
   README.md                    <- format seed
-src/lib/domain/                <- logika murni yang SUDAH DIUJI (22 uji lulus)
+src/lib/domain/                <- logika murni yang SUDAH DIUJI (22 uji awal; 31 setelah iterasi 1)
   tahun-akademik.ts  anggaran.ts  kunci-api.ts  teks.ts  prompt.ts
   __tests__/*.test.ts
 docker-compose.yml  .env.example  .gitignore
@@ -121,12 +121,27 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 8. Skrip seed instrumen membaca `data/instrumen/lamteknik-2025-pasca.json` (idempoten, berdasarkan `versi.kode`).
 9. Lanjutkan sisa iterasi 1 di `docs/RENCANA-ITERASI.md`.
 
-## Perintah (isi setelah kerangka dibuat)
+## Perintah
 
-- `npm run dev` — aplikasi web
-- `npm run worker` — worker antrean pg-boss (iterasi 2 ke atas)
-- `npm run db:migrate`, `npm run db:seed` — migrasi dan seed (super admin + instrumen)
-- `npm run lint`, `npm run typecheck`, `npm test`
+- `docker compose up -d` — PostgreSQL + pgvector (wajib menyala sebelum perintah lain)
+- `npm run dev` — aplikasi web (http://localhost:3000)
+- `npm run worker` — worker antrean pg-boss (iterasi 2 ke atas, belum ada)
+- `npm run db:migrate` — terapkan migrasi (`prisma migrate deploy`); `npm run db:seed` — super admin + instrumen (idempoten)
+- `npm run lint`, `npm run typecheck` (`next typegen` + `tsc`), `npm test` (= `test:unit` + `test:integrasi`)
+- `npm run test:integrasi` membuat/memigrasi basis data `led_lamteknik_test` sendiri; basis data pengembangan tidak disentuh
+- Migrasi baru: `npx prisma migrate dev --name <nama> --create-only`, lalu **hapus baris
+  `DROP INDEX "Potongan_embedding_hnsw_idx"`** dari SQL hasilnya (Prisma tidak mengenal indeks HNSW), lalu `npm run db:migrate`
+
+## Struktur kode (setelah iterasi 1)
+
+- `src/lib/domain/` logika murni teruji; `src/lib/data/` akses data, setiap fungsi menerima `Pengguna` dan memeriksa
+  peran/`prodiId`; `src/lib/akses.ts` (`Pengguna`, `GalatAkses`, `GalatPengguna`); `src/lib/validasi.ts` skema Zod bersama.
+- `src/lib/auth.ts` Better Auth (plugin admin; peran di kolom `role`, nonaktif = `banned`), `src/lib/sesi.ts`
+  (`ambilPengguna`, `wajibSuperAdmin`, `wajibPenanggungJawab`), `src/proxy.ts` (pengganti middleware di Next.js 16).
+- Aksi server di `src/app/**/aksi.ts` dibungkus `jalankanAksi` (`src/lib/aksi.ts`).
+- Rute: `/login`, `/admin/*` (super admin), `/proyek` dan `/proyek/[proyekId]/*` (penanggung jawab;
+  halaman form bagian/kriteria di `/proyek/[id]/bagian/[kode]`).
+- Versi instrumen yang dipakai proyek dikunci (tidak bisa diubah/dihapus); perubahan lewat salin versi.
 
 ## Konvensi
 
