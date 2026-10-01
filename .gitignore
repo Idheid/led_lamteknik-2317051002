@@ -12,3 +12,10 @@ src/generated/
 .DS_Store
 Thumbs.db
 _tmp/
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+*.pem
+led-tmp/
+
+/src/generated/prisma

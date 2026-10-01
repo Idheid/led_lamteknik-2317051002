@@ -1,0 +1,483 @@
+// Skema data sistem penyusun LED LAM Teknik (iterasi 1).
+// Asal: docs/rancangan/schema.prisma, disesuaikan dengan Prisma 7 dan Better Auth (plugin admin).
+// Ekstensi pgvector, indeks HNSW, dan kolom tsvector dibuat lewat migrasi SQL (lihat prisma/migrations).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: url diatur di prisma.config.ts (env DATABASE_URL)
+}
+
+// ----------------------------------------------------------------- Pengguna dan akses
+
+enum Peran {
+  SUPER_ADMIN
+  PENANGGUNG_JAWAB
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  // kolom plugin admin Better Auth: role = peran, banned = akun dinonaktifkan
+  role          Peran     @default(PENANGGUNG_JAWAB)
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  // kolom tambahan (Better Auth additionalFields)
+  prodiId       String?   @unique // satu akun penanggung jawab per prodi; null untuk super admin
+  prodi         Prodi?    @relation(fields: [prodiId], references: [id])
+
+  sessions      Session[]
+  accounts      Account[]
+  kunciApi      KunciAPI[]
+  logAktivitas  LogAktivitas[]
+  versiDraf     VersiDraf[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  impersonatedBy String? // plugin admin Better Auth (tidak dipakai)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ----------------------------------------------------------------- Organisasi
+
+model Upps {
+  id        String   @id @default(cuid())
+  kode      String   @unique // samakan dengan sistem LKPS (Ghalib)
+  nama      String
+  perguruanTinggi String
+  alamat    String?
+  prodi     Prodi[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Prodi {
+  id          String       @id @default(cuid())
+  kodePddikti String?      @unique // kunci bersama dengan sistem LKPS
+  nama        String
+  jenjang     String       // D1, D2, D3, S1, STr, S2, S2Tr, S3, S3Tr, PPI (lihat seed instrumen)
+  uppsId      String
+  upps        Upps         @relation(fields: [uppsId], references: [id])
+  identitas   Json?        // SK pendirian, SK pembukaan, akreditasi terakhir, alamat, kontak (halaman Identitas Pengusul)
+  penanggungJawab User?
+  proyek      ProyekLED[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// ----------------------------------------------------------------- Instrumen (diatur super admin)
+
+model VersiInstrumen {
+  id          String     @id @default(cuid())
+  kode        String     @unique // contoh: LAMTEKNIK-2025-PASCA
+  nama        String
+  lembaga     String     @default("LAM Teknik")
+  peraturan   Json       // daftar peraturan acuan
+  catatan     String?
+  aktif       Boolean    @default(false)
+  disalinDariId String?
+  jenjang     Json       // [{ kode, nama }] jenjang yang dikenal versi ini
+  statusAkreditasi Json?
+  bagian      Bagian[]
+  butir       ButirPenilaian[]
+  tabelLkps   TabelLkpsAcuan[]
+  anggaranBawaan Json    // pengaturan anggaran halaman dan kata
+  proyek      ProyekLED[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum JenisBagian {
+  awal
+  bab
+  butir     // bagian yang seluruhnya dinilai butir (II.B, Bab III)
+  kriteria  // C.1 - C.7
+  lampiran
+}
+
+// Kriteria dan bab disimpan sebagai Bagian supaya jumlah halaman form mengikuti data (kriteria dinamis).
+model Bagian {
+  id         String         @id @default(cuid())
+  versiId    String
+  versi      VersiInstrumen @relation(fields: [versiId], references: [id], onDelete: Cascade)
+  kode       String         // AWAL, I, II.A, II.B, C.1 ... C.7, III, IV, LAMPIRAN
+  nama       String
+  jenis      JenisBagian
+  urutan     Int
+  batasHalamanResmi Int?
+  pengantar  String?
+  subBagian  SubBagian[]
+
+  @@unique([versiId, kode])
+}
+
+enum TipeSubBagian {
+  data      // diisi dari data proyek, tidak di-generate
+  narasi    // di-generate, tidak punya butir
+  bersama   // latar belakang, kebijakan, analisis faktor, SWOT di setiap kriteria
+  iku       // indikator kinerja yang punya butir penilaian
+  otomatis  // daftar isi dsb.
+}
+
+model SubBagian {
+  id          String        @id @default(cuid())
+  bagianId    String
+  bagian      Bagian        @relation(fields: [bagianId], references: [id], onDelete: Cascade)
+  kode        String        // contoh: C.2-IKU-a.i.I
+  label       String        // nomor tampilan, contoh 3.a.i.I
+  judul       String
+  grup        String?
+  tipe        TipeSubBagian
+  varian      Json          // [{ instruksi, jenjang: [..], catatanTemplate }]
+  berlakuUntuk String[]     // kode jenjang
+  jenjangOverride String[]  // bila diisi, menimpa jenjang template (lihat catatan)
+  sumberInstruksi String    @default("template")
+  catatan     String?
+  urutan      Int
+  butir       ButirSubBagian[]
+  dokumenDiharapkan DokumenDiharapkan[]
+  draf        BagianDraf[]
+
+  @@unique([bagianId, kode])
+}
+
+enum JenisButir {
+  narasi
+  angka
+}
+
+model ButirPenilaian {
+  id          String         @id @default(cuid())
+  versiId     String
+  versi       VersiInstrumen @relation(fields: [versiId], references: [id], onDelete: Cascade)
+  jenjang     String         // butir dan bobot berbeda per jenjang
+  kode        String         // contoh 4-I
+  no          Int
+  sub         String?
+  urutan      Int
+  bagianKode  String         // bagian tempat anggaran butir dihitung (C.1 ... C.7, II.B, III)
+  elemen      String
+  indikator   String
+  bobot       Decimal        @db.Decimal(5, 2)
+  jenis       JenisButir
+  tabelLkps   String[]
+  deskriptorSkor4 String
+  unsurSkor4  String[]
+  pertanyaanPemandu String?
+  catatan     String?
+  subBagian   ButirSubBagian[]
+  dokumenDiharapkan DokumenDiharapkan[]
+
+  @@unique([versiId, jenjang, kode])
+}
+
+// n-m: satu sub-bagian bisa dinilai lebih dari satu butir, dan sebaliknya.
+model ButirSubBagian {
+  butirId     String
+  subBagianId String
+  butir       ButirPenilaian @relation(fields: [butirId], references: [id], onDelete: Cascade)
+  subBagian   SubBagian      @relation(fields: [subBagianId], references: [id], onDelete: Cascade)
+
+  @@id([butirId, subBagianId])
+}
+
+model DokumenDiharapkan {
+  id          String          @id @default(cuid())
+  nama        String
+  butirId     String?
+  butir       ButirPenilaian? @relation(fields: [butirId], references: [id], onDelete: Cascade)
+  subBagianId String?
+  subBagian   SubBagian?      @relation(fields: [subBagianId], references: [id], onDelete: Cascade)
+  urutan      Int             @default(0)
+}
+
+model TabelLkpsAcuan {
+  id      String         @id @default(cuid())
+  versiId String
+  versi   VersiInstrumen @relation(fields: [versiId], references: [id], onDelete: Cascade)
+  kode    String         // contoh 4.a
+  sheet   String         // nama sheet di template LKPS, contoh 4a
+  judul   String
+
+  @@unique([versiId, kode])
+}
+
+// ----------------------------------------------------------------- Proyek LED
+
+model ProyekLED {
+  id          String         @id @default(cuid())
+  prodiId     String
+  prodi       Prodi          @relation(fields: [prodiId], references: [id])
+  versiId     String
+  versi       VersiInstrumen @relation(fields: [versiId], references: [id])
+  jenjang     String
+  nama        String
+  tsTahunMulai Int           // 2025 berarti TS = 2025/2026
+  anggaran    Json           // halaman per bagian dan pengaturan (salinan dari versi, bisa diubah)
+  timPenyusun Json?          // untuk Tabel 2.1, 2.2 dan halaman identitas tim
+  status      StatusKriteria[]
+  berkasLkps  BerkasLKPS[]
+  dokumen     Dokumen[]
+  draf        BagianDraf[]
+  ekspor      Ekspor[]
+  jawabanForm JawabanForm[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+enum StatusPengisian {
+  belum
+  draf
+  disunting
+  selesai
+}
+
+model StatusKriteria {
+  id        String          @id @default(cuid())
+  proyekId  String
+  proyek    ProyekLED       @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  bagianKode String         // C.1 ... atau I, III dsb.
+  status    StatusPengisian @default(belum)
+  updatedAt DateTime        @updatedAt
+
+  @@unique([proyekId, bagianKode])
+}
+
+// Jawaban penyusun di form per sub-bagian (pertanyaan pemandu). Sumber "J" di prompt.
+model JawabanForm {
+  id          String    @id @default(cuid())
+  proyekId    String
+  proyek      ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  subBagianKode String
+  isi         String
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([proyekId, subBagianKode])
+}
+
+// ----------------------------------------------------------------- Bahan unggahan
+
+model BerkasLKPS {
+  id         String     @id @default(cuid())
+  proyekId   String
+  proyek     ProyekLED  @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  namaBerkas String
+  jenis      String     // xlsx atau pdf
+  lokasi     String     // path penyimpanan
+  status     String     @default("diunggah") // diunggah, dibaca, gagal
+  pesan      String?
+  tabel      TabelLKPS[]
+  createdAt  DateTime   @default(now())
+}
+
+model TabelLKPS {
+  id        String     @id @default(cuid())
+  berkasId  String
+  berkas    BerkasLKPS @relation(fields: [berkasId], references: [id], onDelete: Cascade)
+  kode      String     // 4.a
+  sheet     String
+  baris     Json       // baris hasil baca (label TS dipertahankan; tahun nyata dihitung dari proyek)
+  perluDicek Boolean   @default(false) // true untuk hasil ekstraksi PDF
+}
+
+model Dokumen {
+  id          String    @id @default(cuid())
+  proyekId    String
+  proyek      ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  subBagianKode String? // dokumen bisa umum (null) atau khusus satu sub-bagian
+  butirKode   String?
+  namaBerkas  String
+  mime        String
+  lokasi      String
+  ukuran      Int
+  tautanBukti String?   // tautan penyimpanan awan untuk lampiran (usulan U-02)
+  status      String    @default("diunggah") // diunggah, diproses, siap, gagal
+  pesan       String?
+  potongan    Potongan[]
+  createdAt   DateTime  @default(now())
+}
+
+model Potongan {
+  id        String   @id @default(cuid())
+  dokumenId String
+  dokumen   Dokumen  @relation(fields: [dokumenId], references: [id], onDelete: Cascade)
+  urutan    Int
+  teks      String
+  halaman   Int?
+  modelEmbedding String
+  embedding Unsupported("vector(768)")? // Gemini embedding dengan outputDimensionality 768; indeks HNSW lewat migrasi SQL
+  // tsvector untuk pencarian kata kunci: kolom terbangkitkan (GENERATED) dibuat lewat migrasi SQL
+  teksTsv   Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(teks, ''::text))"))
+
+  @@index([dokumenId])
+  @@index([teksTsv], type: Gin, map: "Potongan_teksTsv_gin_idx")
+}
+
+// ----------------------------------------------------------------- Hasil
+
+model BagianDraf {
+  id          String     @id @default(cuid())
+  proyekId    String
+  proyek      ProyekLED  @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  subBagianId String
+  subBagian   SubBagian  @relation(fields: [subBagianId], references: [id])
+  status      StatusPengisian @default(belum)
+  versiAktifId String?
+  versi       VersiDraf[]
+
+  @@unique([proyekId, subBagianId])
+}
+
+model VersiDraf {
+  id          String     @id @default(cuid())
+  bagianDrafId String
+  bagianDraf  BagianDraf @relation(fields: [bagianDrafId], references: [id], onDelete: Cascade)
+  nomor       Int
+  asal        String     // generate, sunting, pulihkan
+  isi         Json       // dokumen Tiptap (JSON) atau struktur paragraf
+  sumber      Json?      // sumber per paragraf
+  unsur       Json?      // status unsur skor 4
+  dokumenKurang String[]
+  pemeriksaan Json?      // hasil cek panjang, angka, sumber
+  model       String?
+  keluaranMentah Json?
+  jumlahKata  Int        @default(0)
+  dibuatOlehId String?
+  dibuatOleh  User?      @relation(fields: [dibuatOlehId], references: [id])
+  createdAt   DateTime   @default(now())
+
+  @@unique([bagianDrafId, nomor])
+}
+
+model Ekspor {
+  id           String    @id @default(cuid())
+  proyekId     String
+  proyek       ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  lokasi       String
+  jumlahHalaman Int?
+  status       String    // diproses, siap, gagal
+  pemeriksaan  Json?
+  createdAt    DateTime  @default(now())
+}
+
+// ----------------------------------------------------------------- Pengaturan LLM
+
+model PengaturanLLM {
+  id             String   @id @default("utama")
+  penyedia       String   @default("google")
+  modelNarasi    String
+  modelCadangan  String[]
+  modelEmbedding String
+  suhu           Float    @default(0.2)
+  maksTokenKeluaran Int   @default(4096)
+  pakaiCadanganAdmin Boolean @default(true)
+  updatedAt      DateTime @updatedAt
+}
+
+enum PemilikKunci {
+  penanggung_jawab
+  super_admin
+}
+
+enum StatusKunci {
+  aktif
+  kuota_habis
+  tidak_valid
+  nonaktif
+}
+
+model KunciAPI {
+  id          String       @id @default(cuid())
+  label       String
+  penyedia    String       @default("google")
+  kunciTerenkripsi String  // AES-256-GCM; tidak pernah dikirim ke browser
+  akhiran     String       // 4 karakter terakhir untuk tampilan
+  pemilik     PemilikKunci
+  pemilikId   String
+  pemilikUser User         @relation(fields: [pemilikId], references: [id])
+  prodiId     String?      // kunci penanggung jawab terikat ke prodinya
+  status      StatusKunci  @default(aktif)
+  habisSampai DateTime?
+  urutan      Int          @default(0)
+  batasHarian Int?
+  log         LogPemakaian[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model LogPemakaian {
+  id          String    @id @default(cuid())
+  kunciId     String?
+  kunci       KunciAPI? @relation(fields: [kunciId], references: [id], onDelete: SetNull)
+  proyekId    String?
+  subBagianKode String?
+  model       String
+  tokenMasuk  Int       @default(0)
+  tokenKeluar Int       @default(0)
+  berhasil    Boolean
+  galat       String?
+  createdAt   DateTime  @default(now())
+}
+
+model LogAktivitas {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  aksi      String
+  objek     String
+  objekId   String?
+  detail    Json?
+  createdAt DateTime @default(now())
+}
