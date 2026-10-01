@@ -1,0 +1,23 @@
+# PostgreSQL + pgvector untuk pengembangan lokal.
+# Jalankan: docker compose up -d   |   Hentikan: docker compose down   (data tetap di volume led_pgdata)
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: led-lamteknik-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: led
+      POSTGRES_PASSWORD: led_lokal_ganti
+      POSTGRES_DB: led_lamteknik
+    ports:
+      - "5432:5432"
+    volumes:
+      - led_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U led -d led_lamteknik"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  led_pgdata:

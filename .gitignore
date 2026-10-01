@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+uploads/
+src/generated/
+*.log
+.DS_Store
+Thumbs.db
+_tmp/
