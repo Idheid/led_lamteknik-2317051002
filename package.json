@@ -14,7 +14,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "worker": "tsx src/worker/index.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.87",

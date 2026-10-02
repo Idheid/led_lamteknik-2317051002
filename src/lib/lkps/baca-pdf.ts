@@ -201,7 +201,7 @@ export async function bacaLkpsPdf(berkas: Buffer | Uint8Array, jenjang: string):
   }
 
   const selesai: TabelSementara[] = [];
-  let aktif: TabelSementara | null = null;
+  let aktif = null as TabelSementara | null;
   for (let i = 0; i < baris.length; i++) {
     const b = baris[i];
     const awal = b.potongan[0]?.teks ?? "";

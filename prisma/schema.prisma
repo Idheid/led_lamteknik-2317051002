@@ -241,6 +241,7 @@ model DokumenDiharapkan {
   subBagianId String?
   subBagian   SubBagian?      @relation(fields: [subBagianId], references: [id], onDelete: Cascade)
   urutan      Int             @default(0)
+  dokumen     Dokumen[]
 }
 
 model TabelLkpsAcuan {
@@ -316,10 +317,19 @@ model BerkasLKPS {
   namaBerkas String
   jenis      String     // xlsx atau pdf
   lokasi     String     // path penyimpanan
-  status     String     @default("diunggah") // diunggah, dibaca, gagal
+  status     String     @default("diunggah") // diunggah, diproses, dibaca, gagal
   pesan      String?
+  ukuran     Int        @default(0)
+  // berkas aktif = sumber metrik proyek (berkas terbaru yang berhasil dibaca)
+  aktif      Boolean    @default(false)
+  masalah    Json?      // daftar masalah validasi (sheet hilang, sel kosong)
+  identitas  Json?      // isian sheet Menu (tanggal TS, nama prodi)
+  diunggahOlehId String?
+  diprosesPada DateTime?
   tabel      TabelLKPS[]
   createdAt  DateTime   @default(now())
+
+  @@index([proyekId])
 }
 
 model TabelLKPS {
@@ -328,8 +338,17 @@ model TabelLKPS {
   berkas    BerkasLKPS @relation(fields: [berkasId], references: [id], onDelete: Cascade)
   kode      String     // 4.a
   sheet     String
-  baris     Json       // baris hasil baca (label TS dipertahankan; tahun nyata dihitung dari proyek)
-  perluDicek Boolean   @default(false) // true untuk hasil ekstraksi PDF
+  judul     String     @default("")
+  blok      String?    // label blok jenjang untuk 6.d dan 6.f.1
+  kolom     Json       @default("[]") // [{ kunci, nomor, label }] kunci = huruf kolom template
+  kolomRumus String[]
+  baris     Json       // [{ nomorBaris, sel: { A: .., B: .. } }]; label TS dipertahankan, tahun nyata dihitung dari proyek
+  perluDicek Boolean   @default(false) // true untuk hasil ekstraksi PDF sampai dikoreksi/dicek penanggung jawab
+  dikoreksi Boolean    @default(false)
+  urutan    Int        @default(0)
+  updatedAt DateTime   @default(now()) @updatedAt
+
+  @@unique([berkasId, sheet])
 }
 
 model Dokumen {
@@ -343,10 +362,21 @@ model Dokumen {
   lokasi      String
   ukuran      Int
   tautanBukti String?   // tautan penyimpanan awan untuk lampiran (usulan U-02)
-  status      String    @default("diunggah") // diunggah, diproses, siap, gagal
+  jenis       String    @default("pdf") // pdf, docx, gambar
+  judul       String?   // judul gambar/dokumen untuk disisipkan ke narasi
+  hash        String?   // SHA-256 berkas asli
+  dokumenDiharapkanId String?
+  dokumenDiharapkan DokumenDiharapkan? @relation(fields: [dokumenDiharapkanId], references: [id], onDelete: SetNull)
+  status      String    @default("diunggah") // diunggah, diproses, siap, gagal, menunggu_kunci
   pesan       String?
+  jumlahPotongan Int    @default(0)
+  diunggahOlehId String?
+  diprosesPada DateTime?
   potongan    Potongan[]
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([proyekId, subBagianKode])
 }
 
 model Potongan {

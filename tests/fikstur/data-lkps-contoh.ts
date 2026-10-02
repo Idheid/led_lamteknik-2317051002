@@ -112,7 +112,7 @@ export const DAFTAR: Record<string, BarisIsi[]> = {
     { B: 'Buku Ajar Mekanika Fluida', C: t(2025, 12, 1), D: '978-623-00-0003-5' },
     { B: 'Buku lama di luar rentang', C: t(2019, 6, 1), D: '978-623-00-0000-4' },
   ],
-  '4h': Array.from({ length: 12 }, (_, i) => {
+  '4h': Array.from({ length: 12 }, (_, i): BarisIsi => {
     const pub = [[1, 0, 1], [0, 1, 1], [1, 1, 0], [0, 0, 1], [1, 0, 0], [0, 1, 0], [0, 0, 2]][i];
     return pub
       ? { B: `Dosen Contoh ${i + 1}`, C: pub[0], D: pub[1], E: pub[2], F: 'Jurnal internasional bereputasi (Scopus)' }
