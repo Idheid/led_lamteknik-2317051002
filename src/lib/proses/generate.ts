@@ -11,7 +11,7 @@ import { bacaAnggaran, targetKataSubBagian } from "@/lib/domain/anggaran-proyek"
 import { bacaVarian, berlakuUntukJenjang, varianUntukJenjang } from "@/lib/domain/instrumen";
 import { hitungSemua, type HasilButirAngka } from "@/lib/domain/metrik-lkps";
 import {
-  bacaDokumen, keluaranKeDokumen, kumpulkanAngkaSah, perluRingkasanIku, periksaDokumen, ringkasIku, samarkanTeks,
+  bacaDokumen, keluaranKeDokumen, kumpulkanAngkaSah, perluRingkasanIku, perluRingkasanSemua, periksaDokumen, ringkasIku, samarkanTeks,
   statusGabungan, tabelKeMarkdown, tahunSah, teksDokumen, urutkanUntukGenerate, type RujukanPeriksa, type StatusIsi,
   type TabelSistem,
 } from "@/lib/domain/narasi";
@@ -143,6 +143,23 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
       }] : [];
     })) || null;
     if (!ringkasanIku) catatan.push("Belum ada draf indikator kinerja (IKU) untuk diringkas.");
+  }
+
+  // kata pengantar, ringkasan eksekutif, Bab III dan IV: ringkasan analisis faktor dan SWOT semua kriteria
+  if (perluRingkasanSemua(s.kode)) {
+    const draf = await prisma.bagianDraf.findMany({
+      where: { proyekId, versiAktifId: { not: null }, subBagian: { tipe: "bersama", bagian: { versiId: proyek.versiId, jenis: "kriteria" } } },
+      include: { subBagian: { include: { bagian: true } } },
+    });
+    const pilih = draf
+      .filter((d) => /-(AF|SWOT)$/.test(d.subBagian.kode))
+      .sort((a, b) => a.subBagian.bagian.urutan - b.subBagian.bagian.urutan || a.subBagian.urutan - b.subBagian.urutan);
+    const versi = await prisma.versiDraf.findMany({ where: { id: { in: pilih.map((d) => d.versiAktifId!) } } });
+    ringkasanIku = ringkasIku(pilih.flatMap((d) => {
+      const v = versi.find((x) => x.id === d.versiAktifId);
+      return v ? [{ judul: `${d.subBagian.bagian.kode} ${d.subBagian.judul}`, teks: teksDokumen(bacaDokumen(v.isi), { tanpaTabel: true }) }] : [];
+    }), 6000) || null;
+    if (!ringkasanIku) catatan.push("Belum ada draf analisis faktor atau SWOT kriteria untuk diringkas; susun kriteria C.1–C.7 lebih dulu.");
   }
 
   // target kata (anggaran halaman)

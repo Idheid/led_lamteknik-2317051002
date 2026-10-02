@@ -46,6 +46,8 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
         { judul: "Beranda", href: dasar, ikon: "beranda", persis: true },
         { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },
         { judul: "Dokumen", href: `${dasar}/dokumen`, ikon: "dokumen" },
+        { judul: "Tim penyusun", href: `${dasar}/tim`, ikon: "tim" },
+        { judul: "Ekspor Word", href: `${dasar}/ekspor`, ikon: "ekspor" },
       ],
     },
     {
@@ -59,12 +61,6 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
       item: lain.map((b) => ({
         judul: NAMA_PENDEK[b.kode] ?? b.nama, href: `${dasar}/bagian/${b.kode}`, ikon: "bab" as const, status: b.status as StatusLencana,
       })),
-    },
-    {
-      label: "Iterasi berikutnya",
-      item: [
-        { judul: "Ekspor Word", href: `${dasar}/ekspor`, ikon: "ekspor", segera: true },
-      ],
     },
   ];
   return (

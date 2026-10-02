@@ -24,8 +24,12 @@ export type MasukanUpps = z.input<typeof skemaUpps>;
 export const skemaIdentitasProdi = z.object({
   skPendirian: teksOpsional(),
   tanggalSkPendirian: teksOpsional(40),
+  pejabatSkPendirian: teksOpsional(160),
   skPembukaan: teksOpsional(),
   tanggalSkPembukaan: teksOpsional(40),
+  pejabatSkPembukaan: teksOpsional(160),
+  tahunPertamaMenerima: teksOpsional(10),
+  kota: teksOpsional(80),
   peringkatAkreditasi: teksOpsional(80),
   nomorSkAkreditasi: teksOpsional(),
   lembagaAkreditasi: teksOpsional(120),
@@ -154,3 +158,19 @@ export const skemaJawabanForm = z.object({
 export function pesanGalatZod(e: z.ZodError): string {
   return e.issues.map((i) => i.message).filter((m, idx, arr) => arr.indexOf(m) === idx).join(" ");
 }
+
+// ---------------------------------------------------------------- Tim penyusun (F-23, Tabel 2.1/2.2)
+
+const anggotaTim = z.object({
+  nama: teksWajib("Nama anggota tim", 160),
+  nomorInduk: teksOpsional(60),
+  jabatan: teksOpsional(160),
+  tugas: teksOpsional(600),
+});
+
+export const skemaTimPenyusun = z.object({
+  dosen: z.array(anggotaTim).max(30, "Paling banyak 30 dosen."),
+  tendik: z.array(anggotaTim).max(30, "Paling banyak 30 tenaga kependidikan."),
+});
+export type MasukanTimPenyusun = z.input<typeof skemaTimPenyusun>;
+export type TimPenyusun = z.output<typeof skemaTimPenyusun>;

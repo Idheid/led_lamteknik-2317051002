@@ -10,6 +10,7 @@ export const ANTREAN = {
   lkps: "baca-lkps",
   dokumen: "proses-dokumen",
   generate: "generate",
+  ekspor: "ekspor-word",
 } as const;
 
 export type NamaAntrean = (typeof ANTREAN)[keyof typeof ANTREAN];

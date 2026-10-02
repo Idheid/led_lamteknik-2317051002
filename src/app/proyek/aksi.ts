@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/lib/aksi";
 import { buatProyek, simpanJawaban, ubahTsProyek } from "@/lib/data/proyek";
-import type { MasukanProyek } from "@/lib/validasi";
+import type { MasukanProyek, MasukanTimPenyusun } from "@/lib/validasi";
 import * as lkps from "@/lib/data/lkps";
 import * as dokumen from "@/lib/data/dokumen";
 import * as pencarian from "@/lib/data/pencarian";
 import * as generate from "@/lib/data/generate";
+import * as ekspor from "@/lib/data/ekspor";
 
 export async function aksiBuatProyek(masukan: MasukanProyek) {
   const r = await jalankanAksi(async (p) => (await buatProyek(p, masukan)).id);
@@ -127,5 +128,25 @@ export async function aksiTandaiSubBagian(proyekId: string, subBagianKode: strin
 export async function aksiTandaiBagianSelesai(proyekId: string, bagianKode: string) {
   const r = await jalankanAksi((p) => generate.tandaiBagianSelesai(p, proyekId, bagianKode));
   revalidatePath(`/proyek/${proyekId}`, "layout");
+  return r;
+}
+
+// ---------------------------------------------------------------- Ekspor Word dan tim penyusun (F-22–F-24)
+
+export async function aksiSimpanTim(proyekId: string, tim: MasukanTimPenyusun) {
+  const r = await jalankanAksi((p) => ekspor.simpanTimPenyusun(p, proyekId, tim).then(() => null));
+  revalidatePath(`/proyek/${proyekId}`, "layout");
+  return r;
+}
+
+export async function aksiMulaiEkspor(proyekId: string) {
+  const r = await jalankanAksi(async (p) => (await ekspor.mulaiEkspor(p, proyekId)).id);
+  revalidatePath(`/proyek/${proyekId}/ekspor`);
+  return r;
+}
+
+export async function aksiHapusEkspor(proyekId: string, eksporId: string) {
+  const r = await jalankanAksi((p) => ekspor.hapusEkspor(p, eksporId).then(() => null));
+  revalidatePath(`/proyek/${proyekId}/ekspor`);
   return r;
 }

@@ -301,6 +301,14 @@ export function urutkanUntukGenerate<T extends SubUntukUrutan>(sub: T[]): T[] {
     .map((x) => x.s);
 }
 
+/**
+ * Bagian yang disusun paling akhir dan merangkum seluruh kriteria: kata pengantar, ringkasan eksekutif, Bab III
+ * (SWOT semua kriteria, tujuan strategis, program pengembangan), dan Bab IV (penutup).
+ */
+export function perluRingkasanSemua(kodeSub: string): boolean {
+  return /^(AWAL-PENGANTAR|AWAL-RINGKASAN|III-\d+|IV-\d+)$/.test(kodeSub);
+}
+
 export function perluRingkasanIku(kodeSub: string): boolean {
   const akhir = kodeSub.split('-').pop();
   return akhir === 'AF' || akhir === 'SWOT';

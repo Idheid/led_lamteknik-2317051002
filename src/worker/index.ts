@@ -1,13 +1,14 @@
 /**
  * Worker antrean (pg-boss): membaca LKPS, memproses dokumen (ekstraksi, pemotongan, embedding), dan menyusun
- * narasi (tugas generate).
+ * narasi (tugas generate), dan membuat berkas Word (ekspor).
  * Jalankan terpisah dari aplikasi web:  npm run worker
  */
 import "dotenv/config";
-import { ANTREAN, buatBos, siapkanAntrean } from "@/lib/antrean";
+import { ANTREAN, buatBos, kirimTugas, siapkanAntrean } from "@/lib/antrean";
 import { prosesBerkasLkps } from "@/lib/proses/lkps";
 import { prosesDokumen } from "@/lib/proses/dokumen";
 import { prosesTugasGenerate, pulihkanTugasTerputus } from "@/lib/proses/generate";
+import { prosesEkspor } from "@/lib/proses/ekspor";
 import { prisma } from "@/lib/db";
 
 async function main() {
@@ -28,6 +29,15 @@ async function main() {
     const hasil = await prosesTugasGenerate(tugas.data.tugasId);
     console.log(`[generate] ${tugas.data.tugasId} ${hasil}`);
   });
+  await bos.work<{ eksporId: string }>(ANTREAN.ekspor, { localConcurrency: 1 }, async ([tugas]) => {
+    console.log(`[ekspor] ${tugas.data.eksporId}`);
+    console.log(`[ekspor] ${tugas.data.eksporId} ${await prosesEkspor(tugas.data.eksporId)}`);
+  });
+  // ekspor yang terputus saat worker mati dikirim ulang
+  await prisma.ekspor.updateMany({ where: { status: "diproses" }, data: { status: "antre" } });
+  for (const e of await prisma.ekspor.findMany({ where: { status: "antre" }, select: { id: true } })) {
+    await kirimTugas(ANTREAN.ekspor, { eksporId: e.id });
+  }
   const dipulihkan = await pulihkanTugasTerputus();
   if (dipulihkan) console.log(`${dipulihkan} tugas generate dikirim ulang.`);
   console.log("Worker berjalan. Antrean:", Object.values(ANTREAN).join(", "));

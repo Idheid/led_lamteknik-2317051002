@@ -15,6 +15,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TombolSalinVersi, SaklarAktifVersi } from "../komponen-versi";
 import { FormVersi } from "./form-versi";
+import { infoTemplateLed } from "@/lib/data/ekspor";
+import { UnggahBerkas } from "@/components/unggah-berkas";
 
 export const metadata: Metadata = { title: "Detail versi instrumen" };
 
@@ -28,6 +30,7 @@ export default async function HalamanVersi({ params }: PageProps<"/admin/instrum
   const v = await ambilVersi(p, versiId);
   if (!v) notFound();
   const peraturan = Array.isArray(v.peraturan) ? (v.peraturan as string[]) : [];
+  const tpl = await infoTemplateLed(p, versiId);
   const perJenjang = new Map(v.butirPerJenjang.map((b) => [b.jenjang, b]));
   return (
     <>
@@ -62,6 +65,27 @@ export default async function HalamanVersi({ params }: PageProps<"/admin/instrum
           "Versi yang terkunci hanya bisa dilihat; salin versi bila perlu mengubahnya.",
         ]}
       />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Template LEDPS (Word) untuk ekspor</CardTitle>
+          <CardDescription>
+            {tpl.nama ? `Terpasang: ${tpl.nama}` : tpl.cadangan ? "Belum diunggah; memakai template cadangan dari TEMPLATE_LEDPS_PATH." : "Belum ada template. Unggah template LEDPS resmi (.docx)."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm">
+          {tpl.laporan && (
+            <ul className="space-y-1">
+              {Object.entries(tpl.laporan).map(([j, l]) => (
+                <li key={j}>
+                  <span className="font-mono">{j}</span>: {l.placeholder} sub-bagian dipetakan, {l.dihapus.length} dihapus (tidak berlaku)
+                  {l.tidakDitemukan.length > 0 && <span className="text-destructive">, tidak ditemukan: {l.tidakDitemukan.join(", ")}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          <UnggahBerkas url={`/api/admin/versi/${versiId}/template`} accept=".docx" label="Unggah template .docx" ringkas />
+        </CardContent>
+      </Card>
       {v.terkunci && (
         <Alert>
           <Lock aria-hidden />

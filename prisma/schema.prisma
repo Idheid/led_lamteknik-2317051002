@@ -136,6 +136,10 @@ model VersiInstrumen {
   butir       ButirPenilaian[]
   tabelLkps   TabelLkpsAcuan[]
   anggaranBawaan Json    // pengaturan anggaran halaman dan kata
+  // template LEDPS resmi (.docx) untuk ekspor; diunggah super admin per versi (cadangan: TEMPLATE_LEDPS_PATH)
+  templateLedLokasi String?
+  templateLedNama   String?
+  templateLedLaporan Json?  // hasil penyiapan per jenjang: placeholder, dihapus, tidak ditemukan
   proyek      ProyekLED[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -440,11 +444,19 @@ model Ekspor {
   id           String    @id @default(cuid())
   proyekId     String
   proyek       ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
-  lokasi       String
+  lokasi       String?   // berkas .docx di UPLOAD_DIR (null selama diproses atau bila gagal)
+  namaBerkas   String?
+  ukuran       Int?
   jumlahHalaman Int?
-  status       String    // diproses, siap, gagal
-  pemeriksaan  Json?
+  halamanPerkiraan Boolean @default(false) // true bila LibreOffice tidak tersedia (jumlah halaman diperkirakan)
+  status       String    @default("antre") // antre, diproses, siap, ditahan (> 150 halaman), gagal
+  pesan        String?
+  pemeriksaan  Json?     // galat dan peringatan
+  dibuatOlehId String?
   createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+
+  @@index([proyekId])
 }
 
 // ----------------------------------------------------------------- Pengaturan LLM
