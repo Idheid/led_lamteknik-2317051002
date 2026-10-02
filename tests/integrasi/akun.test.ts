@@ -61,6 +61,10 @@ test("Akun: satu akun aktif per prodi; pergantian PJ; data prodi tetap ada setel
   const versi = await prisma.versiInstrumen.findFirstOrThrow({ where: { aktif: true } });
   const proyek = await buatProyek(pjLama, { nama: "LED Elektro", versiId: versi.id, tsTahunMulai: 2025 });
   await tambahKunci(pjLama, { label: "Kunci prodi", kunci: "AIzaSyUjiAkun0000000000000000000000000" });
+  // format kunci Google yang baru memuat titik ("AQ.…")
+  const baruFormat = await tambahKunci(pjLama, { label: "Kunci format baru", kunci: "AQ.Ab8RUjiPalsu000000000000000000-xyz_9" });
+  assert.equal(baruFormat.akhiran, "yz_9");
+  await assert.rejects(tambahKunci(pjLama, { label: "Kunci rusak", kunci: "AQ.kunci dengan spasi 0000000000" }));
 
   // serah terima: nonaktifkan akun lama, buat akun baru
   await aturAktifAkun(admin, lama.id, false);
