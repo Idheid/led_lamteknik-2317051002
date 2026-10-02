@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/lib/aksi";
 import * as org from "@/lib/data/organisasi";
 import * as ins from "@/lib/data/instrumen";
+import * as pengaturan from "@/lib/data/pengaturan";
 import type { MasukanAkun, MasukanButir, MasukanProdi, MasukanSubBagian, MasukanUpps } from "@/lib/validasi";
 
 // ---------------------------------------------------------------- UPPS, prodi, akun
@@ -110,5 +111,13 @@ export async function aksiSimpanButir(versiId: string, masukan: MasukanButir, id
 export async function aksiHapusButir(id: string) {
   const r = await jalankanAksi((p) => ins.hapusButir(p, id).then(() => null));
   revalidatePath("/admin/instrumen", "layout");
+  return r;
+}
+
+// ---------------------------------------------------------------- Model LLM
+
+export async function aksiSimpanPengaturan(masukan: { modelNarasi: string; modelEmbedding: string }) {
+  const r = await jalankanAksi((p) => pengaturan.simpanPengaturan(p, masukan));
+  revalidatePath("/admin/model");
   return r;
 }

@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { FileUp, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, FileText, Sparkles } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { butirAnggaranProyek, halamanBagian } from "@/lib/data/proyek";
+import { daftarDokumen } from "@/lib/data/dokumen";
+import { metrikProyek } from "@/lib/data/lkps";
+import { formatMetrik } from "@/lib/tampil";
+import type { HasilButirAngka } from "@/lib/domain/metrik-lkps";
+import { UnggahBerkas } from "@/components/unggah-berkas";
+import { LencanaProses, PemantauProses } from "@/components/status-proses";
+import { STATUS_BERJALAN } from "@/lib/tampil";
 import { bacaAnggaran, targetKataSubBagian } from "@/lib/domain/anggaran-proyek";
 import { hitungAnggaran } from "@/lib/domain/anggaran";
 import { bacaVarian, namaJenjang, varianUntukJenjang } from "@/lib/domain/instrumen";
@@ -25,19 +32,20 @@ const LABEL_TIPE: Record<string, string> = {
   data: "Diisi dari data", narasi: "Narasi", bersama: "Bagian bersama", iku: "Indikator kinerja", otomatis: "Otomatis",
 };
 
-function TombolSegera({ label, ikon }: { label: string; ikon: "generate" | "unggah" }) {
-  const Ikon = ikon === "generate" ? Sparkles : FileUp;
+const TERIMA_DOKUMEN = ".pdf,.docx,.png,.jpg,.jpeg,.gif";
+
+function TombolSegera({ label }: { label: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span tabIndex={0}>
-          <Button variant={ikon === "generate" ? "default" : "outline"} size="sm" disabled>
-            <Ikon aria-hidden />
+          <Button size="sm" disabled>
+            <Sparkles aria-hidden />
             {label}
           </Button>
         </span>
       </TooltipTrigger>
-      <TooltipContent>{ikon === "generate" ? "Tersedia di iterasi 3 (mesin penyusun)" : "Tersedia di iterasi 2 (unggah dokumen)"}</TooltipContent>
+      <TooltipContent>Tersedia di iterasi 3 (mesin penyusun)</TooltipContent>
     </Tooltip>
   );
 }
@@ -49,7 +57,12 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
   const data = await halamanBagian(p, proyekId, kode);
   if (!data) notFound();
   const { proyek, bagian, jawaban } = data;
-  const { butir: butirAnggaran } = await butirAnggaranProyek(p, proyekId);
+  const [{ butir: butirAnggaran }, semuaDokumen, metrik] = await Promise.all([
+    butirAnggaranProyek(p, proyekId), daftarDokumen(p, proyekId), metrikProyek(p, proyekId),
+  ]);
+  const dokumenSub = (kodeSub: string) => semuaDokumen.filter((d) => d.subBagianKode === kodeSub);
+  const metrikButir = new Map((metrik?.hasil ?? []).map((h) => [h.butir, h]));
+  const adaProses = semuaDokumen.some((d) => STATUS_BERJALAN.includes(d.status));
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butirAnggaran, pengaturan);
   const target = targetKataSubBagian(
@@ -73,6 +86,7 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
 
   return (
     <>
+      <PemantauProses aktif={adaProses} />
       <JudulHalaman
         judul={
           <span className="flex flex-wrap items-center gap-3">
@@ -85,7 +99,7 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
         aksi={
           <>
             <LencanaStatus status={status} />
-            <TombolSegera label={bagian.jenis === "kriteria" ? "Generate kriteria" : "Generate bagian"} ikon="generate" />
+            <TombolSegera label={bagian.jenis === "kriteria" ? "Generate kriteria" : "Generate bagian"} />
           </>
         }
       />
@@ -100,7 +114,11 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
                 const v = varianUntukJenjang(bacaVarian(s.varian), proyek.jenjang);
                 const t = target[s.kode];
                 const pemandu = s.butir.map((b) => b.pertanyaanPemandu).filter((x): x is string => Boolean(x));
-                const dokumen = [...s.dokumenDiharapkan, ...s.butir.flatMap((b) => b.dokumenDiharapkan)];
+                const diharapkan = [
+                  ...s.dokumenDiharapkan.map((d) => ({ ...d, butirKode: s.butir[0]?.kode ?? null })),
+                  ...s.butir.flatMap((b) => b.dokumenDiharapkan.map((d) => ({ ...d, butirKode: b.kode }))),
+                ];
+                const terunggah = dokumenSub(s.kode);
                 return (
                   <Card key={s.id} id={s.kode} className="scroll-mt-20">
                     <CardHeader>
@@ -115,7 +133,7 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
                       </CardDescription>
                       {s.tipe !== "data" && s.tipe !== "otomatis" && (
                         <CardAction>
-                          <TombolSegera label={s.butir.length ? "Generate butir" : "Generate"} ikon="generate" />
+                          <TombolSegera label={s.butir.length ? "Generate butir" : "Generate"} />
                         </CardAction>
                       )}
                     </CardHeader>
@@ -157,18 +175,65 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
                             </ul>
                             <p className="mt-2 text-xs text-muted-foreground">Status unsur (terpenuhi/sebagian/belum ada bukti) diisi setelah generate.</p>
                           </div>
+                          {b.jenis === "angka" && <KotakMetrik hasil={metrikButir.get(b.kode)} perluDicek={metrik?.perluDicek ?? false} proyekId={proyek.id} />}
                         </div>
                       ))}
 
-                      {dokumen.length > 0 && (
+                      {s.tipe !== "otomatis" && (
                         <div className="text-sm">
-                          <div className="mb-1.5 flex items-center justify-between gap-2">
-                            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Dokumen pendukung yang diharapkan</span>
-                            <TombolSegera label="Unggah" ikon="unggah" />
+                          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                              Dokumen pendukung
+                              {diharapkan.length > 0 &&
+                                ` · ${diharapkan.filter((d) => terunggah.some((x) => x.dokumenDiharapkanId === d.id)).length}/${diharapkan.length} terpenuhi`}
+                            </span>
+                            <UnggahBerkas
+                              ringkas
+                              multiple
+                              label="Unggah dokumen lain"
+                              accept={TERIMA_DOKUMEN}
+                              url={`/api/proyek/${proyek.id}/dokumen`}
+                              isian={{ subBagianKode: s.kode, butirKode: s.butir[0]?.kode }}
+                            />
                           </div>
-                          <ul className="flex flex-wrap gap-1.5">
-                            {dokumen.map((d) => <li key={d.id}><Badge variant="outline" className="font-normal">{d.nama}</Badge></li>)}
-                          </ul>
+                          {diharapkan.length > 0 && (
+                            <ul className="mb-2 divide-y rounded-lg border">
+                              {diharapkan.map((d) => {
+                                const ada = terunggah.some((x) => x.dokumenDiharapkanId === d.id);
+                                return (
+                                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                                    <span className="flex items-center gap-2">
+                                      {ada
+                                        ? <CheckCircle2 className="size-4 text-emerald-600" aria-label="sudah ada" />
+                                        : <Circle className="size-4 text-muted-foreground" aria-label="belum ada" />}
+                                      {d.nama}
+                                    </span>
+                                    <UnggahBerkas
+                                      ringkas
+                                      label={ada ? "Tambah" : "Unggah"}
+                                      accept={TERIMA_DOKUMEN}
+                                      url={`/api/proyek/${proyek.id}/dokumen`}
+                                      isian={{ subBagianKode: s.kode, butirKode: d.butirKode, dokumenDiharapkanId: d.id }}
+                                    />
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                          {terunggah.length > 0 && (
+                            <ul className="space-y-1">
+                              {terunggah.map((d) => (
+                                <li key={d.id} className="flex flex-wrap items-center gap-2 text-xs">
+                                  <FileText className="size-3.5 text-muted-foreground" aria-hidden />
+                                  <a href={`/api/dokumen/${d.id}/berkas`} target="_blank" rel="noreferrer" className="hover:underline">
+                                    {d.judul ?? d.namaBerkas}
+                                  </a>
+                                  <LencanaProses status={d.status} />
+                                  {d.pesan && <span className="text-destructive">{d.pesan}</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
                       )}
 
@@ -213,5 +278,32 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
         </nav>
       </div>
     </>
+  );
+}
+
+function KotakMetrik({ hasil, perluDicek, proyekId }: { hasil: HasilButirAngka | undefined; perluDicek: boolean; proyekId: string }) {
+  if (!hasil) {
+    return (
+      <p className="mt-3 rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
+        Metrik butir ini dihitung sistem dari LKPS.{" "}
+        <a className="text-primary underline" href={`/proyek/${proyekId}/lkps`}>Unggah LKPS</a> untuk melihat nilainya.
+      </p>
+    );
+  }
+  return (
+    <div className="mt-3 rounded-md bg-muted/60 p-3 text-sm">
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span>Data LKPS (dihitung sistem){perluDicek ? " · dari PDF, perlu dicek" : ""}</span>
+        {hasil.skor !== null && <span className="normal-case">skor perkiraan {formatAngka(hasil.skor, 2)}</span>}
+      </div>
+      <dl className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
+        {hasil.metrik.map((m) => (
+          <div key={m.kode} className="flex justify-between gap-2">
+            <dt className={m.kode === hasil.utama ? "font-medium" : "text-muted-foreground"}>{m.nama}</dt>
+            <dd className="shrink-0 tabular-nums">{formatMetrik(m)}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

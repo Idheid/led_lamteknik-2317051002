@@ -3,8 +3,9 @@
 Website untuk membantu program studi menyusun draf Laporan Evaluasi Diri (LED) akreditasi LAM Teknik dengan LLM dan RAG.
 Skripsi Adrianne Julian, Ilmu Komputer Universitas Lampung.
 
-Status: **iterasi 1 selesai** (login dua peran, UPPS/prodi/akun, versi instrumen dinamis, proyek LED, Beranda dengan
-anggaran halaman, halaman form per kriteria). Rincian dan hasil uji: `docs/CATATAN-PENGEMBANGAN.md`.
+Status: **iterasi 2 selesai** (iterasi 1: login dua peran, UPPS/prodi/akun, versi instrumen dinamis, proyek LED,
+Beranda, form per kriteria; iterasi 2: unggah LKPS Excel/PDF dan metrik butir angka, dokumen pendukung, worker
+pemrosesan dan embedding, pencarian gabungan, kunci API). Rincian dan hasil uji: `docs/CATATAN-PENGEMBANGAN.md`.
 
 ## Menjalankan di komputer lokal
 
@@ -17,6 +18,7 @@ docker compose up -d
 npm run db:migrate
 npm run db:seed
 npm run dev                 # http://localhost:3000, masuk dengan SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD
+npm run worker              # terminal kedua: membaca LKPS dan memproses dokumen
 ```
 
 Pemeriksaan: `npm run lint`, `npm run typecheck`, `npm test` (uji integrasi memakai basis data `led_lamteknik_test`).

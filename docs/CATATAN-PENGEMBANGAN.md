@@ -125,3 +125,103 @@ Better Auth 1.7.7, Zod 4.6.5, React Hook Form 7.89.0, @hookform/resolvers 5.9.1,
 ### Umpan balik pembimbing
 
 (diisi setelah demo)
+
+## Iterasi 2 — Unggah dan pemrosesan (2 Oktober 2026, Claude Code)
+
+Kebutuhan F-08 sampai F-12. Umpan balik pembimbing untuk iterasi 1 belum ada (bagian di atas masih "diisi setelah
+demo"), jadi tidak ada perubahan iterasi 1 yang diterapkan.
+
+### Yang dibuat
+
+- **F-08 LKPS Excel** (`src/lib/lkps/baca-xlsx.ts`). Satu aturan baca generik untuk semua sheet template: cari baris
+  nomor kolom (A = 1, B = 2, C = 3), judul kolom dari baris di atasnya, data di bawahnya, panel INFO diabaikan, baris
+  kategori/jumlah dilewati, blok jenjang dipilih untuk 6.d dan 6.f.1. Sheet yang berlaku per jenjang disalin dari
+  sheet "Daftar Tabel" template (`struktur.ts`). Validasi: sheet hilang dan struktur berubah = galat; tabel wajib
+  kosong dan sel wajib kosong (`KOLOM_WAJIB` per sheet) = peringatan; TS di sheet Menu dibandingkan dengan TS proyek.
+  Tabel disimpan ke `TabelLKPS` dengan kunci huruf kolom template; berkas terbaru yang terbaca menjadi sumber data
+  (bisa dipilih ulang).
+- **Metrik butir angka** (`src/lib/domain/metrik-lkps.ts`): 33 butir angka Sarjana (6-I, 6-II, 9, 10, 11, 18, 19,
+  23, 25–28, 30–37, 40–47, 49–52) beserta skor perkiraan. Rumus dari PDF Matriks Penilaian LED dan LKPS Sarjana 2025;
+  definisi variabel mengikuti panel INFO template (NDTPS = Dosen Tetap dengan V di kolom J, kerja sama sah bila masa
+  berlaku beririsan dengan 4 tahun sampai akhir TS, NM = baris prodi bertanda V, RBK = rerata BK per semester, dst.).
+  Metrik tampil di halaman Data LKPS dan di kartu butir halaman kriteria.
+- **Fikstur LKPS fiktif**: template LKPS asli diisi data rekaan (`tests/fikstur/data-lkps-contoh.ts`,
+  `scripts/buat-fikstur-lkps.ts` → `tests/fikstur/lkps-contoh-s1.xlsx`). Hitungan manual tiap butir di
+  `docs/uji/hitungan-manual-lkps.md`, diperiksa ulang dengan kalkulator terpisah, dan diuji di
+  `tests/unit/lkps-contoh.test.ts`.
+- **F-09 LKPS PDF** (`src/lib/lkps/baca-pdf.ts`): teks berposisi dari pdf.js (unpdf); judul tabel dicocokkan dengan
+  judul sheet template; baris nomor kolom menjadi patokan posisi; batas kolom diambil dari awal teks rata kiri; sel
+  terbungkus digabung ke baris sebelumnya. Hasil selalu `perluDicek`. Halaman tabel bisa dikoreksi manual
+  (tambah/hapus baris, ubah sel, tandai "sudah dicek") dan metrik dihitung ulang. Fikstur PDF
+  (`scripts/buat-fikstur-lkps-pdf.ts`) meniru cetakan Excel: judul, nomor kolom, sel terbungkus, pindah halaman, dan
+  blok jenjang lain di 6.d. Uji: semua metrik dari PDF sama dengan metrik dari Excel.
+- **F-10 dokumen pendukung**: unggah PDF/DOCX/PNG/JPG/GIF (jenis dikenali dari isi berkas, maksimal 25 MB) per
+  sub-bagian dan butir. Dokumen bisa dikaitkan ke "dokumen yang diharapkan" (daftar cek di halaman kriteria
+  menampilkan tanda terpenuhi) dan diberi tautan bukti sahih (hanya http/https). Halaman Dokumen: semua berkas, status
+  proses, ubah judul/tautan, unduh asli, proses ulang, hapus.
+- **F-11 pemrosesan**: worker pg-boss (`npm run worker`, antrean `baca-lkps` dan `proses-dokumen`, diulang otomatis
+  2× dengan jeda bertambah). Ekstraksi teks dengan unpdf (per halaman) dan mammoth; potongan 800–1.200 karakter dengan
+  tumpang tindih 15% di batas paragraf/kalimat/kata (`potong-teks.ts`); embedding Gemini `gemini-embedding-001`
+  (`outputDimensionality` 768, `taskType` RETRIEVAL_DOCUMENT/QUERY, dinormalkan) disimpan di `Potongan.embedding`
+  (pgvector, indeks HNSW), dan teks di `teksTsv` (tsvector "simple", GIN). Status per berkas: diunggah, diproses,
+  siap, gagal, menunggu_kunci. Mengganti model embedding (menu Model LLM super admin) mengantre ulang semua dokumen
+  teks. Pencarian gabungan (`pencarian.ts`): kandidat vektor (jarak kosinus) dan kata kunci (ts_rank, kueri OR yang
+  hanya berisi huruf/angka), digabung RRF k = 60, 8 potongan teratas, disaring per proyek dan per sub-bagian
+  (ditambah dokumen umum).
+- **Kunci API sederhana**: menu Kunci API penanggung jawab (tambah, uji koneksi, hapus). Kunci dienkripsi AES-256-GCM,
+  hanya 4 karakter terakhir yang tampil; pemilihan kunci dan penandaan kuota habis memakai
+  `src/lib/domain/kunci-api.ts`. Dokumen tanpa kunci berstatus "menunggu kunci" dan diantre ulang otomatis saat kunci
+  ditambahkan.
+- **F-12 gambar**: disimpan apa adanya (hash SHA-256 dicatat; byte yang disajikan sama dengan unggahan) dan punya
+  judul gambar. `simpulGambar()` menyiapkan simpul gambar Tiptap (src berkas asli + judul) untuk editor iterasi 3.
+- **UI**: menu Data LKPS, Dokumen, dan Kunci API aktif. Beranda menampilkan status kunci, LKPS sumber data, dokumen
+  siap dicari, dan dokumen yang diharapkan yang masih kurang. Halaman kriteria punya tombol unggah per dokumen yang
+  diharapkan, daftar berkas per sub-bagian, dan kotak metrik LKPS per butir angka. Proses berjalan di latar; halaman
+  menyegarkan diri selama masih ada berkas yang diproses.
+
+### Keputusan teknis dan asumsi (perlu dikonfirmasi pembimbing)
+
+1. **Asumsi rumus** untuk bagian yang tidak dirinci matriks: BOP dari kolom Program Studi baris 1.a–1.f; DPD dan DPkMD
+   per DTPS; RIPK tertimbang jumlah lulusan; MS dan WT dengan titik tengah kelompok; KBK = sedang + tinggi; PMA = penuh
+   + paruh waktu saat TS; skor butir 26 dan 44 pada rentang yang teksnya terpotong di PDF. Daftar lengkap di
+   `docs/uji/hitungan-manual-lkps.md`; setiap butir menampilkan catatan asumsinya.
+2. **Skor perkiraan** ikut dihitung (rumus skor tersedia di matriks) dan ditandai sebagai bantuan, bukan penilaian asesor.
+3. **Pembaca Excel memakai aliran ExcelJS**: model penuh ExcelJS butuh ±35 detik untuk template (gaya dan validasi
+   ±1.000 baris × 54 sheet), sedangkan aliran ±3 detik. Konsekuensinya, sel gabungan tidak diulang ke kolom
+   sebelahnya, sehingga judul kolom memakai teks sel masing-masing.
+4. **Embedding uji** (`EMBEDDING_PENYEDIA=uji`, feature hashing kata, 768 dimensi) dipakai uji otomatis dan bisa
+   dipakai demo lokal tanpa kunci; ditolak di produksi. **Jalur Gemini belum diuji dengan kunci sungguhan** karena
+   lingkungan pengembangan tidak punya kunci; uji koneksi tersedia di menu Kunci API.
+5. **pg-boss** memakai skema `pgboss` di basis data yang sama. Uji integrasi mematikan antrean (`ANTREAN_NONAKTIF=1`)
+   dan memanggil fungsi proses langsung.
+6. **Rute unggah tidak lewat `proxy.ts`**: Next.js 16 hanya menyalin 10 MB pertama body permintaan yang lewat proxy
+   (`proxyClientMaxBodySize`), sehingga unggahan besar akan terpotong diam-diam. Semua rute `/api/*` memeriksa sesi sendiri.
+7. **Konstanta dari modul "use client"** tidak bisa dipakai komponen server (yang diterima hanya referensi klien), jadi
+   konstanta bersama ditaruh di modul biasa (`src/lib/tampil.ts`). Masalah ini ditemukan saat uji di browser.
+
+### Migrasi
+
+`prisma/migrations/20261002120000_iterasi2_unggah` menambah kolom status/aktif/masalah/identitas di `BerkasLKPS`;
+judul, blok, kolom, kolomRumus, dan dikoreksi di `TabelLKPS` (unik per berkas + sheet); serta jenis, judul, hash,
+dokumenDiharapkanId, dan jumlahPotongan di `Dokumen`. Migrasi dibuat dengan `prisma migrate diff` (`migrate dev`
+menolak berjalan non-interaktif), lalu baris `DROP INDEX "Potongan_embedding_hnsw_idx"` dihapus sesuai aturan.
+
+### Versi pustaka baru
+
+exceljs 4.4.0, unpdf 1.8.1, mammoth 1.13.0, pg-boss 12.35.1, ai 7.0.127, @ai-sdk/google 4.0.87, docx 9.8.1,
+pdf-lib 1.17.1 (hanya pengembangan, untuk fikstur).
+
+### Hasil pemeriksaan kriteria selesai
+
+| Kriteria | Cara diperiksa | Hasil |
+| --- | --- | --- |
+| Satu LKPS contoh terbaca benar (template diisi data fiktif, fikstur dibuat) | `tests/unit/lkps-contoh.test.ts`, `tests/integrasi/unggah.test.ts`, unggah lewat API dan tampilan di browser | Lulus: 43 tabel Sarjana dan identitas sheet Menu terbaca; hanya 1 peringatan, yang memang disengaja |
+| Metrik butir angka dihitung sistem dan diuji terhadap hitungan manual | 55 nilai metrik dan 33 skor dibandingkan dengan `docs/uji/hitungan-manual-lkps.md` | Lulus (toleransi 0,0001) |
+| Dokumen PDF dan DOCX bisa dicari: gabungan vektor + kata kunci, disaring per proyek dan sub-bagian | `tests/integrasi/unggah.test.ts` dan panel Uji pencarian di halaman Dokumen | Lulus, dengan embedding uji (bukan Gemini) |
+| Perlu kunci Gemini, diisi penanggung jawab lewat menu Kunci API | Menu Kunci API, uji enkripsi, antre ulang dokumen "menunggu kunci" | Lulus; koneksi Gemini sungguhan belum dicoba (butuh kunci Adrianne) |
+| F-09 PDF cadangan, F-10 daftar cek dan tautan bukti, F-12 gambar utuh | `lkps-pdf.test.ts`, `unggah.test.ts`, browser | Lulus |
+| `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus (57 uji unit, 15 uji integrasi) |
+
+### Umpan balik pembimbing
+
+(diisi setelah demo)

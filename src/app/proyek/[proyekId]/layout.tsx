@@ -34,7 +34,9 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
       label: "Proyek",
       item: [
         { judul: "Beranda", href: dasar, ikon: "beranda", persis: true },
-        { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps", segera: true },
+        { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },
+        { judul: "Dokumen", href: `${dasar}/dokumen`, ikon: "dokumen" },
+        { judul: "Kunci API", href: `${dasar}/kunci-api`, ikon: "kunci" },
       ],
     },
     {
@@ -52,9 +54,7 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
     {
       label: "Iterasi berikutnya",
       item: [
-        { judul: "Dokumen", href: `${dasar}/dokumen`, ikon: "dokumen", segera: true },
         { judul: "Ekspor Word", href: `${dasar}/ekspor`, ikon: "ekspor", segera: true },
-        { judul: "Kunci API", href: `${dasar}/kunci-api`, ikon: "kunci", segera: true },
       ],
     },
   ];

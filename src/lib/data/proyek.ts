@@ -156,3 +156,16 @@ export async function butirAnggaranProyek(p: Pengguna, proyekId: string) {
   });
   return { proyek, butir: butir.map((b) => ({ kode: b.kode, bagian: b.bagianKode, bobot: Number(b.bobot), jenis: b.jenis })) };
 }
+
+/** Pilihan sub-bagian (berlaku untuk jenjang proyek) untuk mengaitkan dokumen. */
+export async function pilihanSubBagianProyek(p: Pengguna, proyekId: string) {
+  const proyek = await ambilProyek(p, proyekId);
+  const sub = await prisma.subBagian.findMany({
+    where: { bagian: { versiId: proyek.versiId }, tipe: { notIn: ["data", "otomatis"] } },
+    orderBy: [{ bagian: { urutan: "asc" } }, { urutan: "asc" }],
+    select: { kode: true, label: true, judul: true, berlakuUntuk: true, jenjangOverride: true, bagian: { select: { kode: true } } },
+  });
+  return sub
+    .filter((s) => berlakuUntukJenjang(s, proyek.jenjang))
+    .map((s) => ({ kode: s.kode, label: `${s.bagian.kode} ${s.label ? `${s.label} ` : ""}${s.judul}`.slice(0, 120) }));
+}

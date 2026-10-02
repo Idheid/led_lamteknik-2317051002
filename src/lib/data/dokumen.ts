@@ -176,3 +176,28 @@ export async function antreUlangMenungguKunci(prodiId: string | null): Promise<n
   }
   return daftar.length;
 }
+
+/** Ringkasan bahan untuk Beranda: dokumen per status dan dokumen yang diharapkan yang belum ada. */
+export async function ringkasanBahan(p: Pengguna, proyekId: string) {
+  const proyek = await ambilProyek(p, proyekId);
+  const [perStatus, diharapkan, terpenuhi, lkps] = await Promise.all([
+    prisma.dokumen.groupBy({ by: ["status"], where: { proyekId: proyek.id }, _count: { _all: true } }),
+    prisma.dokumenDiharapkan.count({ where: { butir: { versiId: proyek.versiId, jenjang: proyek.jenjang } } }),
+    prisma.dokumen.findMany({
+      where: { proyekId: proyek.id, dokumenDiharapkanId: { not: null } },
+      distinct: ["dokumenDiharapkanId"],
+      select: { dokumenDiharapkanId: true },
+    }),
+    prisma.berkasLKPS.findFirst({ where: { proyekId: proyek.id, aktif: true }, select: { namaBerkas: true, jenis: true } }),
+  ]);
+  const jumlah = (s: string) => perStatus.find((x) => x.status === s)?._count._all ?? 0;
+  return {
+    totalDokumen: perStatus.reduce((n, x) => n + x._count._all, 0),
+    siap: jumlah("siap"),
+    menungguKunci: jumlah("menunggu_kunci"),
+    gagal: jumlah("gagal"),
+    diharapkan,
+    terpenuhi: terpenuhi.length,
+    lkps,
+  };
+}

@@ -125,7 +125,7 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 
 - `docker compose up -d` — PostgreSQL + pgvector (wajib menyala sebelum perintah lain)
 - `npm run dev` — aplikasi web (http://localhost:3000)
-- `npm run worker` — worker antrean pg-boss (iterasi 2 ke atas, belum ada)
+- `npm run worker` — worker antrean pg-boss: baca LKPS dan proses dokumen (wajib berjalan bersama `npm run dev`)
 - `npm run db:migrate` — terapkan migrasi (`prisma migrate deploy`); `npm run db:seed` — super admin + instrumen (idempoten)
 - `npm run lint`, `npm run typecheck` (`next typegen` + `tsc`), `npm test` (= `test:unit` + `test:integrasi`)
 - `npm run test:integrasi` membuat/memigrasi basis data `led_lamteknik_test` sendiri; basis data pengembangan tidak disentuh
@@ -142,6 +142,24 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 - Rute: `/login`, `/admin/*` (super admin), `/proyek` dan `/proyek/[proyekId]/*` (penanggung jawab;
   halaman form bagian/kriteria di `/proyek/[id]/bagian/[kode]`).
 - Versi instrumen yang dipakai proyek dikunci (tidak bisa diubah/dihapus); perubahan lewat salin versi.
+
+## Struktur kode (setelah iterasi 2)
+
+- `src/lib/lkps/`: pembaca LKPS Excel (`baca-xlsx.ts`, pembaca aliran ExcelJS), PDF (`baca-pdf.ts`, posisi teks),
+  struktur template (`struktur.ts`, `kolom-template.json`), validasi isi (`periksa.ts`). Tabel disimpan dengan kunci
+  huruf kolom template (A, B, C, ...).
+- `src/lib/domain/metrik-lkps.ts`: rumus metrik butir angka Sarjana (Matriks Penilaian 2025) + skor perkiraan;
+  hitungan manual pembanding di `docs/uji/hitungan-manual-lkps.md`. `potong-teks.ts` (800–1.200 karakter, 15%),
+  `rrf.ts` (reciprocal rank fusion).
+- `src/lib/proses/` (dipanggil worker): `lkps.ts`, `dokumen.ts` (unpdf/mammoth → potong → embedding → Potongan).
+- `src/lib/data/`: `lkps.ts`, `dokumen.ts`, `pencarian.ts` (vektor pgvector + tsvector, RRF), `kunci-api.ts`
+  (AES-256-GCM, pemilihan kunci), `pengaturan.ts` (model; ganti model embedding → proses ulang semua dokumen).
+- Unggahan lewat Route Handler `src/app/api/proyek/[proyekId]/{lkps,dokumen}`; berkas asli di `UPLOAD_DIR`,
+  disajikan `src/app/api/dokumen/[dokumenId]/berkas`. Rute `/api/*` tidak lewat `proxy.ts` (proxy memotong body > 10 MB).
+- Fikstur uji: `tests/fikstur/lkps-contoh-s1.{xlsx,pdf}` dari data fiktif `tests/fikstur/data-lkps-contoh.ts`
+  (`npx tsx scripts/buat-fikstur-lkps.ts`, lalu `scripts/buat-fikstur-lkps-pdf.ts`). Peta kolom PDF:
+  `npx tsx scripts/buat-kolom-template.ts` bila template LKPS berganti.
+- Uji: `tests/unit/` (tanpa DB), `tests/integrasi/` (DB uji, antrean mati, embedding uji `EMBEDDING_PENYEDIA=uji`).
 
 ## Konvensi
 

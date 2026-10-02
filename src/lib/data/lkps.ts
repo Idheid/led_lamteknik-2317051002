@@ -148,3 +148,11 @@ export async function simpanKoreksiTabel(p: Pengguna, tabelId: string, barisMasu
   await prisma.berkasLKPS.update({ where: { id: t.berkasId }, data: { masalah: [...masalahLama, ...baru] as unknown as Prisma.InputJsonValue } });
   await catatAktivitas(p, "koreksi", "tabel_lkps", tabelId, { sheet: t.sheet, sudahDicek });
 }
+
+export async function ambilTabel(p: Pengguna, tabelId: string) {
+  const t = await prisma.tabelLKPS.findUnique({ where: { id: tabelId }, include: { berkas: true } });
+  if (!t) return null;
+  const proyek = await ambilProyek(p, t.berkas.proyekId);
+  const masalah = ((t.berkas.masalah ?? []) as unknown as MasalahLkps[]).filter((m) => m.sheet === t.sheet);
+  return { proyek, berkas: t.berkas, tabel: keTabel(t), masalah };
+}

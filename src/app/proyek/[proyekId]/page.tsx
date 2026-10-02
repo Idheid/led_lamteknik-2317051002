@@ -3,6 +3,9 @@ import Link from "next/link";
 import { ChevronRight, KeyRound } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { bagianProyek, butirAnggaranProyek, ringkasanBagianProyek } from "@/lib/data/proyek";
+import { ringkasanBahan } from "@/lib/data/dokumen";
+import { daftarKunci } from "@/lib/data/kunci-api";
+import { pakaiPenyediaUji } from "@/lib/llm/embedding";
 import { bacaAnggaran } from "@/lib/domain/anggaran-proyek";
 import { hitungAnggaran, usulanHalamanKriteria } from "@/lib/domain/anggaran";
 import { namaJenjang } from "@/lib/domain/instrumen";
@@ -27,11 +30,14 @@ const LABEL_JENIS: Record<string, string> = {
 export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]">) {
   const p = await wajibPenanggungJawab();
   const { proyekId } = await params;
-  const [{ proyek, bagian }, { butir }, ringkas] = await Promise.all([
+  const [{ proyek, bagian }, { butir }, ringkas, bahan, kunci] = await Promise.all([
     bagianProyek(p, proyekId),
     butirAnggaranProyek(p, proyekId),
     ringkasanBagianProyek(p, proyekId),
+    ringkasanBahan(p, proyekId),
+    daftarKunci(p),
   ]);
+  const kunciAktif = kunci.filter((k) => k.statusEfektif === "aktif").length;
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
   const usulan = usulanHalamanKriteria(bagianAnggaran, butir, pengaturan);
@@ -103,11 +109,13 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
             <CardDescription>Kunci API Gemini</CardDescription>
             <CardTitle className="flex items-center gap-2 text-base">
               <KeyRound className="size-4 text-muted-foreground" aria-hidden />
-              Belum diatur
+              {kunci.length === 0 ? (pakaiPenyediaUji() ? "Mode uji" : "Belum diatur") : `${kunciAktif} dari ${kunci.length} aktif`}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">Diisi sebelum generate (iterasi berikutnya).</p>
+            <Link href={`/proyek/${proyek.id}/kunci-api`} className="text-xs text-primary hover:underline">
+              {kunci.length === 0 ? "Tambahkan kunci untuk mengindeks dokumen" : "Kelola kunci API"}
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -223,6 +231,38 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
           </CardContent>
         </Card>
         <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Bahan penyusunan</CardTitle>
+              <CardDescription>LKPS dan dokumen pendukung yang menjadi sumber narasi.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="text-xs text-muted-foreground">LKPS sumber data</dt>
+                  <dd>
+                    {bahan.lkps ? <span className="line-clamp-2">{bahan.lkps.namaBerkas}</span> : <span className="text-muted-foreground">belum ada</span>}
+                    <Link href={`/proyek/${proyek.id}/lkps`} className="block text-xs text-primary hover:underline">Data LKPS</Link>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Dokumen siap dicari</dt>
+                  <dd className="tabular-nums">
+                    {bahan.siap} / {bahan.totalDokumen}
+                    {bahan.menungguKunci > 0 && <span className="block text-xs text-amber-700 dark:text-amber-300">{bahan.menungguKunci} menunggu kunci API</span>}
+                    {bahan.gagal > 0 && <span className="block text-xs text-destructive">{bahan.gagal} gagal diproses</span>}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Dokumen yang diharapkan</dt>
+                  <dd className="tabular-nums">
+                    {bahan.terpenuhi} / {bahan.diharapkan} terpenuhi
+                    <span className="block text-xs text-muted-foreground">{bahan.diharapkan - bahan.terpenuhi} masih kurang</span>
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Peta label TS</CardTitle>

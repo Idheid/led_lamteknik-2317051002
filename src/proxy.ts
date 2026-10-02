@@ -18,6 +18,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Semua halaman kecuali API auth, aset Next.js, dan berkas statis.
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg|ico)$).*)"],
+  // Semua halaman kecuali API, aset Next.js, dan berkas statis. Rute /api/* memeriksa sesi sendiri;
+  // selain itu proxy hanya menyalin 10 MB pertama body permintaan sehingga unggahan besar akan terpotong.
+  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg|ico)$).*)"],
 };

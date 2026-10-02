@@ -10,13 +10,14 @@ const MENU: GrupNav[] = [
       { judul: "Instrumen", href: "/admin/instrumen", ikon: "instrumen" },
       { judul: "Prodi dan UPPS", href: "/admin/prodi", ikon: "prodi" },
       { judul: "Akun", href: "/admin/akun", ikon: "akun" },
+      { judul: "Model LLM", href: "/admin/model", ikon: "model" },
     ],
   },
   {
     label: "Iterasi berikutnya",
     item: [
       { judul: "Kunci API", href: "/admin/kunci-api", ikon: "kunci", segera: true },
-      { judul: "Model dan log", href: "/admin/model", ikon: "model", segera: true },
+      { judul: "Log pemakaian", href: "/admin/log", ikon: "model", segera: true },
     ],
   },
 ];
