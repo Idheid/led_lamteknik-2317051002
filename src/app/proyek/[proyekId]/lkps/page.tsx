@@ -9,6 +9,7 @@ import { formatAngka } from "@/lib/domain/teks";
 import { formatTahunAkademik } from "@/lib/domain/tahun-akademik";
 import { fmtWaktu, formatMetrik, formatUkuran } from "@/lib/tampil";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { UnggahBerkas } from "@/components/unggah-berkas";
 import { LencanaProses, PemantauProses } from "@/components/status-proses";
 import { STATUS_BERJALAN } from "@/lib/tampil";
@@ -38,6 +39,15 @@ export default async function HalamanLkps({ params }: PageProps<"/proyek/[proyek
         judul="Data LKPS"
         deskripsi={`Unggah LKPS dari template LKPS LAM Teknik 2025 (Excel). PDF bisa dipakai sebagai cadangan, tetapi hasilnya harus dicek. TS proyek: ${formatTahunAkademik(proyek.tsTahunMulai)}.`}
         remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Data LKPS" }]}
+      />
+      <Petunjuk
+        kunci="proyek-lkps"
+        fungsi="LKPS adalah sumber data angka. Sistem membaca tabel LKPS dan menghitung metrik butir angka; narasi hanya boleh memakai angka dari sini."
+        langkah={[
+          "Unggah berkas LKPS (Excel dari template LAM Teknik).",
+          "Periksa tabel hasil bacaan dan peringatan; koreksi sel yang salah.",
+          "Periksa metrik butir angka, lalu lanjut ke halaman kriteria.",
+        ]}
       />
 
       <div className="grid gap-6 xl:grid-cols-3">

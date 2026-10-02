@@ -6,6 +6,7 @@ import { wajibSuperAdmin } from "@/lib/sesi";
 import { ambilBagian } from "@/lib/data/instrumen";
 import { jenjangBerlaku } from "@/lib/domain/instrumen";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,14 @@ export default async function HalamanBagian({ params }: PageProps<"/admin/instru
             </Button>
           )
         }
+      />
+      <Petunjuk
+        kunci="admin-bagian"
+        fungsi="Pengaturan satu bagian LED dan daftar sub-bagiannya (misalnya Latar Belakang, Kebijakan, IKU, Analisis Faktor, SWOT)."
+        langkah={[
+          "Ubah nama, urutan, batas halaman resmi, atau pengantar bagian bila diperlukan.",
+          "Tambah atau sunting sub-bagian beserta pertanyaan pemandu dan bobot halamannya.",
+        ]}
       />
       {terkunci && (
         <Alert>

@@ -4,6 +4,7 @@ import { Lock } from "lucide-react";
 import { wajibSuperAdmin } from "@/lib/sesi";
 import { daftarVersi } from "@/lib/data/instrumen";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,6 +21,15 @@ export default async function HalamanInstrumen() {
       <JudulHalaman
         judul="Versi instrumen"
         deskripsi="Instrumen disimpan per versi. Versi yang sudah dipakai proyek dikunci; untuk mengikuti peraturan baru, salin versi lalu sunting salinannya. Hanya versi aktif yang bisa dipilih saat membuat proyek."
+      />
+      <Petunjuk
+        kunci="admin-instrumen"
+        fungsi="Daftar versi instrumen LED. Versi yang sudah dipakai proyek dikunci agar proyek lama tetap konsisten."
+        langkah={[
+          "Buka versi untuk melihat bagian, sub-bagian, dan butir penilaian.",
+          "Untuk mengikuti peraturan baru, salin versi lalu sunting salinannya.",
+          "Aktifkan versi agar bisa dipilih saat penanggung jawab membuat proyek.",
+        ]}
       />
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">

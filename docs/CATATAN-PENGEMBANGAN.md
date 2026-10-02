@@ -225,3 +225,103 @@ pdf-lib 1.17.1 (hanya pengembangan, untuk fikstur).
 ### Umpan balik pembimbing
 
 (diisi setelah demo)
+
+## Perbaikan sebelum iterasi 3 dan iterasi 3 — Mesin penyusun (2 Oktober 2026, Claude Code)
+
+Keputusan Adrianne: iterasi 3 dan 4 dilanjutkan tanpa menunggu umpan balik pembimbing; review bersama pembimbing dan
+stakeholder setelah website jadi (dicatat di `CLAUDE.md` dan `docs/RENCANA-ITERASI.md`).
+
+### Perbaikan sebelum iterasi 3
+
+1. **Kunci API per prodi**: menu Kunci API juga ada di sidebar halaman "Semua proyek LED" (`/proyek/kunci-api`);
+   komponen bersama `src/components/kunci-api/`. Beranda proyek menampilkan peringatan bila tidak ada kunci yang bisa
+   dipakai (`ringkasanKunciProdi`), dengan tautan ke menu Kunci API.
+2. **Model LLM**: isian teks diganti dropdown dari endpoint `models.list` Google (memakai kunci aktif mana pun,
+   cadangan super admin lebih dulu; kunci dikirim lewat header `x-goog-api-key`, bukan URL). Model narasi dan cadangan
+   = model yang mendukung `generateContent` (model gambar/suara/robotika disaring), model embedding = `embedContent`.
+   Setiap pilihan menampilkan nama, kode, dan penjelasan singkat (`penjelasanModel`); tombol **Muat ulang daftar** dan
+   **Uji model**; urutan model cadangan (maks. 5) bisa diatur. Model narasi bawaan diganti ke `gemini-3-flash-preview`;
+   saat daftar dimuat, model generasi 1.x/2.x atau model yang tidak ada di daftar otomatis diganti model 3.x flash
+   (stabil diutamakan dari pratinjau). Batas kuota Gemini tidak ditanam di kode.
+3. **Akun dan serah terima** (tetap dua peran): super admin bisa membuat super admin lain; semua pengguna bisa mengganti
+   kata sandi sendiri (wajib kata sandi lama, lewat `auth.api.changePassword`, sesi lain dicabut); akun baru dan akun
+   yang sandinya diatur ulang punya `wajibGantiSandi` sehingga diarahkan ke `/akun/ganti-sandi` (halaman, aksi server,
+   dan rute API ikut menolak). Hanya super admin yang mengatur ulang sandi, menonaktifkan, dan menghapus akun; tidak
+   bisa untuk akun sendiri; minimal satu super admin aktif. Aturan satu akun per prodi kini hanya menghitung akun
+   **aktif** (`User.prodiId` tidak lagi unik). Kunci API, versi draf, dan log memakai `onDelete: SetNull` ke akun,
+   jadi data prodi tetap ada saat akun dihapus.
+4. **Petunjuk di setiap halaman** (`src/components/petunjuk.tsx`, bisa ditutup, diingat per halaman di browser) dan
+   `docs/PANDUAN-PENGGUNAAN.md` untuk super admin dan penanggung jawab.
+
+### Iterasi 3 — yang dibuat
+
+| Kode | Implementasi |
+| --- | --- |
+| F-13 | `TugasGenerate` + antrean pg-boss `generate`. Per kriteria: IKU → latar belakang dan kebijakan → analisis faktor → SWOT (`urutkanUntukGenerate`); AF dan SWOT menerima ringkasan IKU (`ringkasIku`). Per sub-bagian/butir (Generate ulang butir) dan per bagian di luar kriteria memakai jalur yang sama. Konteks: identitas, instruksi (label TS diganti), butir + unsur skor 4, jawaban penyusun [J], metrik sistem [M-…], tabel LKPS [T-sheet] (Markdown ringkas), 8 potongan dokumen [D1–D8] dari pencarian gabungan, target kata. Prompt dari `src/lib/domain/prompt.ts`, keluaran terstruktur `generateText` + `Output.object` (skema Zod setara `SKEMA_KELUARAN`). |
+| F-14 | Status unsur skor 4 per butir (terpenuhi/sebagian/belum ada bukti + sumber) dan dokumen yang perlu diunggah, ditampilkan sebagai daftar cek di tab Hasil generate. |
+| F-15 | Paragraf Tiptap membawa atribut `sumber` (tampil sebagai penanda kecil "Sumber: …" lewat CSS, tidak ikut ekspor) dan legenda kode sumber per versi. |
+| F-16 | Editor Tiptap (tebal, miring, daftar berbutir/bernomor, tabel, gambar dari unggahan proyek), simpan otomatis 1,5 detik setelah berhenti mengetik. |
+| F-17 | Setiap generate dan suntingan menjadi `VersiDraf` baru (suntingan beruntun oleh orang yang sama dalam 30 menit memperbarui versi suntingan yang sama); bandingkan dua versi (diff kata `diffWordsWithSpace`: dihapus dicoret, ditambah disorot); pulihkan = salinan versi lama menjadi versi baru. |
+| F-18 | Target kata dari anggaran proyek (`targetKataSubBagian`); peringatan bila di luar ±15%. |
+| F-19 | `src/lib/proses/llm-narasi.ts`: kunci dipilih `pilihKunci` (kunci prodi, lalu cadangan super admin bila diizinkan); model narasi lalu model cadangan; 429 harian pada satu model → model berikutnya; semua model habis → kunci ditandai `kuota_habis` sampai reset, kunci berikutnya dipakai; batas per menit/galat sementara → tunggu `retryDelay` lalu ulang; tidak ada kunci → tugas `tertunda` dengan pesan meminta kunci baru, dijadwalkan ulang saat reset kuota (pg-boss `startAfter`) dan langsung diantre ulang saat kunci baru ditambahkan (`antreUlangTugasTertunda`). Tugas lanjut dari `indeks` sub-bagian yang tertunda. |
+| F-20 | `LogPemakaian` per panggilan (kunci, prodi, proyek, tugas, sub-bagian, model, token masuk/keluar, durasi, galat); halaman super admin **Log pemakaian** (24 jam/7/30 hari, per model, per prodi, 100 panggilan terakhir); token per versi juga tampil di kartu hasil. |
+| F-21 | Status sub-bagian (belum, draf, disunting, selesai) dan status kriteria gabungan (`statusGabungan`), sakelar Selesai per sub-bagian, tombol Tandai selesai per kriteria (hanya bila semua sub-bagian punya draf), progres draf per kriteria di Beranda. |
+| Cek | `periksaDokumen`: panjang (`statusPanjang`), angka (`angkaTidakBerdasar` terhadap angka di metrik, tabel, jawaban, potongan, butir, ringkasan IKU, dan tahun TS−10 sampai TS+6), sumber per paragraf terhadap kode sah, penanda `[BELUM ADA BUKTI: …]`, dan unsur yang tidak dilaporkan (`periksaKeluaran`). Dijalankan ulang setiap simpan suntingan. |
+
+Tampilan halaman kriteria: tombol **Generate kriteria** di atas; setiap kartu sub-bagian berisi instruksi, butir +
+data LKPS, jawaban penyusun, dan dokumen di atas, lalu tab **Hasil generate** (editor, penanda sumber, pemeriksaan
+otomatis, daftar cek skor 4) dan **Riwayat versi** (daftar, pulihkan, bandingkan). **Pemberitahuan antrean** tampil
+di atas semua halaman proyek (progres, sub-bagian yang sedang disusun, tombol Batalkan/Lanjutkan/Tambah kunci API),
+memantau `GET /api/proyek/[id]/generate`, dan menyegarkan halaman setiap ada sub-bagian selesai; halaman boleh ditinggal.
+
+### Keputusan teknis dan asumsi
+
+1. **Penyamaran data pribadi selalu aktif** (tidak hanya untuk kunci gratis): deret 10–20 digit (NIDN, NIM, NIK, NIP)
+   diganti `[ID disamarkan]`; kolom LKPS berlabel NIDN/NIDK/NUPTK/NIP/NIM/NIK dan "Nama Mahasiswa/Lulusan" disamarkan.
+   Nama dosen tidak disamarkan (dibutuhkan narasi SDM dan tidak termasuk daftar larangan).
+2. **Satu tugas aktif per proyek** supaya kuota tidak terpakai ganda dan urutan IKU → AF/SWOT terjaga. Memulai generate
+   tanpa kunci tetap membuat tugas (status tertunda) agar otomatis dimulai setelah kunci diisi.
+3. **Tabel metrik butir angka dibuat sistem** di awal narasi butir angka; LLM hanya menulis analisis. Tabel dan judul
+   tabel tidak dihitung dalam anggaran kata dan tidak diperiksa angkanya.
+4. **Gemini 3 memakai suhu bawaan** (Google menyarankan 1,0; suhu rendah bisa membuat keluaran berulang); suhu
+   pengaturan hanya dipakai model generasi lama. `maxOutputTokens` minimal 8.192 karena token *thinking* ikut dihitung.
+5. **Mode uji narasi** (`LLM_NARASI=uji`, ditolak di produksi): model tiruan deterministik tanpa kunci, teks bertanda
+   "[Mode uji]", untuk mencoba alur antrean/editor/riwayat tanpa kuota. Uji otomatis memakai `MockLanguageModelV4`
+   lewat `aturModelUji`, termasuk galat 429 tiruan berformat respons Google (QuotaFailure + RetryInfo).
+6. **Atribut Tiptap dikirim sebagai salinan JSON murni** ke aksi server: objek atribut Tiptap bukan objek biasa
+   sehingga React mengirimnya sebagai *temporary client reference* dan server gagal membacanya (ditemukan saat uji
+   di browser).
+7. **Prompt tidak diubah** dari iterasi sebelumnya (`src/lib/domain/prompt.ts` dan ujinya tetap); sub-bagian tanpa
+   sumber apa pun akan memunculkan masalah "sumber tidak dikenal" atau penanda belum ada bukti, sesuai aturan anti-halusinasi.
+
+### Migrasi
+
+`prisma/migrations/20261002200000_iterasi3`: `User.prodiId` tidak unik + `wajibGantiSandi`; relasi akun → data prodi
+`SetNull`; `KunciAPI.pemilikId`; `PengaturanLLM.daftarModel/daftarModelDiperbarui`; `LogPemakaian.tugasId/prodiId/durasiMs`;
+`VersiDraf.tugasId`; `BagianDraf.updatedAt`; tabel `TugasGenerate`; model narasi 2.5 di data lama diganti
+`gemini-3-flash-preview`.
+
+### Versi pustaka baru
+
+@tiptap/react, @tiptap/pm, @tiptap/starter-kit, @tiptap/extension-table, @tiptap/extension-image,
+@tiptap/extension-paragraph 3.31.4; diff 9.0.0.
+
+### Hasil pemeriksaan kriteria selesai
+
+| Kriteria | Cara diperiksa | Hasil |
+| --- | --- | --- |
+| Satu kriteria lengkap disusun, disunting, diulang per butir, dibandingkan dengan versi lama, dan dipulihkan | `tests/integrasi/generate.test.ts` (C.1, 7 sub-bagian, model tiruan) dan di browser dengan `LLM_NARASI=uji` (generate C.1 lewat antrean worker, sunting di editor, bandingkan versi 1 dan 2, pulihkan versi 1) | Lulus |
+| 429 harian tiruan: generate berhenti, pesan meminta kunci baru tampil, setelah kunci baru diisi generate lanjut dari butir tertunda | `generate.test.ts`: C.4 (16 sub-bagian) berhenti di sub-bagian ke-3, kedua model dicoba, kunci ditandai kuota habis sampai reset, banner berstatus tertunda; kunci B ditambahkan → tugas diantre ulang dan selesai tanpa mengulang 2 sub-bagian pertama | Lulus |
+| Narasi tidak memuat angka di luar data (konteks fiktif) | `narasi.test.ts` (konteks fiktif: angka sah lolos, 19,8 dan 93% tertangkap) dan `generate.test.ts` (narasi tiruan dengan 97,3% dan 1.234 ditandai; draf normal tanpa temuan); suntingan "15 kali" langsung ditandai di browser | Lulus untuk pemeriksaan; uji dengan Gemini sungguhan belum dilakukan (lihat di bawah) |
+| Akun: super admin lain, ganti sandi sendiri, wajib ganti sandi, aturan super admin terakhir, satu akun aktif per prodi, data tetap saat akun dihapus | `tests/integrasi/akun.test.ts` | Lulus |
+| Model LLM dari models.list, model 2.5 diganti 3.x, uji model | `tests/integrasi/model.test.ts`, `model-llm.test.ts` | Lulus (respons Google tiruan) |
+| `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus (66 uji unit, 24 uji integrasi) |
+
+**Uji ujung ke ujung dengan kunci Gemini asli belum dijalankan**: saat dicek, tabel `KunciAPI` di basis data
+pengembangan masih kosong (tidak ada kunci yang tersimpan), sehingga jalur Gemini sungguhan (models.list, generate C.1,
+kuota) belum dicoba. Setelah kunci ditambahkan di menu Kunci API, jalankan worker tanpa `LLM_NARASI=uji`, muat ulang
+daftar model di menu Model LLM, lalu Generate kriteria C.1 (±7 panggilan).
+
+### Umpan balik pembimbing
+
+(review bersama pembimbing dan stakeholder setelah website jadi)

@@ -3,6 +3,8 @@ import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
 import type { GrupNav, StatusLencana } from "@/components/shell/nav-sidebar";
 import { GalatAkses } from "@/lib/akses";
 import { bagianProyek } from "@/lib/data/proyek";
+import { tugasProyek } from "@/lib/data/generate";
+import { BannerAntrean } from "@/components/narasi/banner-antrean";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 
 const NAMA_PENDEK: Record<string, string> = {
@@ -26,6 +28,7 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
     throw e;
   }
   const { proyek, bagian } = data;
+  const tugas = await tugasProyek(p, proyekId);
   const dasar = `/proyek/${proyekId}`;
   const kriteria = bagian.filter((b) => b.jenis === "kriteria");
   const lain = bagian.filter((b) => b.jenis !== "kriteria");
@@ -60,6 +63,7 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
   ];
   return (
     <ShellAplikasi pengguna={p} grup={grup} subjudul={proyek.prodi.nama} beranda={dasar}>
+      <BannerAntrean proyekId={proyekId} awal={tugas} />
       {children}
     </ShellAplikasi>
   );

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { AKTIF } from "@/lib/data/organisasi";
 import { wajibSuperAdmin } from "@/lib/sesi";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata: Metadata = { title: "Ringkasan" };
@@ -17,7 +19,7 @@ export default async function RingkasanAdmin() {
     prisma.prodi.count(),
     prisma.user.count({ where: { role: "PENANGGUNG_JAWAB" } }),
     prisma.proyekLED.count(),
-    prisma.prodi.count({ where: { penanggungJawab: null } }),
+    prisma.prodi.count({ where: { akun: { none: AKTIF } } }),
   ]);
   const kartu = [
     { judul: "Versi instrumen", nilai: versi, ket: `${versiAktif} aktif`, href: "/admin/instrumen" },
@@ -30,6 +32,16 @@ export default async function RingkasanAdmin() {
       <JudulHalaman
         judul="Ringkasan"
         deskripsi="Siapkan versi instrumen, UPPS, program studi, dan akun penanggung jawab. Penanggung jawab kemudian membuat proyek LED prodinya."
+      />
+      <Petunjuk
+        kunci="admin-ringkasan"
+        fungsi="Halaman awal super admin: ringkasan instrumen, UPPS, program studi, dan akun."
+        langkah={[
+          "Periksa versi instrumen di menu Instrumen (versi aktif dipakai proyek baru).",
+          "Tambahkan UPPS dan program studi di menu Prodi dan UPPS.",
+          "Buat akun penanggung jawab untuk setiap prodi di menu Akun, lalu berikan kata sandi sementara.",
+          "Atur model Gemini di menu Model LLM dan, bila perlu, tambahkan kunci cadangan.",
+        ]}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kartu.map((k) => (

@@ -227,11 +227,11 @@ test("F-11 tanpa kunci API dokumen menunggu kunci; kunci baru disimpan terenkrip
 });
 
 test("F-11 mengganti model embedding mengantre ulang semua dokumen teks", async () => {
-  const n = await simpanPengaturan(admin, { modelNarasi: "gemini-2.5-flash", modelEmbedding: "gemini-embedding-002" });
+  const n = await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: [], modelEmbedding: "gemini-embedding-002", pakaiCadanganAdmin: true });
   assert.ok(n >= 3, `diantre ${n}`);
   const teks = await prisma.dokumen.findMany({ where: { proyekId, jenis: { not: "gambar" } } });
   assert.ok(teks.every((d) => d.status === "diunggah"));
   const gambar = await prisma.dokumen.findFirstOrThrow({ where: { proyekId, jenis: "gambar" } });
   assert.equal(gambar.status, "siap", "gambar tidak perlu diproses ulang");
-  await assert.rejects(simpanPengaturan(pj, { modelNarasi: "x-model", modelEmbedding: "y-model" }), GalatAkses);
+  await assert.rejects(simpanPengaturan(pj, { modelNarasi: "x-model", modelCadangan: [], modelEmbedding: "y-model", pakaiCadanganAdmin: true }), GalatAkses);
 });

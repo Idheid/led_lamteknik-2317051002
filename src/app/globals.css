@@ -131,3 +131,60 @@
     @apply font-sans;
   }
 }
+/* Editor narasi (Tiptap) dan tampilan narasi: penanda sumber per paragraf (F-15), tabel, gambar */
+@layer components {
+  .editor-narasi {
+    @apply text-sm leading-relaxed;
+  }
+  .editor-narasi > * + * {
+    @apply mt-3;
+  }
+  .editor-narasi p {
+    @apply text-justify;
+  }
+  .editor-narasi p[data-sumber]::after {
+    content: "Sumber: " attr(data-sumber);
+    @apply mt-0.5 block font-mono text-[0.7rem] leading-snug text-primary/70 select-none;
+  }
+  .editor-narasi p[data-peran="judul-tabel"] {
+    @apply text-left font-medium;
+  }
+  .editor-narasi ul {
+    @apply list-disc pl-6;
+  }
+  .editor-narasi ol {
+    @apply list-decimal pl-6;
+  }
+  .editor-narasi li > p::after {
+    content: none;
+  }
+  .editor-narasi em {
+    @apply italic;
+  }
+  .editor-narasi table {
+    @apply w-full border-collapse text-xs;
+  }
+  .editor-narasi th,
+  .editor-narasi td {
+    @apply border px-2 py-1 align-top;
+  }
+  .editor-narasi th {
+    @apply bg-muted text-left font-medium;
+  }
+  .editor-narasi th p::after,
+  .editor-narasi td p::after {
+    content: none;
+  }
+  .editor-narasi .selectedCell {
+    @apply bg-primary/10;
+  }
+  .editor-narasi img {
+    @apply mx-auto max-h-80 rounded border;
+  }
+  .editor-narasi img.ProseMirror-selectednode {
+    @apply ring-2 ring-primary;
+  }
+  .editor-narasi .tableWrapper {
+    @apply overflow-x-auto;
+  }
+}

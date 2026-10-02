@@ -56,6 +56,19 @@ export const skemaAkunPenanggungJawab = z.object({
 });
 export type MasukanAkun = z.input<typeof skemaAkunPenanggungJawab>;
 
+export const skemaAkunSuperAdmin = skemaAkunPenanggungJawab.omit({ prodiId: true });
+export type MasukanAkunSuperAdmin = z.input<typeof skemaAkunSuperAdmin>;
+
+export const skemaGantiSandi = z
+  .object({
+    sandiLama: z.string().min(1, "Kata sandi lama wajib diisi."),
+    sandiBaru: kataSandi,
+    ulangi: z.string(),
+  })
+  .refine((v) => v.sandiBaru === v.ulangi, { message: "Ulangan kata sandi baru tidak sama.", path: ["ulangi"] })
+  .refine((v) => v.sandiBaru !== v.sandiLama, { message: "Kata sandi baru harus berbeda dari yang lama.", path: ["sandiBaru"] });
+export type MasukanGantiSandi = z.input<typeof skemaGantiSandi>;
+
 export const skemaAturUlangSandi = z.object({ userId: teksWajib("Akun", 60), kataSandi });
 
 export const skemaLogin = z.object({

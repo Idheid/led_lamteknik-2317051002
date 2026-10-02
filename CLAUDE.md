@@ -15,8 +15,10 @@ Rekan: Ghalib membangun sistem LKPS dengan teknologi yang sama. Target akhir: sa
 berisi modul LKPS dan modul LED, hanya untuk LAM fakultas itu (Fakultas Teknik: LAM Teknik), satu login,
 satu basis data. Jaga kode tetap mudah digabung (kode prodi/UPPS sama, skema Prisma rapi, modul terpisah).
 
-Metode pengembangan: **prototyping**. Kerjakan per iterasi (lihat `docs/RENCANA-ITERASI.md`); setiap iterasi
-diakhiri demo ke pembimbing. Jangan melompat ke iterasi berikutnya sebelum kriteria selesai iterasi berjalan terpenuhi.
+Metode pengembangan: **prototyping**. Kerjakan per iterasi (lihat `docs/RENCANA-ITERASI.md`). Jangan melompat ke
+iterasi berikutnya sebelum kriteria selesai iterasi berjalan terpenuhi. Keputusan Adrianne (2 Okt 2026): iterasi 3 dan 4
+tidak menunggu demo/umpan balik pembimbing per iterasi; review bersama pembimbing dan pemangku kepentingan dilakukan
+setelah website jadi.
 
 Dokumen rencana lengkap (Claude Doc): https://claude.ai/code/artifact/ba67e45c-545f-4cd6-a0ee-1011eaf55dd5
 
@@ -26,11 +28,16 @@ Dokumen rencana lengkap (Claude Doc): https://claude.ai/code/artifact/ba67e45c-5
    (Peraturan LAM Teknik No. 5 dan 6 Tahun 2025), 7 kriteria C.1–C.7. Instrumen disimpan sebagai **versi** yang bisa
    disalin dan disunting (kriteria, sub-bagian, butir, bobot bisa berubah per tahun/peraturan).
 2. **Dua peran**, semua lewat login:
-   - **Super admin** (tim pengembang): versi instrumen, UPPS dan prodi, akun penanggung jawab, model LLM,
-     kunci API cadangan, log pemakaian dan aktivitas.
-   - **Penanggung jawab prodi** (satu akun per prodi): proyek LED prodinya, tahun TS, unggah LKPS dan dokumen,
-     generate dan sunting semua bagian, tandai kriteria selesai, tambah kunci API sendiri, unduh Word.
+   - **Super admin** (tim pengembang, lalu diserahterimakan ke fakultas): versi instrumen, UPPS dan prodi, akun
+     penanggung jawab dan akun super admin lain, model LLM, kunci API cadangan, log pemakaian dan aktivitas.
+   - **Penanggung jawab prodi** (satu akun **aktif** per prodi): proyek LED prodinya, tahun TS, unggah LKPS dan
+     dokumen, generate dan sunting semua bagian, tandai kriteria selesai, tambah kunci API prodi, unduh Word.
    - Tidak ada peran peninjau dan tidak ada pembagian kriteria ke anggota.
+   - Aturan akun: semua pengguna bisa mengganti kata sandi sendiri (wajib kata sandi lama); akun baru dan akun yang
+     sandinya diatur ulang wajib mengganti sandi saat login. Hanya super admin yang mengatur ulang sandi,
+     menonaktifkan, dan menghapus akun; super admin tidak bisa menonaktifkan/menghapus diri sendiri dan minimal ada
+     satu super admin aktif. Proyek, kunci API, dan riwayat versi terikat ke **prodi**, bukan ke akun. Pergantian PJ:
+     nonaktifkan akun lama, buat akun baru.
 3. **Form per kriteria**: satu halaman per kriteria berisi butir-butirnya (instruksi, pertanyaan pemandu, unggah
    dokumen, daftar cek unsur skor 4, editor hasil). Jumlah halaman form mengikuti jumlah kriteria di versi instrumen.
 4. **Generate per kriteria** (tombol di atas halaman kriteria) dan **ulang per butir/sub-bagian**. Satu panggilan LLM =
@@ -125,12 +132,14 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 
 - `docker compose up -d` — PostgreSQL + pgvector (wajib menyala sebelum perintah lain)
 - `npm run dev` — aplikasi web (http://localhost:3000)
-- `npm run worker` — worker antrean pg-boss: baca LKPS dan proses dokumen (wajib berjalan bersama `npm run dev`)
+- `npm run worker` — worker antrean pg-boss: baca LKPS, proses dokumen, generate narasi (wajib berjalan bersama `npm run dev`)
+- Tanpa kunci Gemini (pengembangan): `EMBEDDING_PENYEDIA=uji` dan `LLM_NARASI=uji` untuk aplikasi dan worker
 - `npm run db:migrate` — terapkan migrasi (`prisma migrate deploy`); `npm run db:seed` — super admin + instrumen (idempoten)
 - `npm run lint`, `npm run typecheck` (`next typegen` + `tsc`), `npm test` (= `test:unit` + `test:integrasi`)
 - `npm run test:integrasi` membuat/memigrasi basis data `led_lamteknik_test` sendiri; basis data pengembangan tidak disentuh
-- Migrasi baru: `npx prisma migrate dev --name <nama> --create-only`, lalu **hapus baris
-  `DROP INDEX "Potongan_embedding_hnsw_idx"`** dari SQL hasilnya (Prisma tidak mengenal indeks HNSW), lalu `npm run db:migrate`
+- Migrasi baru: `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`
+  (`migrate dev` menolak berjalan non-interaktif), simpan ke `prisma/migrations/<waktu>_<nama>/migration.sql`,
+  **hapus baris `DROP INDEX "Potongan_embedding_hnsw_idx"`** (Prisma tidak mengenal indeks HNSW), lalu `npm run db:migrate`
 
 ## Struktur kode (setelah iterasi 1)
 
@@ -160,6 +169,25 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
   (`npx tsx scripts/buat-fikstur-lkps.ts`, lalu `scripts/buat-fikstur-lkps-pdf.ts`). Peta kolom PDF:
   `npx tsx scripts/buat-kolom-template.ts` bila template LKPS berganti.
 - Uji: `tests/unit/` (tanpa DB), `tests/integrasi/` (DB uji, antrean mati, embedding uji `EMBEDDING_PENYEDIA=uji`).
+
+## Struktur kode (setelah iterasi 3)
+
+- `src/lib/domain/narasi.ts`: penyamaran data pribadi untuk prompt, tabel LKPS ke Markdown, keluaran LLM ke dokumen
+  Tiptap (paragraf membawa atribut `sumber`), pemeriksaan (panjang, angka, sumber, penanda belum ada bukti), urutan
+  generate (IKU → LB/KEB → AF → SWOT), ringkasan IKU, diff kata, status gabungan. `model-llm.ts`: daftar models.list.
+- `src/lib/proses/generate.ts` (worker): susun konteks satu sub-bagian, panggil LLM, simpan `VersiDraf`; tugas
+  `TugasGenerate` diproses dari `indeks` dan berhenti rapi (status `tertunda`) bila kunci habis.
+  `src/lib/proses/llm-narasi.ts`: rotasi kunci + urutan model cadangan, log `LogPemakaian` per panggilan.
+- `src/lib/data/generate.ts`: mulai/batal/lanjut, draf per bagian, simpan suntingan (versi suntingan diperbarui dalam
+  30 menit), pulihkan, bandingkan, tandai selesai. `tugas-generate.ts`: antre ulang tugas tertunda saat kunci baru ditambah.
+  `pengaturan.ts`: muat daftar model Google, uji model. `pemakaian.ts`: log untuk super admin.
+- UI: `src/components/narasi/` (editor Tiptap, banner antrean di layout proyek, tombol generate),
+  `src/app/proyek/[proyekId]/bagian/[kode]/panel-draf.tsx` (tab Hasil generate / Riwayat versi).
+  Status antrean: `GET /api/proyek/[proyekId]/generate`.
+- Kunci API per prodi: `/proyek/kunci-api` (juga dari daftar proyek), komponen bersama `src/components/kunci-api/`.
+- Akun: `src/app/akun/ganti-sandi`; `wajibGantiSandi` memaksa ganti sandi (`wajibLogin`, `jalankanAksi`, `jalankanRute`).
+- Uji LLM memakai `aturModelUji` (`src/lib/llm/narasi.ts`) dengan `MockLanguageModelV4`; `GENERATE_JEDA_MAKS_MS=0`
+  memendekkan jeda batas per menit di uji.
 
 ## Konvensi
 

@@ -6,6 +6,7 @@ import { ambilButir, pilihanSubBagian } from "@/lib/data/instrumen";
 import { JENJANG, namaJenjang, type KodeJenjang } from "@/lib/domain/instrumen";
 import type { MasukanButir } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { FormButir } from "../form-butir";
 
 export const metadata: Metadata = { title: "Butir penilaian" };
@@ -54,6 +55,14 @@ export default async function HalamanUbahButir({ params, searchParams }: PagePro
           { label: versi.kode, href: `/admin/instrumen/${versiId}` },
           { label: `Butir ${jenjang}`, href: `/admin/instrumen/${versiId}/butir?jenjang=${jenjang}` },
           { label: baru ? "Baru" : awal.kode },
+        ]}
+      />
+      <Petunjuk
+        kunci="admin-butir-ubah"
+        fungsi="Formulir satu butir penilaian. Unsur skor 4 dipakai sebagai daftar cek kelengkapan narasi; dokumen pendukung dipakai daftar cek dokumen."
+        langkah={[
+          "Isi deskriptor skor 4 dan pecah menjadi unsur yang bisa dicek satu per satu.",
+          "Pilih tabel LKPS terkait dan sub-bagian tempat butir dibahas, lalu simpan.",
         ]}
       />
       <FormButir

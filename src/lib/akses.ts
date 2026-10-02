@@ -7,6 +7,8 @@ export interface Pengguna {
   email: string;
   peran: Peran;
   prodiId: string | null;
+  /** Akun baru atau sandi diatur ulang: wajib mengganti kata sandi sebelum memakai aplikasi. */
+  wajibGantiSandi?: boolean;
 }
 
 /** Galat hak akses; pesan aman ditampilkan ke pengguna. */

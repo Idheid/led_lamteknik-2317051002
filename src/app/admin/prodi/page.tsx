@@ -6,6 +6,7 @@ import { daftarUpps } from "@/lib/data/organisasi";
 import { namaJenjang } from "@/lib/domain/instrumen";
 import type { IdentitasProdi } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,15 @@ export default async function HalamanProdi() {
             }
           />
         }
+      />
+      <Petunjuk
+        kunci="admin-prodi"
+        fungsi="Daftar UPPS dan program studi beserta penanggung jawab aktifnya."
+        langkah={[
+          "Tambah UPPS lebih dulu, lalu tambah program studi di bawahnya.",
+          "Lengkapi identitas prodi (kode PDDikti, akreditasi terakhir) karena dipakai di halaman identitas LED.",
+          "Buat akun penanggung jawab prodi di menu Akun.",
+        ]}
       />
       {daftar.length === 0 && (
         <Card>
@@ -80,6 +90,8 @@ export default async function HalamanProdi() {
                   <TableBody>
                     {u.prodi.map((pr) => {
                       const ident = (pr.identitas ?? {}) as Partial<IdentitasProdi>;
+                      const pj = pr.akun.find((a) => !a.banned);
+                      const nonaktif = pr.akun.filter((a) => a.banned).length;
                       return (
                         <TableRow key={pr.id}>
                           <TableCell className="font-medium">{pr.nama}</TableCell>
@@ -87,10 +99,10 @@ export default async function HalamanProdi() {
                           <TableCell className="font-mono text-xs">{pr.kodePddikti ?? "—"}</TableCell>
                           <TableCell>{ident.peringkatAkreditasi ?? "—"}</TableCell>
                           <TableCell>
-                            {pr.penanggungJawab ? (
+                            {pj ? (
                               <div className="flex items-center gap-2">
-                                <span className="truncate">{pr.penanggungJawab.email}</span>
-                                {pr.penanggungJawab.banned && <Badge variant="destructive">nonaktif</Badge>}
+                                <span className="truncate">{pj.email}</span>
+                                {nonaktif > 0 && <Badge variant="outline" title="Akun lama yang dinonaktifkan">+{nonaktif} nonaktif</Badge>}
                               </div>
                             ) : (
                               <Button asChild variant="link" size="sm" className="h-auto px-0">

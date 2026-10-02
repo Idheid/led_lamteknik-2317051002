@@ -5,7 +5,7 @@ import { jalankanAksi } from "@/lib/aksi";
 import * as org from "@/lib/data/organisasi";
 import * as ins from "@/lib/data/instrumen";
 import * as pengaturan from "@/lib/data/pengaturan";
-import type { MasukanAkun, MasukanButir, MasukanProdi, MasukanSubBagian, MasukanUpps } from "@/lib/validasi";
+import type { MasukanAkun, MasukanAkunSuperAdmin, MasukanButir, MasukanProdi, MasukanSubBagian, MasukanUpps } from "@/lib/validasi";
 
 // ---------------------------------------------------------------- UPPS, prodi, akun
 
@@ -35,6 +35,12 @@ export async function aksiHapusProdi(id: string) {
 
 export async function aksiBuatAkun(masukan: MasukanAkun) {
   const r = await jalankanAksi(async (p) => (await org.buatAkunPenanggungJawab(p, masukan)).id);
+  revalidatePath("/admin", "layout");
+  return r;
+}
+
+export async function aksiBuatSuperAdmin(masukan: MasukanAkunSuperAdmin) {
+  const r = await jalankanAksi(async (p) => (await org.buatAkunSuperAdmin(p, masukan)).id);
   revalidatePath("/admin", "layout");
   return r;
 }
@@ -116,8 +122,18 @@ export async function aksiHapusButir(id: string) {
 
 // ---------------------------------------------------------------- Model LLM
 
-export async function aksiSimpanPengaturan(masukan: { modelNarasi: string; modelEmbedding: string }) {
+export async function aksiSimpanPengaturan(masukan: pengaturan.MasukanPengaturan) {
   const r = await jalankanAksi((p) => pengaturan.simpanPengaturan(p, masukan));
+  revalidatePath("/admin", "layout");
+  return r;
+}
+
+export async function aksiMuatDaftarModel() {
+  const r = await jalankanAksi((p) => pengaturan.muatDaftarModel(p));
   revalidatePath("/admin/model");
   return r;
+}
+
+export async function aksiUjiModel(jenis: "narasi" | "embedding", kode: string) {
+  return jalankanAksi((p) => pengaturan.ujiModel(p, jenis, kode));
 }

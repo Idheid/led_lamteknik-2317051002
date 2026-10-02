@@ -6,6 +6,8 @@ import { auth } from "@/lib/auth";
 import type { Pengguna } from "@/lib/akses";
 import { PERAN, type Peran } from "@/lib/peran";
 
+export const HALAMAN_GANTI_SANDI = "/akun/ganti-sandi";
+
 /** Pengguna yang sedang login (sekali per permintaan), atau null. */
 export const ambilPengguna = cache(async (): Promise<Pengguna | null> => {
   const sesi = await auth.api.getSession({ headers: await headers() });
@@ -14,12 +16,17 @@ export const ambilPengguna = cache(async (): Promise<Pengguna | null> => {
   if (u.banned) return null;
   const peran = PERAN.includes(u.role as Peran) ? (u.role as Peran) : null;
   if (!peran) return null;
-  return { id: u.id, nama: u.name, email: u.email, peran, prodiId: u.prodiId ?? null };
+  return {
+    id: u.id, nama: u.name, email: u.email, peran, prodiId: u.prodiId ?? null,
+    wajibGantiSandi: Boolean(u.wajibGantiSandi),
+  };
 });
 
-export async function wajibLogin(): Promise<Pengguna> {
+/** Wajib login; akun yang wajib mengganti kata sandi diarahkan ke halaman ganti sandi lebih dulu. */
+export async function wajibLogin(opsi: { bolehBelumGantiSandi?: boolean } = {}): Promise<Pengguna> {
   const p = await ambilPengguna();
   if (!p) redirect("/login");
+  if (p.wajibGantiSandi && !opsi.bolehBelumGantiSandi) redirect(HALAMAN_GANTI_SANDI);
   return p;
 }
 

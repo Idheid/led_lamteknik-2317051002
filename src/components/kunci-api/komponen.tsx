@@ -10,9 +10,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { IkonSibuk, TombolKonfirmasi, useAksi } from "@/components/aksi-klien";
-import { aksiHapusKunci, aksiTambahKunci, aksiUjiKunci } from "@/app/proyek/aksi";
+import { aksiHapusKunci, aksiTambahKunci, aksiUjiKunci } from "@/app/aksi-kunci";
 
-export function FormKunci({ proyekId }: { proyekId: string }) {
+export function FormKunci() {
   const { sibuk, jalankan } = useAksi();
   const [label, setLabel] = useState("Kunci utama");
   const [kunci, setKunci] = useState("");
@@ -20,10 +20,11 @@ export function FormKunci({ proyekId }: { proyekId: string }) {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        jalankan(() => aksiTambahKunci(proyekId, label, kunci), {
-          lalu: (diantre) => {
+        jalankan(() => aksiTambahKunci(label, kunci), {
+          lalu: ({ dokumen, tugas }) => {
             setKunci("");
-            toast.success(diantre ? `Kunci disimpan. ${diantre} dokumen yang tertahan diproses ulang.` : "Kunci disimpan.");
+            const lanjut = [dokumen ? `${dokumen} dokumen diproses ulang` : "", tugas ? `${tugas} penyusunan dilanjutkan` : ""].filter(Boolean).join(", ");
+            toast.success(lanjut ? `Kunci disimpan. ${lanjut}.` : "Kunci disimpan.");
           },
         });
       }}
@@ -47,7 +48,7 @@ export function FormKunci({ proyekId }: { proyekId: string }) {
   );
 }
 
-export function AksiKunci({ proyekId, id, label }: { proyekId: string; id: string; label: string }) {
+export function AksiKunci({ id, label }: { id: string; label: string }) {
   const { sibuk, jalankan } = useAksi();
   return (
     <DropdownMenu>
@@ -58,7 +59,7 @@ export function AksiKunci({ proyekId, id, label }: { proyekId: string; id: strin
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
-          onSelect={() => jalankan(() => aksiUjiKunci(proyekId, id), {
+          onSelect={() => jalankan(() => aksiUjiKunci(id), {
             lalu: (h) => (h.ok ? toast.success(h.pesan) : toast.error(h.pesan)),
           })}
         >
@@ -75,7 +76,7 @@ export function AksiKunci({ proyekId, id, label }: { proyekId: string; id: strin
           }
           judul={`Hapus kunci "${label}"?`}
           deskripsi="Kunci dihapus permanen dari sistem. Dokumen yang sudah diindeks tidak terpengaruh."
-          onKonfirmasi={() => jalankan(() => aksiHapusKunci(proyekId, id), { sukses: "Kunci dihapus." })}
+          onKonfirmasi={() => jalankan(() => aksiHapusKunci(id), { sukses: "Kunci dihapus." })}
         />
       </DropdownMenuContent>
     </DropdownMenu>

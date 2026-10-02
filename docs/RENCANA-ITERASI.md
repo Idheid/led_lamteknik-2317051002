@@ -1,8 +1,17 @@
 # Rencana iterasi prototyping
 
-Empat iterasi. Setiap iterasi diakhiri demo ke Pak Tris; umpan baliknya dicatat di `CATATAN-PENGEMBANGAN.md`
-dan masuk ke iterasi berikutnya. Kode F-xx sama dengan tabel Kebutuhan fungsional di dokumen rencana dan dipakai lagi
-di skenario uji black-box.
+Empat iterasi. Kode F-xx sama dengan tabel Kebutuhan fungsional di dokumen rencana dan dipakai lagi di skenario uji
+black-box.
+
+**Keputusan Adrianne (2 Oktober 2026):** iterasi 3 dan 4 dilanjutkan tanpa menunggu umpan balik pembimbing per
+iterasi. Review bersama pembimbing dan pemangku kepentingan dilakukan satu kali setelah website jadi (setelah
+iterasi 4); umpan baliknya dicatat di `CATATAN-PENGEMBANGAN.md` dan dikerjakan sebagai perbaikan sebelum pengujian.
+Iterasi 1 dan 2 sudah dikerjakan dengan aturan lama (demo per iterasi), tetapi belum didemokan.
+
+Perbaikan sebelum iterasi 3 (permintaan Adrianne): menu Kunci API di halaman daftar proyek dan pengingat di Beranda;
+pilihan model LLM dari daftar model Google (models.list) dengan uji model; pembuatan akun super admin lain, ganti kata
+sandi sendiri (wajib saat login pertama), aturan minimal satu super admin aktif, data terikat ke prodi (bukan akun),
+"satu akun per prodi" hanya menghitung akun aktif; petunjuk singkat di setiap halaman dan `docs/PANDUAN-PENGGUNAAN.md`.
 
 Aturan kerja untuk Claude Code:
 - Kerjakan satu iterasi sampai semua kriteria selesainya terpenuhi, lalu berhenti dan laporkan.

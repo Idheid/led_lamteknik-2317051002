@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Circle, FileText, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, FileText } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { butirAnggaranProyek, halamanBagian } from "@/lib/data/proyek";
 import { daftarDokumen } from "@/lib/data/dokumen";
+import { drafBagian, tugasProyek, STATUS_TUGAS_AKTIF } from "@/lib/data/generate";
 import { metrikProyek } from "@/lib/data/lkps";
 import { formatMetrik } from "@/lib/tampil";
 import type { HasilButirAngka } from "@/lib/domain/metrik-lkps";
@@ -18,10 +19,11 @@ import { gantiLabelTS } from "@/lib/domain/tahun-akademik";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { LencanaStatus } from "@/components/lencana-status";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Petunjuk } from "@/components/petunjuk";
+import { TombolGenerate, TombolTandaiSelesai } from "@/components/narasi/tombol-generate";
 import { IsianJawaban } from "./isian-jawaban";
+import { PanelDraf } from "./panel-draf";
 
 export async function generateMetadata({ params }: PageProps<"/proyek/[proyekId]/bagian/[kode]">): Promise<Metadata> {
   const { kode } = await params;
@@ -34,22 +36,6 @@ const LABEL_TIPE: Record<string, string> = {
 
 const TERIMA_DOKUMEN = ".pdf,.docx,.png,.jpg,.jpeg,.gif";
 
-function TombolSegera({ label }: { label: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span tabIndex={0}>
-          <Button size="sm" disabled>
-            <Sparkles aria-hidden />
-            {label}
-          </Button>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>Tersedia di iterasi 3 (mesin penyusun)</TooltipContent>
-    </Tooltip>
-  );
-}
-
 export default async function HalamanBagianProyek({ params }: PageProps<"/proyek/[proyekId]/bagian/[kode]">) {
   const p = await wajibPenanggungJawab();
   const { proyekId, kode: kodeMentah } = await params;
@@ -57,9 +43,14 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
   const data = await halamanBagian(p, proyekId, kode);
   if (!data) notFound();
   const { proyek, bagian, jawaban } = data;
-  const [{ butir: butirAnggaran }, semuaDokumen, metrik] = await Promise.all([
+  const [{ butir: butirAnggaran }, semuaDokumen, metrik, draf, tugas] = await Promise.all([
     butirAnggaranProyek(p, proyekId), daftarDokumen(p, proyekId), metrikProyek(p, proyekId),
+    drafBagian(p, proyekId, kode), tugasProyek(p, proyekId),
   ]);
+  const tugasAktif = tugas.filter((t) => STATUS_TUGAS_AKTIF.includes(t.status));
+  const gambar = semuaDokumen
+    .filter((d) => d.jenis === "gambar" && d.status === "siap")
+    .map((d) => ({ id: d.id, judul: d.judul ?? d.namaBerkas, src: `/api/dokumen/${d.id}/berkas` }));
   const dokumenSub = (kodeSub: string) => semuaDokumen.filter((d) => d.subBagianKode === kodeSub);
   const metrikButir = new Map((metrik?.hasil ?? []).map((h) => [h.butir, h]));
   const adaProses = semuaDokumen.some((d) => STATUS_BERJALAN.includes(d.status));
@@ -75,6 +66,9 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
   const semuaButir = bagian.subBagian.flatMap((s) => s.butir);
   const bobot = semuaButir.reduce((n, b) => n + Number(b.bobot), 0);
   const ts = proyek.tsTahunMulai;
+  const subGenerate = bagian.subBagian.filter((s) => s.tipe !== "data" && s.tipe !== "otomatis");
+  const adaDraf = subGenerate.filter((s) => draf[s.kode]?.aktif).length;
+  const sedangDisusun = tugasAktif.some((t) => t.bagianKode === bagian.kode);
 
   // kelompokkan sub-bagian berurutan menurut grup
   const kelompok: { grup: string | null; sub: typeof bagian.subBagian }[] = [];
@@ -99,10 +93,37 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
         aksi={
           <>
             <LencanaStatus status={status} />
-            <TombolSegera label={bagian.jenis === "kriteria" ? "Generate kriteria" : "Generate bagian"} />
+            {subGenerate.length > 0 && adaDraf === subGenerate.length && (
+              <TombolTandaiSelesai proyekId={proyek.id} bagianKode={bagian.kode} selesai={status === "selesai"} />
+            )}
+            {subGenerate.length > 0 && (
+              <TombolGenerate
+                proyekId={proyek.id}
+                bagianKode={bagian.kode}
+                label={`${adaDraf > 0 ? "Generate ulang" : "Generate"} ${bagian.jenis === "kriteria" ? "kriteria" : "bagian"}`}
+                sudahAda={adaDraf > 0}
+                nonaktif={tugasAktif.length > 0}
+              />
+            )}
           </>
         }
       />
+      <Petunjuk
+        kunci="bagian-proyek"
+        fungsi={`Halaman penyusunan ${bagian.jenis === "kriteria" ? "kriteria" : "bagian"}: setiap kartu berisi data LKPS, jawaban penyusun, dan dokumen pendukung di atas, lalu hasil generate dan riwayat versinya.`}
+        langkah={[
+          "Periksa data LKPS tiap butir dan isi Jawaban penyusun dengan fakta yang belum ada di dokumen.",
+          "Unggah dokumen pendukung yang diminta (daftar cek dokumen).",
+          `Klik ${bagian.jenis === "kriteria" ? "Generate kriteria" : "Generate bagian"}: urutannya indikator kinerja, latar belakang dan kebijakan, analisis faktor, lalu SWOT. Anda boleh meninggalkan halaman selama proses.`,
+          "Baca hasil di tab Hasil generate: perhatikan panel pemeriksaan otomatis dan daftar cek skor 4, lalu sunting langsung (tersimpan otomatis).",
+          "Bila perlu, klik Generate ulang pada satu sub-bagian, bandingkan atau pulihkan versi di tab Riwayat versi, lalu tandai selesai.",
+        ]}
+      />
+      {subGenerate.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {adaDraf} dari {subGenerate.length} sub-bagian sudah punya draf{sedangDisusun ? " · penyusunan sedang berjalan" : ""}.
+        </p>
+      )}
       {bagian.pengantar && <p className="max-w-4xl text-sm text-muted-foreground">{gantiLabelTS(bagian.pengantar, ts)}</p>}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_15rem]">
@@ -132,8 +153,17 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
                         <span className="font-mono text-xs">{s.kode}</span>
                       </CardDescription>
                       {s.tipe !== "data" && s.tipe !== "otomatis" && (
-                        <CardAction>
-                          <TombolSegera label={s.butir.length ? "Generate butir" : "Generate"} />
+                        <CardAction className="flex items-center gap-2">
+                          <LencanaStatus status={draf[s.kode]?.status ?? "belum"} />
+                          <TombolGenerate
+                            ukuran="sm"
+                            proyekId={proyek.id}
+                            bagianKode={bagian.kode}
+                            subBagianKode={s.kode}
+                            label={draf[s.kode]?.aktif ? (s.butir.length ? "Generate ulang butir" : "Generate ulang") : "Generate"}
+                            sudahAda={Boolean(draf[s.kode]?.aktif)}
+                            nonaktif={tugasAktif.length > 0}
+                          />
                         </CardAction>
                       )}
                     </CardHeader>
@@ -159,22 +189,7 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
                               {b.tabelLkps.map((tb) => <Badge key={tb} variant="outline" className="font-mono">LKPS {tb}</Badge>)}
                             </div>
                           </div>
-                          <div className="mt-3 text-sm">
-                            <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                              Daftar cek unsur skor 4
-                            </div>
-                            <ul className="space-y-1.5">
-                              {b.unsurSkor4.map((u, idx) => (
-                                <li key={idx} className="flex items-start gap-2">
-                                  <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border text-[10px] text-muted-foreground">
-                                    {idx + 1}
-                                  </span>
-                                  <span>{gantiLabelTS(u, ts)}</span>
-                                </li>
-                              ))}
-                            </ul>
-                            <p className="mt-2 text-xs text-muted-foreground">Status unsur (terpenuhi/sebagian/belum ada bukti) diisi setelah generate.</p>
-                          </div>
+                          <p className="mt-2 text-xs text-muted-foreground">{b.unsurSkor4.length} unsur skor 4 dicek setelah generate (tab Hasil generate).</p>
                           {b.jenis === "angka" && <KotakMetrik hasil={metrikButir.get(b.kode)} perluDicek={metrik?.perluDicek ?? false} proyekId={proyek.id} />}
                         </div>
                       ))}
@@ -246,12 +261,20 @@ export default async function HalamanBagianProyek({ params }: PageProps<"/proyek
                         />
                       )}
 
-                      {s.tipe !== "otomatis" && (
+                      {s.tipe === "data" && (
                         <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                          {s.tipe === "data"
-                            ? "Bagian ini diisi otomatis dari data proyek saat ekspor."
-                            : "Draf narasi akan muncul di sini setelah generate, lalu bisa disunting dan dibandingkan antarversi."}
+                          Bagian ini diisi otomatis dari data proyek saat ekspor.
                         </div>
+                      )}
+                      {s.tipe !== "data" && s.tipe !== "otomatis" && (
+                        <PanelDraf
+                          proyekId={proyek.id}
+                          subBagianKode={s.kode}
+                          draf={draf[s.kode] ?? null}
+                          butir={s.butir.map((b) => ({ kode: b.kode, unsur: b.unsurSkor4.map((u) => gantiLabelTS(u, ts)) }))}
+                          gambar={gambar}
+                          tugasAktif={sedangDisusun}
+                        />
                       )}
                     </CardContent>
                   </Card>

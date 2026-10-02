@@ -6,6 +6,7 @@ import { ambilProdi } from "@/lib/data/organisasi";
 import type { KodeJenjang } from "@/lib/domain/instrumen";
 import type { IdentitasProdi } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { FormProdi } from "../form-prodi";
 
 export const metadata: Metadata = { title: "Ubah program studi" };
@@ -22,6 +23,13 @@ export default async function HalamanUbahProdi({ params }: PageProps<"/admin/pro
         judul={prodi.nama}
         deskripsi={`${prodi.upps.nama} · ${prodi.upps.perguruanTinggi}`}
         remah={[{ label: "Prodi dan UPPS", href: "/admin/prodi" }, { label: prodi.nama }]}
+      />
+      <Petunjuk
+        kunci="admin-prodi-ubah"
+        fungsi="Identitas program studi. Data ini dipakai di halaman identitas pengusul dan prompt penyusunan narasi."
+        langkah={[
+          "Perbarui data yang berubah (misalnya SK akreditasi terbaru), lalu simpan.",
+        ]}
       />
       <FormProdi
         id={prodi.id}

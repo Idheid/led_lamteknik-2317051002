@@ -25,6 +25,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       prodiId: { type: "string", required: false, input: false },
+      wajibGantiSandi: { type: "boolean", required: false, input: false, defaultValue: false },
     },
   },
   plugins: [

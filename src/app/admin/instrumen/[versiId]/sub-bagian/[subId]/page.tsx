@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { bacaVarian, jenjangBerlaku, KODE_JENJANG, type KodeJenjang } from "@/lib/domain/instrumen";
 import type { MasukanSubBagian } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { FormSubBagian } from "../form-sub-bagian";
 
 export const metadata: Metadata = { title: "Sub-bagian" };
@@ -56,6 +57,14 @@ export default async function HalamanSubBagian({ params, searchParams }: PagePro
           { label: bagian.versi.kode, href: `/admin/instrumen/${versiId}` },
           { label: bagian.kode, href: `/admin/instrumen/${versiId}/bagian/${bagianId}` },
           { label: baru ? "Baru" : awal.kode },
+        ]}
+      />
+      <Petunjuk
+        kunci="admin-sub-bagian"
+        fungsi="Formulir sub-bagian: kode, judul, pertanyaan pemandu, dan butir yang dibahas. Isian ini menjadi bagian prompt penyusunan narasi."
+        langkah={[
+          "Isi atau perbaiki pertanyaan pemandu supaya penanggung jawab tahu apa yang perlu dijawab.",
+          "Simpan, lalu kembali ke halaman bagian.",
         ]}
       />
       <FormSubBagian

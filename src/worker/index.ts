@@ -1,11 +1,13 @@
 /**
- * Worker antrean (pg-boss): membaca LKPS dan memproses dokumen (ekstraksi, pemotongan, embedding).
+ * Worker antrean (pg-boss): membaca LKPS, memproses dokumen (ekstraksi, pemotongan, embedding), dan menyusun
+ * narasi (tugas generate).
  * Jalankan terpisah dari aplikasi web:  npm run worker
  */
 import "dotenv/config";
 import { ANTREAN, buatBos, siapkanAntrean } from "@/lib/antrean";
 import { prosesBerkasLkps } from "@/lib/proses/lkps";
 import { prosesDokumen } from "@/lib/proses/dokumen";
+import { prosesTugasGenerate, pulihkanTugasTerputus } from "@/lib/proses/generate";
 import { prisma } from "@/lib/db";
 
 async function main() {
@@ -21,6 +23,13 @@ async function main() {
     console.log(`[dokumen] ${tugas.data.dokumenId}`);
     await prosesDokumen(tugas.data.dokumenId);
   });
+  await bos.work<{ tugasId: string }>(ANTREAN.generate, { localConcurrency: 2 }, async ([tugas]) => {
+    console.log(`[generate] ${tugas.data.tugasId}`);
+    const hasil = await prosesTugasGenerate(tugas.data.tugasId);
+    console.log(`[generate] ${tugas.data.tugasId} ${hasil}`);
+  });
+  const dipulihkan = await pulihkanTugasTerputus();
+  if (dipulihkan) console.log(`${dipulihkan} tugas generate dikirim ulang.`);
   console.log("Worker berjalan. Antrean:", Object.values(ANTREAN).join(", "));
 
   const berhenti = async () => {

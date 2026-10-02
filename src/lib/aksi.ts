@@ -16,9 +16,15 @@ function kodePrisma(e: unknown): string | null {
  * Bungkus aksi server: periksa sesi, jalankan, dan ubah galat menjadi pesan bahasa sehari-hari.
  * Pemeriksaan peran dan prodi dilakukan di lapisan data (src/lib/data).
  */
-export async function jalankanAksi<T>(fn: (p: Pengguna) => Promise<T>): Promise<HasilAksi<T>> {
+export async function jalankanAksi<T>(
+  fn: (p: Pengguna) => Promise<T>,
+  opsi: { bolehBelumGantiSandi?: boolean } = {},
+): Promise<HasilAksi<T>> {
   const p = await ambilPengguna();
   if (!p) return { ok: false, pesan: "Sesi Anda berakhir. Silakan masuk lagi." };
+  if (p.wajibGantiSandi && !opsi.bolehBelumGantiSandi) {
+    return { ok: false, pesan: "Ganti kata sandi Anda terlebih dahulu (menu akun)." };
+  }
   try {
     return { ok: true, data: await fn(p) };
   } catch (e) {

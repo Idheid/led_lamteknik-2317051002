@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpenCheck, Building2, FileSpreadsheet, FileText, FolderOpen, Home, KeyRound, Layers, LayoutDashboard,
-  ListChecks, ScrollText, Settings2, UserCog, type LucideIcon,
+  ListChecks, ScrollText, Settings2, UserCog, Activity, type LucideIcon,
 } from "lucide-react";
 import {
   SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem,
@@ -25,6 +25,7 @@ export const IKON = {
   kunci: KeyRound,
   model: Settings2,
   proyek: Layers,
+  log: Activity,
 } satisfies Record<string, LucideIcon>;
 
 export type NamaIkon = keyof typeof IKON;

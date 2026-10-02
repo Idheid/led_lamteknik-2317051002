@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { KeyRound, MoreHorizontal, Plus, Power, Trash2 } from "lucide-react";
+import { KeyRound, MoreHorizontal, Plus, Power, ShieldPlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -17,8 +17,8 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
-import { skemaAkunPenanggungJawab, type MasukanAkun } from "@/lib/validasi";
-import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAkun, aksiHapusAkun } from "../aksi";
+import { skemaAkunPenanggungJawab, skemaAkunSuperAdmin, type MasukanAkun, type MasukanAkunSuperAdmin } from "@/lib/validasi";
+import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAkun, aksiBuatSuperAdmin, aksiHapusAkun } from "../aksi";
 
 export function DialogBuatAkun({ prodi, prodiAwal }: { prodi: { id: string; label: string }[]; prodiAwal?: string }) {
   const awalSah = prodi.some((x) => x.id === prodiAwal) ? prodiAwal : undefined;
@@ -48,7 +48,7 @@ export function DialogBuatAkun({ prodi, prodiAwal }: { prodi: { id: string; labe
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Akun penanggung jawab baru</DialogTitle>
-          <DialogDescription>Satu akun untuk setiap program studi.</DialogDescription>
+          <DialogDescription>Satu akun aktif untuk setiap program studi. Untuk mengganti penanggung jawab, nonaktifkan akun lama dulu.</DialogDescription>
         </DialogHeader>
         <form onSubmit={kirim} noValidate>
           <FieldGroup>
@@ -185,8 +185,8 @@ export function AksiBarisAkun({ id, nama, email, aktif }: { id: string; nama: st
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus akun {email}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Akun dihapus permanen. Proyek LED prodi tetap ada dan bisa dipakai akun penanggung jawab baru.
-              Bila hanya ingin mencegah login sementara, pilih Nonaktifkan.
+              Akun dihapus permanen. Proyek LED, kunci API, dan riwayat versi prodi tetap ada dan bisa dipakai akun
+              penanggung jawab baru. Bila hanya ingin mencegah login, pilih Nonaktifkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -198,5 +198,69 @@ export function AksiBarisAkun({ id, nama, email, aktif }: { id: string; nama: st
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+export function DialogBuatSuperAdmin() {
+  const [buka, setBuka] = useState(false);
+  const { sibuk, jalankan } = useAksi();
+  const form = useForm<MasukanAkunSuperAdmin>({
+    resolver: zodResolver(skemaAkunSuperAdmin),
+    defaultValues: { nama: "", email: "", kataSandi: "" },
+  });
+  const kirim = form.handleSubmit((nilai) =>
+    jalankan(() => aksiBuatSuperAdmin(nilai), {
+      sukses: "Akun super admin dibuat. Pemilik akun wajib mengganti kata sandi saat login pertama.",
+      lalu: () => {
+        setBuka(false);
+        form.reset({ nama: "", email: "", kataSandi: "" });
+      },
+    }),
+  );
+  const kolom = [
+    { name: "nama", label: "Nama", tipe: "text" },
+    { name: "email", label: "Email", tipe: "email" },
+    { name: "kataSandi", label: "Kata sandi awal", tipe: "password" },
+  ] as const;
+  return (
+    <Dialog open={buka} onOpenChange={setBuka}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <ShieldPlus aria-hidden />
+          Super admin baru
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Akun super admin baru</DialogTitle>
+          <DialogDescription>Untuk serah terima pengelolaan ke fakultas. Super admin bisa mengelola instrumen, prodi, dan semua akun.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={kirim} noValidate>
+          <FieldGroup>
+            {kolom.map((k) => (
+              <Controller
+                key={k.name}
+                name={k.name}
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={`sa-${k.name}`}>{k.label}</FieldLabel>
+                    <Input {...field} id={`sa-${k.name}`} type={k.tipe} autoComplete="off" aria-invalid={fieldState.invalid} />
+                    {k.name === "kataSandi" && <FieldDescription>Minimal 8 karakter.</FieldDescription>}
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+            ))}
+          </FieldGroup>
+          <DialogFooter className="mt-6">
+            <Button type="submit" disabled={sibuk}>
+              <IkonSibuk sibuk={sibuk} />
+              Buat super admin
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

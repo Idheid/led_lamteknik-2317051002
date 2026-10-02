@@ -6,8 +6,9 @@ import { daftarProyek, prodiSaya } from "@/lib/data/proyek";
 import { daftarVersiAktif } from "@/lib/data/instrumen";
 import { namaJenjang } from "@/lib/domain/instrumen";
 import { formatTahunAkademik, tsDariTanggalPengajuan } from "@/lib/domain/tahun-akademik";
-import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
+import { ShellDaftarProyek } from "@/components/shell/shell-daftar-proyek";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormProyekBaru } from "./form-proyek-baru";
@@ -20,15 +21,19 @@ export default async function HalamanDaftarProyek() {
   const bulanMulai = Number(process.env.BULAN_MULAI_TA) || undefined;
   const tsUsulan = tsDariTanggalPengajuan(new Date(), bulanMulai);
   return (
-    <ShellAplikasi
-      pengguna={p}
-      subjudul={prodi.nama}
-      beranda="/proyek"
-      grup={[{ label: "Proyek", item: [{ judul: "Semua proyek LED", href: "/proyek", ikon: "proyek", persis: true }] }]}
-    >
+    <ShellDaftarProyek pengguna={p}>
       <JudulHalaman
         judul="Proyek LED"
         deskripsi={`${prodi.nama} (${namaJenjang(prodi.jenjang)}) · ${prodi.upps.nama}, ${prodi.upps.perguruanTinggi}`}
+      />
+      <Petunjuk
+        kunci="proyek-daftar"
+        fungsi="Daftar proyek LED milik prodi Anda. Satu proyek berisi satu dokumen LED untuk satu periode akreditasi."
+        langkah={[
+          "Tambahkan kunci API Gemini di menu Kunci API bila belum ada (berlaku untuk semua proyek prodi).",
+          "Buat proyek baru: pilih versi instrumen dan tahun TS.",
+          "Buka proyek untuk mengunggah LKPS dan dokumen, lalu menyusun narasi per kriteria.",
+        ]}
       />
       <div className="grid gap-6 xl:grid-cols-5">
         <div className="flex flex-col gap-4 xl:col-span-3">
@@ -71,6 +76,6 @@ export default async function HalamanDaftarProyek() {
           </CardContent>
         </Card>
       </div>
-    </ShellAplikasi>
+    </ShellDaftarProyek>
   );
 }

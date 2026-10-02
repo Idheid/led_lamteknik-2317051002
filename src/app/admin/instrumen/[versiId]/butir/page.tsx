@@ -8,6 +8,7 @@ import { daftarButir } from "@/lib/data/instrumen";
 import { JENJANG, namaJenjang } from "@/lib/domain/instrumen";
 import { formatAngka } from "@/lib/domain/teks";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +47,14 @@ export default async function HalamanButir({ params, searchParams }: PageProps<"
             </Button>
           )
         }
+      />
+      <Petunjuk
+        kunci="admin-butir"
+        fungsi="Daftar butir penilaian untuk satu jenjang beserta bobot, jenis (angka atau deskriptif), dan pemetaannya."
+        langkah={[
+          "Pilih butir untuk mengubah deskriptor dan unsur skor 4, tabel LKPS, dokumen pendukung, dan sub-bagian tujuan.",
+          "Pastikan setiap butir terpetakan ke sub-bagian agar ikut dibahas saat generate.",
+        ]}
       />
       <nav className="flex flex-wrap gap-1.5" aria-label="Pilih jenjang">
         {JENJANG.map((j) => (

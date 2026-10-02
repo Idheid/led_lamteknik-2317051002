@@ -33,7 +33,9 @@ model User {
   banReason     String?
   banExpires    DateTime?
   // kolom tambahan (Better Auth additionalFields)
-  prodiId       String?   @unique // satu akun penanggung jawab per prodi; null untuk super admin
+  // satu akun AKTIF per prodi (diperiksa aplikasi); akun lama yang dinonaktifkan tetap tercatat; null untuk super admin
+  prodiId       String?
+  wajibGantiSandi Boolean @default(false) // akun baru atau sandi diatur ulang super admin
   prodi         Prodi?    @relation(fields: [prodiId], references: [id])
 
   sessions      Session[]
@@ -111,7 +113,7 @@ model Prodi {
   uppsId      String
   upps        Upps         @relation(fields: [uppsId], references: [id])
   identitas   Json?        // SK pendirian, SK pembukaan, akreditasi terakhir, alamat, kontak (halaman Identitas Pengusul)
-  penanggungJawab User?
+  akun        User[]
   proyek      ProyekLED[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -273,6 +275,7 @@ model ProyekLED {
   dokumen     Dokumen[]
   draf        BagianDraf[]
   ekspor      Ekspor[]
+  tugas       TugasGenerate[]
   jawabanForm JawabanForm[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -406,6 +409,7 @@ model BagianDraf {
   status      StatusPengisian @default(belum)
   versiAktifId String?
   versi       VersiDraf[]
+  updatedAt   DateTime   @default(now()) @updatedAt
 
   @@unique([proyekId, subBagianId])
 }
@@ -425,7 +429,8 @@ model VersiDraf {
   keluaranMentah Json?
   jumlahKata  Int        @default(0)
   dibuatOlehId String?
-  dibuatOleh  User?      @relation(fields: [dibuatOlehId], references: [id])
+  dibuatOleh  User?      @relation(fields: [dibuatOlehId], references: [id], onDelete: SetNull)
+  tugasId     String?    // tugas generate yang membuat versi ini
   createdAt   DateTime   @default(now())
 
   @@unique([bagianDrafId, nomor])
@@ -453,6 +458,8 @@ model PengaturanLLM {
   suhu           Float    @default(0.2)
   maksTokenKeluaran Int   @default(4096)
   pakaiCadanganAdmin Boolean @default(true)
+  daftarModel    Json?    // hasil models.list Google terakhir (nama, kode, metode, batas token)
+  daftarModelDiperbarui DateTime?
   updatedAt      DateTime @updatedAt
 }
 
@@ -475,8 +482,9 @@ model KunciAPI {
   kunciTerenkripsi String  // AES-256-GCM; tidak pernah dikirim ke browser
   akhiran     String       // 4 karakter terakhir untuk tampilan
   pemilik     PemilikKunci
-  pemilikId   String
-  pemilikUser User         @relation(fields: [pemilikId], references: [id])
+  // akun yang menambahkan; kunci tetap milik prodi (prodiId) walau akunnya dihapus
+  pemilikId   String?
+  pemilikUser User?        @relation(fields: [pemilikId], references: [id], onDelete: SetNull)
   prodiId     String?      // kunci penanggung jawab terikat ke prodinya
   status      StatusKunci  @default(aktif)
   habisSampai DateTime?
@@ -498,6 +506,9 @@ model LogPemakaian {
   tokenKeluar Int       @default(0)
   berhasil    Boolean
   galat       String?
+  tugasId     String?
+  prodiId     String?
+  durasiMs    Int?
   createdAt   DateTime  @default(now())
 }
 
@@ -510,4 +521,26 @@ model LogAktivitas {
   objekId   String?
   detail    Json?
   createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------------------- Tugas generate (antrean)
+
+// Satu tugas = satu tombol generate (satu sub-bagian, satu kriteria, atau satu bagian). Worker mengerjakan
+// sub-bagian berurutan mulai `indeks`; bila kunci habis tugas "tertunda" dan dilanjutkan dari indeks yang sama.
+model TugasGenerate {
+  id            String    @id @default(cuid())
+  proyekId      String
+  proyek        ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  bagianKode    String?   // diisi untuk generate kriteria/bagian
+  judul         String
+  subBagianKode String[]  // urutan pengerjaan
+  indeks        Int       @default(0)
+  status        String    @default("antre") // antre, berjalan, tertunda, selesai, gagal, dibatalkan
+  pesan         String?
+  dilanjutkanPada DateTime? // perkiraan waktu dicoba lagi (reset kuota)
+  dibuatOlehId  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@index([proyekId, status])
 }

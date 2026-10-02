@@ -9,6 +9,7 @@ import { pesanGalatZod } from "@/lib/validasi";
 export async function jalankanRute(fn: (p: Pengguna) => Promise<Response>): Promise<Response> {
   const p = await ambilPengguna();
   if (!p) return NextResponse.json({ pesan: "Sesi Anda berakhir. Silakan masuk lagi." }, { status: 401 });
+  if (p.wajibGantiSandi) return NextResponse.json({ pesan: "Ganti kata sandi Anda terlebih dahulu." }, { status: 403 });
   try {
     return await fn(p);
   } catch (e) {

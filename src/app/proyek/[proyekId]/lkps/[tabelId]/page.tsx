@@ -4,6 +4,7 @@ import { wajibPenanggungJawab } from "@/lib/sesi";
 import { ambilTabel } from "@/lib/data/lkps";
 import { petaTS } from "@/lib/domain/tahun-akademik";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { EditorTabel } from "./editor-tabel";
@@ -31,6 +32,14 @@ export default async function HalamanTabelLkps({ params }: PageProps<"/proyek/[p
           </span>
         }
         remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Data LKPS", href: `/proyek/${proyekId}/lkps` }, { label: `Tabel ${tabel.kode}` }]}
+      />
+      <Petunjuk
+        kunci="proyek-lkps-tabel"
+        fungsi="Isi satu tabel LKPS hasil bacaan sistem. Koreksi disimpan terpisah dari berkas asli dan dipakai saat menghitung metrik."
+        langkah={[
+          "Bandingkan dengan berkas LKPS asli.",
+          "Klik sel untuk mengoreksi nilai yang salah terbaca, lalu simpan.",
+        ]}
       />
       <p className="text-sm text-muted-foreground">Label TS di LKPS tetap ditampilkan apa adanya; di narasi diganti tahun nyata ({peta}).</p>
       {masalah.length > 0 && (

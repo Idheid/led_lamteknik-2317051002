@@ -7,7 +7,7 @@ import type { MasukanProyek } from "@/lib/validasi";
 import * as lkps from "@/lib/data/lkps";
 import * as dokumen from "@/lib/data/dokumen";
 import * as pencarian from "@/lib/data/pencarian";
-import * as kunciApi from "@/lib/data/kunci-api";
+import * as generate from "@/lib/data/generate";
 
 export async function aksiBuatProyek(masukan: MasukanProyek) {
   const r = await jalankanAksi(async (p) => (await buatProyek(p, masukan)).id);
@@ -80,22 +80,52 @@ export async function aksiCariDokumen(proyekId: string, kueri: string, subBagian
   });
 }
 
-// ---------------------------------------------------------------- Kunci API (sederhana)
+// ---------------------------------------------------------------- Mesin penyusun (F-13–F-21)
 
-export async function aksiTambahKunci(proyekId: string, label: string, kunci: string) {
-  const r = await jalankanAksi(async (p) => (await kunciApi.tambahKunci(p, { label, kunci })).diantre);
+export async function aksiMulaiGenerate(proyekId: string, bagianKode: string, subBagianKode?: string | null) {
+  const r = await jalankanAksi(async (p) => {
+    const t = await generate.mulaiGenerate(p, proyekId, bagianKode, subBagianKode);
+    return { id: t.id, status: t.status, pesan: t.pesan };
+  });
   revalidatePath(`/proyek/${proyekId}`, "layout");
   return r;
 }
 
-export async function aksiHapusKunci(proyekId: string, id: string) {
-  const r = await jalankanAksi((p) => kunciApi.hapusKunci(p, id).then(() => null));
+export async function aksiBatalkanTugas(proyekId: string, tugasId: string) {
+  const r = await jalankanAksi((p) => generate.batalkanTugas(p, tugasId).then(() => null));
   revalidatePath(`/proyek/${proyekId}`, "layout");
   return r;
 }
 
-export async function aksiUjiKunci(proyekId: string, id: string) {
-  const r = await jalankanAksi((p) => kunciApi.ujiKunci(p, id));
-  revalidatePath(`/proyek/${proyekId}/kunci-api`);
+export async function aksiLanjutkanTugas(proyekId: string, tugasId: string) {
+  const r = await jalankanAksi((p) => generate.lanjutkanTugas(p, tugasId).then(() => null));
+  revalidatePath(`/proyek/${proyekId}`, "layout");
+  return r;
+}
+
+/** Simpan otomatis editor; tidak memuat ulang halaman. */
+export async function aksiSimpanSuntingan(proyekId: string, subBagianKode: string, isi: unknown) {
+  return jalankanAksi((p) => generate.simpanSuntingan(p, proyekId, subBagianKode, isi));
+}
+
+export async function aksiPulihkanVersi(proyekId: string, versiId: string) {
+  const r = await jalankanAksi((p) => generate.pulihkanVersi(p, versiId));
+  revalidatePath(`/proyek/${proyekId}`, "layout");
+  return r;
+}
+
+export async function aksiBandingkanVersi(versiLamaId: string, versiBaruId: string) {
+  return jalankanAksi((p) => generate.bandingkanVersi(p, versiLamaId, versiBaruId));
+}
+
+export async function aksiTandaiSubBagian(proyekId: string, subBagianKode: string, selesai: boolean) {
+  const r = await jalankanAksi((p) => generate.tandaiSubBagianSelesai(p, proyekId, subBagianKode, selesai));
+  revalidatePath(`/proyek/${proyekId}`, "layout");
+  return r;
+}
+
+export async function aksiTandaiBagianSelesai(proyekId: string, bagianKode: string) {
+  const r = await jalankanAksi((p) => generate.tandaiBagianSelesai(p, proyekId, bagianKode));
+  revalidatePath(`/proyek/${proyekId}`, "layout");
   return r;
 }

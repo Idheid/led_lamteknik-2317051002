@@ -4,7 +4,7 @@ import { ChevronRight, KeyRound } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { bagianProyek, butirAnggaranProyek, ringkasanBagianProyek } from "@/lib/data/proyek";
 import { ringkasanBahan } from "@/lib/data/dokumen";
-import { daftarKunci } from "@/lib/data/kunci-api";
+import { daftarKunci, ringkasanKunciProdi } from "@/lib/data/kunci-api";
 import { pakaiPenyediaUji } from "@/lib/llm/embedding";
 import { bacaAnggaran } from "@/lib/domain/anggaran-proyek";
 import { hitungAnggaran, usulanHalamanKriteria } from "@/lib/domain/anggaran";
@@ -13,6 +13,9 @@ import { formatAngka } from "@/lib/domain/teks";
 import { formatTahunAkademik } from "@/lib/domain/tahun-akademik";
 import type { IdentitasProdi } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { PetaTS } from "@/components/peta-ts";
 import { LencanaStatus } from "@/components/lencana-status";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +41,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
     daftarKunci(p),
   ]);
   const kunciAktif = kunci.filter((k) => k.statusEfektif === "aktif").length;
+  const statusKunci = await ringkasanKunciProdi(proyek.prodiId);
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
   const usulan = usulanHalamanKriteria(bagianAnggaran, butir, pengaturan);
@@ -62,6 +66,32 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
         judul={proyek.nama}
         deskripsi={`${proyek.prodi.nama} · ${namaJenjang(proyek.jenjang)} · ${proyek.prodi.upps.nama}, ${proyek.prodi.upps.perguruanTinggi}`}
       />
+      <Petunjuk
+        kunci="beranda-proyek"
+        fungsi="Beranda merangkum progres penyusunan LED, anggaran halaman, kunci API, dan bahan penyusunan proyek ini."
+        langkah={[
+          "Pastikan kunci API Gemini sudah ditambahkan (menu Kunci API).",
+          "Unggah LKPS di menu Data LKPS, lalu periksa tabel dan metrik hasil bacaan.",
+          "Unggah dokumen pendukung di menu Dokumen.",
+          "Buka kriteria di tabel di bawah, isi jawaban penyusun, lalu klik Generate kriteria.",
+        ]}
+      />
+      {!statusKunci.adaYangBisaDipakai && !pakaiPenyediaUji() && (
+        <Alert variant="destructive">
+          <KeyRound aria-hidden />
+          <AlertTitle>{statusKunci.milikProdi === 0 ? "Belum ada kunci API Gemini" : "Semua kunci API sedang tidak bisa dipakai"}</AlertTitle>
+          <AlertDescription>
+            <p>
+              {statusKunci.milikProdi === 0
+                ? "Kunci API diperlukan untuk mengindeks dokumen dan menyusun narasi. Kunci berlaku untuk semua proyek LED prodi Anda."
+                : "Kuota kunci habis atau kunci ditolak Google. Tambahkan kunci dari project Google lain, atau tunggu reset kuota harian."}
+            </p>
+            <Button asChild size="sm" className="mt-2">
+              <Link href="/proyek/kunci-api">Buka menu Kunci API</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -113,7 +143,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Link href={`/proyek/${proyek.id}/kunci-api`} className="text-xs text-primary hover:underline">
+            <Link href="/proyek/kunci-api" className="text-xs text-primary hover:underline">
               {kunci.length === 0 ? "Tambahkan kunci untuk mengindeks dokumen" : "Kelola kunci API"}
             </Link>
           </CardContent>
@@ -134,7 +164,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
               <TableRow>
                 <TableHead className="pl-6">Kriteria</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Sub-bagian</TableHead>
+                <TableHead>Draf sub-bagian</TableHead>
                 <TableHead className="text-right">Butir</TableHead>
                 <TableHead className="text-right">Bobot</TableHead>
                 <TableHead className="text-right">Halaman</TableHead>
@@ -156,7 +186,18 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
                       </Link>
                     </TableCell>
                     <TableCell><LencanaStatus status={b.status} /></TableCell>
-                    <TableCell className="text-right tabular-nums">{ringkas.jumlahSub.get(b.kode) ?? 0}</TableCell>
+                    <TableCell>
+                      <div className="flex min-w-28 items-center gap-2">
+                        <Progress
+                          value={((ringkas.jumlahDraf.get(b.kode) ?? 0) / Math.max(ringkas.jumlahSubGenerate.get(b.kode) ?? 0, 1)) * 100}
+                          className="h-1.5 w-16"
+                          aria-label={`Draf ${b.kode}`}
+                        />
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {ringkas.jumlahDraf.get(b.kode) ?? 0}/{ringkas.jumlahSubGenerate.get(b.kode) ?? 0}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">{bt?.jumlah ?? 0}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatAngka(bt?.bobot ?? 0)}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">{a?.halaman ?? "—"}</TableCell>

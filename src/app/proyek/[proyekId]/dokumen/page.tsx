@@ -7,6 +7,7 @@ import { daftarKunci } from "@/lib/data/kunci-api";
 import { pakaiPenyediaUji } from "@/lib/llm/embedding";
 import { fmtWaktu, formatUkuran } from "@/lib/tampil";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { LencanaProses, PemantauProses } from "@/components/status-proses";
 import { STATUS_BERJALAN } from "@/lib/tampil";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -37,6 +38,15 @@ export default async function HalamanDokumen({ params }: PageProps<"/proyek/[pro
         judul="Dokumen pendukung"
         deskripsi="PDF dan DOCX diekstrak, dipotong, dan diindeks (vektor + kata kunci) supaya bisa dipakai sebagai sumber narasi. Gambar disimpan utuh untuk disisipkan ke narasi."
         remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Dokumen" }]}
+      />
+      <Petunjuk
+        kunci="proyek-dokumen"
+        fungsi="Dokumen pendukung (PDF, DOCX, gambar) yang menjadi sumber narasi. Daftar cek menunjukkan dokumen yang diharapkan per kriteria."
+        langkah={[
+          "Unggah dokumen lalu pilih kriteria terkait agar mudah ditemukan saat generate.",
+          "Tunggu status Siap; dokumen yang gagal bisa diproses ulang.",
+          "Periksa daftar cek dokumen yang masih kurang, lalu lengkapi.",
+        ]}
       />
       {(tanpaKunci || menungguKunci > 0) && (
         <Alert>

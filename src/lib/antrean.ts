@@ -9,6 +9,7 @@ import { PgBoss } from "pg-boss";
 export const ANTREAN = {
   lkps: "baca-lkps",
   dokumen: "proses-dokumen",
+  generate: "generate",
 } as const;
 
 export type NamaAntrean = (typeof ANTREAN)[keyof typeof ANTREAN];
@@ -25,7 +26,8 @@ export function buatBos(): PgBoss {
 
 export async function siapkanAntrean(bos: PgBoss): Promise<void> {
   for (const nama of Object.values(ANTREAN)) {
-    await bos.createQueue(nama, { retryLimit: 2, retryDelay: 30, retryBackoff: true });
+    // tugas generate mengatur ulang sendiri (kunci habis, batas per menit); tidak diulang otomatis oleh pg-boss
+    await bos.createQueue(nama, nama === ANTREAN.generate ? { retryLimit: 0 } : { retryLimit: 2, retryDelay: 30, retryBackoff: true });
   }
 }
 
@@ -39,10 +41,15 @@ async function bos(): Promise<PgBoss> {
   return globalBos.bosAntrean;
 }
 
-export async function kirimTugas(nama: NamaAntrean, data: Record<string, string>): Promise<string | null> {
+export interface OpsiKirim {
+  /** Tunda sampai waktu ini (untuk melanjutkan generate setelah reset kuota atau jeda batas per menit). */
+  mulaiSetelah?: Date;
+}
+
+export async function kirimTugas(nama: NamaAntrean, data: Record<string, string>, opsi: OpsiKirim = {}): Promise<string | null> {
   if (process.env.ANTREAN_NONAKTIF === "1") return null;
   try {
-    return await (await bos()).send(nama, data);
+    return await (await bos()).send(nama, data, opsi.mulaiSetelah ? { startAfter: opsi.mulaiSetelah } : {});
   } catch (e) {
     globalBos.bosAntrean = undefined;
     throw e;

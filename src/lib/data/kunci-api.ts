@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
 import { catatAktivitas } from "@/lib/data/log";
 import { antreUlangMenungguKunci } from "@/lib/data/dokumen";
+import { antreUlangTugasTertunda } from "@/lib/data/tugas-generate";
 import { akhiranKunci, dekripsi, enkripsi } from "@/lib/kripto";
 import {
   klasifikasiGalat, pesanKunciHabis, pilihKunci, statusEfektif, tandaiSetelahGalat,
@@ -11,13 +12,14 @@ import {
 import { galatPenyedia, pakaiPenyediaUji, penyediaGemini, penyediaUji, type PenyediaEmbedding } from "@/lib/llm/embedding";
 
 /**
- * Kunci API Gemini versi sederhana (iterasi 2): penanggung jawab mengisi kunci untuk prodinya; kunci dienkripsi
- * AES-256-GCM dan tidak pernah dikirim ke browser. Pemilihan kunci dan penandaan kuota habis memakai
- * src/lib/domain/kunci-api.ts; rotasi penuh dan kunci cadangan super admin di iterasi 3.
+ * Kunci API Gemini (F-19): penanggung jawab mengisi kunci untuk prodinya (berlaku untuk semua proyek prodi), super
+ * admin mengisi kunci cadangan. Kunci dienkripsi AES-256-GCM dan tidak pernah dikirim ke browser. Pemilihan kunci
+ * dan penandaan kuota habis memakai src/lib/domain/kunci-api.ts.
  */
 
 export const MODEL_EMBEDDING_BAWAAN = "gemini-embedding-001";
-export const MODEL_NARASI_BAWAAN = "gemini-2.5-flash";
+// model 2.5 dibatasi Google untuk pengguna baru; diganti otomatis saat daftar model dimuat (data/pengaturan.ts)
+export const MODEL_NARASI_BAWAAN = "gemini-3-flash-preview";
 
 export async function pengaturanLlm() {
   return prisma.pengaturanLLM.upsert({
@@ -69,9 +71,10 @@ export async function tambahKunci(p: Pengguna, masukan: { label: string; kunci: 
     select: { id: true, label: true, akhiran: true },
   });
   await catatAktivitas(p, "tambah", "kunci_api", k.id, { label: k.label, akhiran: k.akhiran });
-  // dokumen yang tertahan karena kunci habis/belum ada diproses lagi
+  // dokumen dan penyusunan yang tertahan karena kunci habis/belum ada dilanjutkan
   const diantre = await antreUlangMenungguKunci(prodiId);
-  return { ...k, diantre };
+  const tugasDilanjutkan = await antreUlangTugasTertunda(prodiId);
+  return { ...k, diantre, tugasDilanjutkan };
 }
 
 async function kunciMilik(p: Pengguna, id: string) {
@@ -166,4 +169,47 @@ export async function penyediaUntukProdi(prodiId: string): Promise<PenyediaTerpi
 export async function modelEmbeddingAktif(): Promise<string> {
   if (pakaiPenyediaUji()) return penyediaUji().model;
   return (await pengaturanLlm()).modelEmbedding;
+}
+
+function keDomain(k: { id: string; label: string; pemilik: "penanggung_jawab" | "super_admin"; status: KunciDomain["status"]; habisSampai: Date | null; urutan: number; createdAt: Date }): KunciDomain {
+  return { id: k.id, label: k.label, pemilik: k.pemilik, status: k.status, habisSampai: k.habisSampai, urutan: k.urutan, dibuatPada: k.createdAt };
+}
+
+/**
+ * Kunci aktif apa saja untuk keperluan administrasi (memuat daftar model, uji model): kunci cadangan super admin
+ * lebih dulu, lalu kunci penanggung jawab. Hanya dipakai di server.
+ */
+export async function kunciUntukAdministrasi(): Promise<{ id: string; kunci: string } | null> {
+  const sekarang = new Date();
+  const semua = await prisma.kunciAPI.findMany({ orderBy: [{ urutan: "asc" }, { createdAt: "asc" }] });
+  const siap = semua.filter((k) => statusEfektif(keDomain(k), sekarang) === "aktif");
+  const k = siap.find((x) => x.pemilik === "super_admin") ?? siap[0];
+  return k ? { id: k.id, kunci: dekripsi(k.kunciTerenkripsi) } : null;
+}
+
+/** Kunci yang boleh dipakai prodi (kunci prodi + cadangan super admin bila diizinkan), dalam bentuk domain. */
+export async function kunciProdi(prodiId: string) {
+  const atur = await pengaturanLlm();
+  const semua = await prisma.kunciAPI.findMany({
+    where: { OR: [{ pemilik: "penanggung_jawab", prodiId }, ...(atur.pakaiCadanganAdmin ? [{ pemilik: "super_admin" as const }] : [])] },
+  });
+  return { atur, semua, domain: semua.map(keDomain) };
+}
+
+/** Isi kunci (didekripsi) untuk dipakai worker. */
+export async function isiKunci(id: string): Promise<string> {
+  const k = await prisma.kunciAPI.findUniqueOrThrow({ where: { id } });
+  return dekripsi(k.kunciTerenkripsi);
+}
+
+/** Status kunci prodi untuk Beranda: jumlah kunci aktif yang bisa dipakai (termasuk cadangan admin bila diizinkan). */
+export async function ringkasanKunciProdi(prodiId: string) {
+  const { domain } = await kunciProdi(prodiId);
+  const sekarang = new Date();
+  const milikProdi = domain.filter((k) => k.pemilik === "penanggung_jawab");
+  return {
+    milikProdi: milikProdi.length,
+    aktifProdi: milikProdi.filter((k) => statusEfektif(k, sekarang) === "aktif").length,
+    adaYangBisaDipakai: pilihKunci(domain, sekarang) !== null,
+  };
 }

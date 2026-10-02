@@ -7,6 +7,7 @@ import { ambilVersi } from "@/lib/data/instrumen";
 import { JENJANG } from "@/lib/domain/instrumen";
 import { formatAngka } from "@/lib/domain/teks";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,15 @@ export default async function HalamanVersi({ params }: PageProps<"/admin/instrum
             <TombolSalinVersi id={v.id} />
           </>
         }
+      />
+      <Petunjuk
+        kunci="admin-versi"
+        fungsi="Struktur satu versi instrumen: bagian LED (halaman awal, bab, kriteria, lampiran) beserta sub-bagiannya."
+        langkah={[
+          "Pilih bagian untuk mengubah nama, urutan, batas halaman, dan pengantarnya.",
+          "Buka Butir S1 atau Butir D3/D4 untuk mengatur butir penilaian dan pemetaannya ke sub-bagian.",
+          "Versi yang terkunci hanya bisa dilihat; salin versi bila perlu mengubahnya.",
+        ]}
       />
       {v.terkunci && (
         <Alert>

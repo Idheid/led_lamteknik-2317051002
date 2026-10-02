@@ -123,13 +123,13 @@ export async function simpanJawaban(p: Pengguna, masukan: { proyekId: string; su
   });
 }
 
-/** Jumlah sub-bagian (yang berlaku untuk jenjang proyek) dan butir per bagian, untuk Beranda. */
+/** Jumlah sub-bagian (yang berlaku untuk jenjang proyek), sub-bagian yang sudah punya draf, dan butir per bagian, untuk Beranda. */
 export async function ringkasanBagianProyek(p: Pengguna, proyekId: string) {
   const proyek = await ambilProyek(p, proyekId);
-  const [sub, butir] = await Promise.all([
+  const [sub, butir, draf] = await Promise.all([
     prisma.subBagian.findMany({
       where: { bagian: { versiId: proyek.versiId } },
-      select: { berlakuUntuk: true, jenjangOverride: true, bagian: { select: { kode: true } } },
+      select: { tipe: true, berlakuUntuk: true, jenjangOverride: true, bagian: { select: { kode: true } } },
     }),
     prisma.butirPenilaian.groupBy({
       by: ["bagianKode"],
@@ -137,13 +137,22 @@ export async function ringkasanBagianProyek(p: Pengguna, proyekId: string) {
       _count: { _all: true },
       _sum: { bobot: true },
     }),
+    prisma.bagianDraf.findMany({
+      where: { proyekId: proyek.id, versiAktifId: { not: null } },
+      select: { subBagian: { select: { bagian: { select: { kode: true } } } } },
+    }),
   ]);
   const jumlahSub = new Map<string, number>();
+  const jumlahSubGenerate = new Map<string, number>();
   for (const s of sub) {
-    if (berlakuUntukJenjang(s, proyek.jenjang)) jumlahSub.set(s.bagian.kode, (jumlahSub.get(s.bagian.kode) ?? 0) + 1);
+    if (!berlakuUntukJenjang(s, proyek.jenjang)) continue;
+    jumlahSub.set(s.bagian.kode, (jumlahSub.get(s.bagian.kode) ?? 0) + 1);
+    if (s.tipe !== "data" && s.tipe !== "otomatis") jumlahSubGenerate.set(s.bagian.kode, (jumlahSubGenerate.get(s.bagian.kode) ?? 0) + 1);
   }
+  const jumlahDraf = new Map<string, number>();
+  for (const d of draf) jumlahDraf.set(d.subBagian.bagian.kode, (jumlahDraf.get(d.subBagian.bagian.kode) ?? 0) + 1);
   const jumlahButir = new Map(butir.map((b) => [b.bagianKode, { jumlah: b._count._all, bobot: Number(b._sum.bobot ?? 0) }]));
-  return { jumlahSub, jumlahButir };
+  return { jumlahSub, jumlahSubGenerate, jumlahDraf, jumlahButir };
 }
 
 /** Butir jenjang proyek untuk perhitungan anggaran. */

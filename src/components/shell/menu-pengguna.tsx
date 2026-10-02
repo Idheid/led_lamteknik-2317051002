@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import Link from "next/link";
+import { ChevronsUpDown, KeyRound, LogOut } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -42,6 +43,12 @@ export function MenuPengguna({ nama, email, peran }: { nama: string; email: stri
               <div className="text-xs text-muted-foreground">{email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/akun/ganti-sandi">
+                <KeyRound aria-hidden />
+                Ganti kata sandi
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={keluar}>
               <LogOut aria-hidden />
               Keluar
