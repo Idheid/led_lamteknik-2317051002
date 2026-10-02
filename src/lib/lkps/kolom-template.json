@@ -1,0 +1,3194 @@
+{
+ "judul": {
+  "1": [
+   "Tabel 1 Visi Misi Tujuan Strategi Perguruan Tinggi dan UPPS serta Visi Keilmuan Program Studi"
+  ],
+  "2a1": [
+   "Tabel 2 Kerjasama Tridharma Perguruan Tinggi",
+   "Tabel 2 Bagian-1 Kerjasama Pendidikan"
+  ],
+  "2a2": [
+   "Tabel 2 Kerjasama Tridharma Perguruan Tinggi",
+   "Tabel 2 Bagian-2 Kerjasama Penelitian"
+  ],
+  "2a3": [
+   "Tabel 2 Kerjasama Tridharma Perguruan Tinggi",
+   "Tabel 2 Bagian-3 Kerjasama Pengabdian kepada Masyarakat"
+  ],
+  "2b": [
+   "Tabel 2.b Penggunaan Dana"
+  ],
+  "3a1": [
+   "Tabel 3.a.1) Kurikulum dan Rencana Pembelajaran"
+  ],
+  "3a2": [
+   "Tabel 3.a.2) Mata Kuliah dan Dokumen Pembelajaran"
+  ],
+  "3a3": [
+   "Tabel 3.a.3 Integrasi Kegiatan Penelitian/PkM dalam Pembelajaran"
+  ],
+  "3a4": [
+   "Tabel 3.a.4) Mata Kuliah Basic Science dan Matematika dalam Proses Pembelajaran"
+  ],
+  "3a5": [
+   "Tabel 3.a.5) Capstone Design dalam Proses Pembelajaran"
+  ],
+  "3b": [
+   "Tabel 3.b) Penelitian DTPS"
+  ],
+  "3c": [
+   "Tabel 3.c) Pengabdian kepada Masyarakat DTPS"
+  ],
+  "4a": [
+   "Tabel 4) Profil Dosen"
+  ],
+  "4b": [
+   "Tabel 4.b) Data Tenaga Kependidikan Laboran / Teknisi / Administrator Sistem"
+  ],
+  "4c": [
+   "Tabel 4.c) Beban Kerja (BK) Dosen Tetap Perguruan Tinggi"
+  ],
+  "4d": [
+   "Tabel 4.d) Publikasi Ilmiah DTPS"
+  ],
+  "4e": [
+   "Tabel 4.e) Pagelaran/Pameran/Presentasi/Publikasi Ilmiah DTPS"
+  ],
+  "4f-1": [
+   "Tabel 4.f) Luaran Penelitian dan PkM oleh DTPS / DTPSPPI",
+   "Tabel 4.f) Bagian-1 HKI (Paten, Paten Sederhana)"
+  ],
+  "4f-2": [
+   "Tabel 4.f) Luaran Penelitian dan PkM oleh DTPS / DTPSPPI",
+   "Tabel 4.f) Bagian-2 HKI (Hak Cipta, Desain Produk Industri, dll.)"
+  ],
+  "4f-3": [
+   "Tabel 4.f) Luaran Penelitian dan PkM oleh DTPS / DTPSPPI",
+   "Tabel 4.f) Bagian-3 Teknologi Tepat Guna, Produk"
+  ],
+  "4f-4": [
+   "Tabel 4.f) Luaran Penelitian dan PkM oleh DTPS / DTPSPPI",
+   "Tabel 4.f) Bagian-4 Buku Ber-ISBN, Book Chapter"
+  ],
+  "4g": [
+   "Tabel 4.g) Produk/Jasa DTPS yang Diadopsi oleh Industri/Masyarakat"
+  ],
+  "4h": [
+   "Tabel 4.h) Kinerja DTPS dalam mendukung keunggulan kompetitif"
+  ],
+  "4i": [
+   "Tabel 4.i) Karya Ilmiah DTPS yang Disitasi dalam 3 tahun terakhir"
+  ],
+  "4j": [
+   "Tabel 4j) Pengakuan/Rekognisi DTPS"
+  ],
+  "4k": [
+   "Tabel 4.k) Pembimbing Lapangan"
+  ],
+  "5a": [
+   "Tabel 5.a) Prasarana dan Peralatan Utama Ruang Kelas/Ruang Diskusi / Laboratorium di UPPS yang digunakan oleh PS yang Diakreditasi"
+  ],
+  "5b": [
+   "Tabel 5.b) Dokumen K3L di UPPS"
+  ],
+  "5c": [
+   "Tabel 5.c) Fasilitas K3L di UPPS"
+  ],
+  "6a": [
+   "Tabel 6.a) Jumlah Mahasiswa (Reguler dan Asing)"
+  ],
+  "6b": [
+   "Tabel 6.b) IPK Lulusan"
+  ],
+  "6c1": [
+   "Tabel 6.c.1) Prestasi Akademik Mahasiswa"
+  ],
+  "6c2": [
+   "Tabel 6.c.2) Prestasi Non-akademik Mahasiswa"
+  ],
+  "6d": [
+   "Tabel 6.d) Masa Studi Lulusan"
+  ],
+  "6e1": [
+   "Tabel 6.e1) Publikasi Ilmiah Mahasiswa"
+  ],
+  "6e2": [
+   "Tabel 6.e.2) Pagelaran/Pameran/Presentasi/Publikasi Ilmiah Mahasiswa"
+  ],
+  "6e3-1": [
+   "Tabel 6.e.3) Luaran Penelitian/PkM yang Dihasilkan Mahasiswa",
+   "Tabel 6.e.3) Bagian-1 HKI (Paten, Paten Sederhana)"
+  ],
+  "6e3-2": [
+   "Tabel 6.e.3) Luaran Penelitian/PkM yang Dihasilkan Mahasiswa",
+   "Tabel 6.e.3) Bagian-2 HKI (Hak Cipta, Desain Produk Industri, dll.)"
+  ],
+  "6e3-3": [
+   "Tabel 6.e.3) Luaran Penelitian/PkM yang Dihasilkan Mahasiswa",
+   "Tabel 6.e.3) Bagian-3 Teknologi Tepat Guna, Produk"
+  ],
+  "6e3-4": [
+   "Tabel 6.e.3) Luaran Penelitian/PkM yang Dihasilkan Mahasiswa",
+   "Tabel 6.e.3) Bagian-4 Buku Ber-ISBN, Book Chapter"
+  ],
+  "6e4": [
+   "Tabel 6.e.4) Produk/Jasa yang Dihasilkan Mahasiswa yang Diadopsi oleh Industri/Masyarakat"
+  ],
+  "6f1": [
+   "Tabel 6.f.1) Waktu Tunggu Lulusan"
+  ],
+  "6f2": [
+   "Tabel 6.f.2) Kesesuaian Bidang Kerja Lulusan"
+  ],
+  "6g1": [
+   "Tabel 6.g.1) Tempat Kerja Lulusan"
+  ],
+  "6g2": [
+   "Tabel 6.g.2) Kepuasan Pengguna Lulusan"
+  ],
+  "6h1": [
+   "Tabel 6.h.1 Penelitian DTPS yang Melibatkan Mahasiswa"
+  ],
+  "6h2": [
+   "Tabel 6.h.2 Penelitian DTPS yang Menjadi Rujukan Tema Tesis/Disertasi"
+  ],
+  "6i": [
+   "Tabel 6.i PkM DTPS yang Melibatkan Mahasiswa"
+  ],
+  "7a": [
+   "Tabel 7.a) Ketersediaan Dokumen/Buku Sistem Penjaminan Mutu Internal"
+  ],
+  "7b": [
+   "Tabel 7.b) Ketersediaan Dokumen Pelaksanaan Sistem Penjaminan Mutu Internal"
+  ]
+ },
+ "kolom": {
+  "1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jenis VMTS"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Pernyataan"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "No. Surat keputusan (SK)"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Link Dokumen"
+     }
+    ]
+   }
+  ],
+  "2a1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Lembaga Mitra"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tingkat / Interna-sional"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nasional"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Lokal/Wilayah"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Judul Kegiatan Kerjasama"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Manfaat bagi PS yang Diakreditasi"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "Tanggal Awal Kerjasama (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Tanggal Akhir Kerjasama (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Durasi (dalam tahun)"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "Status Kerjasama"
+     },
+     {
+      "kunci": "L",
+      "nomor": "12",
+      "label": "Bukti Kerjasama"
+     }
+    ]
+   }
+  ],
+  "2a2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Lembaga Mitra"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tingkat / Interna-sional"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nasional"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Lokal/Wilayah"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Judul Kegiatan Kerjasama"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Manfaat bagi PS yang Diakreditasi"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "Tanggal Awal Kerjasama (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Tanggal Akhir Kerjasama (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Durasi (dalam tahun)"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "Status Kerjasama"
+     },
+     {
+      "kunci": "L",
+      "nomor": "12",
+      "label": "Bukti Kerjasama"
+     }
+    ]
+   }
+  ],
+  "2a3": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Lembaga Mitra"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tingkat / Interna-sional"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nasional"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Lokal/Wilayah"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Judul Kegiatan Kerjasama"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Manfaat bagi PS yang Diakreditasi"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "Tanggal Awal Kerjasama (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Tanggal Akhir Kerjasama (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Durasi (dalam tahun)"
+     },
+     {
+      "kunci": "K",
+      "nomor": "",
+      "label": "Status Kerjasama"
+     },
+     {
+      "kunci": "L",
+      "nomor": "11",
+      "label": "Bukti Kerjasama"
+     }
+    ]
+   }
+  ],
+  "2b": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jenis Penggunaan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Unit Pengelola Program Studi (Rupiah) / TS-2"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Rata-rata"
+     },
+     {
+      "kunci": "G",
+      "nomor": "3",
+      "label": "Program Studi (Rupiah) / TS-2"
+     },
+     {
+      "kunci": "H",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "I",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "J",
+      "nomor": "6",
+      "label": "Rata-rata"
+     }
+    ]
+   }
+  ],
+  "3a1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Semester"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Kode Mata Kuliah"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nama Mata Kuliah"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Mata Kuliah Kom-petensi"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Bobot Kredit (sks) / Kuliah/ Responsi/ Tutorial"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Seminar"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "Praktikum/ Praktik/ Praktik Lapangan / Penugasan"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Konversi Kredit ke Jam (diisi oleh Pengusul Vokasi)"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Dokumen Rencana Pembelajaran"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "Unit Penyelenggara"
+     }
+    ]
+   }
+  ],
+  "3a2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Mata Kuliah"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Bobot (sks)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Konversi Kredit ke Jam / Teori"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Praktik"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Kelengkapan Dokumen RPS"
+     }
+    ]
+   }
+  ],
+  "3a3": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Dosen"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Judul Penelitian/PkM"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Mata Kuliah"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Bentuk Integrasi"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Tahun Penelitian/PkM / TS-2"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "TS"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Kesesuaian Penelitian dengan Peta Jalan (Sesuai / Tidak Sesuai)"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Bukti Sahih"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "Kesesuaian Rencana Pembelajaran Semester (RPS)"
+     }
+    ]
+   }
+  ],
+  "3a4": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Mata Kuliah Basic Science dan Matematika"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Semester"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah SKS"
+     }
+    ]
+   }
+  ],
+  "3a5": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Mata Kuliah Pendukung Capstone Design"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah SKS Nama Mata Kuliah Pendukung Capstone Design"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nama Mata Kuliah Capstone Design"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Jumlah SKS Nama Mata Kuliah Capstone Design"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Semester"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Cakupan Bahasan"
+     }
+    ]
+   }
+  ],
+  "3b": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Sumber Pembiayaan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Judul Penelitian / TS-2"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Jumlah"
+     }
+    ]
+   }
+  ],
+  "3c": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Sumber Pembiayaan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Judul PkM / TS-2"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Jumlah"
+     }
+    ]
+   }
+  ],
+  "4a": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Dosen"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "NIDN/NIDK/ NUPTK"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Kategori Dosen"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Nama Prodi Tempat Dosen Menyelesaikan Studi dan Bidang Ilmu / Sarjana / Sarjana Terapan"
+     },
+     {
+      "kunci": "F",
+      "nomor": "",
+      "label": "Magister / Magister Terapan"
+     },
+     {
+      "kunci": "G",
+      "nomor": "",
+      "label": "Doktor/ Doktor Terapan"
+     },
+     {
+      "kunci": "H",
+      "nomor": "6",
+      "label": "Bidang Keahlian"
+     },
+     {
+      "kunci": "I",
+      "nomor": "7",
+      "label": "Perusahaan / Industri"
+     },
+     {
+      "kunci": "J",
+      "nomor": "8",
+      "label": "Kesesuaian dengan Kompetensi Inti PS"
+     },
+     {
+      "kunci": "K",
+      "nomor": "9",
+      "label": "Jabatan Akademik"
+     },
+     {
+      "kunci": "L",
+      "nomor": "10",
+      "label": "Nomor Sertifikat Pendidik Profesional"
+     },
+     {
+      "kunci": "M",
+      "nomor": "11",
+      "label": "Sertifikat Kompetensi/ Profesi/ Industri / Bidang Sertifikasi"
+     },
+     {
+      "kunci": "N",
+      "nomor": "12",
+      "label": "Lembaga Penerbit"
+     },
+     {
+      "kunci": "O",
+      "nomor": "13",
+      "label": "Sertifikat Keinsinyuran / SKIP (Sertifikat Kompetensi Insinyur Profesional)"
+     },
+     {
+      "kunci": "P",
+      "nomor": "14",
+      "label": "STRI (Surat Tanda Registrasi Insinyur)"
+     },
+     {
+      "kunci": "Q",
+      "nomor": "15",
+      "label": "Mata Kuliah yang Diampu pada PS yang Diakreditasi"
+     },
+     {
+      "kunci": "R",
+      "nomor": "16",
+      "label": "Kesesuaian Bidang Keahlian dengan Mata Kuliah yang Diampu"
+     },
+     {
+      "kunci": "S",
+      "nomor": "17",
+      "label": "Mata Kuliah yang Diampu pada PS Lain"
+     }
+    ]
+   }
+  ],
+  "4b": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Laboran / Teknisi / Administrator Sistem"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Pendidikan Terakhir / S3"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "S2"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "S1"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "D4"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "D3"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "D2"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "D1"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "SMA/SMK"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "Sertifikat Kompetensi"
+     },
+     {
+      "kunci": "L",
+      "nomor": "12",
+      "label": "Unit Kerja"
+     }
+    ]
+   }
+  ],
+  "4c": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Dosen (DT)"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "DTPS"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Beban Kerja (BK) pada saat TS dalam satuan kredit semester (sks) / Pendidikan: Pembelajaran dan Pembimbingan / PS yang Diakreditasi"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "PS Lain di dalam PT"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "PS Lain di luar PT"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Penelitian"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "PkM"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Tugas Tambahan dan/atau Penunjang"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Jumlah per Tahun (sks)"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "Jumlah per Semester (sks)"
+     }
+    ]
+   }
+  ],
+  "4d": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "S2",
+     "S3",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jenis Publikasi"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Judul / TS-2"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Jumlah"
+     }
+    ]
+   }
+  ],
+  "4e": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "STr",
+     "S2Tr",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jenis Publikasi"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Judul / TS-2"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Jumlah"
+     }
+    ]
+   }
+  ],
+  "4f-1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Judul Luaran Penelitian dan PkM"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tanggal (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nomor Paten (Granted)"
+     }
+    ]
+   }
+  ],
+  "4f-2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Judul Luaran Penelitian dan PkM"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tanggal (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Keterangan (Nomor Sertifikat)"
+     }
+    ]
+   }
+  ],
+  "4f-3": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Luaran Penelitian dan PkM"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tanggal (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "",
+      "label": "Status (Tingkat Kesiapan Teknologi)"
+     },
+     {
+      "kunci": "E",
+      "nomor": "4",
+      "label": "Nomor Sertifikat TKT"
+     }
+    ]
+   }
+  ],
+  "4f-4": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Luaran Penelitian dan PkM"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tanggal (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Keterangan (Nomor ISBN)"
+     }
+    ]
+   }
+  ],
+  "4g": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "STr",
+     "S2Tr",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama DTPS"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Nama Produk/Jasa"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Deskripsi Produk/Jasa"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Bukti"
+     }
+    ]
+   }
+  ],
+  "4h": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama DTPS"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jurnal internasional bereputasi / prosiding internasional ber-ISSN/ISBN terindeks Scopus/IEEE Explore/SPIE / paten / TS-2"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Keterangan"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Jumlah Publikasi"
+     }
+    ]
+   }
+  ],
+  "4i": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama DTPS"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Judul Artikel yang Disitasi (Jurnal/Buku/Prosiding, Volume, Tahun, Nomor, Halaman)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah Sitasi"
+     }
+    ]
+   }
+  ],
+  "4j": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama DTPS"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Bidang Keahlian"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Rekognisi dan Bukti Pendukung / Rekognisi"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Bukti Pendukung"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Tingkat / Wilayah"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Nasional"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "Interna-sional"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Tahun (YYYY)"
+     }
+    ]
+   }
+  ],
+  "4k": [
+   {
+    "blok": null,
+    "jenjang": [
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Industri"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Bidang Keinsinyuran"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Pengalaman Kerja (tahun)"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Pendidikan Tinggi"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Kategori SIP / IPM"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "IPU"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Nomor SIP"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Tanggal Berakhir SIP (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "Jumlah Bimbingan dalam 3 tahun"
+     }
+    ]
+   }
+  ],
+  "5a": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Prasarana"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Prasarana"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nama Sarana / Alat / Peraga"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Jumlah Alat / Standar Minimal"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Yang Dimiliki UPPS"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Kepemilikan / Sendiri"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "Sewa"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "Kondisi / Terawat"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Tidak Terawat"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "Logbook (Diisi oleh Pengusul Vokasi) / Ada"
+     },
+     {
+      "kunci": "L",
+      "nomor": "12",
+      "label": "Tidak Ada"
+     },
+     {
+      "kunci": "M",
+      "nomor": "13",
+      "label": "Rata-rata Waktu Penggunaan (Jam/Minggu, Diisi oleh Pengusul Vokasi)"
+     }
+    ]
+   }
+  ],
+  "5b": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jenis Dokumen"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Riwayat Pengesahan"
+     }
+    ]
+   }
+  ],
+  "5c": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Sarana"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Fungsi"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah Unit"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Kondisi / Terawat"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Tidak Terawat"
+     }
+    ]
+   }
+  ],
+  "6a": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Program Studi"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Prodi yang Diakreditasi"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah Mahasiswa Aktif / TS-2"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "TS"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Jumlah Mahasiswa Asing Penuh Waktu (Full-time) / TS-2"
+     },
+     {
+      "kunci": "H",
+      "nomor": "8",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "I",
+      "nomor": "9",
+      "label": "TS"
+     },
+     {
+      "kunci": "J",
+      "nomor": "10",
+      "label": "Jumlah Mahasiswa Asing Paruh Waktu (Part-time) / TS-2"
+     },
+     {
+      "kunci": "K",
+      "nomor": "11",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "L",
+      "nomor": "12",
+      "label": "TS"
+     }
+    ]
+   }
+  ],
+  "6b": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Indeks Prestasi Kumulatif / Min."
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Rata-rata"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Maks"
+     }
+    ]
+   }
+  ],
+  "6c1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Kegiatan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Waktu Perolehan (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Tingkat / Lokal/ Wilayah"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Nasio-nal"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Interna-sional"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Prestasi yang Dicapai"
+     }
+    ]
+   }
+  ],
+  "6c2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Kegiatan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Waktu Perolehan (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Tingkat / Lokal/ Wilayah"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Nasio-nal"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Interna-sional"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Prestasi yang Dicapai"
+     }
+    ]
+   }
+  ],
+  "6d": [
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Diploma Satu",
+    "jenjang": [
+     "D1"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Masuk"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Mahasiswa Masuk"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Mahasiswa Lulus / 0,5 < MS ≤ 1,5"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "1,5 < MS ≤ 2"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "MS ≤ 0,5"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Diploma Dua",
+    "jenjang": [
+     "D2"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Masuk"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Mahasiswa Masuk"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Mahasiswa Lulus / 1,5 < MS ≤ 2,5"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "2,5 < MS ≤ 4"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "MS ≤ 1,5"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Diploma Tiga",
+    "jenjang": [
+     "D3"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Masuk"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Mahasiswa Masuk"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Mahasiswa Lulus / 2,5 < MS ≤ 3,5"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "3,5 < MS ≤ 6"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "MS ≤ 2,5"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Sarjana/Sarjana Terapan",
+    "jenjang": [
+     "S1",
+     "STr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Masuk"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Mahasiswa Masuk"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Mahasiswa Lulus / 3,5 < MS ≤ 4,5"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "4,5 < MS ≤ 5,5"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "5,5 < MS ≤ 6,5"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "6,5 < MS ≤ 8"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Magister/Magister Terapan",
+    "jenjang": [
+     "S2",
+     "S2Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Masuk"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Mahasiswa Masuk"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Mahasiswa Lulus / 1,5 < MS ≤ 2,5"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "2,5 < MS ≤ 3,5"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "3,5 < MS ≤ 4"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Doktor/Doktor Terapan",
+    "jenjang": [
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Masuk"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Mahasiswa Masuk"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Mahasiswa Lulus / 2,5 < MS ≤ 3,5"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "3,5 < MS ≤ 4,5"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "4 < MS ≤ 6"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Profesi Insinyur Moda Pembelajaran Reguler",
+    "jenjang": [
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Masuk"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Mahasiswa Masuk"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Mahasiswa Lulus (Dalam Semester) / 2 ≤ MS ≤ 3"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "3 < MS ≤ 6"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "MS > 6"
+     }
+    ]
+   }
+  ],
+  "6e1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "S2",
+     "S3"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Media Publikasi"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Judul / TS-2"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Jumlah"
+     }
+    ]
+   }
+  ],
+  "6e2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "STr",
+     "S2Tr",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jenis Publikasi"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Judul / TS-2"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "TS-1"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "TS"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Jumlah"
+     }
+    ]
+   }
+  ],
+  "6e3-1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Luaran Penelitian dan PkM"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tanggal (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Status (Registered/Granted/Komersial)"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Nomor Registrasi/Paten"
+     }
+    ]
+   }
+  ],
+  "6e3-2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Luaran Penelitian dan PkM"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tanggal (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "5",
+      "label": "Nomor HKI"
+     }
+    ]
+   }
+  ],
+  "6e3-3": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Luaran Penelitian dan PkM"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tanggal (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Status (Tingkat Kesiapan Teknologi)"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Nomor Sertifikat TKT"
+     }
+    ]
+   }
+  ],
+  "6e3-4": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Luaran Penelitian dan PkM"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tanggal (HH/BB/TTTT)"
+     },
+     {
+      "kunci": "D",
+      "nomor": "5",
+      "label": "Nomor ISBN"
+     }
+    ]
+   }
+  ],
+  "6e4": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "STr",
+     "S2Tr",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Mahasiswa"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Nama Produk/Jasa"
+     },
+     {
+      "kunci": "D",
+      "nomor": "3",
+      "label": "Deskripsi Produk/Jasa"
+     },
+     {
+      "kunci": "E",
+      "nomor": "4",
+      "label": "Bukti"
+     }
+    ]
+   }
+  ],
+  "6f1": [
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Diploma Satu",
+    "jenjang": [
+     "D1"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Lulusan yang Terlacak"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah Lulusan yang Dipesan Sebelum Lulus"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Jumlah Lulusan Terlacak dengan Waktu Tunggu Mendapatkan Pekerjaan / WT < 3 bulan"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "3 ≤ WT ≤ 6 bulan"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "WT > 6 bulan"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Diploma Dua",
+    "jenjang": [
+     "D2"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Lulusan yang Terlacak"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah Lulusan yang Dipesan Sebelum Lulus"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Jumlah Lulusan Terlacak dengan Waktu Tunggu Mendapatkan Pekerjaan / WT < 3 bulan"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "3 ≤ WT ≤ 6 bulan"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "WT > 6 bulan"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Diploma Tiga",
+    "jenjang": [
+     "D3"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Lulusan yang Terlacak"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah Lulusan yang Dipesan Sebelum Lulus"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Jumlah Lulusan Terlacak dengan Waktu Tunggu Mendapatkan Pekerjaan / WT < 3 bulan"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "3 ≤ WT ≤ 6 bulan"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "WT > 6 bulan"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Sarjana",
+    "jenjang": [
+     "S1"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Lulusan yang Terlacak"
+     },
+     {
+      "kunci": "D",
+      "nomor": "5",
+      "label": "Jumlah Lulusan Terlacak dengan Waktu Tunggu Mendapatkan Pekerjaan / WT < 3 bulan"
+     },
+     {
+      "kunci": "E",
+      "nomor": "6",
+      "label": "3 ≤ WT ≤ 18 bulan"
+     },
+     {
+      "kunci": "F",
+      "nomor": "7",
+      "label": "WT > 18 bulan"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Sarjana Terapan",
+    "jenjang": [
+     "STr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Lulusan yang Terlacak"
+     },
+     {
+      "kunci": "D",
+      "nomor": "5",
+      "label": "Jumlah Lulusan Terlacak dengan Waktu Tunggu Mendapatkan Pekerjaan / WT < 3 bulan"
+     },
+     {
+      "kunci": "E",
+      "nomor": "6",
+      "label": "3 ≤ WT ≤ 18 bulan"
+     },
+     {
+      "kunci": "F",
+      "nomor": "7",
+      "label": "WT > 18 bulan"
+     }
+    ]
+   },
+   {
+    "blok": "Diisi oleh pengusul dari Program Studi pada Program Profesi Insinyur Moda Pembelajaran Reguler",
+    "jenjang": [
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Lulusan yang Terlacak"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah Lulusan yang Dipesan Sebelum Lulus"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Jumlah Lulusan Terlacak dengan Waktu Tunggu Mendapatkan Pekerjaan / WT < 3 bulan"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "3 ≤ WT ≤ 6 bulan"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "WT > 6 bulan"
+     }
+    ]
+   }
+  ],
+  "6f2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Lulusan yang Terlacak"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah lulusan Terlacak dengan Tingkat Kesesuaian Bidang Kerja / Rendah"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Sedang"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Tinggi"
+     }
+    ]
+   }
+  ],
+  "6g1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "Tahun Lulus"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jumlah Lulusan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Jumlah Pengguna Lulusan yang Memberi Tanggapan"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Jumlah Lulusan yang Terlacak"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Jumlah Lulusan Terlacak yang Bekerja Berdasarkan Tingkat/Ukuran Tempat Kerja/Berwirausaha / Lokal/ Wilayah/ Berwirausaha tidak Berizin"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Nasional/ Berwirausaha Berizin"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Multinasional/ Internasional"
+     }
+    ]
+   }
+  ],
+  "6g2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No"
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jenis Kemampuan"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tingkat Kepuasan Pengguna (%) / Sangat Baik"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Baik"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Cukup"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Kurang"
+     },
+     {
+      "kunci": "G",
+      "nomor": "7",
+      "label": "Rencana Tindak Lanjut oleh UPPS/PS"
+     }
+    ]
+   }
+  ],
+  "6h1": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Dosen"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tema Penelitian sesuai Peta Jalan"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nama Mahasiswa"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Judul Kegiatan"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Tahun (YYYY)"
+     }
+    ]
+   }
+  ],
+  "6h2": [
+   {
+    "blok": null,
+    "jenjang": [
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Dosen"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tema Penelitian sesuai Roadmap"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nama Mahasiswa"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Judul Tesis/Disertasi"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Tahun (YYYY)"
+     }
+    ]
+   }
+  ],
+  "6i": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Nama Dosen"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Tema PkM sesuai Peta Jalan"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Nama Mahasiswa"
+     },
+     {
+      "kunci": "E",
+      "nomor": "5",
+      "label": "Judul Kegiatan PkM"
+     },
+     {
+      "kunci": "F",
+      "nomor": "6",
+      "label": "Tahun (YYYY)"
+     }
+    ]
+   }
+  ],
+  "7a": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Jenis Dokumen Penjaminan Mutu"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "No Dokumen"
+     },
+     {
+      "kunci": "D",
+      "nomor": "4",
+      "label": "Tanggal Dokumen"
+     }
+    ]
+   }
+  ],
+  "7b": [
+   {
+    "blok": null,
+    "jenjang": [
+     "D1",
+     "D2",
+     "D3",
+     "S1",
+     "STr",
+     "S2",
+     "S2Tr",
+     "S3",
+     "S3Tr",
+     "PPI"
+    ],
+    "kolom": [
+     {
+      "kunci": "A",
+      "nomor": "1",
+      "label": "No."
+     },
+     {
+      "kunci": "B",
+      "nomor": "2",
+      "label": "Dokumen"
+     },
+     {
+      "kunci": "C",
+      "nomor": "3",
+      "label": "Link Dokumen"
+     },
+     {
+      "kunci": "D",
+      "nomor": "",
+      "label": "Link Laporan Hasil Audit"
+     },
+     {
+      "kunci": "E",
+      "nomor": "4",
+      "label": "Link Laporan RTM"
+     },
+     {
+      "kunci": "F",
+      "nomor": "4",
+      "label": "Link Dokumen Peningkatan"
+     }
+    ]
+   }
+  ]
+ }
+}
