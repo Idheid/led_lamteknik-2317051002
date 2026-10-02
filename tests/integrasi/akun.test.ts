@@ -64,6 +64,8 @@ test("Akun: satu akun aktif per prodi; pergantian PJ; data prodi tetap ada setel
   // format kunci Google yang baru memuat titik ("AQ.…")
   const baruFormat = await tambahKunci(pjLama, { label: "Kunci format baru", kunci: "AQ.Ab8RUjiPalsu000000000000000000-xyz_9" });
   assert.equal(baruFormat.akhiran, "yz_9");
+  // simbol lain yang mungkin muncul di format kunci mendatang
+  await tambahKunci(pjLama, { label: "Kunci simbol", kunci: "XY$Uji+Palsu/0000=0000~0000!0000@#%&*" });
   await assert.rejects(tambahKunci(pjLama, { label: "Kunci rusak", kunci: "AQ.kunci dengan spasi 0000000000" }));
 
   // serah terima: nonaktifkan akun lama, buat akun baru

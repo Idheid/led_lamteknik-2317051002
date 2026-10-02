@@ -1,13 +1,6 @@
-import type { Metadata } from "next";
-import { wajibPenanggungJawab } from "@/lib/sesi";
-import { ambilProyek } from "@/lib/data/proyek";
-import { HalamanKunci } from "@/components/kunci-api/halaman-kunci";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Kunci API" };
-
-export default async function HalamanKunciProyek({ params }: PageProps<"/proyek/[proyekId]/kunci-api">) {
-  const p = await wajibPenanggungJawab();
-  const { proyekId } = await params;
-  await ambilProyek(p, proyekId);
-  return <HalamanKunci pengguna={p} remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Kunci API" }]} />;
+/** Kunci API berlaku untuk seluruh prodi: alamat lama per proyek diarahkan ke satu halaman kunci prodi. */
+export default function HalamanKunciProyek() {
+  redirect("/proyek/kunci-api");
 }

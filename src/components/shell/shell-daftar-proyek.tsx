@@ -15,7 +15,7 @@ export async function ShellDaftarProyek({ pengguna, children }: { pengguna: Peng
         label: "Prodi",
         item: [
           { judul: "Semua proyek LED", href: "/proyek", ikon: "proyek", persis: true },
-          { judul: "Kunci API", href: "/proyek/kunci-api", ikon: "kunci" },
+          { judul: "Kunci API prodi", href: "/proyek/kunci-api", ikon: "kunci" },
         ],
       }]}
     >

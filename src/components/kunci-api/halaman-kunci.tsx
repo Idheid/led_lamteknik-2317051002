@@ -28,7 +28,7 @@ export async function HalamanKunci({ pengguna, remah }: { pengguna: Pengguna; re
         judul={admin ? "Kunci API cadangan" : "Kunci API Gemini"}
         deskripsi={admin
           ? "Kunci milik tim pengembang yang dipakai semua prodi setelah kunci penanggung jawab habis (bila diizinkan di pengaturan Model LLM)."
-          : "Kunci berlaku untuk seluruh proyek LED prodi Anda. Dipakai untuk mengindeks dokumen dan menyusun narasi."}
+          : "Kunci berlaku untuk seluruh proyek LED prodi Anda. Urutan pemakaian: kunci prodi dulu (berurutan); bila semuanya habis, sistem memakai kunci cadangan super admin/fakultas bila diizinkan."}
         remah={remah}
       />
       <Petunjuk

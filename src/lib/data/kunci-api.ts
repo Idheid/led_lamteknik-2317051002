@@ -32,8 +32,9 @@ export async function pengaturanLlm() {
 const skemaKunci = z.object({
   label: z.string().trim().min(1, "Label wajib diisi.").max(80, "Label terlalu panjang."),
   kunci: z.string().trim().min(20, "Kunci API terlalu pendek. Salin utuh dari Google AI Studio.").max(200, "Kunci API terlalu panjang.")
-    // format lama "AIza..." dan format baru "AQ.xxx" (memuat titik)
-    .regex(/^[A-Za-z0-9_.\-]+$/, "Kunci API hanya berisi huruf, angka, titik, garis bawah, atau tanda hubung."),
+    // format kunci Google bisa berubah ("AIza...", "AQ.xxx", ...): terima semua karakter ASCII yang terlihat;
+    // keabsahan kunci dipastikan lewat Uji koneksi, bukan lewat pola
+    .regex(/^[!-~]+$/, "Kunci API tidak boleh berisi spasi, baris baru, atau huruf non-ASCII. Salin ulang dari Google AI Studio."),
 });
 
 function pemilikDari(p: Pengguna) {
