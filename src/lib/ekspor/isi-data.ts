@@ -95,7 +95,7 @@ export function isiTabel(tbl: string, data: string[][]): string {
   const { awal, tr, akhir } = baris(tbl);
   const nomorKolom = (r: string) => {
     const t = sel(r).map(teksSel);
-    return t.length > 2 && t.every((x, i) => x === String(i + 1));
+    return t.length >= 2 && t.every((x, i) => x === String(i + 1));
   };
   const contoh = tr.map((r, i) => i > 0 && !nomorKolom(r) && /^(\d+\.?|…|\.{2,})$/.test(teksSel(sel(r)[0] ?? '')));
   const iContoh = contoh.indexOf(true);

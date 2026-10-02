@@ -325,3 +325,60 @@ daftar model di menu Model LLM, lalu Generate kriteria C.1 (±7 panggilan).
 ### Umpan balik pembimbing
 
 (review bersama pembimbing dan stakeholder setelah website jadi)
+
+## Perbaikan setelah iterasi 3 dan iterasi 4 — Ekspor Word (2–3 Oktober 2026, Claude Code)
+
+### Perbaikan setelah iterasi 3
+
+- Kunci API menerima semua karakter ASCII yang terlihat (format kunci Google baru `AQ.…` memuat titik, dan format
+  mendatang bisa memuat simbol lain); hanya spasi, baris baru, dan huruf non-ASCII yang ditolak. Keabsahan kunci
+  dipastikan lewat Uji koneksi.
+- Satu menu **Kunci API prodi** (`/proyek/kunci-api`); alamat lama per proyek diarahkan ke sana. Sidebar di dalam
+  proyek punya grup **Prodi** (Semua proyek LED, Kunci API prodi) supaya bisa kembali ke daftar proyek.
+- Keputusan Adrianne: urutan kunci tetap **kunci prodi → kunci cadangan super admin** (super admin = fakultas setelah
+  serah terima); tidak ada lapisan kunci fakultas terpisah.
+
+### Iterasi 4 — yang dibuat
+
+| Kode | Implementasi |
+| --- | --- |
+| Penyiapan template | `src/lib/ekspor/template.ts` (pengembangan `docs/spike-ekspor/siapkan-template.py`): titik temu template ↔ instrumen adalah **teks instruksi** (kunci 110 huruf karena banyak instruksi berawalan sama); bila template tidak punya paragraf instruksi, judul bernomornya yang menjadi jangkar. Instruksi, catatan biru (termasuk sambungan baris "/ Magister …"), lanjutan instruksi yang terpecah, kotak teks, dan paragraf kosong diganti `{{kode}}`; instruksi yang bernomor (I./II.) dipertahankan sebagai judul singkat; sub-bagian yang tidak berlaku untuk jenjang dihapus beserta judulnya; pemisah halaman/bagian dipertahankan. Hasil: S1 106 placeholder + 15 dihapus, D3 101 + 20, S2 103 + 18, PPI 98 + 23, **0 tidak ditemukan**. Pemeriksaan cepat: `npx tsx scripts/cek-template-led.ts S1 [keluaran.docx]`. |
+| Template per versi | Super admin mengunggah template LEDPS (.docx) di halaman versi instrumen; sistem langsung melaporkan pemetaan per jenjang. Cadangan pengembangan: `TEMPLATE_LEDPS_PATH`. |
+| F-22 | Antrean `ekspor-word` (worker): template disiapkan, data proyek diisi, narasi Tiptap ditambal dengan `docx` `patchDocument` (`keepOriginalStyles`), berkas disimpan di `UPLOAD_DIR/ekspor`, diunduh lewat `/api/ekspor/[id]/berkas`. Halaman dihitung LibreOffice (`soffice --headless --convert-to pdf`, profil terpisah) lalu jumlah halaman PDF; ekspor > 150 halaman berstatus **ditahan** (tidak bisa diunduh). Tanpa LibreOffice jumlah halaman **diperkirakan** (kata/kata per halaman + baris tabel + gambar + 10 halaman tetap) dan ditandai perkiraan. |
+| F-23 | Halaman muka (program dan nama prodi, PT, UPPS, kota, tahun; catatan template dihapus), identitas pengusul (baris "Label: ……" diisi; nilai kosong ditulis "–" dan dilaporkan), tabel daftar prodi UPPS, identitas tim penyusun (blok Nama/NIDN/Jabatan/Tanggal per dosen, diperbanyak/dikurangi sesuai jumlah), Tabel 2.1 dan 2.2 dari menu baru **Tim penyusun**. Kata pengantar, ringkasan eksekutif, Bab III, dan Bab IV disusun paling akhir dari ringkasan analisis faktor dan SWOT semua kriteria (`perluRingkasanSemua`). Identitas prodi ditambah: kota, pejabat penandatangan SK pendirian/pembukaan, tahun pertama menerima mahasiswa, alamat. |
+| F-24 | Daftar isi template (field TOC) tetap; ditambah **Daftar Tabel** dan **Daftar Gambar** (field `TOC \f t` / `\f g`) dengan entri `TC` tersembunyi di setiap judul tabel/gambar; `settings.xml` diberi `updateFields` sehingga Word memperbarui semua daftar saat dibuka. |
+| Format | Paragraf rata kiri-kanan, Arial 11, spasi 1,15, indentasi kiri sama dengan instruksi yang digantikan; istilah asing miring; daftar berbutir/bernomor dengan indentasi gantung; tabel lebar penuh, baris judul tebal dan diulang di halaman berikut, judul di atas bernomor per bab (Bab II mulai Tabel 2.3 karena Tabel 2.1/2.2 sudah ada di template); gambar berkas asli, rasio asli, lebar maks. 17,1 cm (646 px), judul di bawah. Penanda sumber tidak ikut diekspor. |
+| Pemeriksaan | Ekspor ditolak bila ada bagian belum ditandai selesai, sub-bagian tanpa draf, penanda `[BELUM ADA BUKTI:`, tabel tanpa judul (paragraf judul tabel buatan sistem atau diawali "Tabel"), gambar tanpa judul, tim penyusun kosong, atau template belum ada. Peringatan (tidak menolak): identitas prodi kosong, tautan bukti Lampiran kosong, LibreOffice tidak tersedia, logo PT perlu diganti manual. |
+
+### Keputusan teknis dan asumsi
+
+1. **Kotak "Logo Perguruan Tinggi"** di halaman muka dibiarkan (perwajahan template tidak boleh diubah); penyusun
+   mengganti logo di Word. Diberi peringatan di hasil ekspor.
+2. **Catatan "Keterangan: 1) Lampirkan salinan …"** di identitas pengusul dipertahankan karena bagian formulir resmi
+   (rujukan nomor kaki).
+3. **Jumlah mahasiswa per prodi UPPS** di tabel identitas belum ada sumber datanya (ditulis "–").
+4. **Lampiran** diisi daftar tautan bukti sahih dari kolom tautan dokumen (U-02).
+5. Pemeriksaan teks memakai XML langsung (bukan pustaka DOM) agar bagian template yang tidak disentuh tetap identik.
+6. Bug yang ditemukan uji unit dan diperbaiki: Bab III sempat dianggap bab 2 (`'III'.startsWith('II')`); sel tabel
+   template yang hanya berisi node teks kosong tidak terisi.
+
+### Migrasi
+
+`prisma/migrations/20261003090000_iterasi4_ekspor`: `VersiInstrumen.templateLedLokasi/templateLedNama/templateLedLaporan`;
+`Ekspor` ditambah namaBerkas, ukuran, halamanPerkiraan, pesan, dibuatOlehId, updatedAt, status bawaan `antre`, lokasi opsional.
+
+### Versi pustaka baru
+
+jszip 3.10.2 (sebelumnya hanya dependensi tidak langsung `docx`).
+
+### Hasil pemeriksaan kriteria selesai
+
+| Kriteria | Cara diperiksa | Hasil |
+| --- | --- | --- |
+| Tidak ada instruksi template, catatan biru, atau kotak isian kosong yang tersisa | `tests/integrasi/ekspor.test.ts` (semua bagian disusun model tiruan, diekspor ke template asli, isi document.xml diperiksa) dan pemeriksaan struktur hasil | Lulus. Yang tersisa hanya kotak logo PT (sengaja) dan kotak tanda tangan tim (bagian formulir, tanggal sudah terisi) |
+| ≤ 150 halaman, justify, Arial 11, spasi 1,15, gaya judul template, gambar sama dengan unggahan, tabel berjudul di atas bernomor per bab, gambar berjudul di bawah | Uji integrasi (jc both, Arial, Tabel 2.3, Gambar 2.1, media PNG asli, TC/TOC) | Lulus. **Jumlah halaman masih perkiraan** karena LibreOffice belum terpasang di komputer pengembangan |
+| Pemeriksaan sebelum ekspor menolak bagian belum selesai, penanda belum ada bukti, tabel/gambar tanpa judul | `ekspor.test.ts` (domain dan integrasi) | Lulus |
+| Template per versi | `ekspor.test.ts`: unggah .docx, tolak berkas lain dan penanggung jawab, 0 sub-bagian tidak ditemukan untuk semua jenjang versi | Lulus |
+| `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus (75 uji unit, 27 uji integrasi) |
+
+Belum diperiksa: tampilan berkas di Microsoft Word secara visual (perlu dibuka manual) dan hitung halaman LibreOffice.

@@ -158,7 +158,9 @@ export function gantiTeks(xml: string, pola: RegExp, pengganti: (cocok: RegExpEx
     const a = pos;
     const b = pos + n.teks.length;
     pos = b;
-    if (b <= awal || a >= akhir || (a === b && !(a >= awal && a < akhir))) {
+    // node tersentuh: beririsan dengan kecocokan, atau (kecocokan kosong, mis. paragraf tanpa teks) memuat posisinya
+    const tersentuh = (a < akhir && b > awal) || (awal === akhir && a <= awal && awal <= b);
+    if (!tersentuh || (ditulis && a >= akhir)) {
       isiBaru.push(n.teks);
       continue;
     }

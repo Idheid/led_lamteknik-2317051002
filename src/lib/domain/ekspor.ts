@@ -13,8 +13,8 @@ export const LEBAR_GAMBAR_MAKS_PX = Math.round((17.1 / 2.54) * 96);
 /** Nomor bab untuk penomoran "Tabel 2.3" / "Gambar 2.1"; null untuk halaman awal dan lampiran (tanpa nomor bab). */
 export function nomorBab(bagianKode: string): number | null {
   if (bagianKode === 'I') return 1;
+  if (bagianKode === 'III') return 3; // dicek sebelum awalan "II"
   if (bagianKode.startsWith('II') || bagianKode.startsWith('C.')) return 2;
-  if (bagianKode === 'III') return 3;
   if (bagianKode === 'IV') return 4;
   return null;
 }

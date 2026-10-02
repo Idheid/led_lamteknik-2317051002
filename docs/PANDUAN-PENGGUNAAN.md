@@ -25,7 +25,9 @@ akun (pojok kiri bawah) → **Ganti kata sandi** (wajib mengisi kata sandi lama)
    - **Model cadangan**, dicoba berurutan bila kuota harian model narasi habis.
    - **Model embedding** (embedContent). Mengganti model embedding membuat semua dokumen diindeks ulang.
    - **Izinkan prodi memakai kunci cadangan super admin** setelah kunci prodi habis.
-5. **Kunci API cadangan** (opsional): tambahkan kunci dari project Google milik tim; dipakai semua prodi bila diizinkan.
+5. **Template LEDPS**: buka Instrumen → versi → **Unggah template .docx** (template LEDPS resmi LAM Teknik). Sistem
+   melaporkan berapa sub-bagian yang terpetakan per jenjang; "tidak ditemukan" harus kosong.
+6. **Kunci API cadangan** (opsional): tambahkan kunci dari project Google milik tim; dipakai semua prodi bila diizinkan.
 
 ### 2. Pekerjaan rutin
 
@@ -85,7 +87,20 @@ Langkah:
 6. Tandai **Selesai** per sub-bagian, atau **Tandai selesai** untuk seluruh kriteria setelah semua sub-bagian punya draf.
    Status kriteria (belum diisi, draf, disunting, selesai) tampil di sidebar dan Beranda.
 
-### 4. Bila kuota kunci habis
+### 4. Tim penyusun dan ekspor Word
+
+1. Menu **Tim penyusun**: isi dosen (urutan pertama = ketua) dan tenaga kependidikan beserta NIP/NIDN/NUPTK, jabatan,
+   dan deskripsi kerja. Data ini mengisi halaman Identitas Tim Penyusun serta Tabel 2.1 dan 2.2, dan tidak dikirim ke Gemini.
+2. Susun **Kata Pengantar dan Ringkasan Eksekutif** (Halaman awal), **Bab III**, dan **Bab IV** paling akhir, setelah
+   C.1–C.7 selesai, karena keempatnya merangkum seluruh kriteria.
+3. Menu **Ekspor Word**: selesaikan semua hal di daftar pemeriksaan (semua bagian ditandai selesai, tidak ada penanda
+   `[BELUM ADA BUKTI: …]`, setiap tabel punya judul di atasnya, setiap gambar punya judul), lalu klik **Ekspor ke Word**.
+4. Unduh berkas .docx, buka di Microsoft Word, pilih **Yes/Ya** saat diminta memperbarui field (daftar isi, tabel,
+   gambar), ganti kotak **Logo Perguruan Tinggi** dengan logo asli, periksa, lalu simpan.
+5. Berkas lebih dari 150 halaman **ditahan**: ringkas narasi (perhatikan peringatan panjang di panel pemeriksaan) lalu
+   ekspor ulang.
+
+### 5. Bila kuota kunci habis
 
 Gemini versi gratis membatasi jumlah permintaan per hari per project Google. Saat kuota habis:
 
@@ -93,7 +108,7 @@ Gemini versi gratis membatasi jumlah permintaan per hari per project Google. Saa
 - tambahkan kunci dari **project/akun Google lain** di menu Kunci API, penyusunan **lanjut otomatis** dari sub-bagian
   yang tertunda; atau tunggu reset kuota harian (sekitar pukul 14.00–15.00 WIB), sistem mencoba lagi sendiri.
 
-### 5. Data pribadi
+### 6. Data pribadi
 
 Sebelum konteks dikirim ke Gemini, NIDN/NIDK/NIP/NIM/NIK dan nama mahasiswa di tabel LKPS, jawaban penyusun, dan
 potongan dokumen disamarkan otomatis. Tetap hindari menulis data pribadi yang tidak perlu di jawaban penyusun.

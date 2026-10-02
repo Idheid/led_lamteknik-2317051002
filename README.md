@@ -3,7 +3,7 @@
 Website untuk membantu program studi menyusun draf Laporan Evaluasi Diri (LED) akreditasi LAM Teknik dengan LLM dan RAG.
 Skripsi Adrianne Julian, Ilmu Komputer Universitas Lampung.
 
-Status: **iterasi 3 selesai** (iterasi 1: login dua peran, UPPS/prodi/akun, versi instrumen dinamis, proyek LED,
+Status: **iterasi 4 selesai** (ekspor Word ke template LEDPS resmi); sebelumnya **iterasi 3** (iterasi 1: login dua peran, UPPS/prodi/akun, versi instrumen dinamis, proyek LED,
 Beranda, form per kriteria; iterasi 2: unggah LKPS Excel/PDF dan metrik butir angka, dokumen pendukung, worker
 pemrosesan dan embedding, pencarian gabungan, kunci API; iterasi 3: mesin penyusun narasi per kriteria/butir dengan
 antrean, editor, riwayat versi, pemeriksaan otomatis, rotasi kunci dan model). Rincian dan hasil uji:
@@ -20,13 +20,17 @@ docker compose up -d
 npm run db:migrate
 npm run db:seed
 npm run dev                 # http://localhost:3000, masuk dengan SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD
-npm run worker              # terminal kedua: membaca LKPS, memproses dokumen, menyusun narasi
+npm run worker              # terminal kedua: membaca LKPS, memproses dokumen, menyusun narasi, ekspor Word
 ```
 
 Pemeriksaan: `npm run lint`, `npm run typecheck`, `npm test` (uji integrasi memakai basis data `led_lamteknik_test`).
 
 Mencoba tanpa kunci Gemini: isi `EMBEDDING_PENYEDIA="uji"` dan `LLM_NARASI="uji"` di `.env` (untuk aplikasi dan worker).
 Narasi yang dihasilkan bertanda "[Mode uji]" dan bukan narasi asli; jangan dipakai di produksi.
+
+Ekspor Word butuh template LEDPS (unggah di menu Instrumen → versi, atau `TEMPLATE_LEDPS_PATH`). Untuk menghitung
+halaman secara tepat pasang LibreOffice (`winget install TheDocumentFoundation.LibreOffice`, atau isi `SOFFICE_PATH`);
+tanpa LibreOffice jumlah halaman diperkirakan.
 
 ## Isi
 

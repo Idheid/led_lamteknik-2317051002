@@ -1,7 +1,7 @@
 import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import JSZip from "jszip";
 import { MockLanguageModelV4 } from "ai/test";
@@ -12,7 +12,7 @@ import { buatProyek } from "@/lib/data/proyek";
 import { unggahDokumen, simpulGambar } from "@/lib/data/dokumen";
 import { tambahKunci } from "@/lib/data/kunci-api";
 import { drafBagian, mulaiGenerate, simpanSuntingan, tandaiBagianSelesai } from "@/lib/data/generate";
-import { berkasEkspor, daftarEkspor, mulaiEkspor, periksaEkspor, simpanTimPenyusun } from "@/lib/data/ekspor";
+import { berkasEkspor, daftarEkspor, infoTemplateLed, mulaiEkspor, periksaEkspor, simpanTimPenyusun, unggahTemplateLed } from "@/lib/data/ekspor";
 import { aturModelUji } from "@/lib/llm/narasi";
 import { prosesDokumen } from "@/lib/proses/dokumen";
 import { prosesTugasGenerate, urutanSubBagian } from "@/lib/proses/generate";
@@ -30,6 +30,7 @@ let pj: Pengguna;
 let pjLain: Pengguna;
 let proyekId: string;
 let gambarId: string;
+let admin: Pengguna;
 
 function modelTiruan(_k: string, kode: string) {
   return new MockLanguageModelV4({
@@ -62,7 +63,7 @@ before(async () => {
   await bersihkanDb();
   await imporSeed();
   aturModelUji(modelTiruan);
-  const admin = await buatSuperAdmin();
+  admin = await buatSuperAdmin();
   const upps = await simpanUpps(admin, { kode: "FT", nama: "Fakultas Teknik", perguruanTinggi: "Universitas Contoh", alamat: "Jl. Contoh No. 1" });
   const prodi = await simpanProdi(admin, {
     uppsId: upps.id, nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111",
@@ -184,4 +185,19 @@ test("F-22/F-23/F-24 berkas Word: instruksi, catatan, dan kotak isian hilang; da
   assert.ok(!/Sumber: /.test(teks), "penanda sumber tidak ikut diekspor");
   // sub-bagian khusus jenjang lain (PPI) tidak ada di LED Sarjana
   assert.ok(!/Program Profesi Insinyur \(DTPSPPI\)/.test(teks));
+});
+
+test("Template LEDPS per versi: super admin mengunggah .docx, laporan pemetaan per jenjang; berkas lain ditolak", { skip: lewati }, async () => {
+  const versi = await prisma.versiInstrumen.findFirstOrThrow();
+  await assert.rejects(unggahTemplateLed(admin, versi.id, { nama: "bukan.docx", isi: Buffer.from("bukan zip") }), GalatPengguna);
+  await assert.rejects(unggahTemplateLed(admin, versi.id, { nama: "template.pdf", isi: readFileSync(TEMPLATE) }), GalatPengguna);
+  await assert.rejects(unggahTemplateLed(pj, versi.id, { nama: "t.docx", isi: readFileSync(TEMPLATE) }), GalatAkses);
+  const laporan = await unggahTemplateLed(admin, versi.id, { nama: "Template LEDPS.docx", isi: readFileSync(TEMPLATE) });
+  for (const [jenjang, l] of Object.entries(laporan)) assert.deepEqual(l.tidakDitemukan, [], `semua sub-bagian ${jenjang} terpetakan`);
+  assert.ok(laporan.S1.placeholder >= 100);
+  const info = await infoTemplateLed(admin, versi.id);
+  assert.equal(info.nama, "Template LEDPS.docx");
+  // ekspor memakai template unggahan
+  const e = await mulaiEkspor(pj, proyekId);
+  assert.equal(await prosesEkspor(e.id), "siap");
 });

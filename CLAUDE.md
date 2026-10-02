@@ -189,6 +189,16 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 - Uji LLM memakai `aturModelUji` (`src/lib/llm/narasi.ts`) dengan `MockLanguageModelV4`; `GENERATE_JEDA_MAKS_MS=0`
   memendekkan jeda batas per menit di uji.
 
+## Struktur kode (setelah iterasi 4)
+
+- `src/lib/ekspor/`: `xml.ts` (pecah body, teks tanpa kotak, `gantiTeks` lintas run), `template.ts` (placeholder per
+  sub-bagian, hapus yang tidak berlaku, Daftar Tabel/Gambar, `updateFields`), `isi-data.ts` (halaman muka, identitas,
+  tim, Tabel 2.1/2.2), `word.ts` (Tiptap → docx; tabel/gambar bernomor per bab dengan field TC), `halaman.ts` (LibreOffice).
+- `src/lib/domain/ekspor.ts`: nomor bab, ukuran/skala gambar, judul tabel/gambar, pemeriksaan sebelum ekspor, perkiraan halaman.
+- `src/lib/proses/ekspor.ts` (worker, antrean `ekspor-word`), `src/lib/data/ekspor.ts` (tim penyusun, periksa/mulai/unduh
+  ekspor, unggah template per versi). Halaman `/proyek/[id]/tim`, `/proyek/[id]/ekspor`; unduh `/api/ekspor/[id]/berkas`;
+  unggah template `/api/admin/versi/[versiId]/template`. Cek pemetaan template: `npx tsx scripts/cek-template-led.ts S1`.
+
 ## Konvensi
 
 - Teks antarmuka, pesan galat, dan nama domain dalam **Bahasa Indonesia** (kode boleh campuran; ikuti istilah domain:

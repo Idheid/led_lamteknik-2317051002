@@ -107,4 +107,28 @@ Kriteria selesai:
 ## Setelah iterasi 4
 
 Pengujian sesuai rencana uji (black-box F-01–F-24, retrieval, kualitas narasi oleh penilai ahli, SUS). Usulan fitur
-tambahan U-01–U-09 menunggu keputusan Adrianne (lihat dokumen rencana).
+tambahan U-01–U-09 (lihat dokumen rencana) dan U-10 (di bawah) menunggu keputusan Adrianne.
+
+### Usulan U-10 — Bahan bersama UPPS/fakultas (diajukan 3 Oktober 2026, menunggu keputusan Adrianne)
+
+**Latar.** LED disusun per program studi, tetapi banyak bukti dan data berasal dari UPPS (fakultas) dan berlaku
+untuk semua prodi di bawahnya: VMTS UPPS dan Renstra fakultas, SK struktur organisasi dan tata kelola, laporan
+keuangan dan biaya operasional, sarana-prasarana dan K3L, dokumen SPMI dan audit mutu internal. Saat ini setiap
+penanggung jawab prodi harus mengunggah dokumen yang sama berulang kali, sehingga isinya bisa berbeda antarprodi
+dan kuota embedding terpakai berulang.
+
+**Usulan.** Super admin (fakultas, setelah serah terima) mengunggah **bahan bersama UPPS** satu kali di menu baru
+"Bahan bersama UPPS". Dokumen diproses sekali (ekstraksi, potongan, embedding) dan otomatis ikut dicari saat
+menyusun narasi semua prodi di UPPS itu, dengan penanda sumber berbeda (mis. `U3`) supaya penyusun tahu bukti
+berasal dari fakultas. Opsional: jawaban bersama UPPS per sub-bagian (mis. C.2 tata kelola, C.5 sarana) yang
+otomatis menjadi sumber tambahan di prodi.
+
+**Ruang lingkup teknis.**
+- Skema: `Dokumen.proyekId` menjadi opsional + `uppsId` (dokumen milik UPPS), atau tabel `DokumenUpps` terpisah.
+- Pencarian (`cariPotongan`): gabungkan potongan proyek + potongan UPPS prodi; tetap per sub-bagian/kriteria.
+- Daftar cek dokumen yang diharapkan: dokumen UPPS dihitung terpenuhi untuk semua prodi.
+- Akses: hanya super admin yang mengunggah/menghapus; penanggung jawab hanya melihat dan memakai.
+- Embedding memakai kunci cadangan super admin (bukan kunci prodi).
+
+**Dampak.** Mengurangi kerja berulang dan perbedaan data antarprodi, menghemat kuota, dan memperkuat peran
+fakultas sebagai pengelola mutu. Perkiraan kerja ±1 iterasi kecil (skema, pencarian, UI, uji).
