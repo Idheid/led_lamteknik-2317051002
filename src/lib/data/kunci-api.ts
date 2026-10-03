@@ -167,6 +167,25 @@ export async function penyediaUntukProdi(prodiId: string): Promise<PenyediaTerpi
   return { penyedia: penyediaGemini(dekripsi(asli.kunciTerenkripsi), atur.modelEmbedding), kunciId: k.id };
 }
 
+/** U-10: penyedia embedding untuk bahan bersama UPPS: hanya kunci cadangan super admin. */
+export async function penyediaUntukUpps(): Promise<PenyediaTerpilih> {
+  if (pakaiPenyediaUji()) return { penyedia: penyediaUji(), kunciId: null };
+  const atur = await pengaturanLlm();
+  const semua = await prisma.kunciAPI.findMany({ where: { pemilik: "super_admin" } });
+  const domain = semua.map(keDomain);
+  const sekarang = new Date();
+  const k = pilihKunci(domain, sekarang, { pakaiCadanganAdmin: true });
+  if (!k) {
+    throw new GalatTanpaKunci(
+      domain.length === 0
+        ? "Bahan bersama UPPS diindeks dengan kunci cadangan super admin. Tambahkan kunci di menu Kunci API cadangan."
+        : pesanKunciHabis(domain, sekarang),
+    );
+  }
+  const asli = semua.find((x) => x.id === k.id)!;
+  return { penyedia: penyediaGemini(dekripsi(asli.kunciTerenkripsi), atur.modelEmbedding), kunciId: k.id };
+}
+
 /** Model embedding yang berlaku sekarang (untuk menyaring potongan saat pencarian). */
 export async function modelEmbeddingAktif(): Promise<string> {
   if (pakaiPenyediaUji()) return penyediaUji().model;

@@ -199,6 +199,14 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
   ekspor, unggah template per versi). Halaman `/proyek/[id]/tim`, `/proyek/[id]/ekspor`; unduh `/api/ekspor/[id]/berkas`;
   unggah template `/api/admin/versi/[versiId]/template`. Cek pemetaan template: `npx tsx scripts/cek-template-led.ts S1`.
 
+## Struktur kode (setelah U-10)
+
+- `Dokumen` milik proyek **atau** UPPS (CHECK constraint). Bahan bersama UPPS: `unggahDokumenUpps`/`daftarDokumenUpps`
+  (`src/lib/data/dokumen.ts`), halaman `/admin/bahan-upps`; embedding dengan `penyediaUntukUpps` (kunci super admin);
+  pencarian menggabungkan dokumen proyek + UPPS prodi; kode sumber prompt `U1…` untuk bahan bersama.
+- Proyek: `ambilProyekUbah` menolak perubahan pada proyek diarsipkan (`diarsipkanPada`); `ubahNamaProyek`,
+  `aturArsipProyek`, `hapusProyek` (konfirmasi nama, berkas di disk ikut dihapus).
+
 ## Konvensi
 
 - Teks antarmuka, pesan galat, dan nama domain dalam **Bahasa Indonesia** (kode boleh campuran; ikuti istilah domain:

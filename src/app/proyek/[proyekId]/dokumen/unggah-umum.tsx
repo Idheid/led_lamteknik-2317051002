@@ -8,7 +8,7 @@ import { UnggahBerkas } from "@/components/unggah-berkas";
 
 export const TERIMA_DOKUMEN = ".pdf,.docx,.png,.jpg,.jpeg,.gif";
 
-export function UnggahDokumenUmum({ proyekId, pilihan }: { proyekId: string; pilihan: { kode: string; label: string }[] }) {
+export function UnggahDokumenUmum({ proyekId, pilihan, url }: { proyekId?: string; pilihan: { kode: string; label: string }[]; url?: string }) {
   const [sub, setSub] = useState("umum");
   const [tautan, setTautan] = useState("");
   return (
@@ -29,7 +29,7 @@ export function UnggahDokumenUmum({ proyekId, pilihan }: { proyekId: string; pil
         <FieldDescription>Tautan penyimpanan awan untuk lampiran LED.</FieldDescription>
       </Field>
       <UnggahBerkas
-        url={`/api/proyek/${proyekId}/dokumen`}
+        url={url ?? `/api/proyek/${proyekId}/dokumen`}
         accept={TERIMA_DOKUMEN}
         multiple
         label="Pilih dokumen"

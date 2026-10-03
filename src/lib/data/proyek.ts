@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { GalatAkses, GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/lib/akses";
 import { catatAktivitas } from "@/lib/data/log";
+import { hapusBerkas } from "@/lib/penyimpanan";
 import { berlakuUntukJenjang } from "@/lib/domain/instrumen";
 import { skemaJawabanForm, skemaProyek, type MasukanProyek } from "@/lib/validasi";
 
@@ -14,7 +15,7 @@ export async function daftarProyek(p: Pengguna) {
   const prodiId = pastikanPenanggungJawab(p);
   return prisma.proyekLED.findMany({
     where: { prodiId },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ diarsipkanPada: { sort: "desc", nulls: "first" } }, { createdAt: "desc" }],
     include: { versi: { select: { kode: true, nama: true } }, prodi: { select: { nama: true } } },
   });
 }
@@ -64,8 +65,61 @@ export async function ambilProyek(p: Pengguna, proyekId: string) {
   return proyek;
 }
 
-export async function ubahTsProyek(p: Pengguna, proyekId: string, tsTahunMulai: number) {
+/** Proyek yang diarsipkan hanya bisa dibaca (dan diekspor). */
+export function pastikanBisaDiubah(proyek: { diarsipkanPada: Date | null }) {
+  if (proyek.diarsipkanPada) {
+    throw new GalatPengguna("Proyek ini diarsipkan (hanya baca). Aktifkan kembali dari Beranda proyek untuk mengubahnya.");
+  }
+}
+
+/** Ambil proyek untuk diubah: milik prodi pengguna dan tidak diarsipkan. */
+export async function ambilProyekUbah(p: Pengguna, proyekId: string) {
   const proyek = await ambilProyek(p, proyekId);
+  pastikanBisaDiubah(proyek);
+  return proyek;
+}
+
+export async function ubahNamaProyek(p: Pengguna, proyekId: string, nama: string) {
+  const proyek = await ambilProyekUbah(p, proyekId);
+  const baru = skemaProyek.shape.nama.parse(nama);
+  await prisma.proyekLED.update({ where: { id: proyek.id }, data: { nama: baru } });
+  await catatAktivitas(p, "ubah_nama", "proyek", proyek.id, { lama: proyek.nama, baru });
+}
+
+/** Arsipkan proyek periode lama (tetap tersimpan sebagai rujukan) atau aktifkan kembali. */
+export async function aturArsipProyek(p: Pengguna, proyekId: string, arsip: boolean) {
+  const proyek = await ambilProyek(p, proyekId);
+  if (arsip) {
+    const aktif = await prisma.tugasGenerate.count({ where: { proyekId: proyek.id, status: { in: ["antre", "berjalan", "tertunda"] } } });
+    if (aktif) throw new GalatPengguna("Masih ada penyusunan berjalan. Tunggu selesai atau batalkan dulu.");
+  }
+  await prisma.proyekLED.update({ where: { id: proyek.id }, data: { diarsipkanPada: arsip ? new Date() : null } });
+  await catatAktivitas(p, arsip ? "arsipkan" : "aktifkan", "proyek", proyek.id, { nama: proyek.nama });
+}
+
+/**
+ * Hapus proyek beserta seluruh isinya (draf, riwayat versi, LKPS, dokumen, ekspor) dan berkasnya di disk. Untuk
+ * proyek yang salah dibuat; proyek periode lama sebaiknya diarsipkan. Wajib mengetik ulang nama proyek.
+ */
+export async function hapusProyek(p: Pengguna, proyekId: string, konfirmasiNama: string) {
+  const proyek = await ambilProyek(p, proyekId);
+  if (konfirmasiNama.trim() !== proyek.nama) throw new GalatPengguna("Nama proyek yang diketik tidak sama. Proyek tidak dihapus.");
+  const aktif = await prisma.tugasGenerate.count({ where: { proyekId: proyek.id, status: { in: ["antre", "berjalan", "tertunda"] } } });
+  if (aktif) throw new GalatPengguna("Masih ada penyusunan berjalan. Batalkan dulu sebelum menghapus proyek.");
+  const [dokumen, lkps, ekspor] = await Promise.all([
+    prisma.dokumen.findMany({ where: { proyekId: proyek.id }, select: { lokasi: true } }),
+    prisma.berkasLKPS.findMany({ where: { proyekId: proyek.id }, select: { lokasi: true } }),
+    prisma.ekspor.findMany({ where: { proyekId: proyek.id, lokasi: { not: null } }, select: { lokasi: true } }),
+  ]);
+  await prisma.proyekLED.delete({ where: { id: proyek.id } });
+  for (const l of [...dokumen, ...lkps, ...ekspor].map((x) => x.lokasi).filter((x): x is string => Boolean(x))) {
+    await hapusBerkas(l).catch(() => undefined);
+  }
+  await catatAktivitas(p, "hapus", "proyek", proyek.id, { nama: proyek.nama, dokumen: dokumen.length, lkps: lkps.length });
+}
+
+export async function ubahTsProyek(p: Pengguna, proyekId: string, tsTahunMulai: number) {
+  const proyek = await ambilProyekUbah(p, proyekId);
   const ts = skemaProyek.shape.tsTahunMulai.parse(tsTahunMulai);
   await prisma.proyekLED.update({ where: { id: proyek.id }, data: { tsTahunMulai: ts } });
   await catatAktivitas(p, "ubah_ts", "proyek", proyek.id, { ts });
@@ -113,7 +167,7 @@ export async function halamanBagian(p: Pengguna, proyekId: string, kodeBagian: s
 
 export async function simpanJawaban(p: Pengguna, masukan: { proyekId: string; subBagianKode: string; isi: string }) {
   const data = skemaJawabanForm.parse(masukan);
-  const proyek = await ambilProyek(p, data.proyekId);
+  const proyek = await ambilProyekUbah(p, data.proyekId);
   const sub = await prisma.subBagian.findFirst({ where: { kode: data.subBagianKode, bagian: { versiId: proyek.versiId } } });
   if (!sub) throw new GalatPengguna("Sub-bagian tidak ada di versi instrumen proyek ini.");
   return prisma.jawabanForm.upsert({

@@ -11,6 +11,7 @@ import { Petunjuk } from "@/components/petunjuk";
 import { LencanaProses, PemantauProses } from "@/components/status-proses";
 import { STATUS_BERJALAN } from "@/lib/tampil";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AksiDokumen } from "./aksi-dokumen";
@@ -104,6 +105,7 @@ export default async function HalamanDokumen({ params }: PageProps<"/proyek/[pro
                         {d.jenis === "gambar" ? <FileImage className="size-4 shrink-0" aria-hidden /> : <FileText className="size-4 shrink-0" aria-hidden />}
                         <span className="truncate">{d.namaBerkas}</span>
                       </a>
+                      {d.bersama && <Badge variant="secondary" className="mt-1">Bahan bersama fakultas</Badge>}
                       {d.judul && <div className="text-xs">Judul: {d.judul}</div>}
                       {d.dokumenDiharapkan && <div className="text-xs text-muted-foreground">Memenuhi: {d.dokumenDiharapkan.nama}</div>}
                       <div className="text-xs text-muted-foreground">{d.jenis.toUpperCase()} · {formatUkuran(d.ukuran)} · {fmtWaktu.format(d.createdAt)}</div>
@@ -116,7 +118,7 @@ export default async function HalamanDokumen({ params }: PageProps<"/proyek/[pro
                       {d.tautanBukti ? <a href={d.tautanBukti} target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">{d.tautanBukti}</a> : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="pr-4 text-right">
-                      <AksiDokumen proyekId={proyekId} id={d.id} nama={d.namaBerkas} jenis={d.jenis} judul={d.judul} tautanBukti={d.tautanBukti} />
+                      {!d.bersama && <AksiDokumen proyekId={proyekId} id={d.id} nama={d.namaBerkas} jenis={d.jenis} judul={d.judul} tautanBukti={d.tautanBukti} />}
                     </TableCell>
                   </TableRow>
                 ))}

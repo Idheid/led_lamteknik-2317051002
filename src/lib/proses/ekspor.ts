@@ -65,7 +65,8 @@ export async function siapkanTemplate(asli: Buffer, sub: SubTemplate[]): Promise
   const doc = zip.file("word/document.xml");
   const set = zip.file("word/settings.xml");
   if (!doc) throw new Error("Berkas template bukan dokumen Word (.docx) yang sah.");
-  const h = siapkanDokumen(await doc.async("string"), sub);
+  const num = zip.file("word/numbering.xml");
+  const h = siapkanDokumen(await doc.async("string"), sub, num ? await num.async("string") : "");
   zip.file("word/document.xml", h.xml);
   if (set) zip.file("word/settings.xml", aktifkanPerbaruiField(await set.async("string")));
   return { zip, indentasi: h.indentasi, laporan: h.laporan };
@@ -146,7 +147,7 @@ export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
     const v = versi.find((x) => x.id === d.versiAktifId);
     if (v) isiSub.set(d.subBagianId, bacaDokumen(v.isi));
   }
-  const dokumen = await prisma.dokumen.findMany({ where: { proyekId }, select: { id: true, lokasi: true, jenis: true, judul: true, namaBerkas: true, tautanBukti: true } });
+  const dokumen = await prisma.dokumen.findMany({ where: { OR: [{ proyekId }, { uppsId: proyek.prodi.uppsId }] }, select: { id: true, lokasi: true, jenis: true, judul: true, namaBerkas: true, tautanBukti: true } });
   const ctx = konteksBaru(async (id) => {
     const d = dokumen.find((x) => x.id === id && x.jenis === "gambar");
     return d ? { data: await bacaBerkas(d.lokasi) } : null;

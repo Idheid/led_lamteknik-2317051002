@@ -382,3 +382,45 @@ jszip 3.10.2 (sebelumnya hanya dependensi tidak langsung `docx`).
 | `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus (75 uji unit, 27 uji integrasi) |
 
 Belum diperiksa: tampilan berkas di Microsoft Word secara visual (perlu dibuka manual) dan hitung halaman LibreOffice.
+
+## Setelah iterasi 4 — U-10, pengelolaan proyek, LibreOffice (3 Oktober 2026, Claude Code)
+
+### U-10 Bahan bersama UPPS
+
+- `Dokumen` dimiliki tepat satu: proyek (`proyekId`) **atau** UPPS (`uppsId`); dijaga CHECK constraint di basis data
+  (migrasi `20261003120000_u10_bahan_bersama_upps`).
+- Super admin mengunggah di menu **Bahan bersama UPPS** (`/admin/bahan-upps`, rute `/api/admin/upps/[uppsId]/dokumen`).
+  Dokumen diproses sekali dan di-embedding dengan **kunci cadangan super admin** (`penyediaUntukUpps`), bukan kunci prodi.
+- Pencarian gabungan memasukkan potongan bahan bersama UPPS prodi (`HasilCari.bersama`); di prompt diberi kode
+  **U1, U2, …** (dokumen proyek tetap D1, D2, …) dan legenda "Bahan bersama UPPS", sehingga pemeriksaan sumber mengenalnya.
+- Penanggung jawab melihat bahan bersama di menu Dokumen (lencana "Bahan bersama fakultas", hanya baca, bisa dibuka
+  dan disisipkan gambarnya); bahan bersama ikut memenuhi daftar cek dokumen yang diharapkan dan masuk Lampiran
+  (tautan bukti) serta gambar ekspor. Prodi di UPPS lain tidak melihatnya.
+
+### Pengelolaan proyek
+
+- Proyek selalu milik prodi akun (diambil dari sesi); nama proyek hanya label. Formulir proyek baru dan daftar proyek
+  kini menampilkan prodinya dengan jelas.
+- **Ubah nama**, **Arsipkan / Aktifkan kembali**, dan **Hapus proyek** (wajib mengetik ulang nama; menghapus draf,
+  riwayat, LKPS, dokumen, ekspor beserta berkasnya) di kartu Pengaturan proyek, Beranda.
+- Keputusan: LED periode lama **diarsipkan, tidak dihapus**, karena menjadi rujukan akreditasi berikutnya (siklus
+  ±5 tahun) dan jejak mutu prodi. Proyek arsip hanya baca (generate, sunting, unggah, jawaban, tim ditolak) tetapi
+  tetap bisa dibuka dan diekspor. Hapus hanya untuk proyek yang salah dibuat (migrasi `20261003130000_arsip_proyek`).
+
+### LibreOffice
+
+- LibreOffice 26.8.0 dipasang di komputer pengembangan dari installer MSI resmi (tanda tangan Authenticode The
+  Document Foundation diverifikasi; winget gagal mengunduh karena koneksi ke server pengalih diblokir, jadi dipakai
+  mirror resmi). Jumlah halaman ekspor kini **dihitung**, bukan diperkirakan (uji: 23 halaman untuk data uji).
+- Pratinjau PDF hasil ekspor memperlihatkan narasi di bawah butir bernomor "I." menjorok lebih sedikit daripada "II.";
+  penyebabnya indentasi berasal dari definisi penomoran (`numbering.xml`), bukan paragraf. Diperbaiki: indentasi
+  placeholder dibaca dari level penomoran (`bacaIndentasiPenomoran`, `indentEfektif`).
+
+### Hasil pemeriksaan
+
+| Hal | Cara diperiksa | Hasil |
+| --- | --- | --- |
+| U-10: unggah oleh super admin, dicari prodi di UPPS yang sama, tidak oleh UPPS lain, kode U1, daftar cek, hanya baca | `tests/integrasi/bahan-upps.test.ts`, halaman `/admin/bahan-upps` | Lulus |
+| Ubah nama, arsip hanya baca, aktifkan kembali, hapus dengan konfirmasi, bahan UPPS tidak ikut terhapus | `bahan-upps.test.ts`, Beranda di browser | Lulus |
+| Hitung halaman LibreOffice dan tampilan hasil | `ekspor.test.ts` + konversi PDF dan pratinjau halaman | Lulus (23 halaman, dihitung) |
+| `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus |

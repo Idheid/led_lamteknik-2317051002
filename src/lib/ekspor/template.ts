@@ -1,5 +1,5 @@
 import {
-  adaKotak, adaSectPr, bernomor, gabungBody, gaya, indentKiri, normal, PARAGRAF_PEMISAH_HALAMAN, paragrafPlaceholder,
+  bacaIndentasiPenomoran, adaKotak, adaSectPr, bernomor, gabungBody, gaya, indentEfektif, normal, PARAGRAF_PEMISAH_HALAMAN, paragrafPlaceholder,
   pecahBody, pemisahHalaman, setelTeks, teksElemen, teksKotak, type Elemen,
 } from './xml';
 
@@ -110,9 +110,10 @@ interface Rencana {
 }
 
 /** Siapkan document.xml: placeholder per sub-bagian, hapus yang tidak berlaku, tambahkan Daftar Tabel/Gambar. */
-export function siapkanDokumen(documentXml: string, sub: SubTemplate[]): { xml: string; indentasi: Record<string, number>; laporan: LaporanTemplate } {
+export function siapkanDokumen(documentXml: string, sub: SubTemplate[], numberingXml = ''): { xml: string; indentasi: Record<string, number>; laporan: LaporanTemplate } {
   const { awal, elemen, akhir } = pecahBody(documentXml);
   const info = elemen.map(infoElemen);
+  const penomoran = bacaIndentasiPenomoran(numberingXml);
   const laporan: LaporanTemplate = { placeholder: [], dihapus: [], tidakDitemukan: [] };
   const rencana: Rencana[] = [];
   let posisi = 0;
@@ -166,7 +167,8 @@ export function siapkanDokumen(documentXml: string, sub: SubTemplate[]): { xml: 
       j += 1;
       if (x.sect) break;
     }
-    const indent = indentKiri(elemen[jangkar].xml) || (jangkarBernomor || judulSaja.has(s.kode) ? 720 : 0);
+    // narasi sejajar dengan teks judul/instruksi yang digantikan (indentasi bisa berasal dari definisi penomoran)
+    const indent = indentEfektif(elemen[jangkar].xml, penomoran) || (jangkarBernomor || judulSaja.has(s.kode) ? 720 : 0);
     rencana.push({ kode: s.kode, mulai, akhir: j, jangkarBernomor, judulSaja: judulSaja.has(s.kode), berlaku: s.berlaku, judul: s.judul, indent });
     posisi = j;
   }

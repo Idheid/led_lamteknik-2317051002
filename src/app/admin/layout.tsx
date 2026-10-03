@@ -9,6 +9,7 @@ const MENU: GrupNav[] = [
       { judul: "Ringkasan", href: "/admin", ikon: "dasbor", persis: true },
       { judul: "Instrumen", href: "/admin/instrumen", ikon: "instrumen" },
       { judul: "Prodi dan UPPS", href: "/admin/prodi", ikon: "prodi" },
+      { judul: "Bahan bersama UPPS", href: "/admin/bahan-upps", ikon: "dokumen" },
       { judul: "Akun", href: "/admin/akun", ikon: "akun" },
       { judul: "Model LLM", href: "/admin/model", ikon: "model" },
       { judul: "Kunci API cadangan", href: "/admin/kunci-api", ikon: "kunci" },

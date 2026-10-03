@@ -27,7 +27,10 @@ akun (pojok kiri bawah) → **Ganti kata sandi** (wajib mengisi kata sandi lama)
    - **Izinkan prodi memakai kunci cadangan super admin** setelah kunci prodi habis.
 5. **Template LEDPS**: buka Instrumen → versi → **Unggah template .docx** (template LEDPS resmi LAM Teknik). Sistem
    melaporkan berapa sub-bagian yang terpetakan per jenjang; "tidak ditemukan" harus kosong.
-6. **Kunci API cadangan** (opsional): tambahkan kunci dari project Google milik tim; dipakai semua prodi bila diizinkan.
+6. **Bahan bersama UPPS**: unggah sekali dokumen fakultas yang berlaku untuk semua prodi (VMTS UPPS dan Renstra,
+   SK struktur organisasi, keuangan, sarana-prasarana dan K3L, SPMI dan audit mutu). Prodi di UPPS itu otomatis
+   memakainya saat menyusun narasi (kode sumber U1, U2, …). Bahan ini diindeks dengan kunci cadangan super admin.
+7. **Kunci API cadangan** (opsional): tambahkan kunci dari project Google milik tim; dipakai semua prodi bila diizinkan.
 
 ### 2. Pekerjaan rutin
 
@@ -50,13 +53,16 @@ akun (pojok kiri bawah) → **Ganti kata sandi** (wajib mengisi kata sandi lama)
    tempel, simpan, lalu **Uji koneksi**. Kunci berlaku untuk semua proyek prodi, disimpan terenkripsi, dan hanya
    4 karakter terakhir yang ditampilkan. Beranda proyek mengingatkan bila belum ada kunci yang bisa dipakai.
 3. **Buat proyek LED**: pilih versi instrumen dan tahun TS (misalnya 2025/2026). Label TS di LKPS dan instruksi
-   otomatis diganti tahun akademik nyata.
+   otomatis diganti tahun akademik nyata. Proyek selalu milik prodi akun Anda; nama proyek hanya label dan bisa
+   diubah di Beranda proyek → **Pengaturan proyek**. LED periode lama cukup **diarsipkan** (tetap tersimpan, hanya
+   baca); **Hapus proyek** hanya untuk proyek yang salah dibuat (wajib mengetik ulang nama proyek).
 
 ### 2. Bahan penyusunan
 
 1. **Data LKPS**: unggah LKPS dari template LAM Teknik 2025 (Excel). PDF bisa dipakai sebagai cadangan, tetapi tabelnya
    wajib dicek. Periksa tabel dan peringatan; koreksi sel yang salah. Metrik butir angka dihitung sistem, bukan LLM.
-2. **Dokumen**: unggah PDF/DOCX/gambar dan kaitkan ke kriteria/sub-bagian. Daftar cek menunjukkan dokumen yang
+2. **Dokumen**: unggah PDF/DOCX/gambar dan kaitkan ke kriteria/sub-bagian. Dokumen berlencana **Bahan bersama
+   fakultas** diunggah super admin untuk semua prodi di UPPS Anda; tidak perlu diunggah ulang. Daftar cek menunjukkan dokumen yang
    diharapkan per butir. Tunggu status **Siap dicari**.
 
 ### 3. Menyusun narasi per kriteria

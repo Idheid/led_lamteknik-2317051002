@@ -101,6 +101,7 @@ model Upps {
   perguruanTinggi String
   alamat    String?
   prodi     Prodi[]
+  dokumen   Dokumen[] // bahan bersama UPPS (U-10)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -274,6 +275,7 @@ model ProyekLED {
   tsTahunMulai Int           // 2025 berarti TS = 2025/2026
   anggaran    Json           // halaman per bagian dan pengaturan (salinan dari versi, bisa diubah)
   timPenyusun Json?          // untuk Tabel 2.1, 2.2 dan halaman identitas tim
+  diarsipkanPada DateTime?   // proyek periode lama: tetap tersimpan sebagai rujukan, hanya baca
   status      StatusKriteria[]
   berkasLkps  BerkasLKPS[]
   dokumen     Dokumen[]
@@ -360,8 +362,11 @@ model TabelLKPS {
 
 model Dokumen {
   id          String    @id @default(cuid())
-  proyekId    String
-  proyek      ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  // milik satu proyek LED, ATAU bahan bersama UPPS (U-10) yang dipakai semua prodi di UPPS itu
+  proyekId    String?
+  proyek      ProyekLED? @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  uppsId      String?
+  upps        Upps?     @relation(fields: [uppsId], references: [id], onDelete: Cascade)
   subBagianKode String? // dokumen bisa umum (null) atau khusus satu sub-bagian
   butirKode   String?
   namaBerkas  String
@@ -384,6 +389,7 @@ model Dokumen {
   updatedAt   DateTime  @default(now()) @updatedAt
 
   @@index([proyekId, subBagianKode])
+  @@index([uppsId])
 }
 
 model Potongan {

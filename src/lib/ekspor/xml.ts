@@ -120,6 +120,37 @@ export function indentKiri(xml: string): number {
   return m ? Number(m[1]) : 0;
 }
 
+/**
+ * Indentasi kiri teks setiap level penomoran (numbering.xml): numId → ilvl → twip. Dipakai bila paragraf bernomor
+ * tidak menulis indentasinya sendiri (indentasi datang dari definisi penomoran).
+ */
+export function bacaIndentasiPenomoran(numberingXml: string): Map<string, number> {
+  const abstrak = new Map<string, Map<string, number>>();
+  for (const a of numberingXml.matchAll(/<w:abstractNum\b[^>]*w:abstractNumId="(\d+)"[^>]*>([\s\S]*?)<\/w:abstractNum>/g)) {
+    const level = new Map<string, number>();
+    for (const l of a[2].matchAll(/<w:lvl\b[^>]*w:ilvl="(\d+)"[^>]*>([\s\S]*?)<\/w:lvl>/g)) {
+      const m = /<w:ind\b[^>]*\bw:(?:left|start)="(-?\d+)"/.exec(l[2]);
+      if (m) level.set(l[1], Number(m[1]));
+    }
+    abstrak.set(a[1], level);
+  }
+  const hasil = new Map<string, number>();
+  for (const n of numberingXml.matchAll(/<w:num\b[^>]*w:numId="(\d+)"[^>]*>[\s\S]*?<w:abstractNumId w:val="(\d+)"\/>[\s\S]*?<\/w:num>/g)) {
+    for (const [ilvl, ind] of abstrak.get(n[2]) ?? []) hasil.set(`${n[1]}:${ilvl}`, ind);
+  }
+  return hasil;
+}
+
+/** Indentasi efektif paragraf: dari pPr, atau dari level penomorannya. */
+export function indentEfektif(xml: string, penomoran?: Map<string, number>): number {
+  const sendiri = indentKiri(xml);
+  if (sendiri || !penomoran) return sendiri;
+  const ppr = pPr(xml);
+  const numId = /<w:numId w:val="(\d+)"/.exec(ppr)?.[1];
+  const ilvl = /<w:ilvl w:val="(\d+)"/.exec(ppr)?.[1] ?? '0';
+  return numId ? penomoran.get(`${numId}:${ilvl}`) ?? 0 : 0;
+}
+
 /** Huruf/angka saja, huruf kecil: untuk mencocokkan teks template dengan teks instrumen. */
 export function normal(s: string): string {
   return s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '');

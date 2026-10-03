@@ -23,6 +23,7 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DialogUbahTs } from "./dialog-ubah-ts";
+import { PengaturanProyek } from "./pengaturan-proyek";
 
 export const metadata: Metadata = { title: "Beranda" };
 
@@ -338,6 +339,18 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
           </Card>
         </div>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Pengaturan proyek</CardTitle>
+          <CardDescription>
+            Proyek selalu milik {proyek.prodi.nama}. LED periode lama sebaiknya diarsipkan (tetap tersimpan sebagai rujukan
+            akreditasi berikutnya); hapus hanya untuk proyek yang salah dibuat.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PengaturanProyek proyekId={proyek.id} nama={proyek.nama} diarsipkan={Boolean(proyek.diarsipkanPada)} />
+        </CardContent>
+      </Card>
     </>
   );
 }

@@ -30,7 +30,7 @@ async function main() {
   const zip = await JSZip.loadAsync(readFileSync(resolve(jalur)));
   const doc = await zip.file("word/document.xml")!.async("string");
   const t0 = Date.now();
-  const h = siapkanDokumen(doc, sub);
+  const h = siapkanDokumen(doc, sub, (await zip.file("word/numbering.xml")?.async("string")) ?? "");
   console.log(`Jenjang ${jenjang}: ${h.laporan.placeholder.length} placeholder, ${h.laporan.dihapus.length} dihapus, ${h.laporan.tidakDitemukan.length} tidak ditemukan (${Date.now() - t0} ms)`);
   console.log("Dihapus:", h.laporan.dihapus.join(", ") || "-");
   console.log("Tidak ditemukan:", h.laporan.tidakDitemukan.join(", ") || "-");

@@ -154,6 +154,7 @@ test("F-22/F-23/F-24 berkas Word: instruksi, catatan, dan kotak isian hilang; da
   const [x] = await daftarEkspor(pj, proyekId);
   assert.equal(x.status, "siap");
   assert.ok(x.jumlahHalaman && x.jumlahHalaman > 10 && x.jumlahHalaman <= 150, `halaman ${x.jumlahHalaman}`);
+  console.log(`[uji] ekspor ${x.jumlahHalaman} halaman (${x.halamanPerkiraan ? "perkiraan" : "dihitung LibreOffice"})`);
 
   const { isi } = await berkasEkspor(pj, e.id);
   await assert.rejects(berkasEkspor(pjLain, e.id), GalatAkses);

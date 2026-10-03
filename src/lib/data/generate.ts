@@ -5,7 +5,7 @@ import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { catatAktivitas } from "@/lib/data/log";
 import { ringkasanKunciProdi } from "@/lib/data/kunci-api";
-import { ambilProyek } from "@/lib/data/proyek";
+import { ambilProyek, ambilProyekUbah, pastikanBisaDiubah } from "@/lib/data/proyek";
 import {
   bacaDokumen, bandingkanTeks, periksaDokumen, teksDokumen, type DokTiptap, type HasilPemeriksaan, type RujukanPeriksa,
 } from "@/lib/domain/narasi";
@@ -23,7 +23,7 @@ export const STATUS_TUGAS_AKTIF = ["antre", "berjalan", "tertunda"];
 
 /** Mulai generate satu bagian (semua sub-bagian, urut IKU → LB/KEB → AF → SWOT) atau satu sub-bagian saja. */
 export async function mulaiGenerate(p: Pengguna, proyekId: string, bagianKode: string, subBagianKode?: string | null) {
-  const proyek = await ambilProyek(p, proyekId);
+  const proyek = await ambilProyekUbah(p, proyekId);
   const aktif = await prisma.tugasGenerate.findFirst({ where: { proyekId: proyek.id, status: { in: STATUS_TUGAS_AKTIF } } });
   if (aktif) {
     throw new GalatPengguna(`Masih ada penyusunan "${aktif.judul}" di antrean proyek ini. Tunggu selesai atau batalkan dulu.`);
@@ -199,7 +199,7 @@ export type DrafSubBagian = Awaited<ReturnType<typeof drafBagian>>[string];
 const skemaDok = z.object({ type: z.literal("doc"), content: z.array(z.record(z.string(), z.unknown())) });
 
 async function drafSubBagian(p: Pengguna, proyekId: string, subBagianKode: string) {
-  const proyek = await ambilProyek(p, proyekId);
+  const proyek = await ambilProyekUbah(p, proyekId);
   const sub = await prisma.subBagian.findFirst({ where: { kode: subBagianKode, bagian: { versiId: proyek.versiId } }, include: { bagian: true } });
   if (!sub) throw new GalatPengguna("Sub-bagian tidak ada di versi instrumen proyek ini.");
   return { proyek, sub };
@@ -253,19 +253,20 @@ export async function simpanSuntingan(p: Pengguna, proyekId: string, subBagianKo
   return { versiId: v.id, nomor: v.nomor, baru: !lanjutkan, pemeriksaan, disimpan: new Date().toISOString() };
 }
 
-async function versiMilik(p: Pengguna, versiId: string) {
+async function versiMilik(p: Pengguna, versiId: string, opsi: { ubah?: boolean } = {}) {
   const v = await prisma.versiDraf.findUnique({
     where: { id: versiId },
     include: { bagianDraf: { include: { subBagian: { include: { bagian: true } } } } },
   });
   if (!v) throw new GalatAkses("Versi tidak ditemukan.");
-  await ambilProyek(p, v.bagianDraf.proyekId);
+  const proyek = await ambilProyek(p, v.bagianDraf.proyekId);
+  if (opsi.ubah) pastikanBisaDiubah(proyek);
   return v;
 }
 
 /** Pulihkan versi lama: salinannya menjadi versi baru (riwayat tidak pernah ditimpa). */
 export async function pulihkanVersi(p: Pengguna, versiId: string) {
-  const v = await versiMilik(p, versiId);
+  const v = await versiMilik(p, versiId, { ubah: true });
   const terakhir = await prisma.versiDraf.findFirst({ where: { bagianDrafId: v.bagianDrafId }, orderBy: { nomor: "desc" } });
   const baru = await prisma.versiDraf.create({
     data: {
@@ -311,7 +312,7 @@ export async function tandaiSubBagianSelesai(p: Pengguna, proyekId: string, subB
 
 /** Tandai seluruh kriteria/bagian selesai: semua sub-bagian yang di-generate harus sudah punya draf. */
 export async function tandaiBagianSelesai(p: Pengguna, proyekId: string, bagianKode: string) {
-  const proyek = await ambilProyek(p, proyekId);
+  const proyek = await ambilProyekUbah(p, proyekId);
   const sub = (await subBagianProyek(proyek, bagianKode)).filter((s) => s.tipe !== "data" && s.tipe !== "otomatis");
   const draf = await prisma.bagianDraf.findMany({ where: { proyekId: proyek.id, subBagianId: { in: sub.map((s) => s.id) }, versiAktifId: { not: null } } });
   const kosong = sub.filter((s) => !draf.some((d) => d.subBagianId === s.id));

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/lib/aksi";
-import { buatProyek, simpanJawaban, ubahTsProyek } from "@/lib/data/proyek";
+import { aturArsipProyek, buatProyek, hapusProyek, simpanJawaban, ubahNamaProyek, ubahTsProyek } from "@/lib/data/proyek";
 import type { MasukanProyek, MasukanTimPenyusun } from "@/lib/validasi";
 import * as lkps from "@/lib/data/lkps";
 import * as dokumen from "@/lib/data/dokumen";
@@ -148,5 +148,25 @@ export async function aksiMulaiEkspor(proyekId: string) {
 export async function aksiHapusEkspor(proyekId: string, eksporId: string) {
   const r = await jalankanAksi((p) => ekspor.hapusEkspor(p, eksporId).then(() => null));
   revalidatePath(`/proyek/${proyekId}/ekspor`);
+  return r;
+}
+
+// ---------------------------------------------------------------- Pengelolaan proyek
+
+export async function aksiUbahNamaProyek(proyekId: string, nama: string) {
+  const r = await jalankanAksi((p) => ubahNamaProyek(p, proyekId, nama).then(() => null));
+  revalidatePath("/proyek", "layout");
+  return r;
+}
+
+export async function aksiArsipProyek(proyekId: string, arsip: boolean) {
+  const r = await jalankanAksi((p) => aturArsipProyek(p, proyekId, arsip).then(() => null));
+  revalidatePath("/proyek", "layout");
+  return r;
+}
+
+export async function aksiHapusProyek(proyekId: string, konfirmasiNama: string) {
+  const r = await jalankanAksi((p) => hapusProyek(p, proyekId, konfirmasiNama).then(() => null));
+  revalidatePath("/proyek", "layout");
   return r;
 }

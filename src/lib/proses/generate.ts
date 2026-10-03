@@ -118,10 +118,13 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   const kueri = [s.judul, instruksi.slice(0, 400), ...butir.flatMap((b) => [b.indikator, ...b.unsurSkor4])].join(". ").slice(0, 1500);
   const cari = await cariPotongan(penggunaSistem(proyek.prodiId), proyekId, kueri, { subBagianKode, k: 8 });
   catatan.push(...cari.catatan);
-  const potongan = cari.hasil.map((h, i) => {
-    const id = `D${i + 1}`;
+  // dokumen proyek D1, D2, ...; bahan bersama UPPS (U-10) U1, U2, ... supaya penyusun tahu bukti berasal dari fakultas
+  let nD = 0;
+  let nU = 0;
+  const potongan = cari.hasil.map((h) => {
+    const id = h.bersama ? `U${++nU}` : `D${++nD}`;
     const sumber = `${h.judul ?? h.namaBerkas}${h.halaman ? `, hlm. ${h.halaman}` : ""}`;
-    legenda[id] = `Dokumen: ${sumber}`;
+    legenda[id] = `${h.bersama ? "Bahan bersama UPPS" : "Dokumen"}: ${sumber}`;
     return { id, sumber, teks: samarkanTeks(h.teks) };
   });
 

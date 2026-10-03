@@ -33,6 +33,7 @@ export default async function HalamanDaftarProyek() {
           "Tambahkan kunci API Gemini di menu Kunci API bila belum ada (berlaku untuk semua proyek prodi).",
           "Buat proyek baru: pilih versi instrumen dan tahun TS.",
           "Buka proyek untuk mengunggah LKPS dan dokumen, lalu menyusun narasi per kriteria.",
+          "Nama proyek bisa diubah, dan proyek periode lama bisa diarsipkan, di Beranda proyek (Pengaturan proyek).",
         ]}
       />
       <div className="grid gap-6 xl:grid-cols-5">
@@ -54,6 +55,8 @@ export default async function HalamanDaftarProyek() {
                     </CardTitle>
                     <CardDescription className="flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">TS {formatTahunAkademik(x.tsTahunMulai)}</Badge>
+                      {x.diarsipkanPada && <Badge variant="outline">Diarsipkan</Badge>}
+                      <span>{x.prodi.nama} ·</span>
                       <span>{x.versi.nama}</span>
                     </CardDescription>
                   </CardHeader>
@@ -65,7 +68,10 @@ export default async function HalamanDaftarProyek() {
         <Card className="h-fit xl:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Proyek baru</CardTitle>
-            <CardDescription>Jenjang mengikuti prodi ({namaJenjang(prodi.jenjang)}). Tahun TS diusulkan dari tanggal hari ini.</CardDescription>
+            <CardDescription>
+              Program studi: <strong>{prodi.nama} ({namaJenjang(prodi.jenjang)})</strong>, otomatis dari akun Anda; proyek
+              tidak bisa dibuat untuk prodi lain. Nama proyek hanya label dan bisa diubah nanti. Tahun TS diusulkan dari tanggal hari ini.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <FormProyekBaru

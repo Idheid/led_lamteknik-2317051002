@@ -107,9 +107,9 @@ Kriteria selesai:
 ## Setelah iterasi 4
 
 Pengujian sesuai rencana uji (black-box F-01–F-24, retrieval, kualitas narasi oleh penilai ahli, SUS). Usulan fitur
-tambahan U-01–U-09 (lihat dokumen rencana) dan U-10 (di bawah) menunggu keputusan Adrianne.
+tambahan U-01–U-09 (lihat dokumen rencana) menunggu keputusan Adrianne; U-10 (di bawah) sudah dikerjakan.
 
-### Usulan U-10 — Bahan bersama UPPS/fakultas (diajukan 3 Oktober 2026, menunggu keputusan Adrianne)
+### Usulan U-10 — Bahan bersama UPPS/fakultas (diajukan dan disetujui Adrianne 3 Oktober 2026; sudah dikerjakan)
 
 **Latar.** LED disusun per program studi, tetapi banyak bukti dan data berasal dari UPPS (fakultas) dan berlaku
 untuk semua prodi di bawahnya: VMTS UPPS dan Renstra fakultas, SK struktur organisasi dan tata kelola, laporan

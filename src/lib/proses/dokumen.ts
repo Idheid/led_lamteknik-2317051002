@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { bacaBerkas } from "@/lib/penyimpanan";
 import { potongTeks } from "@/lib/domain/potong-teks";
 import { literalVektor } from "@/lib/llm/embedding";
-import { catatGalatKunci, GalatTanpaKunci, penyediaUntukProdi } from "@/lib/data/kunci-api";
+import { catatGalatKunci, GalatTanpaKunci, penyediaUntukProdi, penyediaUntukUpps } from "@/lib/data/kunci-api";
 
 /**
  * F-11: proses satu dokumen pendukung: ekstraksi teks (unpdf untuk PDF, mammoth untuk DOCX), pemotongan
@@ -56,7 +56,8 @@ export async function prosesDokumen(dokumenId: string): Promise<void> {
       });
       return;
     }
-    const terpilih = await penyediaUntukProdi(dok.proyek.prodiId);
+    // bahan bersama UPPS di-embedding dengan kunci cadangan super admin (bukan kunci salah satu prodi)
+    const terpilih = dok.proyek ? await penyediaUntukProdi(dok.proyek.prodiId) : await penyediaUntukUpps();
     kunciId = terpilih.kunciId;
     const vektor: number[][] = [];
     for (let i = 0; i < potongan.length; i += UKURAN_BATCH) {

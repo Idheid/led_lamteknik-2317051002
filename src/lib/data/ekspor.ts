@@ -4,7 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { GalatAkses, GalatPengguna, pastikanSuperAdmin, type Pengguna } from "@/lib/akses";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { catatAktivitas } from "@/lib/data/log";
-import { ambilProyek } from "@/lib/data/proyek";
+import { ambilProyek, ambilProyekUbah } from "@/lib/data/proyek";
 import { bacaBerkas, hapusBerkas, simpanBerkas } from "@/lib/penyimpanan";
 import { periksaSebelumEkspor, type HasilPeriksaEkspor } from "@/lib/domain/ekspor";
 import { KODE_JENJANG } from "@/lib/domain/instrumen";
@@ -25,7 +25,7 @@ export async function timPenyusun(p: Pengguna, proyekId: string) {
 }
 
 export async function simpanTimPenyusun(p: Pengguna, proyekId: string, masukan: MasukanTimPenyusun) {
-  const proyek = await ambilProyek(p, proyekId);
+  const proyek = await ambilProyekUbah(p, proyekId);
   const tim = skemaTimPenyusun.parse(masukan);
   await prisma.proyekLED.update({ where: { id: proyek.id }, data: { timPenyusun: tim as unknown as Prisma.InputJsonValue } });
   await catatAktivitas(p, "ubah_tim", "proyek", proyek.id, { dosen: tim.dosen.length, tendik: tim.tendik.length });
@@ -62,7 +62,7 @@ export async function periksaEkspor(p: Pengguna, proyekId: string): Promise<Peri
   if (tim.dosen.length === 0) hasil.galat.push("Tim penyusun (dosen) belum diisi di menu Tim penyusun.");
   const templateAda = Boolean(versi.templateLedLokasi || process.env.TEMPLATE_LEDPS_PATH);
   if (!templateAda) hasil.galat.push("Template LEDPS belum diunggah super admin untuk versi instrumen ini.");
-  const tautan = await prisma.dokumen.count({ where: { proyekId: proyek.id, tautanBukti: { not: null } } });
+  const tautan = await prisma.dokumen.count({ where: { OR: [{ proyekId: proyek.id }, { uppsId: proyek.prodi.uppsId }], tautanBukti: { not: null } } });
   if (tautan === 0) hasil.peringatan.push("Belum ada tautan bukti sahih (Lampiran). Isi tautan penyimpanan awan pada dokumen di menu Dokumen.");
   const libreOffice = lokasiSoffice() !== null;
   if (!libreOffice) hasil.peringatan.push("LibreOffice belum terpasang di server: jumlah halaman akan diperkirakan, bukan dihitung.");

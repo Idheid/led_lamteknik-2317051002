@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { GalatPengguna, type Pengguna } from "@/lib/akses";
-import { ambilProyek } from "@/lib/data/proyek";
+import { GalatAkses, GalatPengguna, pastikanSuperAdmin, type Pengguna } from "@/lib/akses";
+import { ambilProyek, ambilProyekUbah } from "@/lib/data/proyek";
 import { catatAktivitas } from "@/lib/data/log";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { bacaBerkas, hapusBerkas, simpanBerkas } from "@/lib/penyimpanan";
@@ -9,6 +9,8 @@ import { bacaBerkas, hapusBerkas, simpanBerkas } from "@/lib/penyimpanan";
 /**
  * F-10 dokumen pendukung per sub-bagian/butir (PDF, DOCX, gambar), F-12 gambar disimpan utuh.
  * Setiap dokumen bisa dikaitkan ke satu "dokumen yang diharapkan" (daftar cek) dan diberi tautan bukti sahih.
+ * U-10: dokumen juga bisa berupa bahan bersama UPPS (uppsId) yang diunggah super admin sekali dan dipakai semua
+ * prodi di UPPS itu (ikut dicari saat generate, memenuhi daftar cek). Penanggung jawab hanya bisa membacanya.
  */
 
 export const UKURAN_MAKS_DOKUMEN = 25 * 1024 * 1024;
@@ -63,11 +65,78 @@ async function periksaKaitan(versiId: string, jenjang: string, m: Pick<MasukanDo
   }
 }
 
-export async function unggahDokumen(p: Pengguna, proyekId: string, m: MasukanDokumen) {
-  const proyek = await ambilProyek(p, proyekId);
+/** Kaitan bahan bersama UPPS: kode sub-bagian dan dokumen yang diharapkan harus ada di salah satu versi aktif. */
+async function periksaKaitanUpps(m: Pick<MasukanDokumen, "subBagianKode" | "dokumenDiharapkanId">) {
+  if (m.subBagianKode) {
+    const ada = await prisma.subBagian.count({ where: { kode: m.subBagianKode, bagian: { versi: { aktif: true } } } });
+    if (!ada) throw new GalatPengguna("Sub-bagian tidak ada di versi instrumen yang aktif.");
+  }
+  if (m.dokumenDiharapkanId) {
+    const ada = await prisma.dokumenDiharapkan.count({ where: { id: m.dokumenDiharapkanId } });
+    if (!ada) throw new GalatPengguna("Dokumen yang diharapkan tidak dikenal.");
+  }
+}
+
+function periksaBerkas(m: MasukanDokumen) {
   if (m.isi.length === 0) throw new GalatPengguna(`Berkas "${m.nama}" kosong.`);
   if (m.isi.length > UKURAN_MAKS_DOKUMEN) throw new GalatPengguna(`Berkas "${m.nama}" lebih dari 25 MB.`);
-  const { jenis, mime } = kenaliJenis(m.nama, m.isi);
+  return kenaliJenis(m.nama, m.isi);
+}
+
+/** U-10: super admin mengunggah bahan bersama untuk satu UPPS (diproses sekali, dipakai semua prodinya). */
+export async function unggahDokumenUpps(p: Pengguna, uppsId: string, m: MasukanDokumen) {
+  pastikanSuperAdmin(p);
+  const upps = await prisma.upps.findUnique({ where: { id: uppsId } });
+  if (!upps) throw new GalatPengguna("UPPS tidak ditemukan.");
+  const { jenis, mime } = periksaBerkas(m);
+  await periksaKaitanUpps(m);
+  const tautanBukti = skemaTautan.parse(m.tautanBukti ?? "");
+  const simpan = await simpanBerkas(`upps/${upps.id}/dokumen`, m.nama, m.isi);
+  const d = await prisma.dokumen.create({
+    data: {
+      uppsId: upps.id,
+      subBagianKode: m.subBagianKode || null,
+      butirKode: m.butirKode || null,
+      dokumenDiharapkanId: m.dokumenDiharapkanId || null,
+      namaBerkas: m.nama.slice(0, 255),
+      judul: m.judul?.trim() || null,
+      mime, jenis,
+      lokasi: simpan.lokasi,
+      ukuran: simpan.ukuran,
+      hash: simpan.hash,
+      tautanBukti,
+      diunggahOlehId: p.id,
+    },
+  });
+  await catatAktivitas(p, "unggah", "dokumen_upps", d.id, { nama: d.namaBerkas, upps: upps.kode });
+  await kirimTugas(ANTREAN.dokumen, { dokumenId: d.id });
+  return d;
+}
+
+/** Pilihan sub-bagian (versi instrumen aktif) untuk mengaitkan bahan bersama UPPS. */
+export async function pilihanSubBagianUpps(p: Pengguna) {
+  pastikanSuperAdmin(p);
+  const sub = await prisma.subBagian.findMany({
+    where: { bagian: { versi: { aktif: true } }, tipe: { notIn: ["data", "otomatis"] } },
+    orderBy: [{ bagian: { urutan: "asc" } }, { urutan: "asc" }],
+    distinct: ["kode"],
+    select: { kode: true, label: true, judul: true, bagian: { select: { kode: true } } },
+  });
+  return sub.map((s) => ({ kode: s.kode, label: `${s.bagian.kode} ${s.label ? `${s.label} ` : ""}${s.judul}`.slice(0, 120) }));
+}
+
+export async function daftarDokumenUpps(p: Pengguna, uppsId: string) {
+  pastikanSuperAdmin(p);
+  return prisma.dokumen.findMany({
+    where: { uppsId },
+    orderBy: { createdAt: "desc" },
+    include: { dokumenDiharapkan: { select: { id: true, nama: true } } },
+  });
+}
+
+export async function unggahDokumen(p: Pengguna, proyekId: string, m: MasukanDokumen) {
+  const proyek = await ambilProyekUbah(p, proyekId);
+  const { jenis, mime } = periksaBerkas(m);
   await periksaKaitan(proyek.versiId, proyek.jenjang, m);
   const tautanBukti = skemaTautan.parse(m.tautanBukti ?? "");
   const simpan = await simpanBerkas(`proyek/${proyek.id}/dokumen`, m.nama, m.isi);
@@ -92,20 +161,37 @@ export async function unggahDokumen(p: Pengguna, proyekId: string, m: MasukanDok
   return d;
 }
 
-export async function dokumenMilik(p: Pengguna, id: string) {
+/**
+ * Dokumen yang boleh diakses: dokumen proyek → hanya prodi pemiliknya; bahan bersama UPPS → super admin, atau
+ * penanggung jawab prodi di UPPS itu bila hanya membaca (`baca`).
+ */
+export async function dokumenMilik(p: Pengguna, id: string, opsi: { baca?: boolean } = {}) {
   const d = await prisma.dokumen.findUnique({ where: { id } });
   if (!d) throw new GalatPengguna("Dokumen tidak ditemukan.");
-  await ambilProyek(p, d.proyekId);
-  return d;
+  if (d.proyekId) {
+    await ambilProyek(p, d.proyekId);
+    return d;
+  }
+  if (p.peran === "SUPER_ADMIN") return d;
+  if (opsi.baca && p.prodiId) {
+    const prodi = await prisma.prodi.findUnique({ where: { id: p.prodiId }, select: { uppsId: true } });
+    if (prodi && prodi.uppsId === d.uppsId) return d;
+  }
+  throw new GalatAkses("Bahan bersama UPPS hanya bisa diubah super admin.");
 }
 
+/** Dokumen proyek ditambah bahan bersama UPPS prodinya (`bersama` = true, hanya baca). */
 export async function daftarDokumen(p: Pengguna, proyekId: string, saring: { subBagianKode?: string } = {}) {
   const proyek = await ambilProyek(p, proyekId);
-  return prisma.dokumen.findMany({
-    where: { proyekId: proyek.id, ...(saring.subBagianKode ? { subBagianKode: saring.subBagianKode } : {}) },
+  const daftar = await prisma.dokumen.findMany({
+    where: {
+      OR: [{ proyekId: proyek.id }, { uppsId: proyek.prodi.uppsId }],
+      ...(saring.subBagianKode ? { subBagianKode: saring.subBagianKode } : {}),
+    },
     orderBy: { createdAt: "desc" },
     include: { dokumenDiharapkan: { select: { id: true, nama: true } } },
   });
+  return daftar.map((d) => ({ ...d, bersama: d.uppsId !== null }));
 }
 
 const skemaUbah = z.object({
@@ -118,8 +204,12 @@ const skemaUbah = z.object({
 export async function ubahDokumen(p: Pengguna, id: string, masukan: unknown) {
   const d = await dokumenMilik(p, id);
   const data = skemaUbah.parse(masukan);
-  const proyek = await ambilProyek(p, d.proyekId);
-  await periksaKaitan(proyek.versiId, proyek.jenjang, { subBagianKode: data.subBagianKode, dokumenDiharapkanId: data.dokumenDiharapkanId });
+  if (d.proyekId) {
+    const proyek = await ambilProyek(p, d.proyekId);
+    await periksaKaitan(proyek.versiId, proyek.jenjang, { subBagianKode: data.subBagianKode, dokumenDiharapkanId: data.dokumenDiharapkanId });
+  } else {
+    await periksaKaitanUpps({ subBagianKode: data.subBagianKode, dokumenDiharapkanId: data.dokumenDiharapkanId });
+  }
   const hasil = await prisma.dokumen.update({
     where: { id },
     data: {
@@ -148,7 +238,7 @@ export async function prosesUlangDokumen(p: Pengguna, id: string) {
 
 /** Isi berkas asli untuk diunduh/ditampilkan (byte sama persis dengan unggahan). */
 export async function berkasDokumen(p: Pengguna, id: string) {
-  const d = await dokumenMilik(p, id);
+  const d = await dokumenMilik(p, id, { baca: true });
   return { dokumen: d, isi: await bacaBerkas(d.lokasi) };
 }
 
@@ -180,15 +270,17 @@ export async function antreUlangMenungguKunci(prodiId: string | null): Promise<n
 /** Ringkasan bahan untuk Beranda: dokumen per status dan dokumen yang diharapkan yang belum ada. */
 export async function ringkasanBahan(p: Pengguna, proyekId: string) {
   const proyek = await ambilProyek(p, proyekId);
-  const [perStatus, diharapkan, terpenuhi, lkps] = await Promise.all([
+  const [perStatus, diharapkan, terpenuhi, lkps, bersama] = await Promise.all([
     prisma.dokumen.groupBy({ by: ["status"], where: { proyekId: proyek.id }, _count: { _all: true } }),
     prisma.dokumenDiharapkan.count({ where: { butir: { versiId: proyek.versiId, jenjang: proyek.jenjang } } }),
     prisma.dokumen.findMany({
-      where: { proyekId: proyek.id, dokumenDiharapkanId: { not: null } },
+      // bahan bersama UPPS juga memenuhi daftar cek
+      where: { OR: [{ proyekId: proyek.id }, { uppsId: proyek.prodi.uppsId }], dokumenDiharapkanId: { not: null } },
       distinct: ["dokumenDiharapkanId"],
       select: { dokumenDiharapkanId: true },
     }),
     prisma.berkasLKPS.findFirst({ where: { proyekId: proyek.id, aktif: true }, select: { namaBerkas: true, jenis: true } }),
+    prisma.dokumen.count({ where: { uppsId: proyek.prodi.uppsId, status: "siap" } }),
   ]);
   const jumlah = (s: string) => perStatus.find((x) => x.status === s)?._count._all ?? 0;
   return {
@@ -199,5 +291,6 @@ export async function ringkasanBahan(p: Pengguna, proyekId: string) {
     diharapkan,
     terpenuhi: terpenuhi.length,
     lkps,
+    bersama,
   };
 }

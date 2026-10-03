@@ -5,6 +5,7 @@ import { GalatAkses } from "@/lib/akses";
 import { bagianProyek } from "@/lib/data/proyek";
 import { tugasProyek } from "@/lib/data/generate";
 import { BannerAntrean } from "@/components/narasi/banner-antrean";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 
 const NAMA_PENDEK: Record<string, string> = {
@@ -65,6 +66,14 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
   ];
   return (
     <ShellAplikasi pengguna={p} grup={grup} subjudul={proyek.prodi.nama} beranda={dasar}>
+      {proyek.diarsipkanPada && (
+        <Alert>
+          <AlertTitle>Proyek diarsipkan</AlertTitle>
+          <AlertDescription>
+            Proyek ini hanya untuk dibaca dan diekspor. Aktifkan kembali di Beranda proyek (Pengaturan proyek) untuk mengubahnya.
+          </AlertDescription>
+        </Alert>
+      )}
       <BannerAntrean proyekId={proyekId} awal={tugas} />
       {children}
     </ShellAplikasi>

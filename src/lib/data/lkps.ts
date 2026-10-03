@@ -2,7 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { GalatPengguna, type Pengguna } from "@/lib/akses";
-import { ambilProyek } from "@/lib/data/proyek";
+import { ambilProyek, ambilProyekUbah } from "@/lib/data/proyek";
 import { catatAktivitas } from "@/lib/data/log";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { hapusBerkas, simpanBerkas } from "@/lib/penyimpanan";
@@ -23,7 +23,7 @@ export function jenisLkps(nama: string, isi: Buffer): "xlsx" | "pdf" {
 }
 
 export async function unggahLkps(p: Pengguna, proyekId: string, berkas: { nama: string; isi: Buffer }) {
-  const proyek = await ambilProyek(p, proyekId);
+  const proyek = await ambilProyekUbah(p, proyekId);
   if (berkas.isi.length === 0) throw new GalatPengguna("Berkas kosong.");
   if (berkas.isi.length > UKURAN_MAKS_LKPS) throw new GalatPengguna("Berkas LKPS lebih dari 25 MB.");
   const jenis = jenisLkps(berkas.nama, berkas.isi);
