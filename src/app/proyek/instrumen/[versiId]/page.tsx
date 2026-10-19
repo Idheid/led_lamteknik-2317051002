@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight, Lock } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { ambilVersi } from "@/lib/data/instrumen";
-import { JENJANG } from "@/lib/domain/instrumen";
+import { JENJANG, namaJenjang } from "@/lib/domain/instrumen";
 import { formatAngka } from "@/lib/domain/teks";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
@@ -17,6 +17,7 @@ import { TombolSalinVersi, SaklarAktifVersi } from "../komponen-versi";
 import { FormVersi } from "./form-versi";
 import { infoTemplateLed } from "@/lib/data/ekspor";
 import { UnggahBerkas } from "@/components/unggah-berkas";
+import { BerkasSumber } from "./berkas-sumber";
 
 export const metadata: Metadata = { title: "Detail versi instrumen" };
 
@@ -58,13 +59,14 @@ export default async function HalamanVersi({ params }: PageProps<"/proyek/instru
       />
       <Petunjuk
         kunci="admin-versi"
-        fungsi="Struktur satu versi instrumen: bagian LED (halaman awal, bab, kriteria, lampiran) beserta sub-bagiannya."
+        fungsi="Satu instrumen jenjang: berkas sumber, hasil ekstraksi (bagian, sub-bagian, butir), dan status aktifnya."
         langkah={[
-          "Pilih bagian untuk mengubah nama, urutan, batas halaman, dan pengantarnya.",
-          "Buka Butir S1 atau Butir D3/D4 untuk mengatur butir penilaian dan pemetaannya ke sub-bagian.",
-          "Versi yang terkunci hanya bisa dilihat; salin versi bila perlu mengubahnya.",
+          "Unggah tiga berkas sumber, isi halaman tabel bobot, lalu klik Mulai ekstraksi.",
+          "Setelah selesai, klik Periksa hasil ekstraksi untuk mencocokkan tabel dengan PDF asli dan mengaktifkan instrumen.",
+          "Bagian dan sub-bagian bisa disunting dari daftar di bawah selama instrumen belum dipakai LED.",
         ]}
       />
+      {v.jenjangUtama && <BerkasSumber v={v} />}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Template LEDPS (Word) untuk ekspor</CardTitle>
@@ -83,7 +85,7 @@ export default async function HalamanVersi({ params }: PageProps<"/proyek/instru
               ))}
             </ul>
           )}
-          <UnggahBerkas url={`/api/admin/versi/${versiId}/template`} accept=".docx" label="Unggah template .docx" ringkas />
+          {!v.jenjangUtama && !v.terkunci && <UnggahBerkas url={`/api/instrumen/${versiId}/berkas/template`} accept=".docx" label="Unggah template .docx" ringkas />}
         </CardContent>
       </Card>
       {v.terkunci && (
@@ -141,7 +143,7 @@ export default async function HalamanVersi({ params }: PageProps<"/proyek/instru
             </CardHeader>
             <CardContent>
               <ul className="divide-y text-sm">
-                {JENJANG.map((j) => {
+                {(v.jenjangUtama ? JENJANG.filter((j) => j.kode === v.jenjangUtama) : JENJANG).map((j) => {
                   const b = perJenjang.get(j.kode);
                   return (
                     <li key={j.kode} className="flex items-center justify-between py-2">
@@ -177,7 +179,7 @@ export default async function HalamanVersi({ params }: PageProps<"/proyek/instru
             </CardContent>
           </Card>
           <Button asChild variant="outline">
-            <Link href={`/proyek/instrumen/${v.id}/butir?jenjang=S1`}>Kelola butir Sarjana</Link>
+            <Link href={`/proyek/instrumen/${v.id}/butir?jenjang=${v.jenjangUtama ?? "S1"}`}>Kelola butir {namaJenjang(v.jenjangUtama ?? "S1")}</Link>
           </Button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 /**
  * Worker antrean (pg-boss): membaca LKPS, memproses dokumen (ekstraksi, pemotongan, embedding), dan menyusun
- * narasi (tugas generate), dan membuat berkas Word (ekspor).
+ * narasi (tugas generate), membuat berkas Word (ekspor), dan mengekstrak instrumen yang diunggah PJ.
  * Jalankan terpisah dari aplikasi web:  npm run worker
  */
 import "dotenv/config";
@@ -9,6 +9,7 @@ import { prosesBerkasLkps } from "@/lib/proses/lkps";
 import { prosesDokumen } from "@/lib/proses/dokumen";
 import { prosesTugasGenerate, pulihkanTugasTerputus } from "@/lib/proses/generate";
 import { prosesEkspor } from "@/lib/proses/ekspor";
+import { prosesEkstraksiInstrumen, pulihkanEkstraksiTerputus } from "@/lib/proses/instrumen";
 import { prisma } from "@/lib/db";
 
 async function main() {
@@ -33,6 +34,10 @@ async function main() {
     console.log(`[ekspor] ${tugas.data.eksporId}`);
     console.log(`[ekspor] ${tugas.data.eksporId} ${await prosesEkspor(tugas.data.eksporId)}`);
   });
+  await bos.work<{ versiId: string }>(ANTREAN.instrumen, { localConcurrency: 1 }, async ([tugas]) => {
+    console.log(`[instrumen] ${tugas.data.versiId}`);
+    console.log(`[instrumen] ${tugas.data.versiId} ${await prosesEkstraksiInstrumen(tugas.data.versiId)}`);
+  });
   // ekspor yang terputus saat worker mati dikirim ulang
   await prisma.ekspor.updateMany({ where: { status: "diproses" }, data: { status: "antre" } });
   for (const e of await prisma.ekspor.findMany({ where: { status: "antre" }, select: { id: true } })) {
@@ -40,6 +45,8 @@ async function main() {
   }
   const dipulihkan = await pulihkanTugasTerputus();
   if (dipulihkan) console.log(`${dipulihkan} tugas generate dikirim ulang.`);
+  const ekstraksi = await pulihkanEkstraksiTerputus();
+  if (ekstraksi) console.log(`${ekstraksi} ekstraksi instrumen dikirim ulang.`);
   console.log("Worker berjalan. Antrean:", Object.values(ANTREAN).join(", "));
 
   const berhenti = async () => {

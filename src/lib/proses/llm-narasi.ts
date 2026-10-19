@@ -41,16 +41,16 @@ export class GalatSementara extends Error {
 }
 
 export interface PanggilanNarasi {
-  prodiId: string;
-  proyekId: string;
+  prodiId: string | null;
+  proyekId: string | null;
   tugasId?: string | null;
   subBagianKode: string;
   sistem: string;
   pengguna: string;
 }
 
-export interface HasilPanggilan {
-  keluaran: KeluaranSubBagian;
+export interface HasilPanggilan<T = KeluaranSubBagian> {
+  keluaran: T;
   model: string;
   kunciId: string | null;
   tokenMasuk: number;
@@ -75,21 +75,37 @@ function pesanGalat(e: unknown): string {
   return `${g.status ? `${g.status} ` : ""}${g.message ?? ""}`.slice(0, 500);
 }
 
+/** Panggilan untuk satu sub-bagian narasi (skema keluaran narasi). */
 export async function panggilNarasi(a: PanggilanNarasi): Promise<HasilPanggilan> {
+  return panggilTerstruktur<KeluaranSubBagian>({ ...a, skema: skemaKeluaran as unknown as z.ZodType<KeluaranSubBagian>, ujiNarasi: true });
+}
+
+export interface PanggilanTerstruktur<T> extends PanggilanNarasi {
+  skema: z.ZodType<T>;
+  /** mode uji LLM_NARASI=uji hanya untuk narasi; panggilan lain tetap memakai Gemini */
+  ujiNarasi?: boolean;
+  maksTokenKeluaran?: number;
+}
+
+/**
+ * Satu panggilan LLM dengan keluaran JSON terstruktur (narasi, ekstraksi instrumen) memakai aturan kunci, model
+ * cadangan, dan pencatatan pemakaian yang sama.
+ */
+export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise<HasilPanggilan<T>> {
   const dikecualikan = new Set<string>();
   const catat = (data: { kunciId: string | null; model: string; berhasil: boolean; galat?: string; tokenMasuk?: number; tokenKeluar?: number; durasiMs: number }) =>
     prisma.logPemakaian.create({
       data: { ...data, proyekId: a.proyekId, prodiId: a.prodiId, tugasId: a.tugasId ?? null, subBagianKode: a.subBagianKode },
     });
 
-  if (pakaiNarasiUji()) {
+  if (a.ujiNarasi && pakaiNarasiUji()) {
     // mode uji pengembangan: tanpa kunci dan tanpa memanggil Gemini
     const mulai = Date.now();
     const r = await generateText({
       model: modelNarasiUji(), system: a.sistem, prompt: a.pengguna, output: Output.object({ schema: skemaKeluaran }), maxRetries: 0,
     });
     const hasil = {
-      keluaran: r.output as KeluaranSubBagian, model: MODEL_NARASI_UJI, kunciId: null,
+      keluaran: r.output as T, model: MODEL_NARASI_UJI, kunciId: null,
       tokenMasuk: r.usage.inputTokens ?? 0, tokenKeluar: r.usage.outputTokens ?? 0, durasiMs: Date.now() - mulai,
     };
     await catat({ kunciId: null, model: hasil.model, berhasil: true, tokenMasuk: hasil.tokenMasuk, tokenKeluar: hasil.tokenKeluar, durasiMs: hasil.durasiMs });
@@ -123,8 +139,8 @@ export async function panggilNarasi(a: PanggilanNarasi): Promise<HasilPanggilan>
             model: buatModelNarasi(apiKey, kodeModel),
             system: a.sistem,
             prompt: a.pengguna,
-            output: Output.object({ schema: skemaKeluaran }),
-            maxOutputTokens: Math.max(atur.maksTokenKeluaran, 8192),
+            output: Output.object({ schema: a.skema }),
+            maxOutputTokens: Math.max(atur.maksTokenKeluaran, a.maksTokenKeluaran ?? 8192),
             // Gemini 3 disarankan memakai suhu bawaan (1,0); suhu rendah hanya untuk model lama
             ...(versiModel(kodeModel) > 0 && versiModel(kodeModel) < 3 ? { temperature: atur.suhu } : {}),
             maxRetries: 0,
@@ -133,7 +149,7 @@ export async function panggilNarasi(a: PanggilanNarasi): Promise<HasilPanggilan>
           const tokenMasuk = r.usage.inputTokens ?? 0;
           const tokenKeluar = r.usage.outputTokens ?? 0;
           await catat({ kunciId: k.id, model: kodeModel, berhasil: true, tokenMasuk, tokenKeluar, durasiMs });
-          return { keluaran: r.output as KeluaranSubBagian, model: kodeModel, kunciId: k.id, tokenMasuk, tokenKeluar, durasiMs };
+          return { keluaran: r.output as T, model: kodeModel, kunciId: k.id, tokenMasuk, tokenKeluar, durasiMs };
         } catch (e) {
           const jenis = klasifikasiGalat(galatPenyedia(e));
           await catat({ kunciId: k.id, model: kodeModel, berhasil: false, galat: `${jenis}: ${pesanGalat(e)}`, durasiMs: Date.now() - mulai });

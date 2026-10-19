@@ -778,3 +778,23 @@ export function hitungButir(kodeButir: string, tabel: TabelMetrik[], k: KonteksM
 export function hitungSemua(tabel: TabelMetrik[], k: KonteksMetrik): HasilButirAngka[] {
   return BUTIR_ANGKA_SARJANA.map((kode) => hitungButir(kode, tabel, k) as HasilButirAngka);
 }
+
+export interface RumusKatalog {
+  kode: string;
+  judul: string;
+  tabel: string[];
+  /** rumus metrik utama, mis. "RK = (N1 + N2 + N3) / NDTPS" */
+  rumus: string | null;
+}
+
+/**
+ * Katalog rumus yang sudah ada (butir angka Sarjana 2025): dipakai sebagai daftar pilihan saat AI mengusulkan
+ * pencocokan rumus untuk butir angka instrumen baru (revisi 19 Okt 2026).
+ */
+export function katalogRumus(): RumusKatalog[] {
+  return BUTIR_ANGKA_SARJANA.map((kode) => {
+    const h = hitungButir(kode, [], { tsTahunMulai: 2025 })!;
+    const utama = h.metrik.find((m) => m.kode === h.utama);
+    return { kode, judul: h.judul, tabel: h.tabel, rumus: utama?.rumus ?? (utama ? `${utama.kode}: ${utama.nama}` : null) };
+  });
+}

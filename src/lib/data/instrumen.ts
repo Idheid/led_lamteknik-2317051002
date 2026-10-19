@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/lib/akses";
 import { catatAktivitas } from "@/lib/data/log";
 import { kodeSalinan } from "@/lib/domain/instrumen";
+import { BUTIR_ANGKA_SARJANA } from "@/lib/domain/metrik-lkps";
 import {
   skemaBagianUbah,
   skemaButir,
@@ -29,6 +30,14 @@ async function pastikanVersiBisaDiubah(db: Tx | typeof prisma, versiId: string):
   if (n > 0) {
     throw new GalatPengguna(`Versi ini dipakai ${n} proyek LED sehingga dikunci. Salin versi ini untuk membuat perubahan.`);
   }
+}
+
+/** Kode rumus harus ada di katalog rumus; "" berarti tanpa rumus (nilai diisi manual); undefined = tidak diubah. */
+export function periksaKodeRumus(kode: string | null | undefined): string | null | undefined {
+  if (kode === undefined) return undefined;
+  if (!kode) return null;
+  if (!BUTIR_ANGKA_SARJANA.includes(kode)) throw new GalatPengguna(`Rumus ${kode} tidak dikenal.`);
+  return kode;
 }
 
 // ---------------------------------------------------------------- Versi
@@ -85,7 +94,17 @@ export async function ubahVersi(p: Pengguna, id: string, masukan: unknown) {
 
 export async function aturAktifVersi(p: Pengguna, id: string, aktif: boolean) {
   pastikanPenanggungJawab(p);
-  const v = await prisma.versiInstrumen.update({ where: { id }, data: { aktif } });
+  const lama = await prisma.versiInstrumen.findUniqueOrThrow({ where: { id } });
+  // revisi 19 Okt 2026: versi hasil unggah diaktifkan pertama kali lewat halaman cek ("Sudah dicek, aktifkan")
+  if (aktif && (lama.status === "draf" || lama.status === "diekstrak")) {
+    throw new GalatPengguna("Versi ini belum dicek. Buka halaman Periksa hasil ekstraksi, cek semua butir, lalu klik Sudah dicek, aktifkan.");
+  }
+  const v = await prisma.$transaction(async (tx) => {
+    if (aktif && lama.jenjangUtama) {
+      await tx.versiInstrumen.updateMany({ where: { jenjangUtama: lama.jenjangUtama, aktif: true, NOT: { id } }, data: { aktif: false, status: "nonaktif" } });
+    }
+    return tx.versiInstrumen.update({ where: { id }, data: { aktif, status: aktif ? "aktif" : "nonaktif" } });
+  });
   await catatAktivitas(p, aktif ? "aktifkan" : "nonaktifkan", "versi_instrumen", id, { kode: v.kode });
   return v;
 }
@@ -292,7 +311,7 @@ export async function simpanButir(p: Pengguna, versiId: string, masukan: Masukan
   if (subSah !== data.subBagianIds.length) throw new GalatPengguna("Sub-bagian yang dipilih tidak ada di versi ini.");
 
   // pertanyaan pemandu dan dokumen yang diharapkan tidak dipakai lagi (revisi 19 Okt 2026)
-  const { subBagianIds, dokumenPendukung: _dokumen, pertanyaanPemandu: _pemandu, ...kolom } = data;
+  const { subBagianIds, dokumenPendukung: _dokumen, pertanyaanPemandu: _pemandu, ...kolom } = { ...data, kodeRumus: periksaKodeRumus(data.kodeRumus) };
   const butir = await prisma.$transaction(async (tx) => {
     const t = id
       ? await tx.butirPenilaian.update({ where: { id }, data: kolom })

@@ -94,6 +94,16 @@ export const skemaVersiUbah = z.object({
   catatan: teksOpsional(2000),
 });
 
+/** Versi instrumen baru untuk satu jenjang (revisi 19 Okt 2026): berkasnya diunggah setelah dibuat. */
+export const skemaVersiJenjang = z.object({
+  nama: teksWajib("Nama instrumen"),
+  kode: teksWajib("Kode versi", 60).regex(/^[A-Z0-9._-]+$/, "Kode hanya huruf kapital, angka, titik, garis bawah, atau tanda hubung."),
+  jenjang: z.enum(KODE_JENJANG),
+  peraturan: z.array(z.string().trim().min(1).max(300)).max(20).default([]),
+  catatan: teksOpsional(2000),
+});
+export type MasukanVersiJenjang = z.input<typeof skemaVersiJenjang>;
+
 export const skemaBagianUbah = z.object({
   nama: teksWajib("Nama bagian"),
   urutan: z.coerce.number().int().min(0).max(999),
@@ -137,6 +147,12 @@ export const skemaButir = z.object({
   jenis: z.enum(["narasi", "angka"]),
   tabelLkps: z.array(z.string().trim().min(1).max(20)).max(20),
   deskriptorSkor4: teksWajib("Deskriptor skor 4", 5000),
+  deskriptorSkor3: teksOpsional(5000).optional(),
+  deskriptorSkor2: teksOpsional(5000).optional(),
+  deskriptorSkor1: teksOpsional(5000).optional(),
+  deskriptorSkor0: teksOpsional(5000).optional(),
+  // kunci rumus metrik lama (katalog di src/lib/domain/metrik-lkps.ts); kosong = nilai butir angka diisi manual
+  kodeRumus: z.string().trim().max(20).nullable().optional(),
   unsurSkor4: daftarTeks,
   // revisi 19 Okt 2026: pertanyaan pemandu dan dokumen yang diharapkan buatan sendiri tidak dipakai lagi
   pertanyaanPemandu: teksOpsional(3000).optional(),

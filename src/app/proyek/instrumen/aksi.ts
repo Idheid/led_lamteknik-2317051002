@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/lib/aksi";
 import * as ins from "@/lib/data/instrumen";
-import type { MasukanButir, MasukanSubBagian } from "@/lib/validasi";
+import * as unggah from "@/lib/data/unggah-instrumen";
+import type { MasukanButir, MasukanSubBagian, MasukanVersiJenjang } from "@/lib/validasi";
 
 // ---------------------------------------------------------------- Instrumen
 
@@ -61,5 +62,43 @@ export async function aksiSimpanButir(versiId: string, masukan: MasukanButir, id
 export async function aksiHapusButir(id: string) {
   const r = await jalankanAksi((p) => ins.hapusButir(p, id).then(() => null));
   revalidatePath("/proyek/instrumen", "layout");
+  return r;
+}
+
+// ---------------------------------------------------------------- Unggah instrumen per jenjang (revisi 19 Okt 2026)
+
+export async function aksiBuatVersiJenjang(masukan: MasukanVersiJenjang) {
+  const r = await jalankanAksi(async (p) => (await unggah.buatVersiJenjang(p, masukan)).id);
+  revalidatePath("/proyek/instrumen");
+  return r;
+}
+
+export async function aksiAturHalamanBobot(versiId: string, teks: string) {
+  const r = await jalankanAksi((p) => unggah.aturHalamanBobot(p, versiId, teks).then(() => null));
+  revalidatePath(`/proyek/instrumen/${versiId}`);
+  return r;
+}
+
+export async function aksiMulaiEkstraksi(versiId: string, ulang: boolean) {
+  const r = await jalankanAksi((p) => unggah.mulaiEkstraksi(p, versiId, { ulang }).then(() => null));
+  revalidatePath(`/proyek/instrumen/${versiId}`, "layout");
+  return r;
+}
+
+export async function aksiSimpanButirCek(versiId: string, butirId: string, masukan: MasukanButir) {
+  const r = await jalankanAksi((p) => unggah.simpanButirCek(p, versiId, butirId, masukan).then(() => null));
+  revalidatePath(`/proyek/instrumen/${versiId}`, "layout");
+  return r;
+}
+
+export async function aksiKonfirmasiButir(versiId: string, butirId: string) {
+  const r = await jalankanAksi((p) => unggah.konfirmasiButir(p, versiId, butirId).then(() => null));
+  revalidatePath(`/proyek/instrumen/${versiId}`, "layout");
+  return r;
+}
+
+export async function aksiAktifkanVersiCek(versiId: string) {
+  const r = await jalankanAksi((p) => unggah.aktifkanVersiCek(p, versiId).then(() => null));
+  revalidatePath("/proyek", "layout");
   return r;
 }

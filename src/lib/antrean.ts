@@ -11,6 +11,7 @@ export const ANTREAN = {
   dokumen: "proses-dokumen",
   generate: "generate",
   ekspor: "ekspor-word",
+  instrumen: "ekstrak-instrumen",
 } as const;
 
 export type NamaAntrean = (typeof ANTREAN)[keyof typeof ANTREAN];
@@ -28,7 +29,8 @@ export function buatBos(): PgBoss {
 export async function siapkanAntrean(bos: PgBoss): Promise<void> {
   for (const nama of Object.values(ANTREAN)) {
     // tugas generate mengatur ulang sendiri (kunci habis, batas per menit); tidak diulang otomatis oleh pg-boss
-    await bos.createQueue(nama, nama === ANTREAN.generate ? { retryLimit: 0 } : { retryLimit: 2, retryDelay: 30, retryBackoff: true });
+    // generate dan ekstraksi instrumen mengatur ulang sendiri (kunci habis, batas per menit); tidak diulang otomatis
+    await bos.createQueue(nama, nama === ANTREAN.generate || nama === ANTREAN.instrumen ? { retryLimit: 0 } : { retryLimit: 2, retryDelay: 30, retryBackoff: true });
   }
 }
 

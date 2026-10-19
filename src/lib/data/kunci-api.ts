@@ -73,7 +73,10 @@ export async function tambahKunci(p: Pengguna, masukan: { label: string; kunci: 
   // dokumen dan penyusunan yang tertahan karena kunci habis/belum ada dilanjutkan
   const diantre = await antreUlangMenungguKunci();
   const tugasDilanjutkan = await antreUlangTugasTertunda();
-  return { ...k, diantre, tugasDilanjutkan };
+  // ekstraksi instrumen yang tertunda karena kunci (impor dinamis: menghindari impor melingkar)
+  const { antreUlangEkstraksiTertunda } = await import("@/lib/data/unggah-instrumen");
+  const ekstraksiDilanjutkan = await antreUlangEkstraksiTertunda();
+  return { ...k, diantre, tugasDilanjutkan, ekstraksiDilanjutkan };
 }
 
 async function kunciMilik(p: Pengguna, id: string) {

@@ -139,7 +139,8 @@ export async function unggahTemplateLed(p: Pengguna, versiId: string, berkas: { 
   } catch {
     throw new GalatPengguna("Berkas bukan dokumen Word (.docx) yang sah.");
   }
-  const jenjang = ((versi.jenjang ?? []) as { kode: string }[]).map((x) => x.kode).filter((k) => (KODE_JENJANG as readonly string[]).includes(k));
+  const jenjang = versi.jenjangUtama ? [versi.jenjangUtama]
+    : ((versi.jenjang ?? []) as { kode: string }[]).map((x) => x.kode).filter((k) => (KODE_JENJANG as readonly string[]).includes(k));
   const laporan = await laporanTemplate(versi.id, berkas.isi, jenjang.length ? jenjang : ["S1"]);
   const simpan = await simpanBerkas(`template/${versi.id}`, berkas.nama, berkas.isi);
   if (versi.templateLedLokasi) await hapusBerkas(versi.templateLedLokasi).catch(() => undefined);
@@ -149,6 +150,17 @@ export async function unggahTemplateLed(p: Pengguna, versiId: string, berkas: { 
   });
   await catatAktivitas(p, "unggah_template", "versi_instrumen", versi.id, { nama: berkas.nama });
   return laporan;
+}
+
+/** Hitung ulang laporan penyiapan template (setelah sub-bagian versi berubah, mis. selesai ekstraksi). */
+export async function perbaruiLaporanTemplate(versiId: string): Promise<void> {
+  const versi = await prisma.versiInstrumen.findUnique({ where: { id: versiId } });
+  if (!versi?.templateLedLokasi) return;
+  const isi = await bacaBerkas(versi.templateLedLokasi);
+  const jenjang = versi.jenjangUtama ? [versi.jenjangUtama]
+    : ((versi.jenjang ?? []) as { kode: string }[]).map((x) => x.kode).filter((k) => (KODE_JENJANG as readonly string[]).includes(k));
+  const laporan = await laporanTemplate(versi.id, isi, jenjang.length ? jenjang : ["S1"]);
+  await prisma.versiInstrumen.update({ where: { id: versi.id }, data: { templateLedLaporan: laporan as unknown as Prisma.InputJsonValue } });
 }
 
 /** Laporan template untuk halaman versi (dihitung dari template cadangan bila belum ada unggahan). */
