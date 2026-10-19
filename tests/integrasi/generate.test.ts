@@ -8,7 +8,7 @@ import { MockLanguageModelV4 } from "ai/test";
 import { Document, Packer, Paragraph } from "docx";
 import { prisma } from "@/lib/db";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { buatAkunPenanggungJawab, simpanProdi, simpanUpps } from "@/lib/data/organisasi";
+import { simpanProdi } from "@/lib/data/organisasi";
 import { buatProyek, simpanJawaban } from "@/lib/data/proyek";
 import { unggahLkps } from "@/lib/data/lkps";
 import { unggahDokumen } from "@/lib/data/dokumen";
@@ -22,7 +22,7 @@ import { prosesBerkasLkps } from "@/lib/proses/lkps";
 import { prosesDokumen } from "@/lib/proses/dokumen";
 import { prosesTugasGenerate } from "@/lib/proses/generate";
 import { bacaDokumen, paragrafBersumber, teksDokumen } from "@/lib/domain/narasi";
-import { bersihkanDb, buatSuperAdmin, imporSeed, penggunaDari } from "./bantu";
+import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 process.env.GENERATE_JEDA_MAKS_MS = "0";
 
@@ -33,6 +33,8 @@ const URUTAN_C1 = ["C.1-IKU-a", "C.1-IKU-b", "C.1-IKU-c", "C.1-LB", "C.1-KEB", "
 
 let pj: Pengguna;
 let pjLain: Pengguna;
+let adminUji: Pengguna;
+let prodiId: string;
 let proyekId: string;
 let proyekLainId: string;
 
@@ -136,14 +138,15 @@ before(async () => {
   await imporSeed();
   aturModelUji(modelTiruan);
   const admin = await buatSuperAdmin();
-  const upps = await simpanUpps(admin, { kode: "FT", nama: "Fakultas Teknik", perguruanTinggi: "Universitas Contoh", alamat: "" });
-  const prodi = await simpanProdi(admin, { uppsId: upps.id, nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
-  const lain = await simpanProdi(admin, { uppsId: upps.id, nama: "Teknik Lain", jenjang: "S1", kodePddikti: "22222", identitas: {} });
-  pj = await penggunaDari((await buatAkunPenanggungJawab(admin, { prodiId: prodi.id, nama: "PJ", email: "pj@uji.test", kataSandi: "SandiPJ#123" })).id);
-  pjLain = await penggunaDari((await buatAkunPenanggungJawab(admin, { prodiId: lain.id, nama: "PJ Lain", email: "pj2@uji.test", kataSandi: "SandiPJ#123" })).id);
-  const versi = await prisma.versiInstrumen.findFirstOrThrow();
-  proyekId = (await buatProyek(pj, { nama: "LED Uji", versiId: versi.id, tsTahunMulai: 2025 })).id;
-  proyekLainId = (await buatProyek(pjLain, { nama: "LED Lain", versiId: versi.id, tsTahunMulai: 2025 })).id;
+  pj = await siapkanPj(admin);
+  // revisi 19 Okt 2026: satu PJ fakultas; LED kedua milik prodi lain, akses lintas peran diuji dengan admin
+  pjLain = pj;
+  adminUji = admin;
+  const prodi = await simpanProdi(pj, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
+  const lain = await simpanProdi(pj, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "22222", identitas: {} });
+  prodiId = prodi.id;
+  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED Uji", tahunPengajuan: 2026 })).id;
+  proyekLainId = (await buatProyek(pj, { prodiId: lain.id, nama: "LED Lain", tahunPengajuan: 2026 })).id;
   await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: ["gemini-3.1-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: true });
 
   const b = await unggahLkps(pj, proyekId, { nama: "lkps.xlsx", isi: XLSX });
@@ -223,7 +226,7 @@ test("F-13 generate kriteria C.1 berurutan (IKU → LB, KEB → AF → SWOT); F-
   // F-20 log pemakaian per generate
   const log = await prisma.logPemakaian.findMany({ where: { tugasId: tugas.id } });
   assert.equal(log.length, 7);
-  assert.ok(log.every((l) => l.berhasil && l.tokenMasuk === 1200 && l.tokenKeluar === 300 && l.prodiId === pj.prodiId));
+  assert.ok(log.every((l) => l.berhasil && l.tokenMasuk === 1200 && l.tokenKeluar === 300 && l.prodiId === prodiId));
 });
 
 test("F-16/F-17 sunting tersimpan otomatis, generate ulang satu butir, bandingkan versi, pulihkan; F-21 tandai selesai", async () => {
@@ -273,9 +276,10 @@ test("F-16/F-17 sunting tersimpan otomatis, generate ulang satu butir, bandingka
   await assert.rejects(tandaiBagianSelesai(pj, proyekId, "C.2"), GalatPengguna, "kriteria tanpa draf tidak bisa ditandai selesai");
 
   // akses lintas prodi ditolak
-  await assert.rejects(drafBagian(pjLain, proyekId, "C.1"), GalatAkses);
-  await assert.rejects(pulihkanVersi(pjLain, v2.id), GalatAkses);
-  await assert.rejects(simpanSuntingan(pjLain, proyekId, "C.1-IKU-a", isi), GalatAkses);
+  // admin tidak mengurus penyusunan LED
+  await assert.rejects(drafBagian(adminUji, proyekId, "C.1"), GalatAkses);
+  await assert.rejects(pulihkanVersi(adminUji, v2.id), GalatAkses);
+  await assert.rejects(simpanSuntingan(adminUji, proyekId, "C.1-IKU-a", isi), GalatAkses);
 });
 
 test("F-19 429 harian: generate berhenti rapi, meminta kunci baru, lalu lanjut dari butir tertunda", async () => {
@@ -338,12 +342,14 @@ test("Pemeriksaan angka: narasi yang memuat angka di luar data (konteks fiktif) 
 });
 
 test("Tanpa kunci: tugas dibuat tertunda dengan pesan, dan dimulai otomatis setelah kunci diisi", async () => {
+  // kunci milik fakultas (revisi 19 Okt 2026): kosongkan semua kunci untuk mensimulasikan fakultas tanpa kunci
+  await prisma.kunciAPI.deleteMany({});
   const t = await mulaiGenerate(pjLain, proyekLainId, "C.1", "C.1-LB");
   assert.equal(t.status, "tertunda");
   assert.match(t.pesan ?? "", /Belum ada kunci API Gemini/);
   assert.equal(await prosesTugasGenerate(t.id), "tertunda");
   assert.match((await prisma.tugasGenerate.findUniqueOrThrow({ where: { id: t.id } })).pesan ?? "", /Belum ada kunci/);
-  const k = await tambahKunci(pjLain, { label: "Kunci prodi lain", kunci: "AIzaSyKunciUjiC0000000000000000000000003" });
+  const k = await tambahKunci(pjLain, { label: "Kunci fakultas baru", kunci: "AIzaSyKunciUjiC0000000000000000000000003" });
   assert.equal(k.tugasDilanjutkan, 1);
   assert.equal(await prosesTugasGenerate(t.id), "selesai");
   assert.equal((await drafBagian(pjLain, proyekLainId, "C.1"))["C.1-LB"].status, "draf");

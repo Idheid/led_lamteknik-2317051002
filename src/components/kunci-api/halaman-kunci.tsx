@@ -18,17 +18,17 @@ const LABEL_STATUS: Record<string, { label: string; varian: "secondary" | "destr
   nonaktif: { label: "Nonaktif", varian: "outline" },
 };
 
-/** Halaman kunci API: penanggung jawab mengelola kunci prodi, super admin mengelola kunci cadangan. */
+/** Halaman kunci API: PJ mengelola kunci fakultas, admin mengelola kunci cadangan. */
 export async function HalamanKunci({ pengguna, remah }: { pengguna: Pengguna; remah?: Remah[] }) {
   const kunci = await daftarKunci(pengguna);
   const admin = pengguna.peran === "SUPER_ADMIN";
   return (
     <>
       <JudulHalaman
-        judul={admin ? "Kunci API cadangan" : "Kunci API Gemini"}
+        judul={admin ? "Kunci API cadangan" : "Kunci API fakultas"}
         deskripsi={admin
-          ? "Kunci milik tim pengembang yang dipakai semua prodi setelah kunci penanggung jawab habis (bila diizinkan di pengaturan Model LLM)."
-          : "Kunci berlaku untuk seluruh proyek LED prodi Anda. Urutan pemakaian: kunci prodi dulu (berurutan); bila semuanya habis, sistem memakai kunci cadangan super admin/fakultas bila diizinkan."}
+          ? "Kunci cadangan admin, dipakai semua LED setelah kunci fakultas habis (bila diizinkan di tab Model Gemini)."
+          : "Kunci berlaku untuk semua LED fakultas. Tambahkan kunci kapan saja, misalnya saat kuota kunci lama habis. Urutan pemakaian: kunci fakultas dulu (berurutan); bila semuanya habis, sistem memakai kunci cadangan admin bila diizinkan."}
         remah={remah}
       />
       <Petunjuk

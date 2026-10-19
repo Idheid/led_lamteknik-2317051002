@@ -6,11 +6,11 @@ import { auth } from "@/lib/auth";
 import { GalatAkses, GalatPengguna } from "@/lib/akses";
 import {
   aturAktifAkun, aturUlangKataSandi, buatAkunPenanggungJawab, buatAkunSuperAdmin, gantiKataSandiSendiri, hapusAkun,
-  simpanProdi, simpanUpps,
+  simpanProdi,
 } from "@/lib/data/organisasi";
-import { buatProyek } from "@/lib/data/proyek";
-import { tambahKunci } from "@/lib/data/kunci-api";
-import { bersihkanDb, bisaLogin, buatSuperAdmin, imporSeed, penggunaDari } from "./bantu";
+import { buatProyek, daftarProyek } from "@/lib/data/proyek";
+import { daftarKunci, tambahKunci } from "@/lib/data/kunci-api";
+import { bersihkanDb, bisaLogin, buatSuperAdmin, imporSeed, penggunaDari, siapkanPj } from "./bantu";
 
 before(async () => {
   await bersihkanDb();
@@ -25,7 +25,7 @@ async function headerSesi(email: string, password: string): Promise<Headers> {
   return new Headers({ cookie });
 }
 
-test("Akun: super admin membuat super admin lain; minimal satu super admin aktif; tidak bisa menonaktifkan diri", async () => {
+test("Akun: admin membuat admin lain; minimal satu admin aktif; tidak bisa menonaktifkan diri", async () => {
   const admin = await buatSuperAdmin();
   const baru = await buatAkunSuperAdmin(admin, { nama: "Admin Fakultas", email: "fakultas@uji.test", kataSandi: "SandiFak#123" });
   const admin2 = await penggunaDari(baru.id);
@@ -47,40 +47,27 @@ test("Akun: super admin membuat super admin lain; minimal satu super admin aktif
   assert.equal(await prisma.user.count({ where: { role: "SUPER_ADMIN" } }), 2);
 });
 
-test("Akun: satu akun aktif per prodi; pergantian PJ; data prodi tetap ada setelah akun dihapus", async () => {
+test("Akun: serah terima PJ fakultas: akun pengganti dibuat, akun lama dinonaktifkan/dihapus; LED dan kunci tetap milik fakultas", async () => {
   const admin = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "admin@uji.test" } })).id);
-  const upps = await simpanUpps(admin, { kode: "FT-AKUN", nama: "Fakultas Teknik", perguruanTinggi: "Universitas Uji", alamat: "" });
-  const prodi = await simpanProdi(admin, { uppsId: upps.id, nama: "Teknik Elektro", jenjang: "S1", kodePddikti: "20201", identitas: {} });
-  const lama = await buatAkunPenanggungJawab(admin, { prodiId: prodi.id, nama: "PJ Lama", email: "pj.lama@uji.test", kataSandi: "SandiLama#123" });
-  const pjLama = await penggunaDari(lama.id);
-  await assert.rejects(
-    buatAkunPenanggungJawab(admin, { prodiId: prodi.id, nama: "PJ Baru", email: "pj.baru@uji.test", kataSandi: "SandiBaru#123" }),
-    GalatPengguna,
-  );
-
-  const versi = await prisma.versiInstrumen.findFirstOrThrow({ where: { aktif: true } });
-  const proyek = await buatProyek(pjLama, { nama: "LED Elektro", versiId: versi.id, tsTahunMulai: 2025 });
-  await tambahKunci(pjLama, { label: "Kunci prodi", kunci: "AIzaSyUjiAkun0000000000000000000000000" });
-  // format kunci Google yang baru memuat titik ("AQ.…")
+  const pjLama = await siapkanPj(admin, "pj.lama@uji.test");
+  const prodi = await simpanProdi(pjLama, { nama: "Teknik Elektro", jenjang: "S1", kodePddikti: "20201", identitas: {} });
+  const proyek = await buatProyek(pjLama, { prodiId: prodi.id, nama: "LED Elektro", tahunPengajuan: 2026 });
+  await tambahKunci(pjLama, { label: "Kunci fakultas", kunci: "AIzaSyUjiAkun0000000000000000000000000" });
+  // format kunci Google yang baru memuat titik ("AQ.…") dan simbol lain
   const baruFormat = await tambahKunci(pjLama, { label: "Kunci format baru", kunci: "AQ.Ab8RUjiPalsu000000000000000000-xyz_9" });
   assert.equal(baruFormat.akhiran, "yz_9");
-  // simbol lain yang mungkin muncul di format kunci mendatang
   await tambahKunci(pjLama, { label: "Kunci simbol", kunci: "XY$Uji+Palsu/0000=0000~0000!0000@#%&*" });
   await assert.rejects(tambahKunci(pjLama, { label: "Kunci rusak", kunci: "AQ.kunci dengan spasi 0000000000" }));
 
-  // serah terima: nonaktifkan akun lama, buat akun baru
-  await aturAktifAkun(admin, lama.id, false);
-  const baru = await buatAkunPenanggungJawab(admin, { prodiId: prodi.id, nama: "PJ Baru", email: "pj.baru@uji.test", kataSandi: "SandiBaru#123" });
-  // akun lama tidak bisa diaktifkan lagi selama ada PJ aktif lain
-  await assert.rejects(aturAktifAkun(admin, lama.id, true), GalatPengguna);
-
-  await hapusAkun(admin, lama.id);
-  assert.ok(await prisma.proyekLED.findUnique({ where: { id: proyek.id } }), "proyek tetap ada");
-  const kunci = await prisma.kunciAPI.findFirstOrThrow({ where: { prodiId: prodi.id } });
-  assert.equal(kunci.pemilikId, null, "kunci tetap milik prodi");
+  const baru = await buatAkunPenanggungJawab(admin, { nama: "PJ Baru", email: "pj.baru@uji.test", kataSandi: "SandiBaru#123" });
+  await aturAktifAkun(admin, pjLama.id, false);
+  await hapusAkun(admin, pjLama.id);
+  assert.ok(await prisma.proyekLED.findUnique({ where: { id: proyek.id } }), "LED tetap ada");
+  const kunci = await prisma.kunciAPI.findFirstOrThrow({ where: { label: "Kunci fakultas" } });
+  assert.equal(kunci.pemilikId, null, "kunci tetap milik fakultas");
   const pjBaru = await penggunaDari(baru.id);
-  assert.equal(pjBaru.prodiId, prodi.id);
-  assert.equal((await prisma.proyekLED.findMany({ where: { prodiId: pjBaru.prodiId! } })).length, 1, "PJ baru melihat proyek prodi");
+  assert.deepEqual((await daftarProyek(pjBaru)).map((x) => x.id), [proyek.id], "PJ baru melihat semua LED fakultas");
+  assert.equal((await daftarKunci(pjBaru)).length, 3, "PJ baru memakai kunci fakultas yang sama");
 });
 
 test("Akun: ganti kata sandi sendiri wajib kata sandi lama; status wajib ganti sandi hilang", async () => {

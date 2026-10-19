@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { bacaBerkas } from "@/lib/penyimpanan";
 import { potongTeks } from "@/lib/domain/potong-teks";
 import { literalVektor } from "@/lib/llm/embedding";
-import { catatGalatKunci, GalatTanpaKunci, penyediaUntukProdi, penyediaUntukUpps } from "@/lib/data/kunci-api";
+import { catatGalatKunci, GalatTanpaKunci, penyediaEmbedding } from "@/lib/data/kunci-api";
 
 /**
  * F-11: proses satu dokumen pendukung: ekstraksi teks (unpdf untuk PDF, mammoth untuk DOCX), pemotongan
@@ -30,7 +30,7 @@ export async function ekstrakTeks(jenis: string, isi: Buffer): Promise<{ halaman
 }
 
 export async function prosesDokumen(dokumenId: string): Promise<void> {
-  const dok = await prisma.dokumen.findUnique({ where: { id: dokumenId }, include: { proyek: true } });
+  const dok = await prisma.dokumen.findUnique({ where: { id: dokumenId }, });
   if (!dok) return;
   if (dok.jenis === "gambar") {
     await prisma.dokumen.update({
@@ -56,8 +56,7 @@ export async function prosesDokumen(dokumenId: string): Promise<void> {
       });
       return;
     }
-    // bahan bersama UPPS di-embedding dengan kunci cadangan super admin (bukan kunci salah satu prodi)
-    const terpilih = dok.proyek ? await penyediaUntukProdi(dok.proyek.prodiId) : await penyediaUntukUpps();
+    const terpilih = await penyediaEmbedding();
     kunciId = terpilih.kunciId;
     const vektor: number[][] = [];
     for (let i = 0; i < potongan.length; i += UKURAN_BATCH) {

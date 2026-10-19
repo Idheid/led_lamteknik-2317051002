@@ -7,7 +7,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { Document, Packer, Paragraph } from "docx";
 import { prisma } from "@/lib/db";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { buatAkunPenanggungJawab, simpanProdi, simpanUpps } from "@/lib/data/organisasi";
+import { simpanProdi } from "@/lib/data/organisasi";
 import { buatProyek, ubahTsProyek } from "@/lib/data/proyek";
 import { lkpsAktif, metrikProyek, simpanKoreksiTabel, unggahLkps } from "@/lib/data/lkps";
 import { berkasDokumen, daftarDokumen, simpulGambar, ubahDokumen, unggahDokumen } from "@/lib/data/dokumen";
@@ -17,7 +17,7 @@ import { simpanPengaturan } from "@/lib/data/pengaturan";
 import { prosesBerkasLkps } from "@/lib/proses/lkps";
 import { prosesDokumen } from "@/lib/proses/dokumen";
 import { hashBerkas } from "@/lib/penyimpanan";
-import { bersihkanDb, buatSuperAdmin, imporSeed, penggunaDari } from "./bantu";
+import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 const XLSX = readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx"));
 const PDF_LKPS = readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.pdf"));
@@ -52,13 +52,11 @@ before(async () => {
   await bersihkanDb();
   await imporSeed();
   admin = await buatSuperAdmin();
-  const upps = await simpanUpps(admin, { kode: "FT", nama: "Fakultas Teknik", perguruanTinggi: "Universitas Contoh", alamat: "" });
-  const prodi = await simpanProdi(admin, { uppsId: upps.id, nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
-  const lain = await simpanProdi(admin, { uppsId: upps.id, nama: "Teknik Lain", jenjang: "S1", kodePddikti: "22222", identitas: {} });
-  pj = await penggunaDari((await buatAkunPenanggungJawab(admin, { prodiId: prodi.id, nama: "PJ", email: "pj@uji.test", kataSandi: "SandiPJ#123" })).id);
-  pjLain = await penggunaDari((await buatAkunPenanggungJawab(admin, { prodiId: lain.id, nama: "PJ Lain", email: "pj2@uji.test", kataSandi: "SandiPJ#123" })).id);
-  const versi = await prisma.versiInstrumen.findFirstOrThrow();
-  proyekId = (await buatProyek(pj, { nama: "LED Uji", versiId: versi.id, tsTahunMulai: 2025 })).id;
+  pj = await siapkanPj(admin);
+  // revisi 19 Okt 2026: tidak ada PJ per prodi; pembatasan akses diuji dengan akun admin
+  pjLain = admin;
+  const prodi = await simpanProdi(pj, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
+  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED Uji", tahunPengajuan: 2026 })).id;
 });
 after(() => prisma.$disconnect());
 
@@ -113,22 +111,17 @@ test("F-09 unggah LKPS PDF: tabel ditandai perlu dicek, koreksi manual tersimpan
   await assert.rejects(simpanKoreksiTabel(pjLain, t4a.id, baris, true), GalatAkses);
 });
 
-test("F-08/F-09 berkas yang tidak didukung ditolak; prodi lain tidak bisa mengunggah", async () => {
+test("F-08/F-09 berkas yang tidak didukung ditolak; admin tidak bisa mengunggah", async () => {
   await assert.rejects(unggahLkps(pj, proyekId, { nama: "lkps.xls", isi: Buffer.from("xx") }), GalatPengguna);
   await assert.rejects(unggahLkps(pj, proyekId, { nama: "lkps.pdf", isi: Buffer.from("bukan pdf") }), GalatPengguna);
   await assert.rejects(unggahLkps(pjLain, proyekId, { nama: "lkps.xlsx", isi: XLSX }), GalatAkses);
 });
 
 test("F-10/F-11 dokumen PDF dan DOCX diproses, lalu bisa dicari (vektor + kata kunci) per proyek dan sub-bagian", async () => {
-  const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId } });
-  const diharap = await prisma.dokumenDiharapkan.findFirstOrThrow({
-    where: { butir: { versiId: proyek.versiId, jenjang: "S1", subBagian: { some: { subBagian: { kode: "C.3-IKU-a.01" } } } } },
-  });
   const pdf = await unggahDokumen(pj, proyekId, {
     nama: "SK Kurikulum.pdf",
     isi: await pdfTeks([Array.from({ length: 40 }, (_, i) => kurikulum(i)), Array.from({ length: 40 }, (_, i) => kurikulum(i + 40))]),
     subBagianKode: "C.3-IKU-a.01",
-    dokumenDiharapkanId: diharap.id,
     tautanBukti: "https://drive.contoh.ac.id/kurikulum",
   });
   const docx = await unggahDokumen(pj, proyekId, {
@@ -147,7 +140,6 @@ test("F-10/F-11 dokumen PDF dan DOCX diproses, lalu bisa dicari (vektor + kata k
     assert.equal(d.status, "siap", `${d.namaBerkas}: ${d.pesan}`);
     assert.ok(d.jumlahPotongan > 0);
   }
-  assert.equal(daftar.find((d) => d.id === pdf.id)?.dokumenDiharapkan?.id, diharap.id);
   assert.equal(daftar.find((d) => d.id === pdf.id)?.tautanBukti, "https://drive.contoh.ac.id/kurikulum");
 
   const pot = await prisma.potongan.findMany({ where: { dokumenId: pdf.id }, orderBy: { urutan: "asc" } });
@@ -173,7 +165,7 @@ test("F-10/F-11 dokumen PDF dan DOCX diproses, lalu bisa dicari (vektor + kata k
   const tracerC3 = await cariPotongan(pj, proyekId, "tracer study waktu tunggu lulusan", sub);
   assert.ok(!tracerC3.hasil.some((h) => h.dokumenId === docx.id), "dokumen C.6 tidak boleh muncul di C.3");
 
-  // prodi lain tidak bisa mencari di proyek ini
+  // admin tidak bisa mencari di LED
   await assert.rejects(cariPotongan(pjLain, proyekId, "kurikulum"), GalatAkses);
 });
 
@@ -220,7 +212,7 @@ test("F-11 tanpa kunci API dokumen menunggu kunci; kunci baru disimpan terenkrip
     const daftar = await daftarKunci(pj);
     assert.equal(daftar.length, 1);
     assert.ok(!JSON.stringify(daftar).includes(kunciAsli), "daftar kunci tidak memuat isi kunci");
-    assert.equal((await daftarKunci(pjLain)).length, 0, "kunci prodi lain tidak terlihat");
+    assert.equal((await daftarKunci(pjLain)).length, 0, "kunci fakultas tidak tampil di daftar kunci cadangan admin");
   } finally {
     process.env.EMBEDDING_PENYEDIA = "uji";
   }

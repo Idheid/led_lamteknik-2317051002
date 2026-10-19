@@ -22,7 +22,7 @@ import { skemaTimPenyusun, type IdentitasProdi, type TimPenyusun } from "@/lib/v
  * diperbarui saat dibuka (F-24). Halaman dihitung lewat LibreOffice; ekspor > 150 halaman ditahan.
  */
 
-/** Template LEDPS untuk versi instrumen: unggahan super admin, atau TEMPLATE_LEDPS_PATH (pengembangan). */
+/** Template LEDPS untuk versi instrumen: unggahan PJ di menu Instrumen, atau TEMPLATE_LEDPS_PATH (pengembangan). */
 export async function bacaTemplateVersi(versi: { templateLedLokasi: string | null }): Promise<Buffer | null> {
   if (versi.templateLedLokasi) return bacaBerkas(versi.templateLedLokasi);
   const env = process.env.TEMPLATE_LEDPS_PATH;
@@ -59,7 +59,7 @@ export async function subBagianTemplate(versiId: string, jenjang: string) {
   }));
 }
 
-/** Siapkan template untuk satu jenjang (dipakai juga untuk laporan di halaman super admin). */
+/** Siapkan template untuk satu jenjang (dipakai juga untuk laporan di halaman Instrumen). */
 export async function siapkanTemplate(asli: Buffer, sub: SubTemplate[]): Promise<{ zip: JSZip; indentasi: Record<string, number>; laporan: LaporanTemplate }> {
   const zip = await JSZip.loadAsync(asli);
   const doc = zip.file("word/document.xml");
@@ -94,10 +94,13 @@ export interface HasilBangun {
 export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
   const proyek = await prisma.proyekLED.findUniqueOrThrow({
     where: { id: proyekId },
-    include: { prodi: { include: { upps: { include: { prodi: { orderBy: { nama: "asc" } } } } } }, versi: true },
+    include: { prodi: true, versi: true },
   });
+  // revisi 19 Okt 2026: UPPS diganti identitas fakultas; daftar prodi di halaman identitas = semua prodi fakultas
+  const fakultas = await prisma.fakultas.findUnique({ where: { id: "utama" } });
+  const semuaProdi = await prisma.prodi.findMany({ orderBy: { nama: "asc" } });
   const asli = await bacaTemplateVersi(proyek.versi);
-  if (!asli) throw new Error("Template LEDPS belum diunggah super admin untuk versi instrumen ini.");
+  if (!asli) throw new Error("Template LED belum diunggah untuk instrumen ini (menu Instrumen).");
   const sub = await subBagianTemplate(proyek.versiId, proyek.jenjang);
   const { zip, indentasi, laporan } = await siapkanTemplate(asli, sub);
 
@@ -106,15 +109,15 @@ export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
   const tim = bacaTim(proyek.timPenyusun);
   const { tanggal, tahun } = tanggalHariIni();
   const data: DataEkspor = {
-    perguruanTinggi: proyek.prodi.upps.perguruanTinggi,
-    upps: proyek.prodi.upps.nama,
+    perguruanTinggi: fakultas?.perguruanTinggi ?? "",
+    upps: fakultas?.nama ?? "",
     jenisProgram: namaJenjang(proyek.jenjang),
     namaProdi: proyek.prodi.nama,
-    kota: ident.kota ?? "",
+    kota: ident.kota ?? fakultas?.kota ?? "",
     tahun,
     tanggalPengisian: tanggal,
     identitas: {
-      alamat: ident.alamat ?? proyek.prodi.upps.alamat ?? "",
+      alamat: ident.alamat ?? fakultas?.alamat ?? "",
       telepon: ident.telepon ?? "",
       emailWebsite: [ident.email, ident.laman].filter(Boolean).join(" / "),
       skPendirian: ident.skPendirian ?? "",
@@ -127,9 +130,12 @@ export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
       peringkatAkreditasi: ident.peringkatAkreditasi ?? "",
       nomorSkAkreditasi: ident.nomorSkAkreditasi ?? "",
     },
-    prodiUpps: proyek.prodi.upps.prodi.map((x, i) => {
+    prodiUpps: semuaProdi.map((x, i) => {
       const id = (x.identitas ?? {}) as Partial<IdentitasProdi>;
-      return [String(i + 1), namaJenjang(x.jenjang), x.nama, id.peringkatAkreditasi ?? "–", id.nomorSkAkreditasi ?? "–", id.akreditasiBerlakuSampai ?? "–", "–"];
+      const sampai = x.akreditasiBerlakuSampai
+        ? new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" }).format(x.akreditasiBerlakuSampai)
+        : "–";
+      return [String(i + 1), namaJenjang(x.jenjang), x.nama, id.peringkatAkreditasi ?? "–", id.nomorSkAkreditasi ?? "–", sampai, "–"];
     }),
     timDosen: tim.dosen.map(anggota),
     timTendik: tim.tendik.map(anggota),
@@ -147,7 +153,7 @@ export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
     const v = versi.find((x) => x.id === d.versiAktifId);
     if (v) isiSub.set(d.subBagianId, bacaDokumen(v.isi));
   }
-  const dokumen = await prisma.dokumen.findMany({ where: { OR: [{ proyekId }, { uppsId: proyek.prodi.uppsId }] }, select: { id: true, lokasi: true, jenis: true, judul: true, namaBerkas: true, tautanBukti: true } });
+  const dokumen = await prisma.dokumen.findMany({ where: { OR: [{ proyekId }, { proyekId: null }] }, select: { id: true, lokasi: true, jenis: true, judul: true, namaBerkas: true, tautanBukti: true } });
   const ctx = konteksBaru(async (id) => {
     const d = dokumen.find((x) => x.id === id && x.jenis === "gambar");
     return d ? { data: await bacaBerkas(d.lokasi) } : null;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BUTIR_ANGKA_SARJANA } from "@/lib/domain/metrik-lkps";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 /**
@@ -103,6 +104,9 @@ export async function imporInstrumen(
           catatan: seed.versi.catatan ?? null,
           aktif: opsi.aktif ?? true,
           jenjang: seed.jenjang,
+          // revisi 19 Okt 2026: satu versi untuk satu jenjang (instrumen bawaan hanya berisi butir Sarjana)
+          jenjangUtama: new Set(seed.butir.map((b) => b.jenjang)).size === 1 ? seed.butir[0].jenjang : null,
+          status: opsi.aktif ?? true ? "aktif" : "nonaktif",
           statusAkreditasi: (seed.statusAkreditasi ?? undefined) as Prisma.InputJsonValue | undefined,
           anggaranBawaan: seed.anggaranBawaan as Prisma.InputJsonValue,
         },
@@ -157,7 +161,9 @@ export async function imporInstrumen(
           tabelLkps: b.tabelLkps,
           deskriptorSkor4: b.deskriptorSkor4,
           unsurSkor4: b.unsurSkor4,
-          pertanyaanPemandu: b.pertanyaanPemandu ?? null,
+          // pertanyaan pemandu buatan sendiri tidak dipakai lagi (pertanyaan = instruksi resmi template)
+          pertanyaanPemandu: null,
+          kodeRumus: b.jenjang === "S1" && b.jenis === "angka" && BUTIR_ANGKA_SARJANA.includes(b.kode) ? b.kode : null,
           catatan: b.catatan ?? null,
         })),
         select: { id: true, kode: true, jenjang: true },
@@ -171,11 +177,7 @@ export async function imporInstrumen(
         })),
       });
 
-      await tx.dokumenDiharapkan.createMany({
-        data: seed.butir.flatMap((b) =>
-          b.dokumenPendukung.map((nama, i) => ({ nama, butirId: idButir.get(`${b.jenjang}|${b.kode}`), urutan: i + 1 })),
-        ),
-      });
+      // daftar dokumen yang diharapkan buatan sendiri tidak diimpor lagi (bukan dokumen resmi LAM Teknik)
 
       await tx.tabelLkpsAcuan.createMany({
         data: seed.tabelLkps.map((t) => ({ versiId: versi.id, kode: t.kode, sheet: t.sheet, judul: t.judul })),

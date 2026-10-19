@@ -24,7 +24,6 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      prodiId: { type: "string", required: false, input: false },
       wajibGantiSandi: { type: "boolean", required: false, input: false, defaultValue: false },
     },
   },
@@ -34,7 +33,7 @@ export const auth = betterAuth({
       roles: peranAkses,
       defaultRole: "PENANGGUNG_JAWAB",
       adminRoles: ["SUPER_ADMIN"],
-      bannedUserMessage: "Akun Anda dinonaktifkan. Hubungi super admin.",
+      bannedUserMessage: "Akun Anda dinonaktifkan. Hubungi admin.",
     }),
     nextCookies(),
   ],

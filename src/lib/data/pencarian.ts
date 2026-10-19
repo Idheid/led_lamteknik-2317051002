@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { Pengguna } from "@/lib/akses";
 import { ambilProyek } from "@/lib/data/proyek";
-import { modelEmbeddingAktif, penyediaUntukProdi } from "@/lib/data/kunci-api";
+import { modelEmbeddingAktif, penyediaEmbedding } from "@/lib/data/kunci-api";
 import { gabungRRF, kueriKataKunci } from "@/lib/domain/rrf";
 import { literalVektor } from "@/lib/llm/embedding";
 
@@ -11,7 +11,7 @@ import { literalVektor } from "@/lib/llm/embedding";
  * - kata kunci: tsvector "simple" dengan kueri OR atas kata-kata kueri, diurutkan ts_rank;
  * - digabung dengan reciprocal rank fusion (k = 60).
  * Disaring per proyek; bila sub-bagian diberikan, hanya dokumen sub-bagian itu ditambah dokumen umum (tanpa sub-bagian).
- * U-10: bahan bersama UPPS prodi ikut dicari (kolom `bersama`).
+ * U-10: dokumen bersama fakultas (proyekId kosong) ikut dicari untuk semua LED (kolom `bersama`).
  * Hanya potongan dengan model embedding yang berlaku yang dipakai (setelah ganti model, dokumen diproses ulang).
  */
 
@@ -27,7 +27,7 @@ export interface HasilCari {
   skor: number;
   peringkatVektor: number | null;
   peringkatKataKunci: number | null;
-  /** true bila potongan berasal dari bahan bersama UPPS (U-10). */
+  /** true bila potongan berasal dari dokumen bersama fakultas (U-10). */
   bersama: boolean;
 }
 
@@ -49,17 +49,16 @@ export async function cariPotongan(p: Pengguna, proyekId: string, kueri: string,
   const kandidat = opsi.kandidat ?? 30;
   const sub = opsi.subBagianKode ?? null;
   const model = await modelEmbeddingAktif();
-  const uppsId = proyek.prodi.uppsId;
   const catatan: string[] = [];
 
   let vektor: string[] = [];
   try {
-    const { penyedia } = await penyediaUntukProdi(proyek.prodiId);
+    const { penyedia } = await penyediaEmbedding();
     const v = literalVektor(await penyedia.embedKueri(kueri));
     const baris = await prisma.$queryRaw<Baris[]>`
       SELECT pt."id" FROM "Potongan" pt
       JOIN "Dokumen" d ON d."id" = pt."dokumenId"
-      WHERE (d."proyekId" = ${proyek.id} OR d."uppsId" = ${uppsId}) AND d."status" = 'siap' AND pt."modelEmbedding" = ${model}
+      WHERE (d."proyekId" = ${proyek.id} OR d."proyekId" IS NULL) AND d."status" = 'siap' AND pt."modelEmbedding" = ${model}
         AND pt."embedding" IS NOT NULL
         AND (${sub}::text IS NULL OR d."subBagianKode" = ${sub} OR d."subBagianKode" IS NULL)
       ORDER BY pt."embedding" <=> ${v}::vector
@@ -75,7 +74,7 @@ export async function cariPotongan(p: Pengguna, proyekId: string, kueri: string,
     const baris = await prisma.$queryRaw<Baris[]>`
       SELECT pt."id" FROM "Potongan" pt
       JOIN "Dokumen" d ON d."id" = pt."dokumenId"
-      WHERE (d."proyekId" = ${proyek.id} OR d."uppsId" = ${uppsId}) AND d."status" = 'siap' AND pt."modelEmbedding" = ${model}
+      WHERE (d."proyekId" = ${proyek.id} OR d."proyekId" IS NULL) AND d."status" = 'siap' AND pt."modelEmbedding" = ${model}
         AND (${sub}::text IS NULL OR d."subBagianKode" = ${sub} OR d."subBagianKode" IS NULL)
         AND pt."teksTsv" @@ to_tsquery('simple', ${q})
       ORDER BY ts_rank(pt."teksTsv", to_tsquery('simple', ${q})) DESC, pt."id"
@@ -87,7 +86,7 @@ export async function cariPotongan(p: Pengguna, proyekId: string, kueri: string,
   if (gabung.length === 0) return { hasil: [] as HasilCari[], catatan };
   const potongan = await prisma.potongan.findMany({
     where: { id: { in: gabung.map((g) => g.id) } },
-    select: { id: true, teks: true, halaman: true, urutan: true, dokumen: { select: { id: true, namaBerkas: true, judul: true, subBagianKode: true, uppsId: true } } },
+    select: { id: true, teks: true, halaman: true, urutan: true, dokumen: { select: { id: true, namaBerkas: true, judul: true, subBagianKode: true, proyekId: true } } },
   });
   const peta = new Map(potongan.map((x) => [x.id, x]));
   const hasil: HasilCari[] = gabung.flatMap((g) => {
@@ -96,7 +95,7 @@ export async function cariPotongan(p: Pengguna, proyekId: string, kueri: string,
     return [{
       potonganId: x.id, dokumenId: x.dokumen.id, namaBerkas: x.dokumen.namaBerkas, judul: x.dokumen.judul,
       subBagianKode: x.dokumen.subBagianKode, halaman: x.halaman, urutan: x.urutan, teks: x.teks, skor: g.skor,
-      peringkatVektor: g.peringkat[0], peringkatKataKunci: g.peringkat[1], bersama: x.dokumen.uppsId !== null,
+      peringkatVektor: g.peringkat[0], peringkatKataKunci: g.peringkat[1], bersama: x.dokumen.proyekId === null,
     }];
   });
   return { hasil, catatan };

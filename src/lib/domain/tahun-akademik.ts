@@ -70,3 +70,16 @@ export function gantiLabelTS(teks: string, tsTahunMulai: number): string {
     return formatTahunAkademik(tsTahunMulai - selisih);
   });
 }
+
+/**
+ * Revisi 19 Okt 2026: satu LED berlaku 5 tahun. Label periode = tahun pengajuan sampai 5 tahun sesudahnya,
+ * misalnya pengajuan 2026 → "Periode 2026–2031".
+ */
+export function labelPeriode(tahunPengajuan: number): string {
+  return `Periode ${tahunPengajuan}–${tahunPengajuan + 5}`;
+}
+
+/** TS bawaan dari tahun pengajuan: tahun akademik sebelumnya (pengajuan 2026 → TS 2025/2026). */
+export function tsDariTahunPengajuan(tahunPengajuan: number): number {
+  return tahunPengajuan - 1;
+}

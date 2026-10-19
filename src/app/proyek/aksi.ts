@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/lib/aksi";
-import { aturArsipProyek, buatProyek, hapusProyek, simpanJawaban, ubahNamaProyek, ubahTsProyek } from "@/lib/data/proyek";
+import { aturArsipProyek, buatProyek, hapusProyek, simpanJawaban, ubahNamaProyek, ubahTahunPengajuan, ubahTsProyek } from "@/lib/data/proyek";
 import type { MasukanProyek, MasukanTimPenyusun } from "@/lib/validasi";
 import * as lkps from "@/lib/data/lkps";
 import * as dokumen from "@/lib/data/dokumen";
@@ -13,6 +13,12 @@ import * as ekspor from "@/lib/data/ekspor";
 export async function aksiBuatProyek(masukan: MasukanProyek) {
   const r = await jalankanAksi(async (p) => (await buatProyek(p, masukan)).id);
   revalidatePath("/proyek");
+  return r;
+}
+
+export async function aksiUbahTahunPengajuan(proyekId: string, tahun: number) {
+  const r = await jalankanAksi((p) => ubahTahunPengajuan(p, proyekId, tahun).then(() => null));
+  revalidatePath("/proyek", "layout");
   return r;
 }
 

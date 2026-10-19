@@ -4,7 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { catatAktivitas } from "@/lib/data/log";
-import { ringkasanKunciProdi } from "@/lib/data/kunci-api";
+import { ringkasanKunci } from "@/lib/data/kunci-api";
 import { ambilProyek, ambilProyekUbah, pastikanBisaDiubah } from "@/lib/data/proyek";
 import {
   bacaDokumen, bandingkanTeks, periksaDokumen, teksDokumen, type DokTiptap, type HasilPemeriksaan, type RujukanPeriksa,
@@ -40,7 +40,7 @@ export async function mulaiGenerate(p: Pengguna, proyekId: string, bagianKode: s
   }
   if (daftar.length === 0) throw new GalatPengguna("Bagian ini tidak punya sub-bagian yang di-generate.");
 
-  const kunci = await ringkasanKunciProdi(proyek.prodiId);
+  const kunci = await ringkasanKunci();
   const tanpaKunci = !kunci.adaYangBisaDipakai && !pakaiNarasiUji();
   const tugas = await prisma.tugasGenerate.create({
     data: {
@@ -51,7 +51,7 @@ export async function mulaiGenerate(p: Pengguna, proyekId: string, bagianKode: s
       dibuatOlehId: p.id,
       status: tanpaKunci ? "tertunda" : "antre",
       pesan: tanpaKunci
-        ? (kunci.milikProdi === 0
+        ? (kunci.milikFakultas === 0
           ? "Belum ada kunci API Gemini. Tambahkan kunci di menu Kunci API; penyusunan dimulai otomatis."
           : "Kuota semua kunci API habis. Tambahkan kunci dari project Google lain; penyusunan dimulai otomatis.")
         : null,
@@ -83,8 +83,8 @@ export async function batalkanTugas(p: Pengguna, tugasId: string) {
 export async function lanjutkanTugas(p: Pengguna, tugasId: string) {
   const t = await tugasMilik(p, tugasId);
   if (t.status !== "gagal" && t.status !== "tertunda") throw new GalatPengguna("Hanya tugas yang gagal atau tertunda yang bisa dilanjutkan.");
-  const proyek = await ambilProyek(p, t.proyekId);
-  if (!pakaiNarasiUji() && !(await ringkasanKunciProdi(proyek.prodiId)).adaYangBisaDipakai) {
+  // tugasMilik sudah memeriksa akses ke LED-nya
+  if (!pakaiNarasiUji() && !(await ringkasanKunci()).adaYangBisaDipakai) {
     throw new GalatPengguna("Belum ada kunci API yang bisa dipakai. Tambahkan kunci di menu Kunci API.");
   }
   await prisma.tugasGenerate.update({ where: { id: t.id }, data: { status: "antre", pesan: null, dilanjutkanPada: null } });

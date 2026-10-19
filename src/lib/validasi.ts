@@ -13,13 +13,14 @@ const teksOpsional = (maks = 300) =>
     .nullish()
     .transform((v) => (v ? v : null));
 
-export const skemaUpps = z.object({
-  kode: teksWajib("Kode UPPS", 40).regex(/^[A-Za-z0-9._-]+$/, "Kode hanya boleh huruf, angka, titik, garis bawah, atau tanda hubung."),
-  nama: teksWajib("Nama UPPS"),
+/** Identitas fakultas (pengganti UPPS, revisi 19 Okt 2026): diisi sekali oleh PJ. */
+export const skemaFakultas = z.object({
+  nama: teksWajib("Nama fakultas"),
   perguruanTinggi: teksWajib("Nama perguruan tinggi"),
   alamat: teksOpsional(500),
+  kota: teksOpsional(80),
 });
-export type MasukanUpps = z.input<typeof skemaUpps>;
+export type MasukanFakultas = z.input<typeof skemaFakultas>;
 
 export const skemaIdentitasProdi = z.object({
   skPendirian: teksOpsional(),
@@ -33,7 +34,6 @@ export const skemaIdentitasProdi = z.object({
   peringkatAkreditasi: teksOpsional(80),
   nomorSkAkreditasi: teksOpsional(),
   lembagaAkreditasi: teksOpsional(120),
-  akreditasiBerlakuSampai: teksOpsional(40),
   alamat: teksOpsional(500),
   telepon: teksOpsional(60),
   email: teksOpsional(120),
@@ -41,9 +41,15 @@ export const skemaIdentitasProdi = z.object({
 });
 export type IdentitasProdi = z.output<typeof skemaIdentitasProdi>;
 
+const tanggalOpsional = z.string().trim()
+  .refine((v) => v === "" || /^\d{4}-\d{2}-\d{2}$/.test(v), "Tanggal tidak valid.")
+  .nullish()
+  .transform((v) => (v ? v : null));
+
 export const skemaProdi = z.object({
-  uppsId: teksWajib("UPPS", 40),
   nama: teksWajib("Nama program studi"),
+  /** Tanggal akreditasi terakhir berakhir (YYYY-MM-DD), untuk mengurutkan prodi yang LED-nya paling dekat. */
+  akreditasiBerlakuSampai: tanggalOpsional,
   jenjang: z.enum(KODE_JENJANG, { message: "Pilih jenjang." }),
   kodePddikti: teksOpsional(20),
   identitas: skemaIdentitasProdi,
@@ -52,15 +58,15 @@ export type MasukanProdi = z.input<typeof skemaProdi>;
 
 const kataSandi = z.string().min(8, "Kata sandi minimal 8 karakter.").max(128, "Kata sandi terlalu panjang.");
 
+/** Akun PJ fakultas (revisi 19 Okt 2026: tidak terikat ke satu prodi). */
 export const skemaAkunPenanggungJawab = z.object({
-  prodiId: teksWajib("Program studi", 40),
   nama: teksWajib("Nama", 120),
   email: z.string().trim().toLowerCase().email("Format email tidak valid."),
   kataSandi,
 });
 export type MasukanAkun = z.input<typeof skemaAkunPenanggungJawab>;
 
-export const skemaAkunSuperAdmin = skemaAkunPenanggungJawab.omit({ prodiId: true });
+export const skemaAkunSuperAdmin = skemaAkunPenanggungJawab;
 export type MasukanAkunSuperAdmin = z.input<typeof skemaAkunSuperAdmin>;
 
 export const skemaGantiSandi = z
@@ -141,11 +147,13 @@ export type MasukanButir = z.input<typeof skemaButir>;
 
 // ---------------------------------------------------------------- Proyek
 
+/** LED baru (revisi 19 Okt 2026): pilih prodi, tahun pengajuan, dan nama; instrumen = instrumen aktif jenjang prodi. */
 export const skemaProyek = z.object({
-  nama: teksWajib("Nama proyek", 200),
-  versiId: teksWajib("Versi instrumen", 40),
-  tsTahunMulai: z.coerce.number().int().min(2000, "Tahun TS tidak masuk akal.").max(2100, "Tahun TS tidak masuk akal."),
+  prodiId: teksWajib("Program studi", 40),
+  nama: teksWajib("Nama LED", 200),
+  tahunPengajuan: z.coerce.number().int().min(2000, "Tahun pengajuan tidak masuk akal.").max(2100, "Tahun pengajuan tidak masuk akal."),
 });
+export const skemaTahunTs = z.coerce.number().int().min(2000, "Tahun TS tidak masuk akal.").max(2100, "Tahun TS tidak masuk akal.");
 export type MasukanProyek = z.input<typeof skemaProyek>;
 
 export const skemaJawabanForm = z.object({

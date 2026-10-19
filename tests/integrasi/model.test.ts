@@ -92,6 +92,6 @@ test("Model LLM: daftar model dimuat dari models.list; model 2.5 diganti 3.x; pi
   assert.equal(uji.ok, true);
   assert.match(uji.pesan, /siap/);
 
-  const pj = { ...admin, peran: "PENANGGUNG_JAWAB" as const, prodiId: "x" };
+  const pj = { ...admin, peran: "PENANGGUNG_JAWAB" as const };
   await assert.rejects(muatDaftarModel(pj), GalatAkses);
 });

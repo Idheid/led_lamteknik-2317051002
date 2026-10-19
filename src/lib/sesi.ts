@@ -17,7 +17,7 @@ export const ambilPengguna = cache(async (): Promise<Pengguna | null> => {
   const peran = PERAN.includes(u.role as Peran) ? (u.role as Peran) : null;
   if (!peran) return null;
   return {
-    id: u.id, nama: u.name, email: u.email, peran, prodiId: u.prodiId ?? null,
+    id: u.id, nama: u.name, email: u.email, peran,
     wajibGantiSandi: Boolean(u.wajibGantiSandi),
   };
 });
@@ -38,6 +38,6 @@ export async function wajibSuperAdmin(): Promise<Pengguna> {
 
 export async function wajibPenanggungJawab(): Promise<Pengguna> {
   const p = await wajibLogin();
-  if (p.peran !== "PENANGGUNG_JAWAB") redirect("/admin");
+  if (p.peran !== "PENANGGUNG_JAWAB") redirect("/admin/akun");
   return p;
 }

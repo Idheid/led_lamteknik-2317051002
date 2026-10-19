@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -20,58 +19,38 @@ import { IkonSibuk, useAksi } from "@/components/aksi-klien";
 import { skemaAkunPenanggungJawab, skemaAkunSuperAdmin, type MasukanAkun, type MasukanAkunSuperAdmin } from "@/lib/validasi";
 import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAkun, aksiBuatSuperAdmin, aksiHapusAkun } from "../aksi";
 
-export function DialogBuatAkun({ prodi, prodiAwal }: { prodi: { id: string; label: string }[]; prodiAwal?: string }) {
-  const awalSah = prodi.some((x) => x.id === prodiAwal) ? prodiAwal : undefined;
-  const [buka, setBuka] = useState(Boolean(awalSah));
+/** Akun PJ fakultas (revisi 19 Okt 2026: tidak terikat ke satu prodi). */
+export function DialogBuatAkun() {
+  const [buka, setBuka] = useState(false);
   const { sibuk, jalankan } = useAksi();
   const form = useForm<MasukanAkun>({
     resolver: zodResolver(skemaAkunPenanggungJawab),
-    defaultValues: { prodiId: awalSah ?? "", nama: "", email: "", kataSandi: "" },
+    defaultValues: { nama: "", email: "", kataSandi: "" },
   });
   const kirim = form.handleSubmit((nilai) =>
     jalankan(() => aksiBuatAkun(nilai), {
-      sukses: "Akun penanggung jawab dibuat. Sampaikan email dan kata sandinya ke pemilik akun.",
+      sukses: "Akun PJ dibuat. Sampaikan email dan kata sandinya ke pemilik akun.",
       lalu: () => {
         setBuka(false);
-        form.reset({ prodiId: "", nama: "", email: "", kataSandi: "" });
+        form.reset({ nama: "", email: "", kataSandi: "" });
       },
     }),
   );
   return (
     <Dialog open={buka} onOpenChange={setBuka}>
       <DialogTrigger asChild>
-        <Button disabled={prodi.length === 0} title={prodi.length === 0 ? "Semua prodi sudah punya akun" : undefined}>
+        <Button>
           <Plus aria-hidden />
-          Buat akun penanggung jawab
+          Buat akun PJ
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Akun penanggung jawab baru</DialogTitle>
-          <DialogDescription>Satu akun aktif untuk setiap program studi. Untuk mengganti penanggung jawab, nonaktifkan akun lama dulu.</DialogDescription>
+          <DialogTitle>Akun PJ fakultas baru</DialogTitle>
+          <DialogDescription>PJ mengelola semua prodi, LED, instrumen, dan dokumen fakultas. Saat petugas berganti, buat akun pengganti lalu nonaktifkan akun lama.</DialogDescription>
         </DialogHeader>
         <form onSubmit={kirim} noValidate>
           <FieldGroup>
-            <Controller
-              name="prodiId"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="akun-prodi">Program studi</FieldLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="akun-prodi" className="w-full" aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Pilih program studi" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {prodi.map((x) => (
-                        <SelectItem key={x.id} value={x.id}>{x.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
             <Controller
               name="nama"
               control={form.control}
@@ -210,7 +189,7 @@ export function DialogBuatSuperAdmin() {
   });
   const kirim = form.handleSubmit((nilai) =>
     jalankan(() => aksiBuatSuperAdmin(nilai), {
-      sukses: "Akun super admin dibuat. Pemilik akun wajib mengganti kata sandi saat login pertama.",
+      sukses: "Akun admin dibuat. Pemilik akun wajib mengganti kata sandi saat login pertama.",
       lalu: () => {
         setBuka(false);
         form.reset({ nama: "", email: "", kataSandi: "" });
@@ -227,13 +206,13 @@ export function DialogBuatSuperAdmin() {
       <DialogTrigger asChild>
         <Button variant="outline">
           <ShieldPlus aria-hidden />
-          Super admin baru
+          Admin baru
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Akun super admin baru</DialogTitle>
-          <DialogDescription>Untuk serah terima pengelolaan ke fakultas. Super admin bisa mengelola instrumen, prodi, dan semua akun.</DialogDescription>
+          <DialogTitle>Akun admin baru</DialogTitle>
+          <DialogDescription>Untuk serah terima pengelolaan ke fakultas. Admin bisa mengelola instrumen, prodi, dan semua akun.</DialogDescription>
         </DialogHeader>
         <form onSubmit={kirim} noValidate>
           <FieldGroup>
@@ -256,7 +235,7 @@ export function DialogBuatSuperAdmin() {
           <DialogFooter className="mt-6">
             <Button type="submit" disabled={sibuk}>
               <IkonSibuk sibuk={sibuk} />
-              Buat super admin
+              Buat admin
             </Button>
           </DialogFooter>
         </form>

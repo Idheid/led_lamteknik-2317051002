@@ -135,7 +135,7 @@ export function isiDataProyek(documentXml: string, d: DataEkspor): HasilIsiData 
   const nilai = (k: string, label: string) => {
     const v = (d as unknown as Record<string, string>)[k] ?? d.identitas[k as keyof DataEkspor['identitas']];
     if (!v || !v.trim()) {
-      peringatan.push(`${label} belum diisi (diisi super admin di identitas prodi).`);
+      peringatan.push(`${label} belum diisi (isi di menu Program studi).`);
       return KOSONG;
     }
     return v.trim();

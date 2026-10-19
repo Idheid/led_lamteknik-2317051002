@@ -2,18 +2,13 @@ import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
 import type { GrupNav } from "@/components/shell/nav-sidebar";
 import { wajibSuperAdmin } from "@/lib/sesi";
 
+/** Revisi 19 Okt 2026: admin hanya mengurus akun PJ dan kunci API (beserta pilihan model dan log pemakaian). */
 const MENU: GrupNav[] = [
   {
-    label: "Super admin",
+    label: "Admin",
     item: [
-      { judul: "Ringkasan", href: "/admin", ikon: "dasbor", persis: true },
-      { judul: "Instrumen", href: "/admin/instrumen", ikon: "instrumen" },
-      { judul: "Prodi dan UPPS", href: "/admin/prodi", ikon: "prodi" },
-      { judul: "Bahan bersama UPPS", href: "/admin/bahan-upps", ikon: "dokumen" },
-      { judul: "Akun", href: "/admin/akun", ikon: "akun" },
-      { judul: "Model LLM", href: "/admin/model", ikon: "model" },
-      { judul: "Kunci API cadangan", href: "/admin/kunci-api", ikon: "kunci" },
-      { judul: "Log pemakaian", href: "/admin/log", ikon: "log" },
+      { judul: "Akun PJ", href: "/admin/akun", ikon: "akun" },
+      { judul: "Kunci API", href: "/admin/kunci-api", ikon: "kunci" },
     ],
   },
 ];
@@ -21,7 +16,7 @@ const MENU: GrupNav[] = [
 export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
   const p = await wajibSuperAdmin();
   return (
-    <ShellAplikasi pengguna={p} grup={MENU} subjudul="Super admin" beranda="/admin">
+    <ShellAplikasi pengguna={p} grup={MENU} subjudul="Admin" beranda="/admin/akun">
       {children}
     </ShellAplikasi>
   );

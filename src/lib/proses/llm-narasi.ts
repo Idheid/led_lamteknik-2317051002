@@ -1,7 +1,7 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { catatGalatKunci, GalatTanpaKunci, isiKunci, kunciProdi } from "@/lib/data/kunci-api";
+import { catatGalatKunci, GalatTanpaKunci, isiKunci, kunciFakultas } from "@/lib/data/kunci-api";
 import { klasifikasiGalat, pesanKunciHabis, pilihKunci } from "@/lib/domain/kunci-api";
 import { versiModel } from "@/lib/domain/model-llm";
 import type { KeluaranSubBagian } from "@/lib/domain/prompt";
@@ -11,7 +11,7 @@ import { MODEL_NARASI_UJI, modelNarasiUji, pakaiNarasiUji } from "@/lib/llm/nara
 
 /**
  * Satu panggilan LLM untuk satu sub-bagian (F-13, F-19, F-20):
- * - kunci dipilih lewat `pilihKunci` (kunci prodi dulu, lalu cadangan super admin bila diizinkan);
+ * - kunci dipilih lewat `pilihKunci` (kunci fakultas dulu, lalu cadangan admin bila diizinkan);
  * - model dicoba berurutan: model narasi lalu model cadangan; 429 harian pada satu model → model berikutnya;
  *   bila semua model kena kuota harian, kunci ditandai kuota_habis dan kunci berikutnya dipakai;
  * - batas per menit dan galat sementara ditunggu lalu diulang;
@@ -97,7 +97,7 @@ export async function panggilNarasi(a: PanggilanNarasi): Promise<HasilPanggilan>
   }
 
   for (let putaran = 0; putaran < 25; putaran++) {
-    const { atur, domain } = await kunciProdi(a.prodiId);
+    const { atur, domain } = await kunciFakultas();
     const sekarang = new Date();
     const k = pilihKunci(domain.filter((x) => !dikecualikan.has(x.id)), sekarang, { pakaiCadanganAdmin: atur.pakaiCadanganAdmin });
     if (!k) {

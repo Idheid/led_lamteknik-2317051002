@@ -27,9 +27,9 @@ import { GalatSementara, panggilNarasi } from "@/lib/proses/llm-narasi";
 
 const TARGET_CADANGAN = 250;
 
-/** Pengguna sistem untuk memakai fungsi data yang memeriksa prodi (worker tidak punya sesi). */
-function penggunaSistem(prodiId: string): Pengguna {
-  return { id: "sistem", nama: "Sistem", email: "", peran: "PENANGGUNG_JAWAB", prodiId };
+/** Pengguna sistem untuk memakai fungsi data yang memeriksa peran (worker tidak punya sesi). */
+function penggunaSistem(): Pengguna {
+  return { id: "sistem", nama: "Sistem", email: "", peran: "PENANGGUNG_JAWAB" };
 }
 
 /** Sub-bagian yang berlaku untuk jenjang proyek di satu bagian, beserta butirnya. */
@@ -77,7 +77,8 @@ interface KonteksLengkap {
 
 /** Susun konteks prompt satu sub-bagian. Data pribadi disamarkan sebelum masuk konteks. */
 export async function susunKonteks(proyekId: string, subBagianKode: string): Promise<KonteksLengkap> {
-  const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId }, include: { prodi: { include: { upps: true } } } });
+  const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId }, include: { prodi: true } });
+  const fakultas = await prisma.fakultas.findUnique({ where: { id: "utama" } });
   const ts = proyek.tsTahunMulai;
   const s = await prisma.subBagian.findFirst({
     where: { kode: subBagianKode, bagian: { versiId: proyek.versiId } },
@@ -116,7 +117,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
 
   // potongan dokumen (RAG)
   const kueri = [s.judul, instruksi.slice(0, 400), ...butir.flatMap((b) => [b.indikator, ...b.unsurSkor4])].join(". ").slice(0, 1500);
-  const cari = await cariPotongan(penggunaSistem(proyek.prodiId), proyekId, kueri, { subBagianKode, k: 8 });
+  const cari = await cariPotongan(penggunaSistem(), proyekId, kueri, { subBagianKode, k: 8 });
   catatan.push(...cari.catatan);
   // dokumen proyek D1, D2, ...; bahan bersama UPPS (U-10) U1, U2, ... supaya penyusun tahu bukti berasal dari fakultas
   let nD = 0;
@@ -176,7 +177,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   const target = targetKataSubBagian(anggaran, s.bagian.kode, subSebagian.map((x) => ({ kode: x.kode, tipe: x.tipe, butir: x.butir.map((b) => b.kode) })))[s.kode] ?? TARGET_CADANGAN;
 
   const konteks: KonteksSubBagian = {
-    prodi: { nama: proyek.prodi.nama, jenjang: proyek.jenjang, upps: proyek.prodi.upps.nama, perguruanTinggi: proyek.prodi.upps.perguruanTinggi },
+    prodi: { nama: proyek.prodi.nama, jenjang: proyek.jenjang, upps: fakultas?.nama ?? "", perguruanTinggi: fakultas?.perguruanTinggi ?? "" },
     ts: { tahunAkademik: formatTahunAkademik(ts), petaLabel: petaTS(ts, 4) },
     subBagian: { kode: s.kode, label: s.label, judul: s.judul, grup: s.grup, instruksi, tipe: s.tipe },
     kriteria: s.bagian.jenis === "kriteria" ? { kode: s.bagian.kode, nama: s.bagian.nama } : null,
@@ -268,10 +269,10 @@ async function ubahTugas(id: string, dariStatus: string[], data: Prisma.TugasGen
   return prisma.tugasGenerate.updateMany({ where: { id, status: { in: dariStatus } }, data });
 }
 
-/** Jadwalkan lanjutan otomatis saat kuota kunci prodi paling cepat direset. */
-async function jadwalkanSetelahReset(tugasId: string, prodiId: string): Promise<Date | null> {
+/** Jadwalkan lanjutan otomatis saat kuota kunci (fakultas atau cadangan) paling cepat direset. */
+async function jadwalkanSetelahReset(tugasId: string): Promise<Date | null> {
   const k = await prisma.kunciAPI.findFirst({
-    where: { status: "kuota_habis", habisSampai: { not: null }, OR: [{ prodiId }, { pemilik: "super_admin" }] },
+    where: { status: "kuota_habis", habisSampai: { not: null } },
     orderBy: { habisSampai: "asc" },
   });
   if (!k?.habisSampai) return null;
@@ -298,7 +299,7 @@ export async function prosesTugasGenerate(tugasId: string): Promise<string> {
     } catch (e) {
       if (e instanceof GalatTanpaKunci) {
         await ubahTugas(tugasId, ["berjalan"], { status: "tertunda", pesan: e.message });
-        await jadwalkanSetelahReset(tugasId, tugas.proyek.prodiId);
+        await jadwalkanSetelahReset(tugasId);
         return "tertunda";
       }
       if (e instanceof GalatSementara) {

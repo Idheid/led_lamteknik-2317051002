@@ -3,65 +3,87 @@ import type { Prisma } from "@/generated/prisma/client";
 import { GalatAkses, GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/lib/akses";
 import { catatAktivitas } from "@/lib/data/log";
 import { hapusBerkas } from "@/lib/penyimpanan";
-import { berlakuUntukJenjang } from "@/lib/domain/instrumen";
-import { skemaJawabanForm, skemaProyek, type MasukanProyek } from "@/lib/validasi";
+import { berlakuUntukJenjang, namaJenjang } from "@/lib/domain/instrumen";
+import { labelPeriode, tsDariTahunPengajuan } from "@/lib/domain/tahun-akademik";
+import { skemaJawabanForm, skemaProyek, skemaTahunTs, type MasukanProyek } from "@/lib/validasi";
 
 /**
- * F-07 proyek LED. Penanggung jawab hanya melihat dan mengubah proyek prodinya sendiri:
- * setiap kueri memakai filter prodiId dari sesi, bukan dari masukan pengguna.
+ * F-07 LED (ProyekLED). Revisi 19 Okt 2026: satu LED = satu pengajuan akreditasi satu prodi yang berlaku 5 tahun.
+ * PJ fakultas melihat dan mengelola semua LED di fakultas; satu prodi hanya boleh punya satu LED aktif (LED periode
+ * sebelumnya diarsipkan dulu). Instrumen LED otomatis = instrumen aktif untuk jenjang prodi.
  */
 
+/** Semua LED fakultas (aktif dulu, lalu arsip), beserta prodi dan versinya. */
 export async function daftarProyek(p: Pengguna) {
-  const prodiId = pastikanPenanggungJawab(p);
+  pastikanPenanggungJawab(p);
   return prisma.proyekLED.findMany({
-    where: { prodiId },
-    orderBy: [{ diarsipkanPada: { sort: "desc", nulls: "first" } }, { createdAt: "desc" }],
-    include: { versi: { select: { kode: true, nama: true } }, prodi: { select: { nama: true } } },
+    orderBy: [{ diarsipkanPada: { sort: "desc", nulls: "first" } }, { tahunPengajuan: "desc" }, { createdAt: "desc" }],
+    include: { versi: { select: { kode: true, nama: true } }, prodi: { select: { id: true, nama: true, jenjang: true } } },
   });
 }
 
-export async function prodiSaya(p: Pengguna) {
-  const prodiId = pastikanPenanggungJawab(p);
-  return prisma.prodi.findUniqueOrThrow({ where: { id: prodiId }, include: { upps: true } });
+/** Versi instrumen aktif untuk satu jenjang (versi per jenjang lebih dulu, lalu versi lama lintas jenjang). */
+export async function instrumenAktifUntuk(jenjang: string) {
+  const kandidat = await prisma.versiInstrumen.findMany({
+    where: { aktif: true, OR: [{ jenjangUtama: jenjang }, { jenjangUtama: null }] },
+    orderBy: [{ createdAt: "desc" }],
+    include: { _count: { select: { butir: { where: { jenjang } } } } },
+  });
+  return kandidat.find((v) => v.jenjangUtama === jenjang && v._count.butir > 0)
+    ?? kandidat.find((v) => v._count.butir > 0)
+    ?? null;
+}
+
+/** LED aktif (belum diarsipkan) milik prodi, bila ada. */
+async function ledAktifProdi(prodiId: string, kecuali?: string) {
+  return prisma.proyekLED.findFirst({
+    where: { prodiId, diarsipkanPada: null, ...(kecuali ? { NOT: { id: kecuali } } : {}) },
+    select: { id: true, nama: true, tahunPengajuan: true },
+  });
 }
 
 export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
-  const prodiId = pastikanPenanggungJawab(p);
+  pastikanPenanggungJawab(p);
   const data = skemaProyek.parse(masukan);
-  const prodi = await prisma.prodi.findUniqueOrThrow({ where: { id: prodiId } });
-  const versi = await prisma.versiInstrumen.findUnique({ where: { id: data.versiId } });
-  if (!versi || !versi.aktif) throw new GalatPengguna("Versi instrumen tidak tersedia. Pilih versi yang aktif.");
-  const butir = await prisma.butirPenilaian.count({ where: { versiId: versi.id, jenjang: prodi.jenjang } });
-  if (butir === 0) {
-    throw new GalatPengguna(`Versi ${versi.kode} belum punya butir penilaian untuk jenjang ${prodi.jenjang}. Hubungi super admin.`);
+  const prodi = await prisma.prodi.findUnique({ where: { id: data.prodiId } });
+  if (!prodi) throw new GalatPengguna("Program studi tidak ditemukan.");
+  const aktif = await ledAktifProdi(prodi.id);
+  if (aktif) {
+    throw new GalatPengguna(`${prodi.nama} masih punya LED aktif (${aktif.nama}, ${labelPeriode(aktif.tahunPengajuan)}). Arsipkan LED itu dulu sebelum membuat LED periode berikutnya.`);
+  }
+  const versi = await instrumenAktifUntuk(prodi.jenjang);
+  if (!versi) {
+    throw new GalatPengguna(`Instrumen jenjang ${namaJenjang(prodi.jenjang)} belum aktif. Unggah dan aktifkan instrumennya di menu Instrumen.`);
   }
   const proyek = await prisma.proyekLED.create({
     data: {
-      prodiId,
+      prodiId: prodi.id,
       versiId: versi.id,
       jenjang: prodi.jenjang,
       nama: data.nama,
-      tsTahunMulai: data.tsTahunMulai,
-      // salinan anggaran versi: bisa diubah per proyek tanpa mengubah versi
+      tahunPengajuan: data.tahunPengajuan,
+      // TS = tahun akademik sebelum tahun pengajuan (pengajuan Oktober 2026 → TS 2025/2026); bisa diubah di Pengaturan LED
+      tsTahunMulai: tsDariTahunPengajuan(data.tahunPengajuan),
+      // salinan anggaran versi: bisa diubah per LED tanpa mengubah versi
       anggaran: versi.anggaranBawaan as Prisma.InputJsonValue,
     },
   });
-  await catatAktivitas(p, "buat", "proyek", proyek.id, { nama: proyek.nama, versi: versi.kode });
+  await catatAktivitas(p, "buat", "proyek", proyek.id, { nama: proyek.nama, prodi: prodi.nama, versi: versi.kode });
   return proyek;
 }
 
-/** Ambil proyek milik prodi pengguna; galat akses bila bukan miliknya. */
+/** Ambil LED (PJ fakultas boleh membuka semua LED). */
 export async function ambilProyek(p: Pengguna, proyekId: string) {
-  const prodiId = pastikanPenanggungJawab(p);
-  const proyek = await prisma.proyekLED.findFirst({
-    where: { id: proyekId, prodiId },
+  pastikanPenanggungJawab(p);
+  const proyek = await prisma.proyekLED.findUnique({
+    where: { id: proyekId },
     include: {
-      prodi: { include: { upps: true } },
+      prodi: true,
       versi: { select: { id: true, kode: true, nama: true } },
       status: true,
     },
   });
-  if (!proyek) throw new GalatAkses("Proyek tidak ditemukan atau bukan milik program studi Anda.");
+  if (!proyek) throw new GalatAkses("LED tidak ditemukan.");
   return proyek;
 }
 
@@ -93,6 +115,10 @@ export async function aturArsipProyek(p: Pengguna, proyekId: string, arsip: bool
     const aktif = await prisma.tugasGenerate.count({ where: { proyekId: proyek.id, status: { in: ["antre", "berjalan", "tertunda"] } } });
     if (aktif) throw new GalatPengguna("Masih ada penyusunan berjalan. Tunggu selesai atau batalkan dulu.");
   }
+  if (!arsip) {
+    const lain = await ledAktifProdi(proyek.prodiId, proyek.id);
+    if (lain) throw new GalatPengguna(`${proyek.prodi.nama} sudah punya LED aktif lain (${lain.nama}). Arsipkan LED itu dulu.`);
+  }
   await prisma.proyekLED.update({ where: { id: proyek.id }, data: { diarsipkanPada: arsip ? new Date() : null } });
   await catatAktivitas(p, arsip ? "arsipkan" : "aktifkan", "proyek", proyek.id, { nama: proyek.nama });
 }
@@ -118,9 +144,18 @@ export async function hapusProyek(p: Pengguna, proyekId: string, konfirmasiNama:
   await catatAktivitas(p, "hapus", "proyek", proyek.id, { nama: proyek.nama, dokumen: dokumen.length, lkps: lkps.length });
 }
 
+/** Pengaturan LED: tahun pengajuan (label periode). */
+export async function ubahTahunPengajuan(p: Pengguna, proyekId: string, tahun: number) {
+  const proyek = await ambilProyekUbah(p, proyekId);
+  const t = skemaProyek.shape.tahunPengajuan.parse(tahun);
+  await prisma.proyekLED.update({ where: { id: proyek.id }, data: { tahunPengajuan: t } });
+  await catatAktivitas(p, "ubah_tahun_pengajuan", "proyek", proyek.id, { tahun: t });
+}
+
+/** Pengaturan LED: tahun data LKPS (TS). */
 export async function ubahTsProyek(p: Pengguna, proyekId: string, tsTahunMulai: number) {
   const proyek = await ambilProyekUbah(p, proyekId);
-  const ts = skemaProyek.shape.tsTahunMulai.parse(tsTahunMulai);
+  const ts = skemaTahunTs.parse(tsTahunMulai);
   await prisma.proyekLED.update({ where: { id: proyek.id }, data: { tsTahunMulai: ts } });
   await catatAktivitas(p, "ubah_ts", "proyek", proyek.id, { ts });
 }

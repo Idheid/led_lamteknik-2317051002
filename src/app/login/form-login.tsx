@@ -33,7 +33,7 @@ export function FormLogin({ tujuan }: { tujuan?: string }) {
     const { data, error } = await authClient.signIn.email({ email: nilai.email.trim().toLowerCase(), password: nilai.kataSandi });
     if (error || !data) {
       const pesan = error?.status === 403
-        ? "Akun Anda dinonaktifkan. Hubungi super admin."
+        ? "Akun Anda dinonaktifkan. Hubungi admin."
         : error?.status === 429
           ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
           : "Email atau kata sandi salah.";

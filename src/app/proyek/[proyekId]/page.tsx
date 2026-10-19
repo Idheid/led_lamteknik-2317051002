@@ -4,13 +4,13 @@ import { ChevronRight, KeyRound } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { bagianProyek, butirAnggaranProyek, ringkasanBagianProyek } from "@/lib/data/proyek";
 import { ringkasanBahan } from "@/lib/data/dokumen";
-import { daftarKunci, ringkasanKunciProdi } from "@/lib/data/kunci-api";
+import { daftarKunci, ringkasanKunci } from "@/lib/data/kunci-api";
 import { pakaiPenyediaUji } from "@/lib/llm/embedding";
 import { bacaAnggaran } from "@/lib/domain/anggaran-proyek";
 import { hitungAnggaran, usulanHalamanKriteria } from "@/lib/domain/anggaran";
 import { namaJenjang } from "@/lib/domain/instrumen";
 import { formatAngka } from "@/lib/domain/teks";
-import { formatTahunAkademik } from "@/lib/domain/tahun-akademik";
+import { formatTahunAkademik, labelPeriode } from "@/lib/domain/tahun-akademik";
 import type { IdentitasProdi } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
@@ -23,6 +23,7 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DialogUbahTs } from "./dialog-ubah-ts";
+import { DialogUbahTahun } from "./dialog-ubah-tahun";
 import { PengaturanProyek } from "./pengaturan-proyek";
 
 export const metadata: Metadata = { title: "Beranda" };
@@ -42,7 +43,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
     daftarKunci(p),
   ]);
   const kunciAktif = kunci.filter((k) => k.statusEfektif === "aktif").length;
-  const statusKunci = await ringkasanKunciProdi(proyek.prodiId);
+  const statusKunci = await ringkasanKunci();
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
   const usulan = usulanHalamanKriteria(bagianAnggaran, butir, pengaturan);
@@ -65,13 +66,13 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
     <>
       <JudulHalaman
         judul={proyek.nama}
-        deskripsi={`${proyek.prodi.nama} · ${namaJenjang(proyek.jenjang)} · ${proyek.prodi.upps.nama}, ${proyek.prodi.upps.perguruanTinggi}`}
+        deskripsi={`${proyek.prodi.nama} · ${namaJenjang(proyek.jenjang)} · ${labelPeriode(proyek.tahunPengajuan)}`}
       />
       <Petunjuk
         kunci="beranda-proyek"
         fungsi="Beranda merangkum progres penyusunan LED, anggaran halaman, kunci API, dan bahan penyusunan proyek ini."
         langkah={[
-          "Pastikan kunci API Gemini sudah ditambahkan (menu Kunci API).",
+          "Pastikan kunci API Gemini sudah ditambahkan (menu Kunci API fakultas).",
           "Unggah LKPS di menu Data LKPS, lalu periksa tabel dan metrik hasil bacaan.",
           "Unggah dokumen pendukung di menu Dokumen.",
           "Buka kriteria di tabel di bawah, isi jawaban penyusun, lalu klik Generate kriteria.",
@@ -80,11 +81,11 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
       {!statusKunci.adaYangBisaDipakai && !pakaiPenyediaUji() && (
         <Alert variant="destructive">
           <KeyRound aria-hidden />
-          <AlertTitle>{statusKunci.milikProdi === 0 ? "Belum ada kunci API Gemini" : "Semua kunci API sedang tidak bisa dipakai"}</AlertTitle>
+          <AlertTitle>{statusKunci.milikFakultas === 0 ? "Belum ada kunci API Gemini" : "Semua kunci API sedang tidak bisa dipakai"}</AlertTitle>
           <AlertDescription>
             <p>
-              {statusKunci.milikProdi === 0
-                ? "Kunci API diperlukan untuk mengindeks dokumen dan menyusun narasi. Kunci berlaku untuk semua proyek LED prodi Anda."
+              {statusKunci.milikFakultas === 0
+                ? "Kunci API diperlukan untuk mengindeks dokumen dan menyusun narasi. Kunci berlaku untuk semua LED fakultas."
                 : "Kuota kunci habis atau kunci ditolak Google. Tambahkan kunci dari project Google lain, atau tunggu reset kuota harian."}
             </p>
             <Button asChild size="sm" className="mt-2">
@@ -123,15 +124,15 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Tahun TS</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{formatTahunAkademik(proyek.tsTahunMulai)}</CardTitle>
+            <CardDescription>Periode akreditasi</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">{proyek.tahunPengajuan}–{proyek.tahunPengajuan + 5}</CardTitle>
             <CardAction>
-              <DialogUbahTs proyekId={proyek.id} tsTahunMulai={proyek.tsTahunMulai} />
+              <DialogUbahTahun proyekId={proyek.id} tahunPengajuan={proyek.tahunPengajuan} />
             </CardAction>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground">
-              TS-1 = {formatTahunAkademik(proyek.tsTahunMulai - 1)}, TS-2 = {formatTahunAkademik(proyek.tsTahunMulai - 2)}
+              Tahun pengajuan {proyek.tahunPengajuan}; berlaku 5 tahun. Tahun data LKPS (TS) di Pengaturan LED.
             </p>
           </CardContent>
         </Card>
@@ -317,7 +318,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Identitas pengusul</CardTitle>
-              <CardDescription>Diisi super admin; dipakai di halaman identitas LED.</CardDescription>
+              <CardDescription>Diisi di menu Program studi; dipakai di halaman identitas LED.</CardDescription>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
@@ -325,7 +326,9 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
                   ["Kode PDDikti", proyek.prodi.kodePddikti],
                   ["Akreditasi terakhir", ident.peringkatAkreditasi],
                   ["SK akreditasi", ident.nomorSkAkreditasi],
-                  ["Berlaku sampai", ident.akreditasiBerlakuSampai],
+                  ["Berlaku sampai", proyek.prodi.akreditasiBerlakuSampai
+                    ? new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" }).format(proyek.prodi.akreditasiBerlakuSampai)
+                    : null],
                   ["SK pembukaan prodi", ident.skPembukaan],
                   ["Versi instrumen", proyek.versi.kode],
                 ].map(([label, nilai]) => (
@@ -341,13 +344,21 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pengaturan proyek</CardTitle>
+          <CardTitle className="text-base">Pengaturan LED</CardTitle>
           <CardDescription>
-            Proyek selalu milik {proyek.prodi.nama}. LED periode lama sebaiknya diarsipkan (tetap tersimpan sebagai rujukan
-            akreditasi berikutnya); hapus hanya untuk proyek yang salah dibuat.
+            LED ini milik {proyek.prodi.nama}. LED periode lama diarsipkan (tetap tersimpan sebagai rujukan akreditasi
+            berikutnya); hapus hanya untuk LED yang salah dibuat.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Tahun data LKPS (TS):</span>
+            <span className="font-medium tabular-nums">{formatTahunAkademik(proyek.tsTahunMulai)}</span>
+            <span className="text-xs text-muted-foreground">
+              (TS-1 = {formatTahunAkademik(proyek.tsTahunMulai - 1)}, TS-2 = {formatTahunAkademik(proyek.tsTahunMulai - 2)})
+            </span>
+            <DialogUbahTs proyekId={proyek.id} tsTahunMulai={proyek.tsTahunMulai} />
+          </div>
           <PengaturanProyek proyekId={proyek.id} nama={proyek.nama} diarsipkan={Boolean(proyek.diarsipkanPada)} />
         </CardContent>
       </Card>

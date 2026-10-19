@@ -35,14 +35,14 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
   const lain = bagian.filter((b) => b.jenis !== "kriteria");
   const grup: GrupNav[] = [
     {
-      label: "Prodi",
+      label: "Fakultas",
       item: [
-        { judul: "Semua proyek LED", href: "/proyek", ikon: "proyek", persis: true },
-        { judul: "Kunci API prodi", href: "/proyek/kunci-api", ikon: "kunci" },
+        { judul: "Semua LED", href: "/proyek", ikon: "proyek", persis: true },
+        { judul: "Kunci API fakultas", href: "/proyek/kunci-api", ikon: "kunci" },
       ],
     },
     {
-      label: "Proyek ini",
+      label: "LED ini",
       item: [
         { judul: "Beranda", href: dasar, ikon: "beranda", persis: true },
         { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },

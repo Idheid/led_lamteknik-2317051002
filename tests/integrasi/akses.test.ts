@@ -4,9 +4,14 @@ import assert from "node:assert/strict";
 import { prisma } from "@/lib/db";
 import { GalatAkses, GalatPengguna } from "@/lib/akses";
 import {
-  aturAktifAkun, aturUlangKataSandi, buatAkunPenanggungJawab, daftarUpps, hapusProdi, simpanProdi, simpanUpps,
+  ambilFakultas, aturAktifAkun, aturUlangKataSandi, buatAkunPenanggungJawab, daftarAkun, daftarProdi, hapusProdi,
+  simpanFakultas, simpanProdi,
 } from "@/lib/data/organisasi";
-import { ambilProyek, bagianProyek, buatProyek, daftarProyek, halamanBagian, simpanJawaban } from "@/lib/data/proyek";
+import {
+  ambilProyek, aturArsipProyek, bagianProyek, buatProyek, daftarProyek, halamanBagian, simpanJawaban,
+} from "@/lib/data/proyek";
+import { daftarVersi } from "@/lib/data/instrumen";
+import { daftarKunci } from "@/lib/data/kunci-api";
 import { bersihkanDb, bisaLogin, buatSuperAdmin, imporSeed, penggunaDari } from "./bantu";
 
 before(async () => {
@@ -15,69 +20,85 @@ before(async () => {
 });
 after(() => prisma.$disconnect());
 
-test("F-01/F-02/F-07 super admin menyiapkan prodi; penanggung jawab hanya melihat prodinya", async () => {
+test("Revisi 19 Okt tahap 1: admin hanya Akun PJ dan Kunci API; PJ fakultas mengelola semua prodi", async () => {
   const admin = await buatSuperAdmin();
   assert.equal(await bisaLogin("admin@uji.test", "SandiAdmin#123"), true);
+  const akun = await buatAkunPenanggungJawab(admin, { nama: "PJ Fakultas", email: "pj@uji.test", kataSandi: "SandiPJ#1234" });
+  const pj = await penggunaDari(akun.id);
+  assert.equal(pj.peran, "PENANGGUNG_JAWAB");
+  assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: akun.id } })).wajibGantiSandi, true);
+  // akun PJ kedua (pengganti) boleh dibuat; tidak ada aturan satu akun per prodi lagi
+  await buatAkunPenanggungJawab(admin, { nama: "PJ Pengganti", email: "pj2@uji.test", kataSandi: "SandiPJ#1234" });
 
-  const upps = await simpanUpps(admin, { kode: "FT-UJI", nama: "Fakultas Teknik", perguruanTinggi: "Universitas Uji", alamat: "" });
-  await assert.rejects(simpanUpps(admin, { kode: "FT-UJI", nama: "Ganda", perguruanTinggi: "X", alamat: "" }), GalatPengguna);
-  const identitas = { skPendirian: "SK 1/2000", peringkatAkreditasi: "Baik Sekali" };
-  const ti = await simpanProdi(admin, { uppsId: upps.id, nama: "Teknik Informatika", jenjang: "S1", kodePddikti: "55201", identitas });
-  const sipil = await simpanProdi(admin, { uppsId: upps.id, nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "22201", identitas: {} });
-  assert.equal((ti.identitas as { skPendirian: string }).skPendirian, "SK 1/2000");
+  // admin tidak bisa membuka pekerjaan penyusunan
+  await assert.rejects(simpanFakultas(admin, { nama: "FT", perguruanTinggi: "U", alamat: "", kota: "" }), GalatAkses);
+  await assert.rejects(simpanProdi(admin, { nama: "X", jenjang: "S1", kodePddikti: "", identitas: {} }), GalatAkses);
+  await assert.rejects(daftarProdi(admin), GalatAkses);
+  await assert.rejects(daftarVersi(admin), GalatAkses);
+  await assert.rejects(daftarProyek(admin), GalatAkses);
+  // admin tetap mengelola akun dan kunci cadangan; PJ tidak bisa mengelola akun
+  assert.ok((await daftarAkun(admin)).length >= 3);
+  await daftarKunci(admin);
+  await assert.rejects(daftarAkun(pj), GalatAkses);
+  await assert.rejects(buatAkunPenanggungJawab(pj, { nama: "X", email: "x@uji.test", kataSandi: "SandiPJ#1234" }), GalatAkses);
 
-  const akunTi = await buatAkunPenanggungJawab(admin, { prodiId: ti.id, nama: "PJ TI", email: "pj.ti@uji.test", kataSandi: "SandiTI#123" });
-  const akunSipil = await buatAkunPenanggungJawab(admin, { prodiId: sipil.id, nama: "PJ Sipil", email: "pj.sipil@uji.test", kataSandi: "SandiSipil#123" });
-  // satu akun per prodi
-  await assert.rejects(
-    buatAkunPenanggungJawab(admin, { prodiId: ti.id, nama: "Lain", email: "lain@uji.test", kataSandi: "SandiLain#123" }),
-    GalatPengguna,
-  );
-  assert.equal(await bisaLogin("pj.ti@uji.test", "SandiTI#123"), true);
-  assert.equal(await bisaLogin("pj.ti@uji.test", "salah-sandi"), false);
+  // identitas fakultas (pengganti UPPS) dan prodi dikelola PJ
+  await simpanFakultas(pj, { nama: "Fakultas Teknik", perguruanTinggi: "Universitas Uji", alamat: "Jl. Uji 1", kota: "Bandar Lampung" });
+  assert.equal((await ambilFakultas())?.nama, "Fakultas Teknik");
+  const ti = await simpanProdi(pj, { nama: "Teknik Informatika", jenjang: "S1", kodePddikti: "55201", akreditasiBerlakuSampai: "2027-03-01", identitas: { skPendirian: "SK 1/2000" } });
+  const sipil = await simpanProdi(pj, { nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "22201", akreditasiBerlakuSampai: "2026-12-01", identitas: {} });
+  await simpanProdi(pj, { nama: "Teknik Kimia", jenjang: "S1", kodePddikti: "24201", identitas: {} });
+  await assert.rejects(simpanProdi(pj, { nama: "Ganda", jenjang: "S1", kodePddikti: "55201", identitas: {} }), GalatPengguna);
+  // diurutkan menurut tanggal akreditasi berakhir (paling dekat di atas, kosong di bawah)
+  assert.deepEqual((await daftarProdi(pj)).map((x) => x.nama), ["Teknik Sipil", "Teknik Informatika", "Teknik Kimia"]);
 
-  const pjTi = await penggunaDari(akunTi.id);
-  const pjSipil = await penggunaDari(akunSipil.id);
-  assert.equal(pjTi.peran, "PENANGGUNG_JAWAB");
-  assert.equal(pjTi.prodiId, ti.id);
-
-  // penanggung jawab tidak bisa memakai fungsi super admin
-  await assert.rejects(daftarUpps(pjTi), GalatAkses);
-  await assert.rejects(simpanProdi(pjTi, { uppsId: upps.id, nama: "X", jenjang: "S1", kodePddikti: "", identitas: {} }), GalatAkses);
-
+  // PJ membuka LED semua prodi
+  const ledTi = await buatProyek(pj, { prodiId: ti.id, nama: "LED TI", tahunPengajuan: 2026 });
+  const ledSipil = await buatProyek(pj, { prodiId: sipil.id, nama: "LED Sipil", tahunPengajuan: 2026 });
+  assert.equal(ledTi.jenjang, "S1");
+  assert.equal(ledTi.tsTahunMulai, 2025, "TS dihitung dari tahun pengajuan (2026 → 2025/2026)");
   const versi = await prisma.versiInstrumen.findFirstOrThrow({ where: { aktif: true } });
-  const proyekTi = await buatProyek(pjTi, { nama: "LED TI", versiId: versi.id, tsTahunMulai: 2025 });
-  const proyekSipil = await buatProyek(pjSipil, { nama: "LED Sipil", versiId: versi.id, tsTahunMulai: 2025 });
-  assert.equal(proyekTi.prodiId, ti.id);
-  assert.equal(proyekTi.jenjang, "S1");
-  assert.deepEqual(proyekTi.anggaran, versi.anggaranBawaan);
+  assert.equal(ledTi.versiId, versi.id, "instrumen otomatis = instrumen aktif jenjang prodi");
+  assert.equal(versi.jenjangUtama, "S1");
+  assert.deepEqual((await daftarProyek(pj)).map((x) => x.id).sort(), [ledTi.id, ledSipil.id].sort());
+  await ambilProyek(pj, ledSipil.id);
+  await assert.rejects(ambilProyek(admin, ledSipil.id), GalatAkses);
+  await assert.rejects(hapusProdi(pj, ti.id), GalatPengguna, "prodi yang punya LED tidak bisa dihapus");
+});
 
-  assert.deepEqual((await daftarProyek(pjTi)).map((x) => x.id), [proyekTi.id]);
-  await assert.rejects(ambilProyek(pjTi, proyekSipil.id), GalatAkses);
-  await assert.rejects(halamanBagian(pjTi, proyekSipil.id, "C.1"), GalatAkses);
-  await assert.rejects(simpanJawaban(pjTi, { proyekId: proyekSipil.id, subBagianKode: "C.1-LB", isi: "x" }), GalatAkses);
-  // prodi yang punya proyek tidak bisa dihapus
-  await assert.rejects(hapusProdi(admin, ti.id), GalatPengguna);
+test("Revisi 19 Okt tahap 2: satu LED aktif per prodi; LED kedua ditolak sebelum LED lama diarsipkan; instrumen jenjang harus aktif", async () => {
+  const pj = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "pj@uji.test" } })).id);
+  const ti = await prisma.prodi.findFirstOrThrow({ where: { nama: "Teknik Informatika" } });
+  const lama = await prisma.proyekLED.findFirstOrThrow({ where: { prodiId: ti.id } });
+  await assert.rejects(buatProyek(pj, { prodiId: ti.id, nama: "LED TI 2031", tahunPengajuan: 2031 }), GalatPengguna);
+  await aturArsipProyek(pj, lama.id, true);
+  const baru = await buatProyek(pj, { prodiId: ti.id, nama: "LED TI 2031", tahunPengajuan: 2031 });
+  assert.equal(baru.tsTahunMulai, 2030);
+  // LED lama tidak bisa diaktifkan lagi selama LED baru aktif
+  await assert.rejects(aturArsipProyek(pj, lama.id, false), GalatPengguna);
+
+  const d3 = await simpanProdi(pj, { nama: "D3 Teknik Mesin", jenjang: "D3", kodePddikti: "21401", identitas: {} });
+  await assert.rejects(buatProyek(pj, { prodiId: d3.id, nama: "LED D3", tahunPengajuan: 2026 }), /Instrumen jenjang Diploma Tiga belum aktif/);
 });
 
 test("F-01 menonaktifkan akun menolak login; mengatur ulang kata sandi", async () => {
   const admin = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "admin@uji.test" } })).id);
-  const pj = await prisma.user.findFirstOrThrow({ where: { email: "pj.sipil@uji.test" } });
+  const pj = await prisma.user.findFirstOrThrow({ where: { email: "pj2@uji.test" } });
   await aturAktifAkun(admin, pj.id, false);
-  assert.equal(await bisaLogin("pj.sipil@uji.test", "SandiSipil#123"), false);
+  assert.equal(await bisaLogin("pj2@uji.test", "SandiPJ#1234"), false);
   await aturAktifAkun(admin, pj.id, true);
-  assert.equal(await bisaLogin("pj.sipil@uji.test", "SandiSipil#123"), true);
+  assert.equal(await bisaLogin("pj2@uji.test", "SandiPJ#1234"), true);
 
   await aturUlangKataSandi(admin, { userId: pj.id, kataSandi: "SandiBaru#456" });
-  assert.equal(await bisaLogin("pj.sipil@uji.test", "SandiSipil#123"), false);
-  assert.equal(await bisaLogin("pj.sipil@uji.test", "SandiBaru#456"), true);
+  assert.equal(await bisaLogin("pj2@uji.test", "SandiPJ#1234"), false);
+  assert.equal(await bisaLogin("pj2@uji.test", "SandiBaru#456"), true);
   assert.ok((await prisma.logAktivitas.count({ where: { objekId: pj.id } })) >= 3);
   await assert.rejects(aturAktifAkun(admin, admin.id, false), GalatPengguna);
 });
 
 test("F-07/UI sidebar C.1–C.7 sesuai versi; C.3 Sarjana = 19 IKU + 4 bersama; jawaban form tersimpan", async () => {
-  const pj = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "pj.ti@uji.test" } })).id);
-  const [proyek] = await daftarProyek(pj);
+  const pj = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "pj@uji.test" } })).id);
+  const proyek = (await daftarProyek(pj)).find((x) => !x.diarsipkanPada)!;
   const { bagian } = await bagianProyek(pj, proyek.id);
   assert.deepEqual(
     bagian.filter((b) => b.jenis === "kriteria").map((b) => b.kode),
@@ -92,7 +113,6 @@ test("F-07/UI sidebar C.1–C.7 sesuai versi; C.3 Sarjana = 19 IKU + 4 bersama; 
   for (const kode of ["C.3-IKU-a.06", "C.3-IKU-a.07", "C.3-IKU-a.08", "C.3-IKU-b.03"]) {
     assert.ok(!sub.some((s) => s.kode === kode), `${kode} tidak boleh tampil untuk Sarjana`);
   }
-  // setiap sub-bagian IKU Sarjana punya butirnya
   assert.ok(sub.filter((s) => s.tipe === "iku").every((s) => s.butir.length >= 1));
 
   await simpanJawaban(pj, { proyekId: proyek.id, subBagianKode: "C.3-LB", isi: "Jawaban uji" });

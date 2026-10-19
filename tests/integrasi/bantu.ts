@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { Pengguna } from "@/lib/akses";
 import { imporInstrumen } from "@/lib/data/impor-instrumen";
+import { buatAkunPenanggungJawab, simpanFakultas } from "@/lib/data/organisasi";
 
 /** Kosongkan semua tabel aplikasi (kecuali riwayat migrasi). */
 export async function bersihkanDb(): Promise<void> {
@@ -26,13 +27,13 @@ export async function buatSuperAdmin(email = "admin@uji.test"): Promise<Pengguna
   const { user } = await auth.api.createUser({
     body: { email, password: "SandiAdmin#123", name: "Admin Uji", role: "SUPER_ADMIN" },
   });
-  return { id: user.id, nama: user.name, email: user.email, peran: "SUPER_ADMIN", prodiId: null };
+  return { id: user.id, nama: user.name, email: user.email, peran: "SUPER_ADMIN" };
 }
 
 /** Pengguna dari basis data (seperti yang dibaca sesi). */
 export async function penggunaDari(userId: string): Promise<Pengguna> {
   const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  return { id: u.id, nama: u.name, email: u.email, peran: u.role, prodiId: u.prodiId };
+  return { id: u.id, nama: u.name, email: u.email, peran: u.role };
 }
 
 /** Login lewat Better Auth; mengembalikan true bila berhasil. */
@@ -43,4 +44,12 @@ export async function bisaLogin(email: string, password: string): Promise<boolea
   } catch {
     return false;
   }
+}
+
+/** Revisi 19 Okt 2026: satu akun PJ fakultas + identitas fakultas (pengganti UPPS). */
+export async function siapkanPj(admin: Pengguna, email = "pj@uji.test", fakultas = { nama: "Fakultas Teknik", perguruanTinggi: "Universitas Contoh", alamat: "Jl. Contoh No. 1", kota: "" }): Promise<Pengguna> {
+  const akun = await buatAkunPenanggungJawab(admin, { nama: "PJ Fakultas", email, kataSandi: "SandiPJ#123" });
+  const pj = await penggunaDari(akun.id);
+  await simpanFakultas(pj, fakultas);
+  return pj;
 }

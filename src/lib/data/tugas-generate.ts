@@ -1,13 +1,10 @@
 import { prisma } from "@/lib/db";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 
-/**
- * Tugas generate yang tertunda karena kunci habis dikirim ulang setelah kunci baru ditambahkan (F-19).
- * `prodiId` null = kunci cadangan super admin: semua tugas tertunda dicoba lagi.
- */
-export async function antreUlangTugasTertunda(prodiId: string | null): Promise<number> {
+/** Tugas generate yang tertunda karena kunci habis dikirim ulang setelah kunci baru ditambahkan (F-19). */
+export async function antreUlangTugasTertunda(): Promise<number> {
   const daftar = await prisma.tugasGenerate.findMany({
-    where: { status: "tertunda", ...(prodiId ? { proyek: { prodiId } } : {}) },
+    where: { status: "tertunda" },
     select: { id: true },
   });
   for (const t of daftar) {

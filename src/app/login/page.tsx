@@ -24,7 +24,7 @@ export default async function HalamanLogin({ searchParams }: PageProps<"/login">
       </div>
       <FormLogin tujuan={typeof ke === "string" ? ke : undefined} />
       <p className="mt-6 max-w-sm text-center text-xs text-muted-foreground">
-        Akun dibuat oleh super admin. Lupa kata sandi? Hubungi super admin untuk mengatur ulang.
+        Akun dibuat oleh admin. Lupa kata sandi? Hubungi admin untuk mengatur ulang.
       </p>
     </div>
   );

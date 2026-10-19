@@ -1,69 +1,68 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { GalatPengguna, pastikanSuperAdmin, type Pengguna } from "@/lib/akses";
+import { GalatPengguna, pastikanPenanggungJawab, pastikanSuperAdmin, type Pengguna } from "@/lib/akses";
 import { catatAktivitas } from "@/lib/data/log";
 import {
   skemaAkunPenanggungJawab,
   skemaAkunSuperAdmin,
+  skemaFakultas,
   skemaGantiSandi,
   skemaAturUlangSandi,
   skemaProdi,
-  skemaUpps,
   type MasukanAkun,
   type MasukanAkunSuperAdmin,
+  type MasukanFakultas,
   type MasukanGantiSandi,
   type MasukanProdi,
-  type MasukanUpps,
 } from "@/lib/validasi";
 
 /**
- * F-02: UPPS dan prodi. F-01: akun (dibuat, dinonaktifkan, diatur ulang sandinya, dihapus) hanya oleh super admin.
- * Aturan akun: satu akun penanggung jawab AKTIF per prodi; super admin tidak bisa menonaktifkan atau menghapus akunnya
- * sendiri; minimal satu super admin aktif. Proyek, kunci API, dan versi draf terikat ke prodi sehingga tetap ada saat
- * akun penanggung jawab diganti.
+ * Revisi 19 Okt 2026: satu instalasi website dipakai satu fakultas.
+ * - Identitas fakultas (pengganti UPPS) dan daftar program studi dikelola penanggung jawab (PJ) fakultas.
+ * - Akun hanya dikelola admin: membuat akun PJ (tidak terikat prodi) dan admin lain, menonaktifkan, mengatur ulang
+ *   sandi, menghapus. Admin tidak bisa menonaktifkan/menghapus dirinya sendiri; minimal satu admin aktif.
+ *   LED, kunci API, dan riwayat versi milik fakultas, jadi tetap ada saat akun PJ diganti.
  */
 
 /** Akun aktif = tidak di-ban (banned false/null). */
 export const AKTIF = { OR: [{ banned: false }, { banned: null }] };
 
-export async function daftarUpps(p: Pengguna) {
-  pastikanSuperAdmin(p);
-  return prisma.upps.findMany({
-    orderBy: { nama: "asc" },
+// ---------------------------------------------------------------- Fakultas dan program studi (PJ)
+
+/** Identitas fakultas (satu baris); null bila belum diisi. Boleh dibaca semua peran. */
+export async function ambilFakultas() {
+  return prisma.fakultas.findUnique({ where: { id: "utama" } });
+}
+
+export async function simpanFakultas(p: Pengguna, masukan: MasukanFakultas) {
+  pastikanPenanggungJawab(p);
+  const data = skemaFakultas.parse(masukan);
+  const f = await prisma.fakultas.upsert({ where: { id: "utama" }, create: { id: "utama", ...data }, update: data });
+  await catatAktivitas(p, "ubah", "fakultas", f.id, { nama: f.nama });
+  return f;
+}
+
+/**
+ * Daftar prodi, diurutkan menurut tanggal akreditasi berakhir (paling dekat di atas, yang belum diisi di bawah),
+ * beserta LED aktif dan jumlah LED-nya.
+ */
+export async function daftarProdi(p: Pengguna) {
+  pastikanPenanggungJawab(p);
+  const prodi = await prisma.prodi.findMany({
+    orderBy: [{ akreditasiBerlakuSampai: { sort: "asc", nulls: "last" } }, { nama: "asc" }],
     include: {
-      prodi: {
-        orderBy: { nama: "asc" },
-        include: {
-          akun: { select: { id: true, name: true, email: true, banned: true }, orderBy: { createdAt: "desc" } },
-          _count: { select: { proyek: true } },
-        },
-      },
+      proyek: { orderBy: { tahunPengajuan: "desc" }, select: { id: true, nama: true, tahunPengajuan: true, diarsipkanPada: true } },
     },
   });
+  return prodi;
 }
 
-export async function simpanUpps(p: Pengguna, masukan: MasukanUpps, id?: string) {
-  pastikanSuperAdmin(p);
-  const data = skemaUpps.parse(masukan);
-  const bentrok = await prisma.upps.findFirst({ where: { kode: data.kode, NOT: id ? { id } : undefined } });
-  if (bentrok) throw new GalatPengguna(`Kode UPPS ${data.kode} sudah dipakai.`);
-  const upps = id
-    ? await prisma.upps.update({ where: { id }, data })
-    : await prisma.upps.create({ data });
-  await catatAktivitas(p, id ? "ubah" : "buat", "upps", upps.id, { kode: upps.kode });
-  return upps;
-}
-
-export async function hapusUpps(p: Pengguna, id: string) {
-  pastikanSuperAdmin(p);
-  const jumlahProdi = await prisma.prodi.count({ where: { uppsId: id } });
-  if (jumlahProdi > 0) throw new GalatPengguna("UPPS masih punya program studi. Hapus atau pindahkan prodinya dulu.");
-  await prisma.upps.delete({ where: { id } });
-  await catatAktivitas(p, "hapus", "upps", id);
+function keTanggal(v: string | null): Date | null {
+  return v ? new Date(`${v}T00:00:00.000Z`) : null;
 }
 
 export async function simpanProdi(p: Pengguna, masukan: MasukanProdi, id?: string) {
-  pastikanSuperAdmin(p);
+  pastikanPenanggungJawab(p);
   const data = skemaProdi.parse(masukan);
   if (data.kodePddikti) {
     const bentrok = await prisma.prodi.findFirst({ where: { kodePddikti: data.kodePddikti, NOT: id ? { id } : undefined } });
@@ -72,30 +71,32 @@ export async function simpanProdi(p: Pengguna, masukan: MasukanProdi, id?: strin
   if (id) {
     const lama = await prisma.prodi.findUniqueOrThrow({ where: { id }, include: { _count: { select: { proyek: true } } } });
     if (lama.jenjang !== data.jenjang && lama._count.proyek > 0) {
-      throw new GalatPengguna("Jenjang tidak bisa diubah karena prodi sudah punya proyek LED.");
+      throw new GalatPengguna("Jenjang tidak bisa diubah karena prodi sudah punya LED.");
     }
   }
-  const isi = { ...data, identitas: data.identitas };
+  const isi = {
+    nama: data.nama,
+    jenjang: data.jenjang,
+    kodePddikti: data.kodePddikti,
+    identitas: data.identitas,
+    akreditasiBerlakuSampai: keTanggal(data.akreditasiBerlakuSampai),
+  };
   const prodi = id ? await prisma.prodi.update({ where: { id }, data: isi }) : await prisma.prodi.create({ data: isi });
   await catatAktivitas(p, id ? "ubah" : "buat", "prodi", prodi.id, { nama: prodi.nama, jenjang: prodi.jenjang });
   return prodi;
 }
 
 export async function hapusProdi(p: Pengguna, id: string) {
-  pastikanSuperAdmin(p);
-  const prodi = await prisma.prodi.findUniqueOrThrow({
-    where: { id },
-    include: { _count: { select: { proyek: true, akun: true } } },
-  });
-  if (prodi._count.proyek > 0) throw new GalatPengguna("Prodi sudah punya proyek LED dan tidak bisa dihapus.");
-  if (prodi._count.akun > 0) throw new GalatPengguna("Hapus dulu akun penanggung jawab prodi ini.");
+  pastikanPenanggungJawab(p);
+  const prodi = await prisma.prodi.findUniqueOrThrow({ where: { id }, include: { _count: { select: { proyek: true } } } });
+  if (prodi._count.proyek > 0) throw new GalatPengguna("Prodi sudah punya LED dan tidak bisa dihapus.");
   await prisma.prodi.delete({ where: { id } });
   await catatAktivitas(p, "hapus", "prodi", id, { nama: prodi.nama });
 }
 
 export async function ambilProdi(p: Pengguna, id: string) {
-  pastikanSuperAdmin(p);
-  return prisma.prodi.findUnique({ where: { id }, include: { upps: true, akun: { where: AKTIF } } });
+  pastikanPenanggungJawab(p);
+  return prisma.prodi.findUnique({ where: { id } });
 }
 
 // ---------------------------------------------------------------- Akun
@@ -106,7 +107,6 @@ export async function daftarAkun(p: Pengguna) {
     orderBy: [{ role: "asc" }, { name: "asc" }],
     select: {
       id: true, name: true, email: true, role: true, banned: true, createdAt: true, wajibGantiSandi: true,
-      prodi: { select: { id: true, nama: true, jenjang: true, upps: { select: { kode: true } } } },
     },
   });
 }
@@ -120,25 +120,21 @@ async function jumlahSuperAdminAktif(kecuali?: string) {
   return prisma.user.count({ where: { role: "SUPER_ADMIN", ...AKTIF, ...(kecuali ? { NOT: { id: kecuali } } : {}) } });
 }
 
-/** Buat akun penanggung jawab untuk satu prodi (hanya bila prodi belum punya akun aktif). Wajib ganti sandi saat login. */
+/**
+ * Buat akun PJ fakultas (wajib ganti sandi saat login). Biasanya cukup satu; saat petugas berganti, admin membuat
+ * akun pengganti lalu menonaktifkan akun lama.
+ */
 export async function buatAkunPenanggungJawab(p: Pengguna, masukan: MasukanAkun) {
   pastikanSuperAdmin(p);
   const data = skemaAkunPenanggungJawab.parse(masukan);
-  const prodi = await prisma.prodi.findUnique({ where: { id: data.prodiId }, include: { akun: { where: AKTIF } } });
-  if (!prodi) throw new GalatPengguna("Program studi tidak ditemukan.");
-  if (prodi.akun.length > 0) {
-    throw new GalatPengguna(`${prodi.nama} sudah punya akun penanggung jawab aktif (${prodi.akun[0].email}). Nonaktifkan dulu akun itu untuk mengganti penanggung jawab.`);
-  }
   await pastikanEmailBaru(data.email);
-  const hasil = await auth.api.createUser({
-    body: { email: data.email, password: data.kataSandi, name: data.nama, role: "PENANGGUNG_JAWAB", data: { prodiId: prodi.id } },
-  });
-  await prisma.user.update({ where: { id: hasil.user.id }, data: { wajibGantiSandi: true, prodiId: prodi.id } });
-  await catatAktivitas(p, "buat", "akun", hasil.user.id, { email: data.email, prodi: prodi.nama });
+  const hasil = await auth.api.createUser({ body: { email: data.email, password: data.kataSandi, name: data.nama, role: "PENANGGUNG_JAWAB" } });
+  await prisma.user.update({ where: { id: hasil.user.id }, data: { wajibGantiSandi: true } });
+  await catatAktivitas(p, "buat", "akun", hasil.user.id, { email: data.email });
   return hasil.user;
 }
 
-/** Super admin membuat super admin lain (misalnya untuk serah terima ke fakultas). */
+/** Admin membuat admin lain (misalnya untuk serah terima). */
 export async function buatAkunSuperAdmin(p: Pengguna, masukan: MasukanAkunSuperAdmin) {
   pastikanSuperAdmin(p);
   const data = skemaAkunSuperAdmin.parse(masukan);
@@ -155,16 +151,12 @@ export async function aturAktifAkun(p: Pengguna, userId: string, aktif: boolean)
   if (userId === p.id) throw new GalatPengguna("Anda tidak bisa menonaktifkan akun sendiri.");
   const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   if (!aktif && u.role === "SUPER_ADMIN" && (await jumlahSuperAdminAktif(userId)) === 0) {
-    throw new GalatPengguna("Minimal harus ada satu super admin aktif.");
-  }
-  if (aktif && u.role === "PENANGGUNG_JAWAB" && u.prodiId) {
-    const lain = await prisma.user.findFirst({ where: { prodiId: u.prodiId, ...AKTIF, NOT: { id: userId } } });
-    if (lain) throw new GalatPengguna(`Prodi ini sudah punya akun aktif (${lain.email}). Nonaktifkan dulu akun itu.`);
+    throw new GalatPengguna("Minimal harus ada satu admin aktif.");
   }
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
-      data: aktif ? { banned: false, banReason: null, banExpires: null } : { banned: true, banReason: "Dinonaktifkan super admin" },
+      data: aktif ? { banned: false, banReason: null, banExpires: null } : { banned: true, banReason: "Dinonaktifkan admin" },
     }),
     ...(aktif ? [] : [prisma.session.deleteMany({ where: { userId } })]),
   ]);
@@ -189,15 +181,15 @@ export async function aturUlangKataSandi(p: Pengguna, masukan: { userId: string;
 }
 
 /**
- * Hapus akun. Data prodi (proyek, kunci API, versi draf, log) tetap ada; kolom pembuatnya dikosongkan.
- * Akun sendiri tidak bisa dihapus dan super admin aktif terakhir tidak bisa dihapus.
+ * Hapus akun. Data fakultas (LED, kunci API, versi draf, log) tetap ada; kolom pembuatnya dikosongkan.
+ * Akun sendiri tidak bisa dihapus dan admin aktif terakhir tidak bisa dihapus.
  */
 export async function hapusAkun(p: Pengguna, userId: string) {
   pastikanSuperAdmin(p);
   if (userId === p.id) throw new GalatPengguna("Anda tidak bisa menghapus akun sendiri.");
   const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   if (u.role === "SUPER_ADMIN" && (await jumlahSuperAdminAktif(userId)) === 0) {
-    throw new GalatPengguna("Minimal harus ada satu super admin aktif.");
+    throw new GalatPengguna("Minimal harus ada satu admin aktif.");
   }
   await prisma.user.delete({ where: { id: userId } });
   await catatAktivitas(p, "hapus", "akun", userId, { email: u.email, peran: u.role });

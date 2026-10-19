@@ -6,7 +6,6 @@ export interface Pengguna {
   nama: string;
   email: string;
   peran: Peran;
-  prodiId: string | null;
   /** Akun baru atau sandi diatur ulang: wajib mengganti kata sandi sebelum memakai aplikasi. */
   wajibGantiSandi?: boolean;
 }
@@ -31,9 +30,10 @@ export function pastikanSuperAdmin(p: Pengguna): void {
   if (p.peran !== "SUPER_ADMIN") throw new GalatAkses();
 }
 
-/** Penanggung jawab hanya boleh mengakses prodinya sendiri; mengembalikan prodiId-nya. */
-export function pastikanPenanggungJawab(p: Pengguna): string {
+/**
+ * Penanggung jawab (PJ) fakultas: satu instalasi website dipakai satu fakultas, jadi PJ mengelola semua prodi, LED,
+ * instrumen, dokumen bersama, dan kunci API fakultas (revisi 19 Okt 2026). Admin hanya mengurus akun dan kunci API.
+ */
+export function pastikanPenanggungJawab(p: Pengguna): void {
   if (p.peran !== "PENANGGUNG_JAWAB") throw new GalatAkses();
-  if (!p.prodiId) throw new GalatAkses("Akun Anda belum terhubung ke program studi. Hubungi super admin.");
-  return p.prodiId;
 }

@@ -35,6 +35,6 @@ export async function jalankanAksi<T>(
     if (kode === "P2002") return { ok: false, pesan: "Data dengan kode yang sama sudah ada." };
     if (kode === "P2003") return { ok: false, pesan: "Data ini masih dipakai data lain sehingga tidak bisa dihapus." };
     console.error("Aksi gagal:", e);
-    return { ok: false, pesan: "Terjadi kesalahan di server. Coba lagi; bila berulang, hubungi super admin." };
+    return { ok: false, pesan: "Terjadi kesalahan di server. Coba lagi; bila berulang, hubungi admin." };
   }
 }

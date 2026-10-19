@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/lib/aksi";
 import * as kunciApi from "@/lib/data/kunci-api";
 
-/** Aksi kunci API (penanggung jawab: kunci prodi; super admin: kunci cadangan). Tidak terikat proyek. */
+/** Aksi kunci API (PJ: kunci fakultas; admin: kunci cadangan). Tidak terikat proyek. */
 
 function segarkan() {
   revalidatePath("/proyek", "layout");

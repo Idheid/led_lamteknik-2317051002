@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatAkses, GalatPengguna, pastikanSuperAdmin, type Pengguna } from "@/lib/akses";
+import { GalatAkses, GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/lib/akses";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { catatAktivitas } from "@/lib/data/log";
 import { ambilProyek, ambilProyekUbah } from "@/lib/data/proyek";
@@ -14,7 +14,7 @@ import { bacaTemplateVersi, bacaTim, siapkanTemplate, subBagianTemplate } from "
 import { skemaTimPenyusun, type MasukanTimPenyusun } from "@/lib/validasi";
 
 /**
- * Ekspor Word untuk penanggung jawab (F-22–F-24) dan template LEDPS per versi untuk super admin.
+ * Ekspor Word (F-22–F-24) dan template LED per versi instrumen; semuanya dikelola PJ fakultas.
  */
 
 // ------------------------------------------------------------------ tim penyusun
@@ -61,8 +61,8 @@ export async function periksaEkspor(p: Pengguna, proyekId: string): Promise<Peri
   const tim = bacaTim(proyek.timPenyusun);
   if (tim.dosen.length === 0) hasil.galat.push("Tim penyusun (dosen) belum diisi di menu Tim penyusun.");
   const templateAda = Boolean(versi.templateLedLokasi || process.env.TEMPLATE_LEDPS_PATH);
-  if (!templateAda) hasil.galat.push("Template LEDPS belum diunggah super admin untuk versi instrumen ini.");
-  const tautan = await prisma.dokumen.count({ where: { OR: [{ proyekId: proyek.id }, { uppsId: proyek.prodi.uppsId }], tautanBukti: { not: null } } });
+  if (!templateAda) hasil.galat.push("Template LED belum diunggah untuk instrumen ini (menu Instrumen).");
+  const tautan = await prisma.dokumen.count({ where: { OR: [{ proyekId: proyek.id }, { proyekId: null }], tautanBukti: { not: null } } });
   if (tautan === 0) hasil.peringatan.push("Belum ada tautan bukti sahih (Lampiran). Isi tautan penyimpanan awan pada dokumen di menu Dokumen.");
   const libreOffice = lokasiSoffice() !== null;
   if (!libreOffice) hasil.peringatan.push("LibreOffice belum terpasang di server: jumlah halaman akan diperkirakan, bukan dihitung.");
@@ -112,7 +112,7 @@ export async function hapusEkspor(p: Pengguna, eksporId: string) {
   if (e.lokasi) await hapusBerkas(e.lokasi).catch(() => undefined);
 }
 
-// ------------------------------------------------------------------ template per versi (super admin)
+// ------------------------------------------------------------------ template per versi (PJ, menu Instrumen)
 
 export const UKURAN_MAKS_TEMPLATE = 30 * 1024 * 1024;
 
@@ -128,7 +128,7 @@ async function laporanTemplate(versiId: string, isi: Buffer, jenjangVersi: strin
 }
 
 export async function unggahTemplateLed(p: Pengguna, versiId: string, berkas: { nama: string; isi: Buffer }) {
-  pastikanSuperAdmin(p);
+  pastikanPenanggungJawab(p);
   const versi = await prisma.versiInstrumen.findUnique({ where: { id: versiId } });
   if (!versi) throw new GalatPengguna("Versi instrumen tidak ditemukan.");
   if (berkas.isi.length > UKURAN_MAKS_TEMPLATE) throw new GalatPengguna("Berkas template terlalu besar (maks. 30 MB).");
@@ -153,7 +153,7 @@ export async function unggahTemplateLed(p: Pengguna, versiId: string, berkas: { 
 
 /** Laporan template untuk halaman versi (dihitung dari template cadangan bila belum ada unggahan). */
 export async function infoTemplateLed(p: Pengguna, versiId: string) {
-  pastikanSuperAdmin(p);
+  pastikanPenanggungJawab(p);
   const versi = await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: versiId } });
   const laporan = versi.templateLedLaporan as Record<string, { placeholder: number; dihapus: string[]; tidakDitemukan: string[] }> | null;
   const cadangan = !versi.templateLedLokasi && Boolean(process.env.TEMPLATE_LEDPS_PATH) && Boolean(await bacaTemplateVersi(versi));

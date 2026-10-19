@@ -20,7 +20,7 @@ export default async function HalamanGantiSandi() {
           <CardTitle>Ganti kata sandi</CardTitle>
           <CardDescription>
             {p.wajibGantiSandi
-              ? "Kata sandi Anda dibuat atau diatur ulang oleh super admin. Ganti dengan kata sandi milik Anda sendiri sebelum melanjutkan."
+              ? "Kata sandi Anda dibuat atau diatur ulang oleh admin. Ganti dengan kata sandi milik Anda sendiri sebelum melanjutkan."
               : `Masuk sebagai ${p.email}. Semua perangkat lain akan dikeluarkan setelah kata sandi diganti.`}
           </CardDescription>
         </CardHeader>
