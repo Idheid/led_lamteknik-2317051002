@@ -22,6 +22,9 @@ import { prosesBerkasLkps } from "@/lib/proses/lkps";
 import { prosesDokumen } from "@/lib/proses/dokumen";
 import { prosesTugasGenerate } from "@/lib/proses/generate";
 import { bacaDokumen, paragrafBersumber, teksDokumen } from "@/lib/domain/narasi";
+import { muatKriteria } from "@/lib/data/kriteria";
+import { halamanBagian } from "@/lib/data/proyek";
+import { peringatanSebelumGenerate, posisiSub, subLanjutkan } from "@/lib/domain/navigasi";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 process.env.GENERATE_JEDA_MAKS_MS = "0";
@@ -280,6 +283,52 @@ test("F-16/F-17 sunting tersimpan otomatis, generate ulang satu butir, bandingka
   await assert.rejects(drafBagian(adminUji, proyekId, "C.1"), GalatAkses);
   await assert.rejects(pulihkanVersi(adminUji, v2.id), GalatAkses);
   await assert.rejects(simpanSuntingan(adminUji, proyekId, "C.1-IKU-a", isi), GalatAkses);
+});
+
+test("Revisi 19 Okt tahap 3: satu sub-bagian satu halaman: status, Lanjutkan, posisi, jawaban tetap tersimpan, peringatan AF/SWOT", async () => {
+  // C.2 belum disentuh: semua belum, Lanjutkan membuka sub-bagian pertama yang di-generate
+  let k = (await muatKriteria(pj, proyekId, "C.2"))!;
+  const kodeC2 = k.bagian.subBagian.map((s) => s.kode);
+  const generateC2 = k.subGenerate.map((s) => s.kode);
+  assert.ok(generateC2.length >= 4);
+  assert.ok(generateC2.every((kode) => k.statusSub[kode] === "belum"));
+  assert.equal(subLanjutkan(kodeC2.map((kode) => ({ kode, status: k.statusSub[kode] }))), generateC2[0]);
+  assert.equal(k.jumlahDrafIku, 0);
+  const af = generateC2.find((x) => x.endsWith("-AF"))!;
+  assert.match(peringatanSebelumGenerate(af, k.jumlahDrafIku) ?? "", /belum punya draf IKU/, "AF tanpa draf IKU diberi peringatan");
+  const pos = posisiSub(kodeC2, generateC2[1])!;
+  assert.equal(pos.nomor, kodeC2.indexOf(generateC2[1]) + 1);
+  assert.equal(pos.total, kodeC2.length);
+  assert.equal(k.urutanBagian.findIndex((b) => b.kode === "C.3"), k.urutanBagian.findIndex((b) => b.kode === "C.2") + 1);
+
+  // jawaban yang disimpan sebelum pindah halaman tetap ada saat halaman dibuka lagi; menimpa tidak menggandakan
+  await simpanJawaban(pj, { proyekId, subBagianKode: generateC2[0], isi: "Jawaban halaman pertama." });
+  await simpanJawaban(pj, { proyekId, subBagianKode: generateC2[1], isi: "Draf awal." });
+  await simpanJawaban(pj, { proyekId, subBagianKode: generateC2[1], isi: "Jawaban halaman kedua setelah diperbaiki." });
+  const h = (await halamanBagian(pj, proyekId, "C.2"))!;
+  assert.equal(h.jawaban[generateC2[0]], "Jawaban halaman pertama.");
+  assert.equal(h.jawaban[generateC2[1]], "Jawaban halaman kedua setelah diperbaiki.");
+  assert.equal(await prisma.jawabanForm.count({ where: { proyekId, subBagianKode: generateC2[1] } }), 1);
+  k = (await muatKriteria(pj, proyekId, "C.2"))!;
+  assert.equal(k.statusSub[generateC2[0]], "ada_jawaban");
+  assert.equal(subLanjutkan(kodeC2.map((kode) => ({ kode, status: k.statusSub[kode] }))), generateC2[0], "ada jawaban belum berarti selesai");
+
+  // generate satu halaman (sub-bagian IKU) lalu statusnya menjadi ada draf, dan AF tidak lagi diberi peringatan
+  const ikuC2 = k.bagian.subBagian.find((s) => s.tipe === "iku")!.kode;
+  const t = await mulaiGenerate(pj, proyekId, "C.2", ikuC2);
+  assert.equal(await prosesTugasGenerate(t.id), "selesai");
+  k = (await muatKriteria(pj, proyekId, "C.2"))!;
+  assert.equal(k.statusSub[ikuC2], "ada_draf");
+  assert.equal(k.jumlahDraf, 1);
+  assert.equal(k.jumlahDrafIku, 1);
+  assert.equal(peringatanSebelumGenerate(af, k.jumlahDrafIku), null);
+
+  // C.1 sudah ditandai selesai di uji sebelumnya: semua sub-bagian selesai
+  const c1 = (await muatKriteria(pj, proyekId, "C.1"))!;
+  assert.ok(URUTAN_C1.every((kode) => c1.statusSub[kode] === "selesai"));
+  assert.equal(c1.status, "selesai");
+  await assert.rejects(muatKriteria(adminUji, proyekId, "C.1"), GalatAkses);
+  assert.equal(await muatKriteria(pj, proyekId, "TIDAK-ADA"), null);
 });
 
 test("F-19 429 harian: generate berhenti rapi, meminta kunci baru, lalu lanjut dari butir tertunda", async () => {
