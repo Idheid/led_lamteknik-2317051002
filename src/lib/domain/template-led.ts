@@ -298,6 +298,8 @@ export interface SubTerpetakan {
   grup: string | null;
   tipe: string;
   varian: VarianTemplate[];
+  /** jenjang yang ditetapkan manual di versi rujukan (menimpa catatan template) */
+  jenjangOverride: string[];
   /** null = sub-bagian baru (tidak ada padanan di versi rujukan) */
   dariRujukan: string | null;
 }
@@ -370,7 +372,7 @@ export function petakanSubBagian(
         return {
           bagianKode: b.kode, kode: cocok.kode, label: cocok.label, judul: cocok.judul, grup: cocok.grup,
           tipe: cocok.tipe,
-          varian, dariRujukan: cocok.kode,
+          varian, jenjangOverride: cocok.jenjangOverride ?? [], dariRujukan: cocok.kode,
         };
       }
       const baku = b.jenis === 'kriteria' && ['LB', 'KEB', 'AF', 'SWOT'].includes(s.peran) ? s.peran : null;
@@ -384,6 +386,7 @@ export function petakanSubBagian(
         grup: s.jalur.filter((j) => peranDariJudul(j) !== 'IKU').join(' › ') || null,
         tipe: baku ? 'bersama' : b.jenis === 'kriteria' || s.peran === 'IKU' ? 'iku' : 'narasi',
         varian: s.varian,
+        jenjangOverride: [],
         dariRujukan: null,
       };
     });
@@ -403,7 +406,7 @@ export function petakanSubBagian(
         const setelah = sub.findLastIndex((x) => x.dariRujukan && urutRujukan.findIndex((y) => y.kode === x.dariRujukan) < posisi);
         sub.splice(setelah + 1, 0, {
           bagianKode: b.kode, kode: r.kode, label: r.label, judul: r.judul, grup: r.grup,
-          tipe: r.tipe, varian, dariRujukan: r.kode,
+          tipe: r.tipe, varian, jenjangOverride: r.jenjangOverride ?? [], dariRujukan: r.kode,
         });
       }
     }

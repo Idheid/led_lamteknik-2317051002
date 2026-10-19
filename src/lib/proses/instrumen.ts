@@ -14,6 +14,7 @@ import {
 } from "@/lib/domain/ekstraksi-instrumen";
 import { kelompokBaris, susunMatriks } from "@/lib/domain/matriks";
 import { katalogRumus } from "@/lib/domain/metrik-lkps";
+import { berlakuUntukJenjang } from "@/lib/domain/instrumen";
 import { petakanSubBagian, untukJenjang, uraiTemplate, type SubRujukan } from "@/lib/domain/template-led";
 import { bacaHalamanPdf } from "@/lib/instrumen/pdf";
 import { bacaParagrafTemplate } from "@/lib/instrumen/template";
@@ -78,7 +79,7 @@ async function rujukanSub(versiId: string, jenjang: string) {
   };
 }
 
-async function langkahTemplate(versi: { id: string; templateLedLokasi: string | null }, jenjang: string): Promise<string[]> {
+export async function langkahTemplate(versi: { id: string; templateLedLokasi: string | null }, jenjang: string): Promise<string[]> {
   if (await prisma.bagian.count({ where: { versiId: versi.id } })) return [];
   if (!versi.templateLedLokasi) throw new Error("Template LED belum diunggah.");
   const semua = uraiTemplate(await bacaParagrafTemplate(await bacaBerkas(versi.templateLedLokasi)));
@@ -86,12 +87,14 @@ async function langkahTemplate(versi: { id: string; templateLedLokasi: string | 
   const ruj = await rujukanSub(versi.id, jenjang);
   const daftarRujukan: SubRujukan[] = ruj.bagian.flatMap((b) => b.subBagian.map((s) => ({
     bagianKode: b.kode, kode: s.kode, label: s.label, judul: s.judul, grup: s.grup, tipe: s.tipe,
-    instruksi: ((s.varian ?? []) as { instruksi: string; jenjang?: string[] }[])
-      .filter((v) => !v.jenjang || v.jenjang.includes(jenjang) || (s.jenjangOverride ?? []).includes(jenjang))
-      .map((v) => v.instruksi),
+    instruksi: ((s.varian ?? []) as { instruksi: string }[]).map((v) => v.instruksi),
     jenjangOverride: s.jenjangOverride ?? [],
   })));
-  const peta = petakanSubBagian(untukJenjang(semua, jenjang), daftarRujukan, { jenjang, semuaVarian: semua });
+  // seluruh struktur template disimpan (semua varian jenjang, seperti versi bawaan) supaya ekspor bisa menghapus
+  // paragraf jenjang lain; halaman penyusun menyaring sub-bagian menurut jenjang LED. Butir tetap khusus jenjang versi.
+  const peta = petakanSubBagian(semua, daftarRujukan, { jenjang, semuaVarian: semua });
+  const berlaku = untukJenjang(semua, jenjang).flatMap((b) => b.sub).length;
+  if (berlaku === 0) throw new Error(`Template LED tidak memuat sub-bagian untuk jenjang ${jenjang}.`);
   const baru: string[] = [];
   await prisma.$transaction(async (tx) => {
     let urutan = 0;
@@ -103,7 +106,7 @@ async function langkahTemplate(versi: { id: string; templateLedLokasi: string | 
           subBagian: {
             create: b.subBagian.map((s, i) => ({
               kode: s.kode, label: s.label, judul: s.judul, grup: s.grup, tipe: s.tipe as "data", varian: s.varian as Prisma.InputJsonValue,
-              berlakuUntuk: [jenjang], jenjangOverride: [], sumberInstruksi: s.sumberInstruksi, catatan: s.catatan, urutan: i,
+              berlakuUntuk: s.berlakuUntuk, jenjangOverride: s.jenjangOverride ?? [], sumberInstruksi: s.sumberInstruksi, catatan: s.catatan, urutan: i,
             })),
           },
         },
@@ -125,8 +128,8 @@ async function langkahTemplate(versi: { id: string; templateLedLokasi: string | 
               if (!s.dariRujukan) baru.push(s.kode);
               return {
                 kode: s.kode, label: s.label, judul: s.judul, grup: s.grup, tipe: s.tipe as "iku",
-                varian: s.varian.map((v) => ({ instruksi: v.instruksi, jenjang: [jenjang], catatanTemplate: v.catatanTemplate })) as Prisma.InputJsonValue,
-                berlakuUntuk: [jenjang], jenjangOverride: [], sumberInstruksi: "template",
+                varian: s.varian.map((v) => ({ instruksi: v.instruksi, jenjang: v.jenjang, catatanTemplate: v.catatanTemplate })) as Prisma.InputJsonValue,
+                berlakuUntuk: [...new Set(s.varian.flatMap((v) => v.jenjang))], jenjangOverride: s.jenjangOverride, sumberInstruksi: "template",
                 catatan: s.dariRujukan ? null : "Sub-bagian baru dari template (tidak ada padanan di versi sebelumnya); periksa judul dan kodenya.",
                 urutan: i,
               };
@@ -203,7 +206,8 @@ export async function prosesEkstraksiInstrumen(versiId: string): Promise<string>
       where: { bagian: { versiId }, tipe: { in: ["iku", "narasi", "bersama"] } },
       orderBy: [{ bagian: { urutan: "asc" } }, { urutan: "asc" }],
       include: { bagian: { select: { kode: true } } },
-    })).filter((s) => s.bagian.kode !== "AWAL").map((s) => ({ kode: s.kode, bagianKode: s.bagian.kode, judul: s.judul, grup: s.grup }));
+    })).filter((s) => s.bagian.kode !== "AWAL" && berlakuUntukJenjang(s, jenjang))
+      .map((s) => ({ kode: s.kode, bagianKode: s.bagian.kode, judul: s.judul, grup: s.grup }));
     const rumus: RumusPilihan[] = katalogRumus().map((r) => ({ kode: r.kode, judul: r.judul, rumus: r.rumus }));
     const bobot = info.bobot ?? [];
     // halaman PDF tiap nomor butir untuk halaman cek (PDF di samping tabel)

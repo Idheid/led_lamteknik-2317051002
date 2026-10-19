@@ -16,6 +16,7 @@ import {
   unggahBerkasInstrumen,
 } from "@/lib/data/unggah-instrumen";
 import { prosesEkstraksiInstrumen } from "@/lib/proses/instrumen";
+import { berlakuUntukJenjang } from "@/lib/domain/instrumen";
 import { aturModelUji } from "@/lib/llm/narasi";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
@@ -132,9 +133,13 @@ test("Revisi 19 Okt tahap 4: unggah instrumen Sarjana (template, matriks, pedoma
   assert.equal(await prosesEkstraksiInstrumen(versi.id), "dilewati", "ekstraksi selesai tidak diproses ulang");
 
   // template diurai tanpa AI: sub-bagian dan kodenya sama dengan instrumen bawaan untuk jenjang Sarjana
-  const sub = await prisma.subBagian.findMany({ where: { bagian: { versiId: versi.id } }, orderBy: [{ bagian: { urutan: "asc" } }, { urutan: "asc" }], select: { kode: true } });
-  const harapSub = SEED.bagian.flatMap((b) => b.subBagian.filter((s) => (s.jenjangOverride?.length ? s.jenjangOverride : s.berlakuUntuk).includes("S1")).map((s) => s.kode));
-  assert.deepEqual(sub.map((s) => s.kode), harapSub);
+  // struktur template semua jenjang disimpan (untuk ekspor); sub-bagian yang berlaku untuk S1 sama dengan bawaan
+  const sub = await prisma.subBagian.findMany({ where: { bagian: { versiId: versi.id } }, orderBy: [{ bagian: { urutan: "asc" } }, { urutan: "asc" }] });
+  const harap = (j: string) => SEED.bagian.flatMap((b) => b.subBagian.filter((s) => (s.jenjangOverride?.length ? s.jenjangOverride : s.berlakuUntuk).includes(j)).map((s) => s.kode));
+  for (const j of ["S1", "D3", "S2", "PPI"]) {
+    assert.deepEqual(sub.filter((s) => berlakuUntukJenjang(s, j)).map((s) => s.kode), harap(j), `sub-bagian jenjang ${j}`);
+  }
+  assert.equal(sub.length, SEED.bagian.flatMap((b) => b.subBagian).length, "seluruh sub-bagian template tersimpan");
 
   // AI dipanggil per kelompok kecil baris matriks; prompt memuat tabel bobot, daftar sub-bagian, katalog rumus
   const info = bacaInfoEkstraksi((await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: versi.id } })).ekstraksi)!;

@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/lib/akses";
@@ -8,7 +10,7 @@ import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { bacaBerkas, hapusBerkas, simpanBerkas } from "@/lib/penyimpanan";
 import { bacaRentangHalaman, deteksiTabelBobot } from "@/lib/domain/bobot";
 import { periksaInstrumen, type HasilCekInstrumen } from "@/lib/domain/ekstraksi-instrumen";
-import { namaJenjang } from "@/lib/domain/instrumen";
+import { berlakuUntukJenjang, namaJenjang } from "@/lib/domain/instrumen";
 import { pecahUnsurSkor4 } from "@/lib/domain/navigasi";
 import { teksPerHalaman } from "@/lib/instrumen/pdf";
 import { skemaButir, skemaVersiJenjang, type MasukanButir, type MasukanVersiJenjang } from "@/lib/validasi";
@@ -67,11 +69,22 @@ export async function versiRujukan(kecualiId: string, jenjang: string) {
   return daftar.find((v) => v.jenjangUtama === jenjang) ?? daftar.find((v) => v._count.butir > 0) ?? daftar[0] ?? null;
 }
 
+/** Kerangka bawaan (data instrumen LAM Teknik 2025) bila belum ada versi lain sama sekali. */
+export async function kerangkaBawaan(): Promise<{
+  tabelLkps: { kode: string; sheet: string; judul: string }[];
+  anggaranBawaan: unknown;
+  statusAkreditasi?: unknown;
+}> {
+  return JSON.parse(await readFile(join(process.cwd(), "data/instrumen/lamteknik-2025-pasca.json"), "utf8"));
+}
+
 export async function buatVersiJenjang(p: Pengguna, masukan: MasukanVersiJenjang) {
   pastikanPenanggungJawab(p);
   const data = skemaVersiJenjang.parse(masukan);
   if (await prisma.versiInstrumen.findUnique({ where: { kode: data.kode } })) throw new GalatPengguna(`Kode versi ${data.kode} sudah dipakai.`);
   const rujukan = await versiRujukan("", data.jenjang);
+  const bawaan = rujukan ? null : await kerangkaBawaan();
+  const tabelRujukan = rujukan ? await prisma.tabelLkpsAcuan.findMany({ where: { versiId: rujukan.id } }) : bawaan!.tabelLkps;
   const v = await prisma.versiInstrumen.create({
     data: {
       kode: data.kode,
@@ -83,12 +96,10 @@ export async function buatVersiJenjang(p: Pengguna, masukan: MasukanVersiJenjang
       status: "draf",
       jenjangUtama: data.jenjang,
       jenjang: [{ kode: data.jenjang, nama: namaJenjang(data.jenjang) }] as Prisma.InputJsonValue,
-      statusAkreditasi: (rujukan?.statusAkreditasi ?? undefined) as Prisma.InputJsonValue | undefined,
-      anggaranBawaan: (rujukan?.anggaranBawaan ?? {}) as Prisma.InputJsonValue,
+      statusAkreditasi: ((rujukan ? rujukan.statusAkreditasi : bawaan!.statusAkreditasi) ?? undefined) as Prisma.InputJsonValue | undefined,
+      anggaranBawaan: ((rujukan ? rujukan.anggaranBawaan : bawaan!.anggaranBawaan) ?? {}) as Prisma.InputJsonValue,
       disalinDariId: null,
-      tabelLkps: rujukan
-        ? { create: (await prisma.tabelLkpsAcuan.findMany({ where: { versiId: rujukan.id } })).map((t) => ({ kode: t.kode, sheet: t.sheet, judul: t.judul })) }
-        : undefined,
+      tabelLkps: { create: tabelRujukan.map((t) => ({ kode: t.kode, sheet: t.sheet, judul: t.judul })) },
     },
   });
   await catatAktivitas(p, "buat", "versi_instrumen", v.id, { kode: v.kode, jenjang: data.jenjang });
@@ -221,7 +232,9 @@ export async function dataCekInstrumen(p: Pengguna, versiId: string) {
       include: { subBagian: { orderBy: { urutan: "asc" } } },
     }),
   ]);
-  const sub = bagian.flatMap((b) => b.subBagian.map((s) => ({ ...s, bagianKode: b.kode })));
+  // versi menyimpan struktur template semua jenjang; yang dicek hanya sub-bagian jenjang versi ini
+  const sub = bagian.flatMap((b) => b.subBagian.map((s) => ({ ...s, bagianKode: b.kode })))
+    .filter((s) => !v.jenjangUtama || berlakuUntukJenjang(s, v.jenjangUtama));
   const cek = periksaInstrumenVersi(butir, sub);
   return { versi: v, butir, bagian, sub, cek, info: bacaInfoEkstraksi(v.ekstraksi) };
 }
