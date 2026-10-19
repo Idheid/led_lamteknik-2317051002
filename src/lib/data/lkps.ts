@@ -6,7 +6,8 @@ import { ambilProyek, ambilProyekUbah } from "@/lib/data/proyek";
 import { catatAktivitas } from "@/lib/data/log";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { hapusBerkas, simpanBerkas } from "@/lib/penyimpanan";
-import { hitungSemua, type HasilButirAngka } from "@/lib/domain/metrik-lkps";
+import type { HasilButirAngka } from "@/lib/domain/metrik-lkps";
+import { nilaiButirUntukProyek } from "@/lib/data/nilai-butir";
 import type { BarisLkps, KolomLkps, MasalahLkps } from "@/lib/lkps/jenis";
 import { periksaIsi } from "@/lib/lkps/periksa";
 
@@ -113,10 +114,9 @@ export async function lkpsAktif(p: Pengguna, proyekId: string) {
 export async function metrikProyek(p: Pengguna, proyekId: string): Promise<{ hasil: HasilButirAngka[]; perluDicek: boolean } | null> {
   const aktif = await lkpsAktif(p, proyekId);
   if (!aktif) return null;
-  return {
-    hasil: hitungSemua(aktif.tabel, { tsTahunMulai: aktif.proyek.tsTahunMulai }),
-    perluDicek: aktif.tabel.some((t) => t.perluDicek),
-  };
+  // revisi 19 Okt 2026: rumus dipetakan lewat kodeRumus butir instrumen LED
+  const n = await nilaiButirUntukProyek(aktif.proyek);
+  return { hasil: n.daftar.flatMap((d) => (d.hasil ? [d.hasil] : [])), perluDicek: n.perluDicek };
 }
 
 const skemaBaris = z.array(z.object({

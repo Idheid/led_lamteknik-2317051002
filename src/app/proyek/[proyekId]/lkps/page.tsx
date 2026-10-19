@@ -4,7 +4,7 @@ import { AlertTriangle, ChevronRight, CircleX, FileSpreadsheet } from "lucide-re
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { ambilProyek } from "@/lib/data/proyek";
 import { daftarBerkasLkps, lkpsAktif } from "@/lib/data/lkps";
-import { hitungSemua } from "@/lib/domain/metrik-lkps";
+import { nilaiButirProyek } from "@/lib/data/nilai-butir";
 import { formatAngka } from "@/lib/domain/teks";
 import { formatTahunAkademik } from "@/lib/domain/tahun-akademik";
 import { fmtWaktu, formatMetrik, formatUkuran } from "@/lib/tampil";
@@ -24,8 +24,11 @@ export const metadata: Metadata = { title: "Data LKPS" };
 export default async function HalamanLkps({ params }: PageProps<"/proyek/[proyekId]/lkps">) {
   const p = await wajibPenanggungJawab();
   const { proyekId } = await params;
-  const [proyek, berkas, aktif] = await Promise.all([ambilProyek(p, proyekId), daftarBerkasLkps(p, proyekId), lkpsAktif(p, proyekId)]);
-  const metrik = aktif ? hitungSemua(aktif.tabel, { tsTahunMulai: proyek.tsTahunMulai }) : [];
+  const [proyek, berkas, aktif, nilai] = await Promise.all([
+    ambilProyek(p, proyekId), daftarBerkasLkps(p, proyekId), lkpsAktif(p, proyekId), nilaiButirProyek(p, proyekId),
+  ]);
+  // revisi 19 Okt 2026: butir angka dihitung lewat rumus yang dipetakan di instrumen (kodeRumus) atau nilai manual PJ
+  const metrik = nilai.daftar;
   const masalah = aktif?.berkas.masalah ?? [];
   const galat = masalah.filter((m) => m.tingkat === "galat");
   const peringatan = masalah.filter((m) => m.tingkat === "peringatan");
@@ -157,7 +160,22 @@ export default async function HalamanLkps({ params }: PageProps<"/proyek/[proyek
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {metrik.map((h) => {
+                  {metrik.map((d) => {
+                    const h = d.hasil;
+                    if (!h || d.sumber === "manual") {
+                      return (
+                        <TableRow key={d.butir} className="align-top">
+                          <TableCell className="pl-6 font-mono text-xs text-muted-foreground">{d.butir}</TableCell>
+                          <TableCell className="max-w-64 whitespace-normal text-sm text-muted-foreground">{d.kodeRumus ? "Rumus tidak bisa membaca LKPS" : "Tanpa rumus sistem"}</TableCell>
+                          <TableCell className="text-right font-medium">{d.manual ? d.manual.nilai : <span className="text-muted-foreground">—</span>}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">—</TableCell>
+                          <TableCell className="font-mono text-xs">{h?.tabel.join(", ")}</TableCell>
+                          <TableCell className="max-w-72 whitespace-normal pr-6 text-xs text-muted-foreground">
+                            {d.manual ? `Nilai manual penyusun${d.manual.keterangan ? `: ${d.manual.keterangan}` : ""}` : d.alasan}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
                     const u = h.metrik.find((x) => x.kode === h.utama);
                     return (
                       <TableRow key={h.butir} className="align-top">

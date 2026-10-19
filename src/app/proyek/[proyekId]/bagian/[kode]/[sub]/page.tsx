@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { daftarDokumen } from "@/lib/data/dokumen";
-import { metrikProyek } from "@/lib/data/lkps";
+import { nilaiButirProyek } from "@/lib/data/nilai-butir";
 import { bacaVarian, varianUntukJenjang } from "@/lib/domain/instrumen";
 import { formatAngka } from "@/lib/domain/teks";
 import { gantiLabelTS } from "@/lib/domain/tahun-akademik";
@@ -21,6 +21,7 @@ import { hrefKriteria, hrefSub, muatKriteria } from "../muat";
 import { IsianJawaban } from "../isian-jawaban";
 import { DaftarCek, PanelDraf } from "../panel-draf";
 import { KotakMetrik } from "../kotak-metrik";
+import { IsianNilaiManual } from "../isian-nilai-manual";
 import { LABEL_TIPE, LencanaStatusSub } from "../lencana-sub";
 import { TautanSimpan } from "../tautan-simpan";
 
@@ -55,14 +56,14 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
   const posisi = posisiSub(bagian.subBagian.map((x) => x.kode), kodeSub);
   if (!s || !posisi) notFound();
 
-  const [semuaDokumen, metrik] = await Promise.all([daftarDokumen(p, proyekId), metrikProyek(p, proyekId)]);
+  const [semuaDokumen, nilai] = await Promise.all([daftarDokumen(p, proyekId), nilaiButirProyek(p, proyekId)]);
   const ts = proyek.tsTahunMulai;
   const digenerate = subDigenerate(s.tipe);
   const v = varianUntukJenjang(bacaVarian(s.varian), proyek.jenjang);
   const t = target[s.kode];
   const drafSub = draf[s.kode] ?? null;
   const terunggah = semuaDokumen.filter((x) => x.subBagianKode === s.kode);
-  const metrikButir = new Map((metrik?.hasil ?? []).map((h) => [h.butir, h]));
+  const nilaiButir = new Map(nilai.daftar.map((n) => [n.butir, n]));
   const gambar = semuaDokumen
     .filter((x) => x.jenis === "gambar" && x.status === "siap")
     .map((x) => ({ id: x.id, judul: x.judul ?? x.namaBerkas, src: `/api/dokumen/${x.id}/berkas` }));
@@ -159,7 +160,24 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
                       butir={[{ kode: b.kode, unsur: b.unsurSkor4.map((u) => gantiLabelTS(u, ts)) }]}
                       unsur={drafSub?.aktif?.unsur ?? []}
                     />
-                    {b.jenis === "angka" && <KotakMetrik hasil={metrikButir.get(b.kode)} perluDicek={metrik?.perluDicek ?? false} proyekId={proyek.id} />}
+                    {b.jenis === "angka" && (() => {
+                      const n = nilaiButir.get(b.kode);
+                      return (
+                        <>
+                          {(n?.sumber === "rumus" || (n?.kodeRumus && !nilai.adaLkps)) && (
+                            <KotakMetrik hasil={n?.sumber === "rumus" ? n.hasil ?? undefined : undefined} perluDicek={nilai.perluDicek} proyekId={proyek.id} />
+                          )}
+                          {n?.perluManual && (
+                            <IsianNilaiManual
+                              proyekId={proyek.id}
+                              butirKode={b.kode}
+                              awal={{ nilai: n.manual?.nilai ?? "", keterangan: n.manual?.keterangan ?? "" }}
+                              alasan={n.alasan}
+                            />
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>

@@ -9,6 +9,7 @@ import * as dokumen from "@/lib/data/dokumen";
 import * as pencarian from "@/lib/data/pencarian";
 import * as generate from "@/lib/data/generate";
 import * as ekspor from "@/lib/data/ekspor";
+import { simpanNilaiManual } from "@/lib/data/nilai-butir";
 
 export async function aksiBuatProyek(masukan: MasukanProyek) {
   const r = await jalankanAksi(async (p) => (await buatProyek(p, masukan)).id);
@@ -175,4 +176,9 @@ export async function aksiHapusProyek(proyekId: string, konfirmasiNama: string) 
   const r = await jalankanAksi((p) => hapusProyek(p, proyekId, konfirmasiNama).then(() => null));
   revalidatePath("/proyek", "layout");
   return r;
+}
+
+/** Nilai hitung manual butir angka (revisi 19 Okt 2026); simpan otomatis tanpa memuat ulang halaman. */
+export async function aksiSimpanNilaiManual(proyekId: string, butirKode: string, nilai: string, keterangan: string) {
+  return jalankanAksi((p) => simpanNilaiManual(p, proyekId, { butirKode, nilai, keterangan }).then(() => null));
 }

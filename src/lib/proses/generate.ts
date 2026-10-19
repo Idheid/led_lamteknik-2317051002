@@ -9,7 +9,9 @@ import { formatMetrik } from "@/lib/tampil";
 import { hitungAnggaran } from "@/lib/domain/anggaran";
 import { bacaAnggaran, targetKataSubBagian } from "@/lib/domain/anggaran-proyek";
 import { bacaVarian, berlakuUntukJenjang, varianUntukJenjang } from "@/lib/domain/instrumen";
-import { hitungSemua, type HasilButirAngka } from "@/lib/domain/metrik-lkps";
+import type { HasilButirAngka } from "@/lib/domain/metrik-lkps";
+import { kodeSumberManual } from "@/lib/domain/butir-angka";
+import { nilaiButirUntukProyek } from "@/lib/data/nilai-butir";
 import {
   bacaDokumen, keluaranKeDokumen, kumpulkanAngkaSah, perluRingkasanIku, perluRingkasanSemua, periksaDokumen, ringkasIku, samarkanTeks,
   statusGabungan, tabelKeMarkdown, tahunSah, teksDokumen, urutkanUntukGenerate, type RujukanPeriksa, type StatusIsi,
@@ -98,15 +100,24 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   // LKPS aktif: metrik butir angka dan tabel terkait
   const berkas = await prisma.berkasLKPS.findFirst({ where: { proyekId, aktif: true }, include: { tabel: { orderBy: { urutan: "asc" } } } });
   const tabelLkps = (berkas?.tabel ?? []).map((t) => ({ ...t, kolom: t.kolom as unknown as KolomLkps[], baris: t.baris as unknown as BarisLkps[] }));
-  const hasilMetrik: HasilButirAngka[] = berkas ? hitungSemua(tabelLkps, { tsTahunMulai: ts }) : [];
-  const metrikButir = butir.filter((b) => b.jenis === "angka").flatMap((b) => {
-    const h = hasilMetrik.find((x) => x.butir === b.kode);
-    return h ? [h] : [];
-  });
-  const metrik = metrikButir.flatMap((h) => h.metrik.filter((m) => m.nilai !== null).map((m) => {
-    legenda[m.kode] = `Metrik sistem: ${m.nama}`;
-    return { id: m.kode, nama: m.nama, nilaiTeks: formatMetrik(m), keterangan: m.rumus };
-  }));
+  // revisi 19 Okt 2026: rumus lewat kodeRumus butir; tanpa rumus atau rumus gagal membaca LKPS → nilai manual PJ
+  const nilai = (await nilaiButirUntukProyek(proyek)).daftar.filter((n) => butir.some((b) => b.kode === n.butir));
+  const metrikButir: HasilButirAngka[] = nilai.flatMap((n) => (n.sumber === "rumus" && n.hasil ? [n.hasil] : []));
+  const manualButir = nilai.filter((n) => n.sumber === "manual" && n.manual);
+  const metrik = [
+    ...metrikButir.flatMap((h) => h.metrik.filter((m) => m.nilai !== null).map((m) => {
+      legenda[m.kode] = `Metrik sistem: ${m.nama}`;
+      return { id: m.kode, nama: m.nama, nilaiTeks: formatMetrik(m), keterangan: m.rumus };
+    })),
+    ...manualButir.map((n) => {
+      const id = kodeSumberManual(n.butir);
+      legenda[id] = `Nilai hitung butir ${n.butir} diisi penyusun`;
+      return { id, nama: `Nilai hitung butir ${n.butir} (diisi penyusun)`, nilaiTeks: n.manual!.nilai, keterangan: n.manual!.keterangan ?? undefined };
+    }),
+  ];
+  for (const n of nilai.filter((x) => x.sumber === "belum" && x.perluManual)) {
+    catatan.push(`Butir ${n.butir}: ${n.alasan ?? "nilai hitung belum ada."}`);
+  }
   const kodeTabel = new Set(butir.flatMap((b) => b.tabelLkps));
   const tabel = tabelLkps.filter((t) => kodeTabel.has(t.kode)).map((t) => {
     const judul = `Tabel ${t.kode}${t.blok ? ` (${t.blok})` : ""} ${t.judul}`.trim();
@@ -193,12 +204,20 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
     targetKata: target,
   };
 
-  const tabelSistem: TabelSistem[] = metrikButir.map((h) => ({
-    judul: `Butir ${h.butir}. ${h.judul}`,
-    kepala: ["Metrik", "Nilai"],
-    baris: h.metrik.map((m) => [m.nama, formatMetrik(m)]),
-    sumber: h.metrik.map((m) => m.kode),
-  }));
+  const tabelSistem: TabelSistem[] = [
+    ...metrikButir.map((h) => ({
+      judul: `Butir ${h.butir}. ${h.judul}`,
+      kepala: ["Metrik", "Nilai"],
+      baris: h.metrik.map((m) => [m.nama, formatMetrik(m)]),
+      sumber: h.metrik.map((m) => m.kode),
+    })),
+    ...manualButir.map((n) => ({
+      judul: `Butir ${n.butir}. Nilai hitung`,
+      kepala: ["Keterangan", "Nilai"],
+      baris: [[n.manual!.keterangan ?? "Diisi penyusun", n.manual!.nilai]],
+      sumber: [kodeSumberManual(n.butir)],
+    })),
+  ];
   const nilaiMetrik = metrikButir.flatMap((h) => h.metrik.map((m) => m.nilai).filter((v): v is number => v !== null));
   const rujukan: RujukanPeriksa = {
     angkaSah: kumpulkanAngkaSah(konteks, nilaiMetrik),

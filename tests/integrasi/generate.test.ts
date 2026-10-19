@@ -20,9 +20,10 @@ import {
 import { aturModelUji } from "@/lib/llm/narasi";
 import { prosesBerkasLkps } from "@/lib/proses/lkps";
 import { prosesDokumen } from "@/lib/proses/dokumen";
-import { prosesTugasGenerate } from "@/lib/proses/generate";
+import { prosesTugasGenerate, susunKonteks } from "@/lib/proses/generate";
 import { bacaDokumen, paragrafBersumber, teksDokumen } from "@/lib/domain/narasi";
 import { muatKriteria } from "@/lib/data/kriteria";
+import { nilaiButirProyek, simpanNilaiManual } from "@/lib/data/nilai-butir";
 import { halamanBagian } from "@/lib/data/proyek";
 import { peringatanSebelumGenerate, posisiSub, subLanjutkan } from "@/lib/domain/navigasi";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
@@ -403,3 +404,46 @@ test("Tanpa kunci: tugas dibuat tertunda dengan pesan, dan dimulai otomatis sete
   assert.equal(await prosesTugasGenerate(t.id), "selesai");
   assert.equal((await drafBagian(pjLain, proyekLainId, "C.1"))["C.1-LB"].status, "draf");
 });
+
+test("Revisi 19 Okt tahap 5: butir angka berumus dihitung otomatis; tanpa rumus atau rumus gagal → nilai manual menjadi sumber", async () => {
+  // butir 26 punya rumus (kodeRumus) dan LKPS terbaca: metrik sistem masuk konteks
+  let n = await nilaiButirProyek(pj, proyekId);
+  const b26 = n.daftar.find((x) => x.butir === "26")!;
+  assert.equal(b26.sumber, "rumus");
+  const k26 = await susunKonteks(proyekId, "C.4-IKU-a.i");
+  assert.ok(k26.konteks.metrik.some((m) => m.id === "M-NDTPS"), "metrik rumus masuk konteks");
+
+  // butir 27 tanpa rumus (instrumen baru tanpa padanan rumus): PJ mengisi nilai hitung sendiri
+  await prisma.butirPenilaian.updateMany({ where: { kode: "27", jenjang: "S1" }, data: { kodeRumus: null } });
+  n = await nilaiButirProyek(pj, proyekId);
+  assert.deepEqual(pick(n.daftar.find((x) => x.butir === "27")!), { sumber: "belum", perluManual: true });
+  await assert.rejects(simpanNilaiManual(pj, proyekId, { butirKode: "1", nilai: "5" }), GalatPengguna, "hanya butir angka");
+  await assert.rejects(simpanNilaiManual(adminUji, proyekId, { butirKode: "27", nilai: "5" }), GalatAkses);
+  await simpanNilaiManual(pj, proyekId, { butirKode: "27", nilai: "37,5%", keterangan: "15 dari 40 DTPS bergelar doktor (Tabel 4.a)" });
+  assert.equal((await nilaiButirProyek(pj, proyekId)).daftar.find((x) => x.butir === "27")?.sumber, "manual");
+  const k27 = await susunKonteks(proyekId, "C.4-IKU-a.iii");
+  const m27 = k27.konteks.metrik.find((m) => m.id === "M-NILAI-27");
+  assert.equal(m27?.nilaiTeks, "37,5%");
+  assert.match(k27.legenda["M-NILAI-27"], /diisi penyusun/);
+  assert.ok(k27.rujukan.sumberSah.includes("M-NILAI-27"), "kode sumber nilai manual sah");
+  assert.ok([37.5, 15, 40].every((a) => k27.rujukan.angkaSah.includes(a)), "angka dari nilai manual sah di narasi");
+  assert.ok(k27.tabelSistem.some((t) => t.sumber.includes("M-NILAI-27")));
+
+  // rumus gagal membaca LKPS (template LKPS berubah, tabel hilang) → otomatis beralih ke nilai manual
+  const tabel28 = n.daftar.find((x) => x.butir === "28")!.hasil!.tabel;
+  const berkas = await prisma.berkasLKPS.findFirstOrThrow({ where: { proyekId, aktif: true } });
+  await prisma.tabelLKPS.deleteMany({ where: { berkasId: berkas.id, kode: { in: tabel28 } } });
+  n = await nilaiButirProyek(pj, proyekId);
+  const b28 = n.daftar.find((x) => x.butir === "28")!;
+  assert.deepEqual(pick(b28), { sumber: "belum", perluManual: true });
+  assert.match(b28.alasan ?? "", /tidak bisa membaca LKPS/);
+  await simpanNilaiManual(pj, proyekId, { butirKode: "28", nilai: "10%" });
+  assert.equal((await nilaiButirProyek(pj, proyekId)).daftar.find((x) => x.butir === "28")?.sumber, "manual");
+  // nilai kosong menghapus isian manual
+  await simpanNilaiManual(pj, proyekId, { butirKode: "28", nilai: "" });
+  assert.equal(await prisma.nilaiManual.count({ where: { proyekId, butirKode: "28" } }), 0);
+});
+
+function pick(n: { sumber: string; perluManual: boolean }) {
+  return { sumber: n.sumber, perluManual: n.perluManual };
+}
