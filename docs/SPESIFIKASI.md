@@ -5,11 +5,16 @@ Bila ada yang bertentangan, dokumen rencana yang terbaru yang berlaku; catat per
 
 ## 1. Alur kerja
 
-1. Super admin menyiapkan versi instrumen (sekali per versi), UPPS, prodi, dan akun penanggung jawab.
-2. Penanggung jawab membuat proyek LED (prodi, jenjang, versi instrumen, tahun TS).
-3. Penanggung jawab mengunggah LKPS dan dokumen pendukung per kriteria/sub-bagian, mengisi jawaban pertanyaan pemandu.
+Revisi 19 Okt 2026: peran Admin (akun PJ, kunci API) dan Penanggung jawab fakultas (PJ); instrumen diunggah PJ per
+jenjang; satu sub-bagian satu halaman. Rincian di `CATATAN-PENGEMBANGAN.md`.
+
+1. Admin membuat akun PJ fakultas. PJ mengisi identitas fakultas dan program studi, lalu mengunggah instrumen per
+   jenjang (Template LED, Matriks Penilaian, Pedoman Penilaian), memeriksa hasil ekstraksi, dan mengaktifkannya.
+2. PJ membuat LED per periode 5 tahun (prodi, tahun pengajuan, nama); instrumen dan TS ditentukan otomatis.
+3. PJ mengunggah LKPS dan dokumen pendukung, lalu mengisi jawaban per sub-bagian (pertanyaan = instruksi resmi template)
+   dan nilai hitung butir angka yang tidak punya rumus.
 4. Sistem memproses dokumen (ekstrak, potong, embedding).
-5. Generate per kriteria atau per butir; penanggung jawab memeriksa, menyunting, mengulang sampai sesuai,
+5. Generate semua (per kriteria) atau satu sub-bagian; PJ memeriksa, menyunting, mengulang sampai sesuai,
    lalu menandai kriteria selesai.
 6. Setelah C.1–C.7 selesai: generate Bab II.B, Bab III, Bab I, Bab IV, ringkasan eksekutif, kata pengantar
    (bagian yang merangkum isi lain dikerjakan paling akhir).
@@ -22,8 +27,9 @@ Bila ada yang bertentangan, dokumen rencana yang terbaru yang berlaku; catat per
 - Sub-bagian menyimpan instruksi template per varian jenjang (`varian[].instruksi`, `varian[].jenjang`) dan
   `berlakuUntuk`. Tampilkan hanya sub-bagian yang berlaku untuk jenjang proyek.
 - Butir penilaian disimpan per jenjang (Sarjana: 60 butir, 72 baris karena 12 butir punya sub I/II; bobot total 100).
-  Setiap butir: bobot, jenis (narasi/angka), deskriptor skor 4, unsur skor 4, tabel LKPS, pertanyaan pemandu,
-  dokumen pendukung (usulan), pemetaan ke sub-bagian.
+  Setiap butir: bobot, jenis (narasi/angka), deskriptor skor 4–0, unsur skor 4 (deskriptor skor 4 dipecah per nomor),
+  tabel LKPS, rumus lama (`kodeRumus`, kosong = nilai diisi manual), pemetaan ke sub-bagian. Pertanyaan pemandu dan
+  dokumen yang diharapkan buatan sendiri tidak dipakai lagi (revisi 19 Okt 2026).
 - Untuk Sarjana, setiap sub-bagian IKU dipetakan ke tepat satu baris butir. Butir 58 dipecah: 58-I ke Bab II.B,
   58-II ke Bab III.1 (bobot 1,46 + 1,46, asumsi).
 - Catatan template yang janggal (sudah ditangani di seed): sub-bagian "Kualifikasi akademik DTPS" ditandai khusus PPI di
@@ -105,16 +111,18 @@ progres selalu terlihat. Bahasa Indonesia.
 
 | Menu | Isi | Peran |
 | --- | --- | --- |
-| Beranda | Progres C.1–C.7 dan bagian lain, perkiraan halaman terhadap 150, dokumen yang masih kurang, status kunci API | Penanggung jawab |
-| Data LKPS | Unggah Excel/PDF, hasil baca per tabel, tanda sel kosong | Penanggung jawab |
-| Kriteria C.1 … C.7 | Satu halaman per kriteria: butir berurutan (instruksi, pertanyaan pemandu, daftar cek skor 4, unggah dokumen, tombol generate butir, editor); tombol generate kriteria di atas | Penanggung jawab |
-| Bagian lain | Bab I, II.A, II.B, Bab III, Bab IV, kata pengantar, ringkasan eksekutif | Penanggung jawab |
-| Dokumen | Semua berkas, status proses, tautan bukti sahih | Penanggung jawab |
-| Ekspor Word | Pemeriksaan sebelum ekspor, jumlah halaman, unduh .docx | Penanggung jawab |
-| Kunci API | Daftar kunci, status, tambah kunci, uji koneksi | Keduanya |
-| Instrumen | Versi, bagian, sub-bagian, butir, bobot, dokumen pendukung | Super admin |
-| Prodi dan akun | UPPS, prodi, akun penanggung jawab | Super admin |
-| Model dan log | Model utama dan cadangan, pemakaian token, log aktivitas | Super admin |
+| Akun PJ | Akun penanggung jawab dan admin, atur ulang sandi, nonaktifkan | Admin |
+| Kunci API (tab Kunci, Model Gemini, Log pemakaian) | Kunci cadangan, model narasi/cadangan/embedding, pemakaian token | Admin |
+| Semua LED | LED dikelompokkan per prodi, label periode, LED baru | PJ fakultas |
+| Program studi | Identitas fakultas, daftar prodi (urut akreditasi berakhir) | PJ fakultas |
+| Instrumen | Instrumen per jenjang: unggah berkas, ekstraksi, periksa hasil, aktifkan | PJ fakultas |
+| Dokumen bersama fakultas | Dokumen yang dipakai semua LED (kode sumber U) | PJ fakultas |
+| Kunci API fakultas | Daftar kunci, status, tambah kunci, uji koneksi | PJ fakultas |
+| Beranda LED | Progres, periode akreditasi, Pengaturan LED (TS, nama, arsip) | PJ fakultas |
+| Data LKPS | Unggah Excel/PDF, hasil baca per tabel, sumber nilai butir angka | PJ fakultas |
+| Kriteria C.1 … C.7 dan bab lain | Ringkasan kriteria + satu halaman per sub-bagian (instruksi, butir dan daftar cek skor 4, data LKPS/nilai manual, jawaban, dokumen, hasil generate dan riwayat); Sebelumnya/Berikutnya | PJ fakultas |
+| Dokumen, Tim penyusun | Berkas LED, tautan bukti sahih; tim penyusun | PJ fakultas |
+| Ekspor Word | Pemeriksaan sebelum ekspor, jumlah halaman, unduh .docx | PJ fakultas |
 
 Aturan tampilan: komponen shadcn/ui; teks isi ≥ 14 px, kontras WCAG AA; lencana status (belum, draf, selesai) di menu
 kriteria; simpan otomatis + peringatan saat meninggalkan halaman yang belum tersimpan; proses lama tampil sebagai

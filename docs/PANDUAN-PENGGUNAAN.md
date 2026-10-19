@@ -1,120 +1,151 @@
 # Panduan penggunaan
 
-Panduan singkat Sistem Penyusun LED LAM Teknik untuk dua peran: **super admin** (tim pengembang, lalu fakultas
-setelah serah terima) dan **penanggung jawab prodi**. Setiap halaman juga punya kotak **Petunjuk halaman ini** yang
-menjelaskan fungsi halaman dan langkah berikutnya; kotak itu bisa ditutup dan pilihan diingat di browser.
+Panduan singkat Sistem Penyusun LED LAM Teknik (setelah revisi 19 Okt 2026) untuk dua peran: **Admin** dan
+**Penanggung jawab fakultas (PJ)**. Satu instalasi website dipakai satu fakultas. Setiap halaman juga punya kotak
+**Petunjuk halaman ini** yang menjelaskan fungsi halaman dan langkah berikutnya; kotak itu bisa ditutup dan pilihannya
+diingat di browser.
 
-Semua akun dibuat oleh super admin; tidak ada pendaftaran mandiri. Akun baru dan akun yang kata sandinya diatur ulang
-**wajib mengganti kata sandi** saat login pertama. Setiap pengguna bisa mengganti kata sandinya sendiri lewat menu
-akun (pojok kiri bawah) → **Ganti kata sandi** (wajib mengisi kata sandi lama).
-
----
-
-## A. Super admin
-
-### 1. Menyiapkan sistem (sekali di awal)
-
-1. **Instrumen**: periksa versi instrumen aktif (LAM Teknik 2025). Untuk peraturan baru, buka versi lalu **Salin
-   versi**, sunting salinannya (bagian, sub-bagian, butir, bobot, unsur skor 4, dokumen yang diharapkan), lalu aktifkan.
-   Versi yang sudah dipakai proyek terkunci supaya proyek lama tetap konsisten.
-2. **Prodi dan UPPS**: tambah UPPS (misalnya fakultas), lalu program studi di bawahnya beserta identitasnya
-   (kode PDDikti, akreditasi terakhir, SK). Identitas dipakai di halaman identitas LED dan di prompt.
-3. **Akun**: buat satu akun **penanggung jawab** untuk setiap prodi dan berikan kata sandi sementara.
-4. **Model LLM**: klik **Muat ulang daftar** (perlu minimal satu kunci API aktif). Pilih:
-   - **Model narasi** (generateContent), misalnya Gemini 3 Flash; klik **Uji model**.
-   - **Model cadangan**, dicoba berurutan bila kuota harian model narasi habis.
-   - **Model embedding** (embedContent). Mengganti model embedding membuat semua dokumen diindeks ulang.
-   - **Izinkan prodi memakai kunci cadangan super admin** setelah kunci prodi habis.
-5. **Template LEDPS**: buka Instrumen → versi → **Unggah template .docx** (template LEDPS resmi LAM Teknik). Sistem
-   melaporkan berapa sub-bagian yang terpetakan per jenjang; "tidak ditemukan" harus kosong.
-6. **Bahan bersama UPPS**: unggah sekali dokumen fakultas yang berlaku untuk semua prodi (VMTS UPPS dan Renstra,
-   SK struktur organisasi, keuangan, sarana-prasarana dan K3L, SPMI dan audit mutu). Prodi di UPPS itu otomatis
-   memakainya saat menyusun narasi (kode sumber U1, U2, …). Bahan ini diindeks dengan kunci cadangan super admin.
-7. **Kunci API cadangan** (opsional): tambahkan kunci dari project Google milik tim; dipakai semua prodi bila diizinkan.
-
-### 2. Pekerjaan rutin
-
-- **Log pemakaian**: pantau panggilan model per prodi, token masuk/keluar, dan galat. Galat `kuota_harian` (429)
-  berarti kuota kunci habis; sistem otomatis mencoba model cadangan lalu kunci berikutnya.
-- **Lupa kata sandi**: Akun → menu baris akun → **Atur ulang kata sandi**. Pemilik akun wajib menggantinya saat login.
-- **Pergantian penanggung jawab**: nonaktifkan akun lama, lalu buat akun baru untuk prodi yang sama. Satu prodi hanya
-  boleh punya satu akun penanggung jawab **aktif**. Proyek, kunci API, dan riwayat versi milik prodi, jadi tidak hilang.
-- **Serah terima ke fakultas**: buat akun **super admin** baru untuk fakultas. Super admin tidak bisa menonaktifkan
-  atau menghapus akunnya sendiri, dan sistem selalu menyisakan minimal satu super admin aktif.
+Semua akun dibuat admin; tidak ada pendaftaran mandiri. Akun baru dan akun yang kata sandinya diatur ulang **wajib
+mengganti kata sandi** saat login pertama. Setiap pengguna bisa mengganti kata sandinya sendiri lewat menu akun (pojok
+kiri bawah) → **Ganti kata sandi** (wajib mengisi kata sandi lama).
 
 ---
 
-## B. Penanggung jawab prodi
+## A. Admin
 
-### 1. Persiapan
+Menu admin hanya dua: **Akun PJ** dan **Kunci API**. Admin tidak membuka LED, prodi, instrumen, atau dokumen.
+
+### Akun PJ
+
+- Buat satu akun **penanggung jawab fakultas** (atau akun admin lain) dan berikan kata sandi sementara.
+- **Lupa kata sandi**: menu baris akun → **Atur ulang kata sandi**; pemilik akun wajib menggantinya saat login.
+- **Pergantian PJ**: nonaktifkan akun lama, lalu buat akun baru. LED, kunci API, dan riwayat versi milik fakultas,
+  jadi tidak ada yang hilang.
+- Admin tidak bisa menonaktifkan atau menghapus akunnya sendiri, dan sistem selalu menyisakan minimal satu admin aktif.
+
+### Kunci API (tiga tab)
+
+- **Kunci**: kunci cadangan admin (opsional), dari project Google milik tim. Dipakai setelah kunci fakultas habis bila
+  diizinkan.
+- **Model Gemini**: klik **Muat ulang daftar** (perlu minimal satu kunci aktif), pilih model narasi, model cadangan, dan
+  model embedding; klik **Uji model**. Mengganti model embedding membuat semua dokumen diindeks ulang.
+- **Log pemakaian**: panggilan model, token masuk/keluar, dan galat. Galat `kuota_harian` (429) berarti kuota kunci
+  habis; sistem otomatis mencoba model cadangan lalu kunci berikutnya.
+
+---
+
+## B. Penanggung jawab fakultas
+
+Menu utama: **Semua LED**, **Program studi**, **Instrumen**, **Dokumen bersama fakultas**, **Kunci API fakultas**.
+Di dalam satu LED: **Beranda**, **Data LKPS**, **Dokumen**, **Tim penyusun**, kriteria C.1–C.7 dan bab lain,
+**Ekspor Word**.
+
+### 1. Persiapan (sekali di awal)
 
 1. Login, lalu ganti kata sandi sementara.
-2. **Kunci API** (menu di daftar proyek maupun di dalam proyek): buat kunci di aistudio.google.com → *Get API key*,
-   tempel, simpan, lalu **Uji koneksi**. Kunci berlaku untuk semua proyek prodi, disimpan terenkripsi, dan hanya
-   4 karakter terakhir yang ditampilkan. Beranda proyek mengingatkan bila belum ada kunci yang bisa dipakai.
-3. **Buat proyek LED**: pilih versi instrumen dan tahun TS (misalnya 2025/2026). Label TS di LKPS dan instruksi
-   otomatis diganti tahun akademik nyata. Proyek selalu milik prodi akun Anda; nama proyek hanya label dan bisa
-   diubah di Beranda proyek → **Pengaturan proyek**. LED periode lama cukup **diarsipkan** (tetap tersimpan, hanya
-   baca); **Hapus proyek** hanya untuk proyek yang salah dibuat (wajib mengetik ulang nama proyek).
+2. **Kunci API fakultas**: buat kunci di aistudio.google.com → *Get API key*, tempel, simpan, lalu **Uji koneksi**.
+   Kunci berlaku untuk semua LED, disimpan terenkripsi, dan hanya 4 karakter terakhir yang ditampilkan.
+3. **Program studi**: isi **identitas fakultas** sekali (nama fakultas, perguruan tinggi, alamat, kota; pengganti UPPS),
+   lalu tambah program studi beserta jenjang, kode PDDikti, dan tanggal **akreditasi berlaku sampai**. Daftar prodi
+   diurutkan dari akreditasi yang paling dekat berakhir.
+4. **Dokumen bersama fakultas**: unggah sekali dokumen yang berlaku untuk semua prodi (VMTS dan Renstra fakultas,
+   SK struktur organisasi, keuangan, sarana-prasarana dan K3L, SPMI dan audit mutu). Semua LED memakainya saat menyusun
+   narasi (kode sumber U1, U2, …).
 
-### 2. Bahan penyusunan
+### 2. Instrumen per jenjang (± 5 tahun sekali)
 
-1. **Data LKPS**: unggah LKPS dari template LAM Teknik 2025 (Excel). PDF bisa dipakai sebagai cadangan, tetapi tabelnya
-   wajib dicek. Periksa tabel dan peringatan; koreksi sel yang salah. Metrik butir angka dihitung sistem, bukan LLM.
-2. **Dokumen**: unggah PDF/DOCX/gambar dan kaitkan ke kriteria/sub-bagian. Dokumen berlencana **Bahan bersama
-   fakultas** diunggah super admin untuk semua prodi di UPPS Anda; tidak perlu diunggah ulang. Daftar cek menunjukkan dokumen yang
-   diharapkan per butir. Tunggu status **Siap dicari**.
+Butir penilaian dan pertanyaan diambil dari berkas resmi LAM Teknik, tidak diketik ulang. Instrumen dibedakan per
+jenjang (10 jenjang); LED baru otomatis memakai instrumen aktif jenjang prodinya.
 
-### 3. Menyusun narasi per kriteria
+1. Menu **Instrumen** → **Instrumen baru**: pilih jenjang; nama dan kode terisi otomatis.
+2. Unggah tiga berkas jenjang itu (skema Pasca Terakreditasi Pertama dan Unggul):
+   - **Template LED (.docx)**: dipakai juga untuk ekspor Word;
+   - **Matriks Penilaian (.pdf)** jenjang tersebut;
+   - **Pedoman Penilaian (.pdf)** beserta **halaman tabel bobot** jenjang itu (nomor halaman PDF, contoh Sarjana
+     `223-227`). Letak tabel dideteksi otomatis setelah pedoman diunggah; periksa dan simpan.
+3. Klik **Mulai ekstraksi**. Template diurai tanpa AI (bagian, sub-bagian, instruksi), tabel bobot dibaca tanpa AI,
+   lalu tabel matriks dibaca Gemini sedikit demi sedikit (± 11 panggilan untuk Sarjana). Halaman boleh ditinggal.
+   Bila kuota habis, ekstraksi **tertunda** dan dilanjutkan otomatis dari kelompok terakhir setelah kunci baru diisi
+   atau kuota direset; **Ekstrak ulang** memulai dari awal.
+4. Klik **Periksa hasil ekstraksi**. PDF asli tampil di kiri; klik butir di kanan untuk melompat ke halamannya.
+   - Cocokkan elemen, indikator, bobot, dan deskriptor skor 4–0 dengan PDF.
+   - Kolom bertanda **usulan AI** (sub-bagian template, jenis angka/narasi, rumus lama, dan kolom yang diragukan)
+     wajib diperiksa. Butir angka tanpa rumus lama berarti nilainya nanti diisi penyusun.
+   - Klik **Simpan dan tandai dicek** atau **Sudah benar, tandai dicek**; butir berikutnya terbuka otomatis.
+5. **Pemeriksaan otomatis** harus lolos: total bobot 100 (100,01 diterima), nomor butir berurutan, setiap butir punya
+   deskriptor skor 4 dan minimal satu sub-bagian, setiap sub-bagian punya instruksi, semua butir sudah dicek.
+6. Klik **Sudah dicek, aktifkan**. Instrumen aktif sebelumnya untuk jenjang itu dinonaktifkan tetapi tetap tersimpan;
+   LED lama tetap memakai versinya.
 
-Buka kriteria di sidebar (C.1–C.7). Setiap kartu sub-bagian berisi, dari atas:
+### 3. Membuat LED (per periode 5 tahun)
 
-- **Instruksi template** dan **butir penilaian** beserta **Data LKPS** (metrik yang dihitung sistem);
-- **Jawaban penyusun**: isi fakta yang belum ada di dokumen (tersimpan otomatis, menjadi sumber `[J]`);
-- **Dokumen pendukung**: daftar cek dan tombol unggah;
-- tab **Hasil generate** dan **Riwayat versi**.
+1. Menu **Semua LED** (dikelompokkan per prodi) → **LED baru**: pilih prodi, tahun pengajuan, dan nama. Instrumen
+   dipilih otomatis menurut jenjang prodi. Prodi yang masih punya LED aktif, atau jenjangnya belum punya instrumen
+   aktif, tidak bisa dipilih (alasannya tampil di daftar).
+2. Label periode tampil sebagai "Periode 2026–2031". **Tahun data LKPS (TS)** dihitung dari tahun pengajuan
+   (pengajuan 2026 → TS 2025/2026) dan bisa diubah di Beranda → **Pengaturan LED**. Label TS di LKPS dan instruksi
+   diganti tahun akademik nyata di narasi.
+3. LED periode lama cukup **diarsipkan** (tetap tersimpan, hanya baca). LED baru untuk prodi yang sama baru bisa dibuat
+   setelah LED lama diarsipkan. **Hapus LED** hanya untuk LED yang salah dibuat (wajib mengetik ulang namanya).
+
+### 4. Bahan penyusunan di dalam LED
+
+1. **Data LKPS**: unggah LKPS dari template LAM Teknik 2025 (Excel). PDF bisa dipakai sebagai cadangan, tetapi
+   tabelnya wajib dicek. Tabel **Metrik butir angka** menunjukkan sumber nilai tiap butir angka: dihitung rumus,
+   diisi manual, atau belum ada.
+2. **Dokumen**: unggah PDF/DOCX/gambar dan kaitkan ke sub-bagian. Dokumen berlencana **bersama fakultas** sudah
+   tersedia untuk semua LED. Tunggu status **Siap dicari**.
+
+### 5. Menyusun narasi: satu sub-bagian satu halaman
+
+Buka kriteria di sidebar (C.1–C.7). **Ringkasan kriteria** menampilkan bobot, target halaman, daftar sub-bagian dengan
+status (belum diisi, ada jawaban, ada draf, selesai) dan target kata, tombol **Lanjutkan** (membuka sub-bagian pertama
+yang belum selesai), **Generate semua**, dan **Tandai selesai**.
+
+Setiap **halaman sub-bagian** (judulnya misalnya "C.4 · 3 dari 14", dengan bilah kemajuan) berisi berurutan:
+
+1. **Instruksi template** resmi (inilah pertanyaannya);
+2. **Butir penilaian** dengan deskriptor skor 4 resmi dan **daftar cek unsur skor 4** (dipecah dari nomor (1), (2), …);
+3. untuk butir angka: **Data LKPS** yang dihitung sistem, atau isian **Nilai hitung** bila butir tidak punya rumus atau
+   rumus tidak bisa membaca LKPS (isi nilai dan cara menghitungnya; nilai ini menjadi sumber angka narasi);
+4. **Jawaban penyusun** (tersimpan otomatis, sumber `[J]`);
+5. **Dokumen pendukung** (unggah langsung ke sub-bagian ini);
+6. **Hasil generate** dan **Riwayat versi**.
 
 Langkah:
 
-1. Klik **Generate kriteria** di atas halaman. Urutan penyusunan: indikator kinerja (IKU), latar belakang dan kebijakan,
-   analisis faktor (memakai ringkasan IKU), terakhir SWOT. Pemberitahuan antrean muncul di atas setiap halaman proyek;
-   **halaman boleh ditinggal**, penyusunan berjalan di server.
-2. Baca hasil di tab **Hasil generate**:
-   - penanda **Sumber:** kecil di bawah setiap paragraf (D = dokumen, T = tabel LKPS, M = metrik sistem,
-     J = jawaban penyusun; lihat **Keterangan kode sumber**). Penanda tidak ikut diekspor;
-   - **Pemeriksaan otomatis**: panjang terhadap anggaran kata (±15%), angka tanpa dasar data, paragraf tanpa sumber,
-     dan penanda `[BELUM ADA BUKTI: ...]`;
-   - **Daftar cek unsur skor 4**: terpenuhi, sebagian, atau belum ada bukti, ditambah dokumen yang perlu diunggah.
-3. **Sunting langsung** di editor (tebal, miring untuk istilah asing, daftar, tabel, gambar dari unggahan). Perubahan
-   tersimpan otomatis sebagai versi suntingan dan pemeriksaan dijalankan ulang.
-4. Bila satu sub-bagian kurang baik (misalnya setelah menambah dokumen), klik **Generate ulang butir** di kartunya.
-5. Tab **Riwayat versi**: pilih dua versi lalu **Bandingkan** (teks dihapus dicoret, teks baru disorot), atau
-   **Pulihkan** versi lama (disalin menjadi versi baru; tidak ada versi yang hilang).
-6. Tandai **Selesai** per sub-bagian, atau **Tandai selesai** untuk seluruh kriteria setelah semua sub-bagian punya draf.
-   Status kriteria (belum diisi, draf, disunting, selesai) tampil di sidebar dan Beranda.
+1. Isi jawaban dan nilai yang diperlukan, unggah dokumen, lalu klik **Generate** (satu sub-bagian) atau kembali ke
+   ringkasan dan klik **Generate semua** (urutan: IKU, latar belakang dan kebijakan, analisis faktor, SWOT). Analisis
+   faktor dan SWOT memberi peringatan bila belum ada draf IKU karena keduanya memakai ringkasan IKU.
+2. Pindah dengan **Sebelumnya** dan **Berikutnya** atau daftar sub-bagian di samping; isian disimpan dulu sebelum
+   pindah. Di sub-bagian terakhir, Berikutnya membuka ringkasan kriteria berikutnya.
+3. Baca hasil: penanda **Sumber** di bawah setiap paragraf (D dokumen, U dokumen bersama, T tabel LKPS, M metrik atau
+   nilai hitung, J jawaban), panel **Pemeriksaan otomatis** (panjang, angka tanpa dasar data, paragraf tanpa sumber,
+   penanda `[BELUM ADA BUKTI: …]`), dan status unsur skor 4.
+4. **Sunting langsung** di editor; perubahan tersimpan otomatis sebagai versi suntingan. Di **Riwayat versi**, bandingkan
+   dua versi atau pulihkan versi lama.
+5. Tandai **Selesai** per sub-bagian, atau **Tandai selesai** di ringkasan setelah semua sub-bagian punya draf.
 
-### 4. Tim penyusun dan ekspor Word
+### 6. Tim penyusun dan ekspor Word
 
-1. Menu **Tim penyusun**: isi dosen (urutan pertama = ketua) dan tenaga kependidikan beserta NIP/NIDN/NUPTK, jabatan,
-   dan deskripsi kerja. Data ini mengisi halaman Identitas Tim Penyusun serta Tabel 2.1 dan 2.2, dan tidak dikirim ke Gemini.
-2. Susun **Kata Pengantar dan Ringkasan Eksekutif** (Halaman awal), **Bab III**, dan **Bab IV** paling akhir, setelah
-   C.1–C.7 selesai, karena keempatnya merangkum seluruh kriteria.
-3. Menu **Ekspor Word**: selesaikan semua hal di daftar pemeriksaan (semua bagian ditandai selesai, tidak ada penanda
-   `[BELUM ADA BUKTI: …]`, setiap tabel punya judul di atasnya, setiap gambar punya judul), lalu klik **Ekspor ke Word**.
-4. Unduh berkas .docx, buka di Microsoft Word, pilih **Yes/Ya** saat diminta memperbarui field (daftar isi, tabel,
-   gambar), ganti kotak **Logo Perguruan Tinggi** dengan logo asli, periksa, lalu simpan.
-5. Berkas lebih dari 150 halaman **ditahan**: ringkas narasi (perhatikan peringatan panjang di panel pemeriksaan) lalu
-   ekspor ulang.
+1. Menu **Tim penyusun**: isi dosen (urutan pertama = ketua) dan tenaga kependidikan. Data ini mengisi halaman
+   Identitas Tim Penyusun serta Tabel 2.1 dan 2.2, dan tidak dikirim ke Gemini.
+2. Susun **Kata Pengantar dan Ringkasan Eksekutif**, **Bab III**, dan **Bab IV** paling akhir karena keempatnya
+   merangkum seluruh kriteria.
+3. Menu **Ekspor Word**: selesaikan daftar pemeriksaan (semua bagian selesai, tidak ada penanda `[BELUM ADA BUKTI: …]`,
+   tabel dan gambar berjudul), lalu klik **Ekspor ke Word**. Berkas memakai Template LED instrumen LED itu.
+4. Buka di Microsoft Word, pilih **Yes/Ya** saat diminta memperbarui field, ganti kotak **Logo Perguruan Tinggi**,
+   periksa, lalu simpan. Berkas lebih dari 150 halaman **ditahan**: ringkas narasi lalu ekspor ulang.
 
-### 5. Bila kuota kunci habis
+### 7. Bila kuota kunci habis
 
-Gemini versi gratis membatasi jumlah permintaan per hari per project Google. Saat kuota habis:
+Gemini versi gratis membatasi jumlah permintaan per hari per project Google. Saat kuota habis, penyusunan dan ekstraksi
+instrumen **berhenti rapi** dan pemberitahuan meminta kunci baru. Tambahkan kunci dari **project/akun Google lain** di
+menu Kunci API fakultas (proses lanjut otomatis dari bagian yang tertunda), atau tunggu reset kuota harian (sekitar
+pukul 14.00–15.00 WIB).
 
-- penyusunan **berhenti rapi** di sub-bagian terakhir dan pemberitahuan antrean meminta kunci baru;
-- tambahkan kunci dari **project/akun Google lain** di menu Kunci API, penyusunan **lanjut otomatis** dari sub-bagian
-  yang tertunda; atau tunggu reset kuota harian (sekitar pukul 14.00–15.00 WIB), sistem mencoba lagi sendiri.
-
-### 6. Data pribadi
+### 8. Data pribadi
 
 Sebelum konteks dikirim ke Gemini, NIDN/NIDK/NIP/NIM/NIK dan nama mahasiswa di tabel LKPS, jawaban penyusun, dan
 potongan dokumen disamarkan otomatis. Tetap hindari menulis data pribadi yang tidak perlu di jawaban penyusun.
+Berkas instrumen (template, matriks, pedoman) adalah dokumen publik LAM Teknik.

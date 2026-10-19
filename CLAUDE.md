@@ -24,33 +24,44 @@ Dokumen rencana lengkap (Claude Doc): https://claude.ai/code/artifact/ba67e45c-5
 
 ## Keputusan yang sudah dikunci (jangan diubah tanpa persetujuan Adrianne)
 
-1. Lembaga: **LAM Teknik saja**. Instrumen acuan: LAM Teknik 2025, skema Pasca Terakreditasi Pertama dan Unggul
-   (Peraturan LAM Teknik No. 5 dan 6 Tahun 2025), 7 kriteria C.1–C.7. Instrumen disimpan sebagai **versi** yang bisa
-   disalin dan disunting (kriteria, sub-bagian, butir, bobot bisa berubah per tahun/peraturan).
+Revisi 19 Okt 2026 (dokumen "Rencana Revisi Website LED LAM Teknik", disetujui Adrianne) mengubah butir 1–4 dan 8;
+rinciannya di `docs/CATATAN-PENGEMBANGAN.md` bagian Revisi 19 Okt 2026.
+
+1. Lembaga: **LAM Teknik saja**, dibedakan per **jenjang** (10 jenjang), bukan per jurusan. Skema: Pasca Terakreditasi
+   Pertama dan Unggul (Peraturan LAM Teknik No. 5 dan 6 Tahun 2025), 7 kriteria C.1–C.7. **Instrumen diunggah PJ per
+   jenjang setiap ± 5 tahun** (Template LED .docx, Matriks Penilaian .pdf, Pedoman Penilaian .pdf + halaman tabel bobot):
+   template diurai tanpa AI, tabel bobot dibaca tanpa AI, tabel matriks dibaca AI per kelompok kecil; hasil dicek PJ di
+   halaman cek (PDF di samping tabel, usulan AI ditandai, pemeriksaan otomatis) lalu diaktifkan. Satu versi aktif per
+   jenjang; versi lama tetap tersimpan dan LED lama tetap memakai versinya.
 2. **Dua peran**, semua lewat login:
-   - **Super admin** (tim pengembang, lalu diserahterimakan ke fakultas): versi instrumen, UPPS dan prodi, akun
-     penanggung jawab dan akun super admin lain, model LLM, kunci API cadangan, log pemakaian dan aktivitas.
-   - **Penanggung jawab prodi** (satu akun **aktif** per prodi): proyek LED prodinya, tahun TS, unggah LKPS dan
-     dokumen, generate dan sunting semua bagian, tandai kriteria selesai, tambah kunci API prodi, unduh Word.
+   - **Admin**: hanya **Akun PJ** dan **Kunci API** (kunci cadangan, model Gemini, log pemakaian). Admin tidak membuka LED.
+   - **Penanggung jawab fakultas** (satu akun untuk seluruh fakultas): semua LED (dikelompokkan per prodi), program
+     studi dan identitas fakultas (pengganti UPPS), instrumen, dokumen bersama fakultas, kunci API fakultas; di dalam LED:
+     Data LKPS, dokumen, tim penyusun, kriteria, ekspor Word.
    - Tidak ada peran peninjau dan tidak ada pembagian kriteria ke anggota.
    - Aturan akun: semua pengguna bisa mengganti kata sandi sendiri (wajib kata sandi lama); akun baru dan akun yang
-     sandinya diatur ulang wajib mengganti sandi saat login. Hanya super admin yang mengatur ulang sandi,
-     menonaktifkan, dan menghapus akun; super admin tidak bisa menonaktifkan/menghapus diri sendiri dan minimal ada
-     satu super admin aktif. Proyek, kunci API, dan riwayat versi terikat ke **prodi**, bukan ke akun. Pergantian PJ:
-     nonaktifkan akun lama, buat akun baru.
-3. **Form per kriteria**: satu halaman per kriteria berisi butir-butirnya (instruksi, pertanyaan pemandu, unggah
-   dokumen, daftar cek unsur skor 4, editor hasil). Jumlah halaman form mengikuti jumlah kriteria di versi instrumen.
-4. **Generate per kriteria** (tombol di atas halaman kriteria) dan **ulang per butir/sub-bagian**. Satu panggilan LLM =
-   satu sub-bagian. Hasil bisa disunting; **setiap generate/suntingan disimpan sebagai versi** dan bisa dibandingkan/dipulihkan.
+     sandinya diatur ulang wajib mengganti sandi saat login. Hanya admin yang mengatur ulang sandi, menonaktifkan, dan
+     menghapus akun; admin tidak bisa menonaktifkan/menghapus diri sendiri dan minimal ada satu admin aktif. LED, kunci
+     API, dan riwayat versi milik **fakultas**, bukan akun. Pergantian PJ: nonaktifkan akun lama, buat akun baru.
+   - **LED per periode 5 tahun** ("Periode 2026–2031"): satu LED aktif per prodi; LED baru = prodi + tahun pengajuan +
+     nama, instrumen otomatis instrumen aktif jenjang prodi, TS ("tahun data LKPS") dihitung dari tahun pengajuan.
+3. **Satu sub-bagian satu halaman**: ringkasan kriteria (status sub-bagian, target kata, Lanjutkan, Generate semua,
+   Tandai selesai), lalu halaman per sub-bagian berisi instruksi template, butir dan daftar cek skor 4 (dari deskriptor
+   skor 4 resmi yang dipecah per nomor), data LKPS atau nilai manual, jawaban penyusun, dokumen, hasil generate dan
+   riwayat versi; Sebelumnya/Berikutnya menyimpan isian dulu. Pertanyaan pemandu dan "dokumen yang diharapkan" buatan
+   sendiri dihapus: pertanyaan = instruksi resmi template.
+4. **Generate semua** (ringkasan kriteria) dan **generate satu sub-bagian**; AF/SWOT memberi peringatan bila belum ada draf
+   IKU. Satu panggilan LLM = satu sub-bagian. Hasil bisa disunting; **setiap generate/suntingan disimpan sebagai versi**
+   dan bisa dibandingkan/dipulihkan. Butir angka: rumus lama (`kodeRumus`) bila cocok; tanpa rumus atau rumus gagal
+   membaca LKPS → nilai hitung diisi PJ (`NilaiManual`) dan menjadi sumber narasi.
 5. Bagian di luar kriteria (kata pengantar, ringkasan eksekutif, Bab I, II.A, II.B, Bab III, Bab IV) **ikut di-generate**
    mengikuti instruksi template. Halaman muka, identitas, dan tabel tim diisi dari data.
 6. **Maksimal 150 halaman termasuk cover dan kata pengantar** (arahan pembimbing, lebih ketat dari template).
    Panjang narasi per butir mengikuti bobot; butir berjenis angka ditulis singkat. Lihat `src/lib/domain/anggaran.ts`.
 7. **TS** = tahun akademik penuh terakhir saat pengajuan (Okt 2026 -> TS 2025/2026). Disimpan per proyek sebagai
    tahun mulai; label TS di LKPS diganti tahun nyata di narasi. Lihat `src/lib/domain/tahun-akademik.ts`.
-8. **Kunci API**: penanggung jawab mengisi satu kunci; saat kuota habis generate berhenti rapi di butir terakhir,
-   sistem meminta kunci baru, lalu lanjut dari butir itu. Super admin juga bisa mengisi kunci cadangan
-   (dipakai setelah kunci penanggung jawab habis; pengaturan `pakaiCadanganAdmin`, keputusan final menunggu konfirmasi).
+8. **Kunci API**: urutan dicoba **kunci fakultas (PJ) → kunci cadangan admin** (`pakaiCadanganAdmin`). Saat kuota habis
+   generate dan ekstraksi instrumen berhenti rapi, sistem meminta kunci baru, lalu lanjut dari butir/kelompok itu.
    Kuota Gemini dihitung **per project Google**, bukan per kunci; reset tengah malam waktu Pasifik (14.00–15.00 WIB);
    galat 429 RESOURCE_EXHAUSTED. Lihat `src/lib/domain/kunci-api.ts`.
 9. **Ekspor**: mengisi template LEDPS resmi (bukan dokumen baru). Huruf bawaan template (**Arial 11**, gaya Normal),
@@ -197,15 +208,35 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 - `src/lib/domain/ekspor.ts`: nomor bab, ukuran/skala gambar, judul tabel/gambar, pemeriksaan sebelum ekspor, perkiraan halaman.
 - `src/lib/proses/ekspor.ts` (worker, antrean `ekspor-word`), `src/lib/data/ekspor.ts` (tim penyusun, periksa/mulai/unduh
   ekspor, unggah template per versi). Halaman `/proyek/[id]/tim`, `/proyek/[id]/ekspor`; unduh `/api/ekspor/[id]/berkas`;
-  unggah template `/api/admin/versi/[versiId]/template`. Cek pemetaan template: `npx tsx scripts/cek-template-led.ts S1`.
+  unggah template lewat `/api/instrumen/[versiId]/berkas/template` (revisi 19 Okt). Cek pemetaan template:
+  `npx tsx scripts/cek-template-led.ts S1`.
 
 ## Struktur kode (setelah U-10)
 
-- `Dokumen` milik proyek **atau** UPPS (CHECK constraint). Bahan bersama UPPS: `unggahDokumenUpps`/`daftarDokumenUpps`
-  (`src/lib/data/dokumen.ts`), halaman `/admin/bahan-upps`; embedding dengan `penyediaUntukUpps` (kunci super admin);
-  pencarian menggabungkan dokumen proyek + UPPS prodi; kode sumber prompt `U1…` untuk bahan bersama.
+- Dokumen bersama fakultas: `Dokumen` dengan `proyekId = null` (`unggahDokumenBersama`/`daftarDokumenBersama` di
+  `src/lib/data/dokumen.ts`, halaman `/proyek/dokumen-bersama`); dipakai semua LED; kode sumber prompt `U1…`.
 - Proyek: `ambilProyekUbah` menolak perubahan pada proyek diarsipkan (`diarsipkanPada`); `ubahNamaProyek`,
   `aturArsipProyek`, `hapusProyek` (konfirmasi nama, berkas di disk ikut dihapus).
+
+## Struktur kode (revisi 19 Okt 2026)
+
+- Peran dan akses: `src/lib/akses.ts`, `src/lib/sesi.ts`; admin di `/admin/akun` dan
+  `/admin/kunci-api?tab=kunci|model|pemakaian`; PJ di `/proyek/*` (`MENU_FAKULTAS` di
+  `src/components/shell/shell-daftar-proyek.tsx`). Identitas fakultas: model `Fakultas` (`src/lib/data/organisasi.ts`).
+- LED per periode: `tahunPengajuan`, `labelPeriode`, `tsDariTahunPengajuan` (`src/lib/domain/tahun-akademik.ts`),
+  `instrumenAktifUntuk(jenjang)` dan `buatProyek` (`src/lib/data/proyek.ts`).
+- Satu sub-bagian satu halaman: `/proyek/[id]/bagian/[kode]` (ringkasan) dan `/proyek/[id]/bagian/[kode]/[sub]`;
+  data bersama `src/lib/data/kriteria.ts`; status/posisi/unsur skor 4 di `src/lib/domain/navigasi.ts`; simpan sebelum
+  pindah halaman lewat `src/lib/simpan-tertunda.ts` (`TautanSimpan`, `IsianJawaban`, `EditorNarasi`, `IsianNilaiManual`).
+- Unggah instrumen: `src/lib/domain/{tata-letak-pdf,matriks,bobot,template-led,ekstraksi-instrumen}.ts` (murni, diuji),
+  `src/lib/instrumen/{pdf,template}.ts` (baca PDF/docx), `src/lib/data/unggah-instrumen.ts`, worker
+  `src/lib/proses/instrumen.ts` (antrean `ekstrak-instrumen`), halaman `/proyek/instrumen`, `/proyek/instrumen/[versiId]`,
+  `/proyek/instrumen/[versiId]/cek`; berkas `/api/instrumen/[versiId]/berkas/[template|matriks|pedoman]`. Pemanggil LLM
+  generik `panggilTerstruktur` (`src/lib/proses/llm-narasi.ts`). Fikstur di `tests/fikstur/instrumen/`.
+  Versi per jenjang menyimpan seluruh struktur template (semua varian jenjang) supaya ekspor dapat menghapus paragraf
+  jenjang lain; butirnya hanya untuk jenjang versi.
+- Butir angka: `src/lib/domain/butir-angka.ts`, `src/lib/data/nilai-butir.ts`; katalog rumus `katalogRumus()` di
+  `src/lib/domain/metrik-lkps.ts`.
 
 ## Konvensi
 
@@ -214,8 +245,8 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 - TypeScript strict, tanpa `any`. Validasi semua masukan dengan Zod di server.
 - Logika domain murni ditaruh di `src/lib/domain/` dan diberi uji. Akses data di `src/lib/data/` atau server actions,
   bukan di komponen.
-- Setiap aksi server memeriksa sesi dan peran; penanggung jawab hanya boleh mengakses data prodinya sendiri
-  (filter `prodiId` di setiap kueri).
+- Setiap aksi server memeriksa sesi dan peran: PJ fakultas mengakses semua LED fakultas; admin tidak mengakses LED,
+  prodi, instrumen, maupun dokumen (hanya akun dan kunci API).
 - Kunci API dienkripsi (AES-256-GCM, kunci dari `ENCRYPTION_KEY`), hanya didekripsi di server/worker, tidak pernah
   dikirim ke browser atau ditulis ke log. Tampilkan hanya 4 karakter terakhir.
 - Angka di narasi dihitung sistem dari LKPS, bukan oleh LLM. Format Indonesia lewat `src/lib/domain/teks.ts`.

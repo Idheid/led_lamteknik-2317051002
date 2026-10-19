@@ -132,3 +132,18 @@ otomatis menjadi sumber tambahan di prodi.
 
 **Dampak.** Mengurangi kerja berulang dan perbedaan data antarprodi, menghemat kuota, dan memperkuat peran
 fakultas sebagai pengelola mutu. Perkiraan kerja ±1 iterasi kecil (skema, pencarian, UI, uji).
+
+## Revisi 19 Oktober 2026 (dokumen "Rencana Revisi Website LED LAM Teknik")
+
+Urutan kerja; setiap tahap diuji sebelum tahap berikutnya. Semua tahap selesai (rincian di
+`docs/CATATAN-PENGEMBANGAN.md`).
+
+| Tahap | Isi | Uji | Status |
+| --- | --- | --- | --- |
+| 1 | Data dan peran: Admin (akun PJ, kunci API), PJ fakultas, identitas fakultas | Admin hanya membuka Akun PJ/Kunci API; PJ membuka semua prodi | Selesai |
+| 2 | Program studi dan periode LED 5 tahun, TS dari tahun pengajuan, instrumen otomatis per jenjang | LED kedua untuk prodi yang sama ditolak sampai yang lama diarsipkan | Selesai |
+| 3 | Satu sub-bagian satu halaman: ringkasan kriteria, Sebelumnya/Berikutnya, simpan otomatis | Jawaban tidak hilang saat pindah; generate satu halaman dan Generate semua berjalan | Selesai |
+| 4 | Unggah instrumen: template, matriks, pedoman; ekstraksi; halaman cek; aktivasi | Matriks Sarjana 2025 dibandingkan dengan 72 butir yang ada | Selesai |
+| 5 | Butir angka: rumus lama atau nilai manual, beralih otomatis bila rumus gagal | Butir berumus dihitung; tanpa rumus memakai nilai manual sebagai sumber | Selesai |
+| 6 | Uji alur penuh | Tambah prodi, unggah instrumen S1, buat LED, isi satu kriteria, generate, ekspor Word | Selesai |
+| 7 | Desain/dokumen | Dokumen repo diperbarui; Figma dan peta form di luar kode | Dokumen repo selesai; Figma/peta form manual |

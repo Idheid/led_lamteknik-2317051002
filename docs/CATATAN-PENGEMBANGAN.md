@@ -424,3 +424,124 @@ Belum diperiksa: tampilan berkas di Microsoft Word secara visual (perlu dibuka m
 | Ubah nama, arsip hanya baca, aktifkan kembali, hapus dengan konfirmasi, bahan UPPS tidak ikut terhapus | `bahan-upps.test.ts`, Beranda di browser | Lulus |
 | Hitung halaman LibreOffice dan tampilan hasil | `ekspor.test.ts` + konversi PDF dan pratinjau halaman | Lulus (23 halaman, dihitung) |
 | `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus |
+
+## Revisi 19 Oktober 2026 (Claude Code)
+
+Sumber: dokumen "Rencana Revisi Website LED LAM Teknik" (19 Okt 2026, disetujui Adrianne). Lima keputusan, dikerjakan
+per tahap dan setiap tahap diuji sebelum tahap berikutnya.
+
+### Tahap 1–2 — Data, peran, program studi, periode (commit `e2df002`)
+
+- Peran menjadi **Admin** (hanya Akun PJ dan Kunci API; model Gemini dan log pemakaian dipindah ke tab di halaman Kunci
+  API) dan **Penanggung jawab fakultas** (satu akun untuk seluruh fakultas: semua LED, program studi, instrumen,
+  dokumen bersama, kunci API fakultas). Admin tidak bisa membuka LED.
+- UPPS diganti identitas **Fakultas** (diisi sekali). Prodi mendapat `akreditasiBerlakuSampai` (daftar diurutkan dari
+  yang paling dekat berakhir). Kunci API dan dokumen bersama milik fakultas.
+- LED per periode 5 tahun: `tahunPengajuan`, label "Periode 2026–2031", TS = "tahun data LKPS" dihitung dari tahun
+  pengajuan (dapat diubah di Pengaturan LED), satu LED aktif per prodi, instrumen dipilih otomatis menurut jenjang.
+- Satu migrasi (`20261019090000_revisi_pj_fakultas`) tanpa menghapus data: UPPS → Fakultas, `tahunPengajuan` dari
+  tanggal dibuat, LED aktif ganda per prodi diarsipkan, pertanyaan pemandu dan dokumen yang diharapkan buatan sendiri
+  dikosongkan. Cadangan basis data dev sebelum migrasi: `led-tmp/cadangan-sebelum-revisi-19okt.dump`.
+
+### Tahap 3 — Satu sub-bagian satu halaman (commit `23f3874`, `649cdc4`)
+
+- Halaman kriteria menjadi **ringkasan**: status tiap sub-bagian (belum diisi, ada jawaban, ada draf, selesai, dari
+  data), target kata, bilah kemajuan, **Lanjutkan** (sub-bagian pertama yang belum selesai), Generate semua, Tandai selesai.
+- Halaman baru `/proyek/[id]/bagian/[kode]/[sub]`: judul "C.4 · 3 dari 14", bilah posisi, urutan isi sesuai dokumen
+  revisi, daftar sub-bagian di samping, **Sebelumnya/Berikutnya** (di sub-bagian terakhir ke ringkasan kriteria berikutnya).
+- Simpan sebelum pindah: penyimpan otomatis (jawaban, editor narasi, nilai manual) mendaftar ke
+  `src/lib/simpan-tertunda.ts`; tautan pindah (`TautanSimpan`) menunggu semua penyimpan selesai dan tidak berpindah
+  bila gagal; komponen juga menyimpan saat dilepas.
+- Peringatan sebelum generate AF/SWOT bila kriteria belum punya draf IKU.
+- Daftar cek skor 4 = deskriptor skor 4 resmi dipecah per nomor (1), (2), … (`pecahUnsurSkor4`). Pemecahan ini
+  menemukan dua butir data bawaan yang salah terpecah ("S.d", butir 53-I dan 57); diperbaiki di data dan lewat
+  migrasi `20261019120000_perbaiki_unsur_skor4`.
+- UI pertanyaan pemandu dan dokumen yang diharapkan dihapus (pertanyaan = instruksi resmi template).
+
+### Tahap 4 — Unggah instrumen per jenjang (commit `0623c80`)
+
+Alur: Instrumen baru (jenjang) → unggah Template LED (.docx), Matriks Penilaian (.pdf), Pedoman Penilaian (.pdf) +
+halaman tabel bobot → Mulai ekstraksi (worker `ekstrak-instrumen`) → Periksa hasil → Sudah dicek, aktifkan.
+
+- **Template tanpa AI** (`src/lib/domain/template-led.ts`): paragraf dibaca dengan nama gaya, penomoran Word
+  (numId/ilvl), dan tanda kotak isian. Judul besar membuka bab, gaya judul kriteria membuka C.1…C.7, paragraf bernomor
+  yang bukan instruksi menjadi judul, isi sampai kotak isian menjadi satu blok (instruksi + catatan biru yang
+  menentukan jenjang). Blok berurutan di bawah judul yang sama dengan jenjang berbeda menjadi varian. Kode sub-bagian
+  diambil dari versi rujukan bila instruksinya cocok (skor = awalan bersama terpanjang setelah awalan baku "Bagian ini
+  menjelaskan data dan analisis terkait …" dibuang), sehingga kode stabil antarversi (rumus, ekspor, draf lama).
+  Hasil pada template resmi 2025: **sub-bagian dan urutannya identik dengan data bawaan untuk 10 jenjang**.
+- **Tabel bobot tanpa AI** (`bobot.ts`): posisi kolom NO./ELEMEN/INDIKATOR/BOBOT dari pdf.js; setiap angka di kolom
+  bobot memulai sub-indikator. Letak tabel tiap jenjang dideteksi otomatis dari judul "LAMPIRAN: BOBOT PENILAIAN" dan
+  judul "PROGRAM …" sebelumnya (Sarjana: halaman PDF 223–227, sesuai dokumen revisi). Sarjana: 71 dari 72 bobot sama
+  dengan data bawaan; butir 58 di tabel resmi hanya punya satu bobot (2,92) untuk dua sub-indikator (data bawaan
+  membaginya 1,46 + 1,46), jadi bobot dibagi rata dan ditandai untuk dicek.
+- **Matriks**: teks PDF biasa bercampur antarkolom, jadi tabel disusun ulang dari posisi teks (`matriks.ts`; kolom dari
+  judul No/Kriteria/Indikator/4/3/2/1/0, baris dari nomor di kolom No, berlanjut lintas halaman, judul bagian sebagai
+  konteks). Hanya teks baris yang sudah rapi dikirim ke Gemini per kelompok ± 6 baris, bersama tabel bobot, daftar
+  sub-bagian, dan katalog 33 rumus lama. AI memecah sub-indikator, merapikan kolom, dan **mengusulkan** sub-bagian,
+  jenis, dan rumus. Kemajuan disimpan per kelompok; kuota habis → tertunda, lanjut dari kelompok yang sama.
+- **Halaman cek**: PDF asli di kiri (melompat ke halaman butir), tabel yang bisa disunting di kanan, usulan AI ditandai
+  sampai dikonfirmasi, pemeriksaan otomatis (total bobot 100 ± 0,01, nomor berurutan, deskriptor 4, ≥ 1 sub-bagian,
+  instruksi sub-bagian, semua butir dicek). Aktivasi menonaktifkan versi aktif lama jenjang itu; LED lama tetap.
+- Pemanggil LLM dijadikan generik (`panggilTerstruktur`): rotasi kunci, model cadangan, dan log pemakaian sama dengan narasi.
+- Versi per jenjang menyimpan **seluruh** struktur template (semua varian jenjang) agar ekspor bisa menghapus paragraf
+  jenjang lain (ditemukan oleh uji alur penuh tahap 6); butirnya khusus jenjang versi.
+
+Uji tahap 4 dengan Gemini sungguhan (Matriks Sarjana 2025, `gemini-3-flash-preview`, 11 panggilan, ± 45 ribu token
+masuk dan 58 ribu token keluar), dibandingkan dengan 72 butir data bawaan:
+
+| Hal | Hasil |
+| --- | --- |
+| Baris matriks → butir | 60 baris → 72 butir/sub-indikator; kode 72/72 sama |
+| Bobot | 72/72 sama, total 100,01 |
+| Sub-bagian usulan AI | 72/72 sama persis |
+| Rumus lama usulan AI | 32/32 cocok (+1 usulan untuk butir 19) |
+| Jenis angka/narasi | 68/72 sama (17, 19, 21-II, 29 diusulkan "angka"; ditandai untuk dicek) |
+| Deskriptor skor 4 | menyalin teks resmi PDF (data bawaan berupa parafrase manual) |
+
+Versi uji coba ini (`LAMTEKNIK-2025-S1-UJICOBA`, status "Perlu dicek", belum aktif) dibiarkan di basis data dev untuk
+dicoba di halaman cek.
+
+### Tahap 5 — Butir angka (commit `fb6e644`)
+
+- Rumus dipetakan lewat `kodeRumus` butir instrumen (bukan kode butir Sarjana). Butir tanpa rumus, atau rumus yang
+  tidak bisa membaca LKPS (tabel kosong/format berubah, `lengkap = false`), otomatis beralih ke **nilai hitung manual**
+  (`NilaiManual`, isian di halaman sub-bagian). Nilai manual masuk prompt sebagai sumber `[M-NILAI-<butir>]`, angkanya
+  dianggap sah oleh pemeriksaan angka, dan tampil di tabel sistem.
+
+### Tahap 6 — Uji alur penuh (commit `2c3c621`)
+
+`tests/integrasi/alur-penuh.test.ts`, dari basis data kosong: tambah prodi → unggah instrumen S1 (fikstur resmi) →
+cek dan aktifkan → buat LED → isi satu kriteria → generate → ekspor Word. Uji ini menemukan dua cacat yang sudah
+diperbaiki: catatan biru jenjang lain tertinggal di Word (struktur template tidak lengkap) dan versi pertama tanpa
+rujukan tidak punya tabel LKPS acuan (kini memakai kerangka bawaan).
+
+### Tahap 7 — Dokumen
+
+- Diperbarui: `CLAUDE.md` (keputusan 1–4 dan 8, struktur kode revisi), `docs/PANDUAN-PENGGUNAAN.md` (ditulis ulang untuk
+  Admin dan PJ fakultas), `README.md`, `docs/RENCANA-ITERASI.md`, catatan ini.
+- **Di luar kode**: desain Figma dan peta form eksternal belum diselaraskan; perlu diperbarui manual mengikuti menu dan
+  halaman di atas.
+- Belum diputuskan (tidak memengaruhi kode): siapa pemegang peran admin (ditulis umum), dan konfirmasi ke Pak Tris bahwa
+  "borang unggul" = skema Pasca Terakreditasi Pertama dan Unggul.
+
+### Catatan lingkungan
+
+- Selama pengujian, komputer pengembangan kehabisan memori (server dev berhenti dengan `spawn ENOMEM`) dan VM WSL
+  Docker ikut mati. Docker Desktop lalu gagal mulai karena berkas soket AF_UNIX sisa (`%LOCALAPPDATA%\Docker\run\
+  dockerInference`, `%LOCALAPPDATA%\docker-secrets-engine\engine.sock`) tidak bisa dihapus. Pemulihan: hentikan Docker,
+  `wsl --shutdown`, ganti nama kedua folder itu (`*.basi-…`), jalankan Docker Desktop lagi. Jangan memakai "Reset to
+  factory defaults" karena menghapus kontainer dan volume basis data. Kontainer Superset dari proyek lain ikut menyala
+  otomatis dan memakan memori; hentikan bila tidak dipakai.
+
+### Hasil pemeriksaan revisi
+
+| Hal | Cara diperiksa | Hasil |
+| --- | --- | --- |
+| Admin hanya Akun PJ/Kunci API; PJ membuka semua prodi | `tests/integrasi/akses.test.ts`, server dev | Lulus |
+| LED kedua untuk prodi yang sama ditolak sampai yang lama diarsipkan | `akses.test.ts` | Lulus |
+| Jawaban tidak hilang saat pindah halaman; generate satu halaman dan Generate semua | `generate.test.ts` (tahap 3), server dev | Lulus |
+| Unggah Matriks Sarjana 2025 dibandingkan butir yang ada | `unggah-instrumen.test.ts` (model tiruan) + uji Gemini sungguhan (tabel di atas) | Lulus |
+| Butir berumus otomatis; tanpa rumus/rumus gagal → nilai manual menjadi sumber | `generate.test.ts` (tahap 5), `butir-angka.test.ts` | Lulus |
+| Alur penuh sampai ekspor Word | `alur-penuh.test.ts` | Lulus |
+| `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus (90 uji unit, 35 uji integrasi) |
