@@ -138,8 +138,9 @@ export const skemaButir = z.object({
   tabelLkps: z.array(z.string().trim().min(1).max(20)).max(20),
   deskriptorSkor4: teksWajib("Deskriptor skor 4", 5000),
   unsurSkor4: daftarTeks,
-  pertanyaanPemandu: teksOpsional(3000),
-  dokumenPendukung: daftarTeks,
+  // revisi 19 Okt 2026: pertanyaan pemandu dan dokumen yang diharapkan buatan sendiri tidak dipakai lagi
+  pertanyaanPemandu: teksOpsional(3000).optional(),
+  dokumenPendukung: daftarTeks.default([]),
   subBagianIds: z.array(z.string().min(1)).max(20),
   catatan: teksOpsional(2000),
 });

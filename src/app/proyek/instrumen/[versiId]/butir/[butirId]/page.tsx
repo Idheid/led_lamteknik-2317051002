@@ -31,7 +31,7 @@ export default async function HalamanUbahButir({ params, searchParams }: PagePro
     awal = {
       jenjang, kode: "", no: (terakhir._max.no ?? 0) + 1, sub: "", urutan: (terakhir._max.urutan ?? 0) + 1,
       bagianKode: versi.bagian[0]?.kode ?? "", elemen: "", indikator: "", bobot: 0, jenis: "narasi", tabelLkps: [],
-      deskriptorSkor4: "", unsurSkor4: [], pertanyaanPemandu: "", dokumenPendukung: [], subBagianIds: [], catatan: "",
+      deskriptorSkor4: "", unsurSkor4: [], subBagianIds: [], catatan: "",
     };
   } else {
     const b = await ambilButir(p, butirId);
@@ -40,8 +40,8 @@ export default async function HalamanUbahButir({ params, searchParams }: PagePro
     awal = {
       jenjang, kode: b.kode, no: b.no, sub: b.sub ?? "", urutan: b.urutan, bagianKode: b.bagianKode, elemen: b.elemen,
       indikator: b.indikator, bobot: Number(b.bobot), jenis: b.jenis, tabelLkps: b.tabelLkps,
-      deskriptorSkor4: b.deskriptorSkor4, unsurSkor4: b.unsurSkor4, pertanyaanPemandu: b.pertanyaanPemandu ?? "",
-      dokumenPendukung: b.dokumenDiharapkan.map((d) => d.nama), subBagianIds: b.subBagian.map((r) => r.subBagianId),
+      deskriptorSkor4: b.deskriptorSkor4, unsurSkor4: b.unsurSkor4,
+      subBagianIds: b.subBagian.map((r) => r.subBagianId),
       catatan: b.catatan ?? "",
     };
   }

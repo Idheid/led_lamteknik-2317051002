@@ -181,11 +181,7 @@ export async function halamanBagian(p: Pengguna, proyekId: string, kodeBagian: s
       subBagian: {
         orderBy: { urutan: "asc" },
         include: {
-          butir: {
-            where: { butir: { jenjang: proyek.jenjang } },
-            include: { butir: { include: { dokumenDiharapkan: { orderBy: { urutan: "asc" } } } } },
-          },
-          dokumenDiharapkan: { orderBy: { urutan: "asc" } },
+          butir: { where: { butir: { jenjang: proyek.jenjang } }, include: { butir: true } },
         },
       },
     },

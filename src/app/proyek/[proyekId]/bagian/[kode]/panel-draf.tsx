@@ -91,7 +91,7 @@ const IKON_UNSUR = {
   belum_ada_bukti: { ikon: CircleAlert, kelas: "text-rose-600", label: "Belum ada bukti" },
 } as const;
 
-function DaftarCek({ butir, unsur }: { butir: ButirCek[]; unsur: KeluaranSubBagian["unsur"] }) {
+export function DaftarCek({ butir, unsur }: { butir: ButirCek[]; unsur: KeluaranSubBagian["unsur"] }) {
   if (butir.length === 0) return null;
   return (
     <section aria-label="Daftar cek skor 4" className="rounded-lg border p-3 text-sm">
@@ -268,7 +268,7 @@ export function PanelDraf({
             <p>
               {tugasAktif
                 ? "Sub-bagian ini ada di antrean penyusunan. Draf muncul di sini setelah selesai."
-                : "Belum ada draf. Lengkapi data di atas, lalu klik Generate atau Generate kriteria."}
+                : "Belum ada draf. Lengkapi data dan jawaban di atas, lalu klik Generate."}
             </p>
             <Button variant="link" size="sm" onClick={() => setManual(true)}><PenLine aria-hidden />Tulis manual</Button>
           </div>

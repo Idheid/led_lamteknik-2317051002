@@ -280,7 +280,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
               <CardDescription>LKPS dan dokumen pendukung yang menjadi sumber narasi.</CardDescription>
             </CardHeader>
             <CardContent>
-              <dl className="grid gap-3 text-sm sm:grid-cols-3">
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="text-xs text-muted-foreground">LKPS sumber data</dt>
                   <dd>
@@ -294,13 +294,6 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
                     {bahan.siap} / {bahan.totalDokumen}
                     {bahan.menungguKunci > 0 && <span className="block text-xs text-amber-700 dark:text-amber-300">{bahan.menungguKunci} menunggu kunci API</span>}
                     {bahan.gagal > 0 && <span className="block text-xs text-destructive">{bahan.gagal} gagal diproses</span>}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Dokumen yang diharapkan</dt>
-                  <dd className="tabular-nums">
-                    {bahan.terpenuhi} / {bahan.diharapkan} terpenuhi
-                    <span className="block text-xs text-muted-foreground">{bahan.diharapkan - bahan.terpenuhi} masih kurang</span>
                   </dd>
                 </div>
               </dl>

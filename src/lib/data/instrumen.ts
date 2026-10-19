@@ -291,15 +291,14 @@ export async function simpanButir(p: Pengguna, versiId: string, masukan: Masukan
   const subSah = await prisma.subBagian.count({ where: { id: { in: data.subBagianIds }, bagian: { versiId } } });
   if (subSah !== data.subBagianIds.length) throw new GalatPengguna("Sub-bagian yang dipilih tidak ada di versi ini.");
 
-  const { subBagianIds, dokumenPendukung, ...kolom } = data;
+  // pertanyaan pemandu dan dokumen yang diharapkan tidak dipakai lagi (revisi 19 Okt 2026)
+  const { subBagianIds, dokumenPendukung: _dokumen, pertanyaanPemandu: _pemandu, ...kolom } = data;
   const butir = await prisma.$transaction(async (tx) => {
     const t = id
       ? await tx.butirPenilaian.update({ where: { id }, data: kolom })
       : await tx.butirPenilaian.create({ data: { ...kolom, versiId } });
     await tx.butirSubBagian.deleteMany({ where: { butirId: t.id } });
     await tx.butirSubBagian.createMany({ data: subBagianIds.map((subBagianId) => ({ butirId: t.id, subBagianId })) });
-    await tx.dokumenDiharapkan.deleteMany({ where: { butirId: t.id } });
-    await tx.dokumenDiharapkan.createMany({ data: dokumenPendukung.map((nama, i) => ({ nama, butirId: t.id, urutan: i + 1 })) });
     return t;
   });
   await catatAktivitas(p, id ? "ubah" : "buat", "butir", butir.id, { kode: butir.kode, jenjang: butir.jenjang });

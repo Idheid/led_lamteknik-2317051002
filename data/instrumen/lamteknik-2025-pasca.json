@@ -6304,8 +6304,10 @@
       ],
       "deskriptorSkor4": "UPPS memiliki aspek (1) s.d. (4): dokumen legal pelaksana penjaminan mutu; dokumen legal auditor independen; dokumen pelaksanaan AMI; dokumen RTM.",
       "unsurSkor4": [
-        "S.d",
-        ": dokumen legal pelaksana penjaminan mutu; dokumen legal auditor independen; dokumen pelaksanaan AMI; dokumen RTM"
+        "Dokumen legal pelaksana penjaminan mutu",
+        "Dokumen legal auditor independen",
+        "Dokumen pelaksanaan AMI",
+        "Dokumen RTM"
       ],
       "pertanyaanPemandu": "Apakah ada dokumen legal unit penjaminan mutu, auditor independen, pelaksanaan AMI, dan RTM?",
       "dokumenPendukung": [
@@ -6442,8 +6444,12 @@
       "tabelLkps": [],
       "deskriptorSkor4": "Mengukur kepuasan seluruh pemangku kepentingan dan memenuhi aspek (1) s.d. (6): instrumen sahih dan andal; berkala dan terekam; analisis tepat; tindak lanjut; reviu; hasil dipublikasikan.",
       "unsurSkor4": [
-        "S.d",
-        ": instrumen sahih dan andal; berkala dan terekam; analisis tepat; tindak lanjut; reviu; hasil dipublikasikan"
+        "Instrumen sahih dan andal",
+        "Berkala dan terekam",
+        "Analisis tepat",
+        "Tindak lanjut",
+        "Reviu",
+        "Hasil dipublikasikan"
       ],
       "pertanyaanPemandu": "Instrumen, jadwal, metode analisis, tindak lanjut, dan publikasi survei kepuasan bagi mahasiswa, dosen, tendik, lulusan, pengguna, dan mitra?",
       "dokumenPendukung": [

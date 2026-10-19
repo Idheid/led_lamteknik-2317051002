@@ -37,8 +37,6 @@ interface NilaiForm {
   tabelLkps: string;
   deskriptorSkor4: string;
   unsurSkor4: string;
-  pertanyaanPemandu: string;
-  dokumenPendukung: string;
   subBagianIds: string[];
   catatan: string;
 }
@@ -64,8 +62,7 @@ export function FormButir({
     bagianKode: awal.bagianKode, elemen: awal.elemen, indikator: awal.indikator,
     bobot: id ? String(awal.bobot ?? "").replace(".", ",") : "",
     jenis: awal.jenis, tabelLkps: awal.tabelLkps.join(", "), deskriptorSkor4: awal.deskriptorSkor4,
-    unsurSkor4: awal.unsurSkor4.join("\n"), pertanyaanPemandu: awal.pertanyaanPemandu ?? "",
-    dokumenPendukung: awal.dokumenPendukung.join("\n"), subBagianIds: awal.subBagianIds, catatan: awal.catatan ?? "",
+    unsurSkor4: awal.unsurSkor4.join("\n"), subBagianIds: awal.subBagianIds, catatan: awal.catatan ?? "",
   });
   const ubah = <K extends keyof NilaiForm>(k: K, v: NilaiForm[K]) => setN((x) => ({ ...x, [k]: v }));
   const kembali = `/proyek/instrumen/${versiId}/butir?jenjang=${jenjang}`;
@@ -80,8 +77,7 @@ export function FormButir({
       jenjang, kode: n.kode, no: n.no, sub: n.sub, urutan: n.urutan, bagianKode: n.bagianKode, elemen: n.elemen,
       indikator: n.indikator, bobot: n.bobot.replace(",", "."), jenis: n.jenis,
       tabelLkps: n.tabelLkps.split(",").map((x) => x.trim()).filter(Boolean),
-      deskriptorSkor4: n.deskriptorSkor4, unsurSkor4: baris(n.unsurSkor4), pertanyaanPemandu: n.pertanyaanPemandu,
-      dokumenPendukung: baris(n.dokumenPendukung), subBagianIds: n.subBagianIds, catatan: n.catatan,
+      deskriptorSkor4: n.deskriptorSkor4, unsurSkor4: baris(n.unsurSkor4), subBagianIds: n.subBagianIds, catatan: n.catatan,
     };
     const cek = skemaButir.safeParse(masukan);
     if (!cek.success) {
@@ -136,16 +132,7 @@ export function FormButir({
               <Field>
                 <FieldLabel htmlFor="b-unsur">Unsur skor 4</FieldLabel>
                 <Textarea id="b-unsur" rows={5} value={n.unsurSkor4} onChange={(e) => ubah("unsurSkor4", e.target.value)} />
-                <FieldDescription>Satu unsur per baris. Menjadi daftar cek di halaman kriteria.</FieldDescription>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="b-pemandu">Pertanyaan pemandu</FieldLabel>
-                <Textarea id="b-pemandu" rows={3} value={n.pertanyaanPemandu} onChange={(e) => ubah("pertanyaanPemandu", e.target.value)} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="b-dokumen">Dokumen pendukung yang diharapkan</FieldLabel>
-                <Textarea id="b-dokumen" rows={4} value={n.dokumenPendukung} onChange={(e) => ubah("dokumenPendukung", e.target.value)} />
-                <FieldDescription>Satu dokumen per baris.</FieldDescription>
+                <FieldDescription>Satu unsur per baris, dari deskriptor skor 4 resmi yang dipecah per nomor (1), (2), …. Menjadi daftar cek di halaman sub-bagian.</FieldDescription>
               </Field>
               <Field>
                 <FieldLabel htmlFor="b-catatan">Catatan</FieldLabel>

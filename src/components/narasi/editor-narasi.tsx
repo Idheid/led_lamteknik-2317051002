@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { daftarkanPenyimpan } from "@/lib/simpan-tertunda";
 import type { DokTiptap, HasilPemeriksaan } from "@/lib/domain/narasi";
 import { aksiSimpanSuntingan } from "@/app/proyek/aksi";
 
@@ -155,6 +156,7 @@ export function EditorNarasi({
   const [waktu, setWaktu] = useState<string | null>(null);
   const pewaktu = useRef<ReturnType<typeof setTimeout> | null>(null);
   const antre = useRef<Promise<void>>(Promise.resolve());
+  const terakhirBerhasil = useRef(true);
   const callback = useRef(onTersimpan);
   useEffect(() => {
     callback.current = onTersimpan;
@@ -179,7 +181,10 @@ export function EditorNarasi({
     onUpdate: ({ editor: e }) => {
       setStatus("berubah");
       if (pewaktu.current) clearTimeout(pewaktu.current);
-      pewaktu.current = setTimeout(() => simpan(e), JEDA_SIMPAN_MS);
+      pewaktu.current = setTimeout(() => {
+        pewaktu.current = null;
+        simpan(e);
+      }, JEDA_SIMPAN_MS);
     },
   });
 
@@ -189,6 +194,7 @@ export function EditorNarasi({
       setStatus("menyimpan");
       // salinan JSON murni: atribut Tiptap bukan objek biasa sehingga tidak bisa dikirim apa adanya ke aksi server
       const r = await aksiSimpanSuntingan(proyekId, subBagianKode, JSON.parse(JSON.stringify(e.getJSON())));
+      terakhirBerhasil.current = r.ok;
       if (r.ok) {
         setPesan(null);
         setWaktu(r.data.disimpan);
@@ -208,8 +214,28 @@ export function EditorNarasi({
     return () => window.removeEventListener("beforeunload", cegah);
   }, [status]);
 
-  useEffect(() => () => {
-    if (pewaktu.current) clearTimeout(pewaktu.current);
+  // simpan segera sebelum pindah halaman (Sebelumnya/Berikutnya) atau saat editor dilepas
+  const editorRef = useRef(editor);
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
+  useEffect(() => {
+    const simpanSegera = async () => {
+      if (pewaktu.current && editorRef.current) {
+        clearTimeout(pewaktu.current);
+        pewaktu.current = null;
+        simpan(editorRef.current);
+      }
+      await antre.current;
+      return terakhirBerhasil.current;
+    };
+    const lepas = daftarkanPenyimpan(simpanSegera);
+    return () => {
+      lepas();
+      if (pewaktu.current) void simpanSegera();
+    };
+    // simpan() hanya memakai ref dan prop yang tetap selama editor ini hidup
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
