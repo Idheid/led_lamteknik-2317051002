@@ -11,7 +11,8 @@ import { PemantauProses } from "@/components/status-proses";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { IsiTautan, TombolEkspor, TombolHapusEkspor } from "./komponen";
+import { AlasanPerbedaan, IsiTautan, TombolEkspor, TombolHapusEkspor } from "./komponen";
+import { teksPerbedaan } from "@/lib/domain/konsistensi";
 
 export const metadata: Metadata = { title: "Ekspor Word" };
 
@@ -78,6 +79,25 @@ export default async function HalamanEkspor({ params }: PageProps<"/proyek/[proy
                 <li key={i} className="flex gap-2"><Info className="mt-0.5 size-4 shrink-0" aria-hidden />{g}</li>
               ))}
             </ul>
+          )}
+          {cek.konsistensi.length > 0 && (
+            <div className="rounded-lg border p-3">
+              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Konsistensi angka antar kriteria</div>
+              <ul className="divide-y">
+                {cek.konsistensi.map((x) => (
+                  <li key={x.kunci} className="flex flex-wrap items-start justify-between gap-2 py-2">
+                    <div className="min-w-0 flex-1">
+                      <p>{teksPerbedaan(x)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Berbeda: <Link className="text-primary underline" href={`/proyek/${proyekId}/bagian/${encodeURIComponent(x.temuan.bagianKode)}/${encodeURIComponent(x.temuan.subKode)}`}>{x.temuan.label}</Link>, &ldquo;{x.temuan.kalimat}&rdquo;
+                      </p>
+                      {x.alasan && <p className="text-xs text-emerald-800 dark:text-emerald-300">Alasan: {x.alasan}</p>}
+                    </div>
+                    <AlasanPerbedaan proyekId={proyekId} kunci={x.kunci} awal={x.alasan} />
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {cek.tanpaTautan.length > 0 && (
             <div className="rounded-lg border p-3">

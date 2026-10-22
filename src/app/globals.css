@@ -146,6 +146,22 @@
     content: "Sumber: " attr(data-sumber);
     @apply mt-0.5 block font-mono text-[0.7rem] leading-snug text-primary/70 select-none;
   }
+  /* revisi 22 Okt 2026: verifikasi per kalimat */
+  .kalimat-sesuai {
+    text-decoration: underline 2px;
+    text-decoration-color: oklch(0.7 0.14 155 / 0.8);
+    text-underline-offset: 3px;
+  }
+  .kalimat-sebagian {
+    text-decoration: underline 2px;
+    text-decoration-color: oklch(0.8 0.15 85 / 0.9);
+    text-underline-offset: 3px;
+  }
+  .kalimat-tidak {
+    text-decoration: underline wavy 2px;
+    text-decoration-color: oklch(0.63 0.2 25 / 0.85);
+    text-underline-offset: 3px;
+  }
   .editor-narasi p[data-peran="judul-tabel"] {
     @apply text-left font-medium;
   }

@@ -10,6 +10,7 @@ import {
   bacaDokumen, bandingkanTeks, periksaDokumen, teksDokumen, type DokTiptap, type HasilPemeriksaan, type RujukanPeriksa,
 } from "@/lib/domain/narasi";
 import type { KeluaranSubBagian } from "@/lib/domain/prompt";
+import type { HasilVerifikasiAi } from "@/lib/data/verifikasi";
 import { perbaruiStatusBagian, subBagianProyek, urutanSubBagian } from "@/lib/proses/generate";
 import { pakaiNarasiUji } from "@/lib/llm/narasi-uji";
 
@@ -142,9 +143,9 @@ export async function tugasProyek(p: Pengguna, proyekId: string): Promise<Ringka
 
 // ------------------------------------------------------------------ draf dan versi
 
-type PemeriksaanTersimpan = HasilPemeriksaan & { rujukan?: RujukanPeriksa; catatanSistem?: string[] };
+type PemeriksaanTersimpan = HasilPemeriksaan & { rujukan?: RujukanPeriksa; catatanSistem?: string[]; kalimatAi?: HasilVerifikasiAi };
 
-function pemeriksaanTampil(json: unknown): (HasilPemeriksaan & { catatanSistem?: string[] }) | null {
+function pemeriksaanTampil(json: unknown): (HasilPemeriksaan & { catatanSistem?: string[]; kalimatAi?: HasilVerifikasiAi }) | null {
   if (!json || typeof json !== "object") return null;
   const { rujukan: _r, ...sisa } = json as PemeriksaanTersimpan;
   return sisa;

@@ -16,6 +16,7 @@ import { bacaTim } from "@/lib/proses/ekspor";
 import { nilaiButirUntukProyek } from "@/lib/data/nilai-butir";
 import { capaianButirUntukProyek } from "@/lib/data/target-butir";
 import { teksCapaian, teksTren } from "@/lib/domain/capaian";
+import { MAKS_TEKS_SUMBER } from "@/lib/domain/verifikasi";
 import {
   bacaDokumen, keluaranKeDokumen, kumpulkanAngkaSah, perluRingkasanIku, perluRingkasanSemua, periksaDokumen, ringkasIku, samarkanTeks,
   statusGabungan, tabelKeMarkdown, tahunSah, teksDokumen, urutkanUntukGenerate, type RujukanPeriksa, type StatusIsi,
@@ -78,6 +79,17 @@ export function konteksTimDanJadwal(
       keterangan: t.map((x) => `${x.nama}: ${fmtTanggalPrompt.format(new Date(`${x.tanggal}T00:00:00Z`))}`).join("; "),
     });
   }
+  return hasil;
+}
+
+/** Teks tiap kode sumber (dipotong) untuk verifikasi per kalimat; disimpan bersama versi draf (revisi 22 Okt 2026). */
+export function teksSumberKonteks(k: KonteksSubBagian): Record<string, string> {
+  const potong = (s: string) => s.slice(0, MAKS_TEKS_SUMBER);
+  const hasil: Record<string, string> = {};
+  if (k.jawabanForm) hasil.J = potong(k.jawabanForm);
+  for (const p of k.potongan) hasil[p.id] = potong(`${p.sumber}\n${p.teks}`);
+  for (const t of k.tabel) hasil[t.id] = potong(`${t.judul}\n${t.markdown}`);
+  for (const m of k.metrik) hasil[m.id] = potong(`${m.nama} = ${m.nilaiTeks}${m.keterangan ? ` (${m.keterangan})` : ""}`);
   return hasil;
 }
 
@@ -291,6 +303,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
     tahunSah: tahunSah(ts),
     target,
     sumberSah: [...kodeSumberSah(konteks)],
+    teksSumber: teksSumberKonteks(konteks),
   };
   return { konteks, rujukan, tabelSistem, legenda, catatan, sub: { id: s.id, kode: s.kode, bagianKode: s.bagian.kode } };
 }

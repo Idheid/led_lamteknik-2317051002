@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2, CircleAlert, CircleCheck, CircleDashed, CircleHelp, FileWarning, GitCompareArrows, History, PenLine,
-  RotateCcw, Sparkles,
+  RotateCcw, ShieldCheck, Sparkles,
 } from "lucide-react";
 import type { DrafSubBagian } from "@/lib/data/generate";
 import type { HasilPemeriksaan, PotonganDiff } from "@/lib/domain/narasi";
@@ -18,7 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { aksiBandingkanVersi, aksiPulihkanVersi, aksiTandaiSubBagian } from "@/app/proyek/aksi";
+import { aksiBandingkanVersi, aksiPeriksaDenganAi, aksiPulihkanVersi, aksiTandaiSubBagian } from "@/app/proyek/aksi";
+import { LABEL_KALIMAT, kunciKalimat, ringkasVerifikasi, teksRingkas, type KalimatTerperiksa, type LabelKalimat } from "@/lib/domain/verifikasi";
+import type { HasilVerifikasiAi } from "@/lib/data/verifikasi";
 
 export interface ButirCek {
   kode: string;
@@ -44,6 +46,57 @@ function Baris({ ok, judul, children }: { ok: boolean; judul: string; children?:
         {children && <div className="text-xs text-muted-foreground">{children}</div>}
       </div>
     </li>
+  );
+}
+
+// ------------------------------------------------------------------ verifikasi per kalimat (revisi 22 Okt 2026)
+
+const GAYA_LABEL: Record<LabelKalimat, string> = {
+  sesuai: "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100",
+  sebagian: "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100",
+  tidak_didukung: "border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100",
+};
+
+function PanelVerifikasi({
+  proyekId, subBagianKode, kalimat, ai,
+}: { proyekId: string; subBagianKode: string; kalimat: KalimatTerperiksa[]; ai: HasilVerifikasiAi | null }) {
+  const { sibuk, jalankan } = useAksi();
+  const [hanyaMasalah, setHanyaMasalah] = useState(true);
+  if (kalimat.length === 0) return null;
+  const r = ringkasVerifikasi(kalimat);
+  const tampil = hanyaMasalah ? kalimat.filter((k) => k.label !== "sesuai") : kalimat;
+  return (
+    <section aria-label="Verifikasi per kalimat" className="rounded-lg border p-3 text-sm">
+      <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Verifikasi per kalimat</h4>
+      <p className="mb-2">{teksRingkas(r)}</p>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {ai ? `Diperiksa AI (${ai.model}), ${waktu(ai.waktu)}.` : "Cek otomatis: angka dan kata kunci dicocokkan dengan sumber yang dirujuk."}
+      </p>
+      <label className="mb-2 flex items-center gap-2 text-xs">
+        <Switch checked={hanyaMasalah} onCheckedChange={setHanyaMasalah} />Hanya kalimat bermasalah
+      </label>
+      <ul className="max-h-72 space-y-2 overflow-y-auto">
+        {tampil.map((k, i) => (
+          <li key={i} className="text-xs">
+            <Badge variant="outline" className={cn("mb-0.5", GAYA_LABEL[k.label])}>{LABEL_KALIMAT[k.label]}</Badge>
+            <p className="line-clamp-3">{k.teks}</p>
+            <p className="text-muted-foreground">{k.alasan}</p>
+          </li>
+        ))}
+        {tampil.length === 0 && <li className="text-xs text-muted-foreground">Semua kalimat sesuai sumber.</li>}
+      </ul>
+      <Button
+        variant="outline"
+        size="sm"
+        className="mt-2 w-full"
+        disabled={sibuk}
+        onClick={() => jalankan(() => aksiPeriksaDenganAi(proyekId, subBagianKode), {
+          lalu: (h) => toast.success(`Selesai diperiksa AI: ${teksRingkas(h)}.`),
+        })}
+      >
+        {sibuk ? <IkonSibuk sibuk /> : <ShieldCheck aria-hidden />}Periksa dengan AI
+      </Button>
+    </section>
   );
 }
 
@@ -233,7 +286,11 @@ export function PanelDraf({
   tugasAktif: boolean;
 }) {
   const aktif = draf?.aktif ?? null;
-  const [periksa, setPeriksa] = useState(aktif?.pemeriksaan ?? null);
+  const [periksa, setPeriksa] = useState<(HasilPemeriksaan & { catatanSistem?: string[] }) | null>(null);
+  // label kalimat: hasil Periksa dengan AI bila ada (dan belum disunting), selain itu cek otomatis
+  const ai = periksa ? null : aktif?.pemeriksaan?.kalimatAi ?? null;
+  const kalimatTampil = useMemo(() => ai?.hasil ?? (periksa ?? aktif?.pemeriksaan)?.kalimat ?? [], [ai, periksa, aktif]);
+  const labelKalimat = useMemo(() => Object.fromEntries(kalimatTampil.map((k) => [kunciKalimat(k.teks), k.label])), [kalimatTampil]);
   const [manual, setManual] = useState(false);
   const { sibuk, jalankan } = useAksi();
   // editor dimuat ulang hanya bila ada versi dasar baru (generate atau pulihkan), bukan setiap simpan otomatis
@@ -289,6 +346,7 @@ export function PanelDraf({
                 isi={aktif?.isi ?? null}
                 gambar={gambar}
                 onTersimpan={(h) => setPeriksa(h.pemeriksaan)}
+                labelKalimat={labelKalimat}
               />
               {aktif && Object.keys(aktif.legenda).length > 0 && (
                 <details className="text-xs text-muted-foreground">
@@ -306,6 +364,12 @@ export function PanelDraf({
             </div>
             <div className="flex flex-col gap-3">
               <PanelPemeriksaan h={periksa ?? aktif?.pemeriksaan ?? null} />
+              <PanelVerifikasi
+                proyekId={proyekId}
+                subBagianKode={subBagianKode}
+                kalimat={kalimatTampil}
+                ai={periksa ? null : aktif?.pemeriksaan?.kalimatAi ?? null}
+              />
               <DaftarCek butir={butir} unsur={aktif?.unsur ?? []} />
               {aktif && aktif.dokumenKurang.length > 0 && (
                 <section className="rounded-lg border p-3 text-sm">

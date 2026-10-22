@@ -295,6 +295,7 @@ model ProyekLED {
   batasPengajuan DateTime?
   jadwal         Json? // { kodeTonggak: "YYYY-MM-DD" }
   statusReview   String    @default("draf") // draf, direview, perlu_revisi, layak
+  alasanKonsistensi Json? // { "metrik|sub|angka": alasan } untuk perbedaan angka antar kriteria yang disengaja
   nilaiManual NilaiManual[]
   targetButir TargetButir[]
   status      StatusKriteria[]

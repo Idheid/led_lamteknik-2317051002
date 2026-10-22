@@ -13,6 +13,7 @@ import { lokasiSoffice } from "@/lib/ekspor/halaman";
 import { bacaTemplateVersi, bacaTim, siapkanTemplate, subBagianTemplate, type JenisEkspor } from "@/lib/proses/ekspor";
 import { dokumenDirujuk, namaDokumen, type DokumenRujukan } from "@/lib/domain/rujukan";
 import { bacaStatusReview } from "@/lib/domain/kesiapan";
+import { konsistensiUntukProyek, type PerbedaanBeralasan } from "@/lib/data/konsistensi";
 import { skemaTimPenyusun, type MasukanTimPenyusun } from "@/lib/validasi";
 
 /**
@@ -41,6 +42,8 @@ export interface PeriksaEkspor extends HasilPeriksaEkspor {
   libreOffice: boolean;
   /** dokumen yang dirujuk narasi tetapi belum punya tautan bukti (wajib sebelum ekspor final) */
   tanpaTautan: { id: string; judul: string; bersama: boolean }[];
+  /** perbedaan angka antar kriteria (wajib diperbaiki atau diberi alasan sebelum ekspor final) */
+  konsistensi: PerbedaanBeralasan[];
   jenis: JenisEkspor;
 }
 
@@ -90,6 +93,11 @@ export async function periksaEkspor(p: Pengguna, proyekId: string, jenis: JenisE
   if (tanpaTautan.length) {
     hasil.galat.push(`${tanpaTautan.length} dokumen yang dirujuk narasi belum punya tautan bukti sahih: ${tanpaTautan.map((d) => d.judul).join("; ")}.`);
   }
+  const konsistensi = await konsistensiUntukProyek(proyek);
+  const tanpaAlasan = konsistensi.filter((x) => !x.alasan);
+  if (tanpaAlasan.length) {
+    hasil.galat.push(`${tanpaAlasan.length} angka tidak konsisten dengan LKPS atau sub-bagian lain; perbaiki narasinya atau beri alasan.`);
+  }
   if (bacaStatusReview(proyek.statusReview) !== "layak") {
     hasil.galat.push("Ekspor final terbuka setelah asesor menyatakan Layak diajukan. Sebelum itu gunakan Ekspor DRAF.");
   }
@@ -101,7 +109,7 @@ export async function periksaEkspor(p: Pengguna, proyekId: string, jenis: JenisE
     hasil.peringatan.unshift(...hasil.galat.filter((g) => !wajib.includes(g)));
     hasil.galat = wajib;
   }
-  return { ...hasil, templateAda, libreOffice, tanpaTautan, jenis };
+  return { ...hasil, templateAda, libreOffice, tanpaTautan, konsistensi, jenis };
 }
 
 /** Mulai ekspor DRAF atau final: ditolak bila pemeriksaan jenis itu menemukan galat. Berkas dibuat worker. */

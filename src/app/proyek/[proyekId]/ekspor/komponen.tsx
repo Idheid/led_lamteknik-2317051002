@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, IkonSibuk, TombolKonfirmasi, useAksi } from "@/components/aksi-klien";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { aksiHapusEkspor, aksiMulaiEkspor, aksiUbahDokumen } from "@/app/proyek/aksi";
+import { aksiHapusEkspor, aksiMulaiEkspor, aksiSimpanAlasanKonsistensi, aksiUbahDokumen } from "@/app/proyek/aksi";
 
 /** Ekspor DRAF (kapan saja, setiap halaman bertanda DRAF) atau ekspor final (setelah Layak diajukan). */
 export function TombolEkspor({ proyekId, bisa, jenis }: { proyekId: string; bisa: boolean; jenis: "draf" | "final" }) {
@@ -22,6 +22,32 @@ export function TombolEkspor({ proyekId, bisa, jenis }: { proyekId: string; bisa
       {sibuk ? <IkonSibuk sibuk /> : jenis === "draf" ? <FilePen aria-hidden /> : <FileDown aria-hidden />}
       {jenis === "draf" ? "Ekspor DRAF" : "Ekspor final"}
     </Button>
+  );
+}
+
+/** Alasan untuk perbedaan angka yang disengaja (mis. data tahun berbeda); kosongkan untuk menghapus. */
+export function AlasanPerbedaan({ proyekId, kunci, awal }: { proyekId: string; kunci: string; awal: string | null }) {
+  const { sibuk, jalankan } = useAksi();
+  const [buka, setBuka] = useState(false);
+  const [alasan, setAlasan] = useState(awal ?? "");
+  return (
+    <>
+      <Button size="sm" variant="ghost" onClick={() => setBuka(true)}>{awal ? "Ubah alasan" : "Beri alasan"}</Button>
+      <Dialog open={buka} onOpenChange={setBuka}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alasan perbedaan angka</DialogTitle>
+            <DialogDescription>Isi bila perbedaan memang disengaja, misalnya angka untuk tahun atau cakupan yang berbeda. Kosongkan untuk menghapus alasan.</DialogDescription>
+          </DialogHeader>
+          <Input value={alasan} onChange={(e) => setAlasan(e.target.value)} placeholder="Angka 11 adalah jumlah DTPS pada TS-1" aria-label="Alasan" />
+          <DialogFooter>
+            <Button disabled={sibuk} onClick={() => jalankan(() => aksiSimpanAlasanKonsistensi(proyekId, kunci, alasan), { sukses: "Alasan disimpan.", lalu: () => setBuka(false) })}>
+              <IkonSibuk sibuk={sibuk} />Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

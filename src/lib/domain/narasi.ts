@@ -10,6 +10,7 @@
 import { diffWordsWithSpace } from 'diff';
 import { angkaTidakBerdasar, ekstrakAngka, formatAngka, hitungKata, statusPanjang } from './teks.ts';
 import { gantiLabelTS } from './tahun-akademik.ts';
+import { periksaKalimat, type KalimatTerperiksa } from './verifikasi.ts';
 import { PENANDA_BELUM_ADA_BUKTI, type KeluaranSubBagian, type KonteksSubBagian, type MasalahKeluaran } from './prompt.ts';
 
 // ------------------------------------------------------------------ penyamaran data pribadi
@@ -236,6 +237,8 @@ export interface RujukanPeriksa {
   tahunSah: number[];
   target: number | null;
   sumberSah: string[];
+  /** revisi 22 Okt 2026: teks tiap sumber (dipotong) untuk verifikasi per kalimat */
+  teksSumber?: Record<string, string>;
 }
 
 export interface HasilPemeriksaan {
@@ -245,6 +248,8 @@ export interface HasilPemeriksaan {
   angkaTidakBerdasar: string[];
   masalahSumber: MasalahKeluaran[];
   belumAdaBukti: string[];
+  /** revisi 22 Okt 2026: label per kalimat (cek otomatis, tanpa kuota AI) */
+  kalimat?: KalimatTerperiksa[];
 }
 
 const RE_BELUM = /\[BELUM ADA BUKTI:\s*([^\]]*)\]/g;
@@ -270,6 +275,7 @@ export function periksaDokumen(doc: DokTiptap, r: RujukanPeriksa, masalahKeluara
     angkaTidakBerdasar: [...new Set(angka)],
     masalahSumber,
     belumAdaBukti,
+    ...(r.teksSumber ? { kalimat: periksaKalimat(doc, r.teksSumber, { tahunSah: r.tahunSah }) } : {}),
   };
 }
 

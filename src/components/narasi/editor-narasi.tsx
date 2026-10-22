@@ -16,6 +16,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { daftarkanPenyimpan } from "@/lib/simpan-tertunda";
+import type { LabelKalimat } from "@/lib/domain/verifikasi";
+import { SorotanKalimat, kunciSorotan } from "./sorotan-kalimat";
 import type { DokTiptap, HasilPemeriksaan } from "@/lib/domain/narasi";
 import { aksiSimpanSuntingan } from "@/app/proyek/aksi";
 
@@ -143,13 +145,15 @@ function BilahAlat({ editor, gambar }: { editor: Editor; gambar: GambarProyek[] 
 }
 
 export function EditorNarasi({
-  proyekId, subBagianKode, isi, gambar, onTersimpan,
+  proyekId, subBagianKode, isi, gambar, onTersimpan, labelKalimat,
 }: {
   proyekId: string;
   subBagianKode: string;
   isi: DokTiptap | null;
   gambar: GambarProyek[];
   onTersimpan?: (h: { nomor: number; pemeriksaan: HasilPemeriksaan; disimpan: string }) => void;
+  /** revisi 22 Okt 2026: label verifikasi per kalimat (kunci = kunciKalimat) untuk garis bawah berwarna */
+  labelKalimat?: Record<string, LabelKalimat>;
 }) {
   const [status, setStatus] = useState<Status>("tersimpan");
   const [pesan, setPesan] = useState<string | null>(null);
@@ -175,6 +179,7 @@ export function EditorNarasi({
       TableRow,
       TableHeader,
       TableCell,
+      SorotanKalimat,
     ],
     content: isi ?? { type: "doc", content: [{ type: "paragraph" }] },
     editorProps: { attributes: { class: "editor-narasi min-h-40 px-4 py-3 focus:outline-none", "aria-label": "Narasi" } },
@@ -213,6 +218,12 @@ export function EditorNarasi({
     window.addEventListener("beforeunload", cegah);
     return () => window.removeEventListener("beforeunload", cegah);
   }, [status]);
+
+  // label verifikasi berubah (hasil cek otomatis setelah simpan, atau Periksa dengan AI): gambar ulang garis bawah
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    editor.view.dispatch(editor.state.tr.setMeta(kunciSorotan, labelKalimat ?? {}));
+  }, [labelKalimat, editor]);
 
   // simpan segera sebelum pindah halaman (Sebelumnya/Berikutnya) atau saat editor dilepas
   const editorRef = useRef(editor);

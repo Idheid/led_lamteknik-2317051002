@@ -12,6 +12,8 @@ import * as ekspor from "@/lib/data/ekspor";
 import { simpanNilaiManual } from "@/lib/data/nilai-butir";
 import { simpanJadwal } from "@/lib/data/kesiapan";
 import { simpanTarget } from "@/lib/data/target-butir";
+import { periksaDenganAi } from "@/lib/data/verifikasi";
+import { simpanAlasanKonsistensi } from "@/lib/data/konsistensi";
 
 export async function aksiBuatProyek(masukan: MasukanProyek) {
   const r = await jalankanAksi(async (p) => (await buatProyek(p, masukan)).id);
@@ -195,4 +197,18 @@ export async function aksiSimpanJadwal(proyekId: string, masukan: { batasPengaju
 /** Target opsional butir angka (revisi 22 Okt 2026); tanpa memuat ulang halaman. */
 export async function aksiSimpanTarget(proyekId: string, masukan: { butirKode: string; target: string; satuan: string; sumber: string; lebihKecil: boolean }) {
   return jalankanAksi((p) => simpanTarget(p, proyekId, masukan).then(() => null));
+}
+
+/** Periksa dengan AI per sub-bagian (revisi 22 Okt 2026). */
+export async function aksiPeriksaDenganAi(proyekId: string, subBagianKode: string) {
+  const r = await jalankanAksi((p) => periksaDenganAi(p, proyekId, subBagianKode));
+  revalidatePath(`/proyek/${proyekId}`, "layout");
+  return r;
+}
+
+/** Alasan untuk perbedaan angka antar kriteria yang disengaja (revisi 22 Okt 2026). */
+export async function aksiSimpanAlasanKonsistensi(proyekId: string, kunci: string, alasan: string) {
+  const r = await jalankanAksi((p) => simpanAlasanKonsistensi(p, proyekId, { kunci, alasan }).then(() => null));
+  revalidatePath(`/proyek/${proyekId}/ekspor`);
+  return r;
 }
