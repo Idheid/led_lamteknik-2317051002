@@ -296,6 +296,7 @@ model ProyekLED {
   jadwal         Json? // { kodeTonggak: "YYYY-MM-DD" }
   statusReview   String    @default("draf") // draf, direview, perlu_revisi, layak
   nilaiManual NilaiManual[]
+  targetButir TargetButir[]
   status      StatusKriteria[]
   berkasLkps  BerkasLKPS[]
   dokumen     Dokumen[]
@@ -322,6 +323,21 @@ model NilaiManual {
   butirKode  String
   nilai      String    // teks apa adanya (mis. "12,5%" atau "Rasio 1 : 18"); dipakai sebagai sumber data narasi
   keterangan String?
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([proyekId, butirKode])
+}
+
+/// Revisi 22 Okt 2026: target per butir angka (opsional) untuk evaluasi capaian; capaian dihitung sistem.
+model TargetButir {
+  id         String    @id @default(cuid())
+  proyekId   String
+  proyek     ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  butirKode  String
+  target     String // angka target apa adanya (mis. "70" atau "1,5")
+  satuan     String?
+  sumber     String? // mis. "Renstra FT 2021–2025"
+  lebihKecil Boolean   @default(false) // true bila nilai lebih kecil lebih baik (masa studi, waktu tunggu, rasio)
   updatedAt  DateTime  @updatedAt
 
   @@unique([proyekId, butirKode])

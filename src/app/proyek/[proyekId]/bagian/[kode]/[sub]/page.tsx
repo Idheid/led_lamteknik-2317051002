@@ -22,6 +22,9 @@ import { IsianJawaban } from "../isian-jawaban";
 import { DaftarCek, PanelDraf } from "../panel-draf";
 import { KotakMetrik } from "../kotak-metrik";
 import { IsianNilaiManual } from "../isian-nilai-manual";
+import { IsianTarget } from "../isian-target";
+import { capaianButirProyek, type CapaianButir } from "@/lib/data/target-butir";
+import { teksCapaian, teksTren } from "@/lib/domain/capaian";
 import { LABEL_TIPE, LencanaStatusSub } from "../lencana-sub";
 import { TautanSimpan } from "../tautan-simpan";
 
@@ -56,7 +59,7 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
   const posisi = posisiSub(bagian.subBagian.map((x) => x.kode), kodeSub);
   if (!s || !posisi) notFound();
 
-  const [semuaDokumen, nilai] = await Promise.all([daftarDokumen(p, proyekId), nilaiButirProyek(p, proyekId)]);
+  const [semuaDokumen, nilai, capaian] = await Promise.all([daftarDokumen(p, proyekId), nilaiButirProyek(p, proyekId), capaianButirProyek(p, proyekId)]);
   const ts = proyek.tsTahunMulai;
   const digenerate = subDigenerate(s.tipe);
   const v = varianUntukJenjang(bacaVarian(s.varian), proyek.jenjang);
@@ -178,6 +181,16 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
                               alasan={n.alasan}
                             />
                           )}
+                          <CapaianDanTren c={capaian.get(b.kode)} />
+                          <IsianTarget
+                            key={`target-${b.kode}`}
+                            proyekId={proyek.id}
+                            butirKode={b.kode}
+                            awal={{
+                              target: capaian.get(b.kode)?.target?.target ?? "", satuan: capaian.get(b.kode)?.target?.satuan ?? "",
+                              sumber: capaian.get(b.kode)?.target?.sumber ?? "", lebihKecil: capaian.get(b.kode)?.target?.lebihKecil ?? false,
+                            }}
+                          />
                         </>
                       );
                     })()}
@@ -314,6 +327,22 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
         </nav>
       </div>
     </>
+  );
+}
+
+/** Capaian terhadap target dan tren tiga tahun (dihitung sistem). */
+function CapaianDanTren({ c }: { c: CapaianButir | undefined }) {
+  if (!c || (!c.hasil && c.tren.length === 0)) return null;
+  return (
+    <div className="rounded-md bg-muted/60 p-3 text-sm">
+      <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Evaluasi capaian (dihitung sistem)</div>
+      {c.hasil && (
+        <p className={c.hasil.tercapai ? "text-emerald-800 dark:text-emerald-300" : "text-amber-800 dark:text-amber-200"}>
+          {teksCapaian(c.hasil, c.satuanCapaian ?? c.target?.satuan ?? null)}{c.target?.sumber ? ` · target dari ${c.target.sumber}` : ""}
+        </p>
+      )}
+      {c.tren.map((t) => <p key={t.judul} className="text-muted-foreground">{teksTren(t)}</p>)}
+    </div>
   );
 }
 

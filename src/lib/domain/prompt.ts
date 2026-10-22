@@ -71,7 +71,8 @@ export function susunSistem(): string {
     '7. Istilah asing ditulis miring dengan tanda *istilah*. Jangan memakai huruf tebal atau judul; struktur dokumen diatur sistem.',
     '8. Arahkan narasi ke unsur deskriptor skor 4 secara jujur: tunjukkan bukti untuk unsur yang terpenuhi dan tindak lanjut untuk yang belum.',
     '9. Butir berjenis angka cukup 1 sampai 2 paragraf analisis (tren, penyebab, rencana); tabelnya disisipkan sistem.',
-    '10. Keluarkan hanya JSON sesuai skema.',
+    '10. Narasi indikator kinerja harus mengevaluasi capaian, bukan hanya menceritakan pelaksanaan. Bila METRIK memuat capaian terhadap target atau tren tiga tahun (M-CAPAIAN, M-TREN), salin angkanya persis, nyatakan tercapai atau belum dan arah trennya, lalu jelaskan akar masalah dan tindak lanjut bila belum tercapai atau tren turun.',
+    '11. Keluarkan hanya JSON sesuai skema.',
   ].join('\n');
 }
 

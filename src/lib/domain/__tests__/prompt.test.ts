@@ -21,6 +21,7 @@ test('prompt sistem memuat aturan anti-halusinasi', () => {
   const s = susunSistem();
   assert.match(s, /hanya fakta/i);
   assert.ok(s.includes(PENANDA_BELUM_ADA_BUKTI));
+  assert.match(s, /mengevaluasi capaian, bukan hanya menceritakan pelaksanaan/, 'revisi 22 Okt 2026: evaluasi capaian');
 });
 
 test('prompt pengguna memuat konteks, peta TS, dan target', () => {

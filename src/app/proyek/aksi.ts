@@ -11,6 +11,7 @@ import * as generate from "@/lib/data/generate";
 import * as ekspor from "@/lib/data/ekspor";
 import { simpanNilaiManual } from "@/lib/data/nilai-butir";
 import { simpanJadwal } from "@/lib/data/kesiapan";
+import { simpanTarget } from "@/lib/data/target-butir";
 
 export async function aksiBuatProyek(masukan: MasukanProyek) {
   const r = await jalankanAksi(async (p) => (await buatProyek(p, masukan)).id);
@@ -189,4 +190,9 @@ export async function aksiSimpanJadwal(proyekId: string, masukan: { batasPengaju
   const r = await jalankanAksi((p) => simpanJadwal(p, proyekId, masukan as Parameters<typeof simpanJadwal>[2]).then(() => null));
   revalidatePath("/proyek", "layout");
   return r;
+}
+
+/** Target opsional butir angka (revisi 22 Okt 2026); tanpa memuat ulang halaman. */
+export async function aksiSimpanTarget(proyekId: string, masukan: { butirKode: string; target: string; satuan: string; sumber: string; lebihKecil: boolean }) {
+  return jalankanAksi((p) => simpanTarget(p, proyekId, masukan).then(() => null));
 }

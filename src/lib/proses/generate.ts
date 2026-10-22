@@ -14,6 +14,8 @@ import { kodeSumberManual } from "@/lib/domain/butir-angka";
 import { jadwalMundur } from "@/lib/domain/kesiapan";
 import { bacaTim } from "@/lib/proses/ekspor";
 import { nilaiButirUntukProyek } from "@/lib/data/nilai-butir";
+import { capaianButirUntukProyek } from "@/lib/data/target-butir";
+import { teksCapaian, teksTren } from "@/lib/domain/capaian";
 import {
   bacaDokumen, keluaranKeDokumen, kumpulkanAngkaSah, perluRingkasanIku, perluRingkasanSemua, periksaDokumen, ringkasIku, samarkanTeks,
   statusGabungan, tabelKeMarkdown, tahunSah, teksDokumen, urutkanUntukGenerate, type RujukanPeriksa, type StatusIsi,
@@ -160,6 +162,24 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
       return { id, nama: `Nilai hitung butir ${n.butir} (diisi penyusun)`, nilaiTeks: n.manual!.nilai, keterangan: n.manual!.keterangan ?? undefined };
     }),
   ];
+  // revisi 22 Okt 2026: capaian terhadap target dan tren tiga tahun, dihitung sistem (bukan AI)
+  const capaian = await capaianButirUntukProyek(proyek);
+  for (const b of butir.filter((x) => x.jenis === "angka")) {
+    const c = capaian.get(b.kode);
+    if (c?.hasil) {
+      const id = `M-CAPAIAN-${b.kode}`;
+      legenda[id] = `Capaian butir ${b.kode} terhadap target${c.target?.sumber ? ` (${c.target.sumber})` : ""}, dihitung sistem`;
+      metrik.push({
+        id, nama: `Capaian butir ${b.kode} terhadap target`, nilaiTeks: teksCapaian(c.hasil, c.satuanCapaian ?? c.target?.satuan ?? null),
+        keterangan: c.target?.sumber ? `target dari ${c.target.sumber}` : undefined,
+      });
+    }
+    if (c?.tren.length) {
+      const id = `M-TREN-${b.kode}`;
+      legenda[id] = `Tren tiga tahun butir ${b.kode} dari LKPS, dihitung sistem`;
+      metrik.push({ id, nama: `Tren tiga tahun butir ${b.kode}`, nilaiTeks: c.tren.map(teksTren).join("; ") });
+    }
+  }
   for (const n of nilai.filter((x) => x.sumber === "belum" && x.perluManual)) {
     catatan.push(`Butir ${n.butir}: ${n.alasan ?? "nilai hitung belum ada."}`);
   }

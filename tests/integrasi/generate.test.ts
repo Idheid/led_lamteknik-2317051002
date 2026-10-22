@@ -24,6 +24,9 @@ import { prosesTugasGenerate, susunKonteks } from "@/lib/proses/generate";
 import { bacaDokumen, paragrafBersumber, teksDokumen } from "@/lib/domain/narasi";
 import { muatKriteria } from "@/lib/data/kriteria";
 import { nilaiButirProyek, simpanNilaiManual } from "@/lib/data/nilai-butir";
+import { capaianButirProyek, simpanTarget } from "@/lib/data/target-butir";
+import { hitungCapaian, teksCapaian } from "@/lib/domain/capaian";
+import { susunSistem } from "@/lib/domain/prompt";
 import { halamanBagian } from "@/lib/data/proyek";
 import { peringatanSebelumGenerate, posisiSub, subLanjutkan } from "@/lib/domain/navigasi";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
@@ -447,3 +450,32 @@ test("Revisi 19 Okt tahap 5: butir angka berumus dihitung otomatis; tanpa rumus 
 function pick(n: { sumber: string; perluManual: boolean }) {
   return { sumber: n.sumber, perluManual: n.perluManual };
 }
+
+test("Revisi 22 Okt tahap 4: target dan capaian, tren tiga tahun dihitung sistem dan menjadi angka sah narasi", async () => {
+  // butir 41 (mahasiswa asing, Tabel 6.a): capaian = nilai utama rumus; target dari Renstra
+  const awal = await capaianButirProyek(pj, proyekId);
+  const c41 = awal.get("41")!;
+  assert.ok(c41.capaian !== null, "capaian dari rumus");
+  assert.ok(c41.tren.some((t) => /Mahasiswa/.test(t.judul)), "tren dari Tabel 6.a (TS-2, TS-1, TS)");
+  await assert.rejects(simpanTarget(pj, proyekId, { butirKode: "1", target: "5" }), GalatPengguna, "hanya butir angka");
+  await assert.rejects(simpanTarget(pj, proyekId, { butirKode: "41", target: "banyak" }), GalatPengguna);
+  await assert.rejects(simpanTarget(adminUji, proyekId, { butirKode: "41", target: "5" }), GalatAkses);
+  const target = Math.ceil(c41.capaian! * 1.25 * 100) / 100;
+  await simpanTarget(pj, proyekId, { butirKode: "41", target: String(target).replace(".", ","), satuan: "", sumber: "Renstra FT 2021–2025" });
+  const c = (await capaianButirProyek(pj, proyekId)).get("41")!;
+  const harap = hitungCapaian(c41.capaian, target)!;
+  assert.deepEqual(c.hasil, harap);
+  assert.equal(c.hasil?.tercapai, false);
+
+  const k = await susunKonteks(proyekId, "C.6-IKU-b");
+  const m = k.konteks.metrik.find((x) => x.id === "M-CAPAIAN-41")!;
+  assert.equal(m.nilaiTeks, teksCapaian(harap, c.satuanCapaian));
+  assert.match(m.keterangan ?? "", /Renstra/);
+  assert.ok(k.konteks.metrik.some((x) => x.id === "M-TREN-41"));
+  assert.ok(k.rujukan.angkaSah.includes(harap.persen), "persen capaian hitungan sistem sah di narasi");
+  assert.ok(!k.rujukan.angkaSah.includes(harap.persen + 7), "angka capaian lain tidak sah");
+  assert.match(susunSistem(), /mengevaluasi capaian/);
+  // target kosong menghapus
+  await simpanTarget(pj, proyekId, { butirKode: "41", target: "" });
+  assert.equal((await capaianButirProyek(pj, proyekId)).get("41")?.target, null);
+});
