@@ -89,7 +89,7 @@ export default async function HalamanDokumenBersama() {
                             <TableCell><LencanaProses status={d.status} /></TableCell>
                             <TableCell className="text-right tabular-nums">{d.jenis === "gambar" ? "—" : d.jumlahPotongan}</TableCell>
                             <TableCell className="pr-4 text-right">
-                              <AksiDokumen proyekId="" id={d.id} nama={d.namaBerkas} jenis={d.jenis} judul={d.judul} tautanBukti={d.tautanBukti} />
+                              <AksiDokumen proyekId="" id={d.id} nama={d.namaBerkas} jenis={d.jenis} judul={d.judul} tautanBukti={d.tautanBukti} tahunTerbit={d.tahunTerbit} />
                             </TableCell>
                           </TableRow>
                         ))}

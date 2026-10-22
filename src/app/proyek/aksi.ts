@@ -63,7 +63,7 @@ export async function aksiSimpanKoreksi(proyekId: string, tabelId: string, baris
 
 // ---------------------------------------------------------------- Dokumen (F-10, F-11, F-12)
 
-export async function aksiUbahDokumen(proyekId: string, dokumenId: string, masukan: { judul?: string; tautanBukti?: string; dokumenDiharapkanId?: string | null }) {
+export async function aksiUbahDokumen(proyekId: string, dokumenId: string, masukan: { judul?: string; tautanBukti?: string; dokumenDiharapkanId?: string | null; tahunTerbit?: number | null }) {
   const r = await jalankanAksi((p) => dokumen.ubahDokumen(p, dokumenId, masukan).then(() => null));
   revalidatePath(`/proyek/${proyekId}`, "layout");
   return r;
@@ -147,8 +147,8 @@ export async function aksiSimpanTim(proyekId: string, tim: MasukanTimPenyusun) {
   return r;
 }
 
-export async function aksiMulaiEkspor(proyekId: string) {
-  const r = await jalankanAksi(async (p) => (await ekspor.mulaiEkspor(p, proyekId)).id);
+export async function aksiMulaiEkspor(proyekId: string, jenis: "draf" | "final" = "final") {
+  const r = await jalankanAksi(async (p) => (await ekspor.mulaiEkspor(p, proyekId, jenis)).id);
   revalidatePath(`/proyek/${proyekId}/ekspor`);
   return r;
 }

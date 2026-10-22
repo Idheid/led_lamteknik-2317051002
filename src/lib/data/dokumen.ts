@@ -186,6 +186,8 @@ const skemaUbah = z.object({
   tautanBukti: skemaTautan.optional(),
   subBagianKode: z.string().trim().max(60).nullable().optional(),
   dokumenDiharapkanId: z.string().trim().max(40).nullable().optional(),
+  // revisi 22 Okt 2026: tahun terbit untuk rujukan di Word; null = "t.t."
+  tahunTerbit: z.coerce.number().int().min(1900, "Tahun tidak sah.").max(2100, "Tahun tidak sah.").nullable().optional(),
 });
 
 export async function ubahDokumen(p: Pengguna, id: string, masukan: unknown) {
@@ -204,6 +206,7 @@ export async function ubahDokumen(p: Pengguna, id: string, masukan: unknown) {
       ...(data.tautanBukti !== undefined ? { tautanBukti: data.tautanBukti } : {}),
       ...(data.subBagianKode !== undefined ? { subBagianKode: data.subBagianKode || null } : {}),
       ...(data.dokumenDiharapkanId !== undefined ? { dokumenDiharapkanId: data.dokumenDiharapkanId || null } : {}),
+      ...(data.tahunTerbit !== undefined ? { tahunTerbit: data.tahunTerbit } : {}),
     },
   });
   await catatAktivitas(p, "ubah", "dokumen", id, { judul: hasil.judul, tautanBukti: hasil.tautanBukti });

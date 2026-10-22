@@ -163,6 +163,8 @@ test("Alur penuh: tambah prodi → unggah instrumen S1 → buat LED → isi satu
   await assert.rejects(mulaiEkspor(pj, proyekId), GalatPengguna, "belum ditandai selesai");
   await simpanTimPenyusun(pj, proyekId, { dosen: [{ nama: "Dr. Ani Lestari", nomorInduk: "0012345678", jabatan: "Ketua Tim", tugas: "Koordinator" }], tendik: [] });
   for (const k of bagian) await tandaiBagianSelesai(pj, proyekId, k);
+  // ekspor final menunggu asesor menyatakan Layak diajukan (revisi 22 Okt 2026); di sini diatur langsung
+  await prisma.proyekLED.update({ where: { id: proyekId }, data: { statusReview: "layak" } });
   assert.deepEqual((await periksaEkspor(pj, proyekId)).galat, []);
 
   // 6. ekspor Word memakai Template LED yang diunggah bersama instrumen

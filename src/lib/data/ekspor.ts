@@ -10,7 +10,9 @@ import { periksaSebelumEkspor, type HasilPeriksaEkspor } from "@/lib/domain/eksp
 import { KODE_JENJANG } from "@/lib/domain/instrumen";
 import { bacaDokumen } from "@/lib/domain/narasi";
 import { lokasiSoffice } from "@/lib/ekspor/halaman";
-import { bacaTemplateVersi, bacaTim, siapkanTemplate, subBagianTemplate } from "@/lib/proses/ekspor";
+import { bacaTemplateVersi, bacaTim, siapkanTemplate, subBagianTemplate, type JenisEkspor } from "@/lib/proses/ekspor";
+import { dokumenDirujuk, namaDokumen, type DokumenRujukan } from "@/lib/domain/rujukan";
+import { bacaStatusReview } from "@/lib/domain/kesiapan";
 import { skemaTimPenyusun, type MasukanTimPenyusun } from "@/lib/validasi";
 
 /**
@@ -37,10 +39,31 @@ export async function simpanTimPenyusun(p: Pengguna, proyekId: string, masukan: 
 export interface PeriksaEkspor extends HasilPeriksaEkspor {
   templateAda: boolean;
   libreOffice: boolean;
+  /** dokumen yang dirujuk narasi tetapi belum punya tautan bukti (wajib sebelum ekspor final) */
+  tanpaTautan: { id: string; judul: string; bersama: boolean }[];
+  jenis: JenisEkspor;
 }
 
-/** Pemeriksaan sebelum ekspor (ditampilkan di halaman Ekspor dan dijalankan ulang saat ekspor dimulai). */
-export async function periksaEkspor(p: Pengguna, proyekId: string): Promise<PeriksaEkspor> {
+/** Dokumen (LED dan bersama fakultas) yang dirujuk narasi aktif LED, urut kemunculan pertama. */
+export async function dokumenDirujukProyek(proyekId: string): Promise<DokumenRujukan[]> {
+  const draf = await prisma.bagianDraf.findMany({ where: { proyekId, versiAktifId: { not: null } }, select: { versiAktifId: true } });
+  const versi = await prisma.versiDraf.findMany({ where: { id: { in: draf.map((d) => d.versiAktifId!) } }, select: { isi: true, sumber: true } });
+  const dokumen = await prisma.dokumen.findMany({
+    where: { OR: [{ proyekId }, { proyekId: null }] },
+    select: { id: true, judul: true, namaBerkas: true, tahunTerbit: true, tautanBukti: true, proyekId: true },
+  });
+  return dokumenDirujuk(
+    versi.map((v) => ({ isi: bacaDokumen(v.isi), legenda: (v.sumber ?? {}) as Record<string, string> })),
+    dokumen.map((d) => ({ id: d.id, judul: d.judul, namaBerkas: d.namaBerkas, tahunTerbit: d.tahunTerbit, tautanBukti: d.tautanBukti, bersama: d.proyekId === null })),
+  );
+}
+
+/**
+ * Pemeriksaan sebelum ekspor (ditampilkan di halaman Ekspor dan dijalankan ulang saat ekspor dimulai).
+ * Revisi 22 Okt 2026: ekspor DRAF bisa kapan saja (hal yang belum lengkap hanya peringatan); ekspor final butuh
+ * semua pemeriksaan lolos, semua dokumen yang dirujuk punya tautan bukti, dan status Layak diajukan dari asesor.
+ */
+export async function periksaEkspor(p: Pengguna, proyekId: string, jenis: JenisEkspor = "final"): Promise<PeriksaEkspor> {
   const proyek = await ambilProyek(p, proyekId);
   const versi = await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: proyek.versiId } });
   const sub = (await subBagianTemplate(proyek.versiId, proyek.jenjang)).filter((s) => s.berlaku && s.tipe !== "data" && s.tipe !== "otomatis");
@@ -62,27 +85,39 @@ export async function periksaEkspor(p: Pengguna, proyekId: string): Promise<Peri
   if (tim.dosen.length === 0) hasil.galat.push("Tim penyusun (dosen) belum diisi di menu Tim penyusun.");
   const templateAda = Boolean(versi.templateLedLokasi || process.env.TEMPLATE_LEDPS_PATH);
   if (!templateAda) hasil.galat.push("Template LED belum diunggah untuk instrumen ini (menu Instrumen).");
-  const tautan = await prisma.dokumen.count({ where: { OR: [{ proyekId: proyek.id }, { proyekId: null }], tautanBukti: { not: null } } });
-  if (tautan === 0) hasil.peringatan.push("Belum ada tautan bukti sahih (Lampiran). Isi tautan penyimpanan awan pada dokumen di menu Dokumen.");
+  const dirujuk = await dokumenDirujukProyek(proyek.id);
+  const tanpaTautan = dirujuk.filter((d) => !d.tautanBukti).map((d) => ({ id: d.id, judul: namaDokumen(d), bersama: d.bersama }));
+  if (tanpaTautan.length) {
+    hasil.galat.push(`${tanpaTautan.length} dokumen yang dirujuk narasi belum punya tautan bukti sahih: ${tanpaTautan.map((d) => d.judul).join("; ")}.`);
+  }
+  if (bacaStatusReview(proyek.statusReview) !== "layak") {
+    hasil.galat.push("Ekspor final terbuka setelah asesor menyatakan Layak diajukan. Sebelum itu gunakan Ekspor DRAF.");
+  }
   const libreOffice = lokasiSoffice() !== null;
   if (!libreOffice) hasil.peringatan.push("LibreOffice belum terpasang di server: jumlah halaman akan diperkirakan, bukan dihitung.");
-  return { ...hasil, templateAda, libreOffice };
+  if (jenis === "draf") {
+    // draf: hanya template yang wajib; hal lain menjadi peringatan
+    const wajib = hasil.galat.filter((g) => /^Template LED belum diunggah/.test(g));
+    hasil.peringatan.unshift(...hasil.galat.filter((g) => !wajib.includes(g)));
+    hasil.galat = wajib;
+  }
+  return { ...hasil, templateAda, libreOffice, tanpaTautan, jenis };
 }
 
-/** Mulai ekspor: ditolak bila pemeriksaan menemukan galat. Berkas dibuat worker. */
-export async function mulaiEkspor(p: Pengguna, proyekId: string) {
+/** Mulai ekspor DRAF atau final: ditolak bila pemeriksaan jenis itu menemukan galat. Berkas dibuat worker. */
+export async function mulaiEkspor(p: Pengguna, proyekId: string, jenis: JenisEkspor = "final") {
   const proyek = await ambilProyek(p, proyekId);
   const berjalan = await prisma.ekspor.findFirst({ where: { proyekId: proyek.id, status: { in: ["antre", "diproses"] } } });
   if (berjalan) throw new GalatPengguna("Ekspor sebelumnya masih diproses. Tunggu sampai selesai.");
-  const cek = await periksaEkspor(p, proyekId);
+  const cek = await periksaEkspor(p, proyekId, jenis);
   if (cek.galat.length > 0) {
-    throw new GalatPengguna(`Ekspor ditolak: ${cek.galat.length} hal perlu diselesaikan dulu (lihat daftar pemeriksaan).`);
+    throw new GalatPengguna(`Ekspor ${jenis === "draf" ? "DRAF" : "final"} ditolak: ${cek.galat.length} hal perlu diselesaikan dulu (lihat daftar pemeriksaan).`);
   }
   const e = await prisma.ekspor.create({
-    data: { proyekId: proyek.id, status: "antre", dibuatOlehId: p.id, pemeriksaan: { galat: [], peringatan: cek.peringatan } },
+    data: { proyekId: proyek.id, status: "antre", jenis, dibuatOlehId: p.id, pemeriksaan: { galat: [], peringatan: cek.peringatan } },
   });
   await kirimTugas(ANTREAN.ekspor, { eksporId: e.id });
-  await catatAktivitas(p, "ekspor", "proyek", proyek.id, { eksporId: e.id });
+  await catatAktivitas(p, "ekspor", "proyek", proyek.id, { eksporId: e.id, jenis });
   return e;
 }
 

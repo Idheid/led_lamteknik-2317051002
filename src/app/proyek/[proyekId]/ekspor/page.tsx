@@ -11,7 +11,7 @@ import { PemantauProses } from "@/components/status-proses";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TombolEkspor, TombolHapusEkspor } from "./komponen";
+import { IsiTautan, TombolEkspor, TombolHapusEkspor } from "./komponen";
 
 export const metadata: Metadata = { title: "Ekspor Word" };
 
@@ -26,23 +26,29 @@ const STATUS: Record<string, { label: string; kelas: string }> = {
 export default async function HalamanEkspor({ params }: PageProps<"/proyek/[proyekId]/ekspor">) {
   const p = await wajibPenanggungJawab();
   const { proyekId } = await params;
-  const [cek, riwayat] = await Promise.all([periksaEkspor(p, proyekId), daftarEkspor(p, proyekId)]);
+  const [cek, cekDraf, riwayat] = await Promise.all([periksaEkspor(p, proyekId, "final"), periksaEkspor(p, proyekId, "draf"), daftarEkspor(p, proyekId)]);
   const berjalan = riwayat.some((e) => e.status === "antre" || e.status === "diproses");
   return (
     <>
       <PemantauProses aktif={berjalan} />
       <JudulHalaman
         judul="Ekspor Word"
-        deskripsi={`Mengisi template LEDPS resmi: narasi menggantikan instruksi dan kotak isian, halaman muka dan identitas diisi dari data proyek, maksimal ${BATAS_HALAMAN} halaman.`}
+        deskripsi={`Mengisi template LEDPS resmi: narasi menggantikan instruksi dan kotak isian, setiap paragraf diberi rujukan sumber, halaman muka dan identitas diisi dari data proyek. Maksimal ${BATAS_HALAMAN} halaman sebelum Lampiran.`}
         remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Ekspor Word" }]}
-        aksi={<TombolEkspor proyekId={proyekId} bisa={cek.galat.length === 0 && !berjalan} />}
+        aksi={
+          <>
+            <TombolEkspor proyekId={proyekId} jenis="draf" bisa={cekDraf.galat.length === 0 && !berjalan} />
+            <TombolEkspor proyekId={proyekId} jenis="final" bisa={cek.galat.length === 0 && !berjalan} />
+          </>
+        }
       />
       <Petunjuk
         kunci="proyek-ekspor"
-        fungsi="Halaman ini memeriksa kesiapan LED lalu membuat berkas Word (.docx) sesuai template LEDPS untuk diunduh dan diunggah ke LAM Teknik."
+        fungsi="Halaman ini membuat berkas Word (.docx) sesuai template LEDPS: Ekspor DRAF kapan saja untuk sosialisasi dan masukan, Ekspor final setelah semua syarat terpenuhi dan asesor menyatakan Layak diajukan."
         langkah={[
-          "Selesaikan semua hal di daftar pemeriksaan (kriteria ditandai selesai, tidak ada penanda [BELUM ADA BUKTI], tabel dan gambar berjudul, tim penyusun terisi).",
-          "Klik Ekspor ke Word. Berkas dibuat di server; halaman boleh ditinggal.",
+          "Ekspor DRAF bisa kapan saja: setiap halaman bertanda DRAF dan kaki halaman memuat tanggal ekspor. Bagikan ke pimpinan, dosen, dan tenaga kependidikan untuk dimintai masukan.",
+          "Untuk ekspor final, selesaikan daftar pemeriksaan: kriteria ditandai selesai, tidak ada penanda [BELUM ADA BUKTI], tabel dan gambar berjudul, tim penyusun terisi, setiap dokumen yang dirujuk punya tautan bukti, dan status review Layak diajukan.",
+          "Klik Ekspor final. Berkas dibuat di server; halaman boleh ditinggal.",
           "Unduh berkas, buka di Microsoft Word, lalu pilih Yes/Ya saat diminta memperbarui field supaya daftar isi, tabel, dan gambar terisi.",
           "Ganti kotak \"Logo Perguruan Tinggi\" di halaman muka dengan logo asli, periksa sekali lagi, lalu simpan.",
         ]}
@@ -50,9 +56,9 @@ export default async function HalamanEkspor({ params }: PageProps<"/proyek/[proy
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pemeriksaan sebelum ekspor</CardTitle>
+          <CardTitle className="text-base">Pemeriksaan sebelum ekspor final</CardTitle>
           <CardDescription>
-            {cek.galat.length === 0 ? "Semua syarat terpenuhi; LED siap diekspor." : `${cek.galat.length} hal perlu diselesaikan sebelum ekspor.`}
+            {cek.galat.length === 0 ? "Semua syarat terpenuhi; LED siap diekspor final." : `${cek.galat.length} hal perlu diselesaikan sebelum ekspor final. Ekspor DRAF tetap bisa.`}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
@@ -72,6 +78,19 @@ export default async function HalamanEkspor({ params }: PageProps<"/proyek/[proy
                 <li key={i} className="flex gap-2"><Info className="mt-0.5 size-4 shrink-0" aria-hidden />{g}</li>
               ))}
             </ul>
+          )}
+          {cek.tanpaTautan.length > 0 && (
+            <div className="rounded-lg border p-3">
+              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Dokumen dirujuk tanpa tautan bukti</div>
+              <ul className="divide-y">
+                {cek.tanpaTautan.map((d) => (
+                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                    <span>{d.judul}{d.bersama ? <span className="text-xs text-muted-foreground"> · dokumen bersama fakultas</span> : null}</span>
+                    <IsiTautan proyekId={d.bersama ? "" : proyekId} id={d.id} judul={d.judul} />
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           <p className="text-xs text-muted-foreground">
             Kriteria ditandai selesai di halaman masing-masing kriteria. Tim penyusun diisi di menu{" "}
@@ -97,12 +116,16 @@ export default async function HalamanEkspor({ params }: PageProps<"/proyek/[proy
                   <li key={e.id} className="flex flex-col gap-2 px-6 py-3">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="tabular-nums">{fmtWaktu.format(e.createdAt)}</span>
+                      <Badge variant={e.jenis === "draf" ? "outline" : "default"}>{e.jenis === "draf" ? "DRAF" : "Final"}</Badge>
                       <Badge className={`gap-1 border-transparent ${s.kelas}`}>
                         {(e.status === "antre" || e.status === "diproses") && <Loader2 className="size-3 animate-spin" aria-hidden />}
                         {s.label}
                       </Badge>
                       {e.jumlahHalaman !== null && (
-                        <span className="text-muted-foreground">{e.halamanPerkiraan ? "± " : ""}{e.jumlahHalaman} halaman{e.halamanPerkiraan ? " (perkiraan)" : ""}</span>
+                        <span className="text-muted-foreground">
+                          {e.halamanPerkiraan ? "± " : ""}{e.jumlahHalaman} halaman{e.halamanPerkiraan ? " (perkiraan)" : " sebelum Lampiran"}
+                          {e.jumlahHalamanTotal ? `, ${e.jumlahHalamanTotal} dengan Lampiran` : ""}
+                        </span>
                       )}
                       {e.ukuran !== null && <span className="text-muted-foreground">{formatUkuran(e.ukuran)}</span>}
                       <span className="ml-auto flex items-center gap-1">

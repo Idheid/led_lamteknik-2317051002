@@ -224,3 +224,18 @@ export const PARAGRAF_PEMISAH_HALAMAN = '<w:p><w:r><w:br w:type="page"/></w:r></
 export function setelTeks(xml: string, teks: string): string {
   return gantiTeks(xml, /^[\s\S]*$/, () => teks);
 }
+
+/**
+ * Penanda DRAF (revisi 22 Okt 2026): tambahkan satu paragraf di akhir bagian header ("DRAF") atau footer
+ * ("DRAF · diekspor …") supaya setiap halaman ekspor draf bertanda. Bagian lain header/footer tidak diubah.
+ */
+export function tandaiDraf(xml: string, jenis: 'header' | 'footer', teks: string): string {
+  const tutup = jenis === 'header' ? '</w:hdr>' : '</w:ftr>';
+  const i = xml.lastIndexOf(tutup);
+  if (i < 0) return xml;
+  const rpr = jenis === 'header'
+    ? '<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:color w:val="7F7F7F"/><w:sz w:val="24"/></w:rPr>'
+    : '<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:color w:val="7F7F7F"/><w:sz w:val="16"/></w:rPr>';
+  const p = `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r>${rpr}<w:t xml:space="preserve">${enkode(teks)}</w:t></w:r></w:p>`;
+  return xml.slice(0, i) + p + xml.slice(i);
+}

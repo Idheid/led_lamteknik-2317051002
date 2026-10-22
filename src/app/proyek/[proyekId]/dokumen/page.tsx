@@ -118,7 +118,7 @@ export default async function HalamanDokumen({ params }: PageProps<"/proyek/[pro
                       {d.tautanBukti ? <a href={d.tautanBukti} target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">{d.tautanBukti}</a> : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="pr-4 text-right">
-                      {!d.bersama && <AksiDokumen proyekId={proyekId} id={d.id} nama={d.namaBerkas} jenis={d.jenis} judul={d.judul} tautanBukti={d.tautanBukti} />}
+                      {!d.bersama && <AksiDokumen proyekId={proyekId} id={d.id} nama={d.namaBerkas} jenis={d.jenis} judul={d.judul} tautanBukti={d.tautanBukti} tahunTerbit={d.tahunTerbit} />}
                     </TableCell>
                   </TableRow>
                 ))}

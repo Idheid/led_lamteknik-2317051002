@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import JSZip from "jszip";
-import { patchDocument, Paragraph, TextRun, AlignmentType, LineRuleType, type IPatch } from "docx";
+import { patchDocument, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, LineRuleType, WidthType, type IPatch } from "docx";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { bacaBerkas, namaAman, simpanBerkas } from "@/lib/penyimpanan";
@@ -14,6 +14,9 @@ import { aktifkanPerbaruiField, siapkanDokumen, type LaporanTemplate, type SubTe
 import { isiDataProyek, type AnggotaTim, type DataEkspor } from "@/lib/ekspor/isi-data";
 import { dokumenKeWord, konteksBaru, patchDaftar, patchIsi } from "@/lib/ekspor/word";
 import { hitungHalamanDocx } from "@/lib/ekspor/halaman";
+import { tandaiDraf } from "@/lib/ekspor/xml";
+import { dokumenDirujuk, namaDokumen, rujukanSingkat, type DokumenRujukan } from "@/lib/domain/rujukan";
+import { nilaiButirUntukProyek } from "@/lib/data/nilai-butir";
 import { skemaTimPenyusun, type IdentitasProdi, type TimPenyusun } from "@/lib/validasi";
 
 /**
@@ -90,8 +93,14 @@ export interface HasilBangun {
   perkiraanHalaman: number;
 }
 
-/** Bangun berkas .docx LED proyek. */
-export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
+export type JenisEkspor = "draf" | "final";
+
+/**
+ * Bangun berkas .docx LED proyek. Revisi 22 Okt 2026: rujukan singkat di akhir paragraf, Daftar Rujukan di Lampiran,
+ * dan ekspor DRAF (setiap halaman bertanda DRAF, kaki halaman memuat tanggal ekspor).
+ */
+export async function bangunDocx(proyekId: string, opsi: { jenis?: JenisEkspor } = {}): Promise<HasilBangun> {
+  const jenis = opsi.jenis ?? "final";
   const proyek = await prisma.proyekLED.findUniqueOrThrow({
     where: { id: proyekId },
     include: { prodi: true, versi: true },
@@ -147,13 +156,24 @@ export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
 
   // narasi aktif per sub-bagian
   const draf = await prisma.bagianDraf.findMany({ where: { proyekId, versiAktifId: { not: null } }, select: { subBagianId: true, versiAktifId: true } });
-  const versi = await prisma.versiDraf.findMany({ where: { id: { in: draf.map((d) => d.versiAktifId!) } }, select: { id: true, isi: true } });
-  const isiSub = new Map<string, DokTiptap>();
+  const versi = await prisma.versiDraf.findMany({ where: { id: { in: draf.map((d) => d.versiAktifId!) } }, select: { id: true, isi: true, sumber: true } });
+  const isiSub = new Map<string, { isi: DokTiptap; legenda: Record<string, string> }>();
   for (const d of draf) {
     const v = versi.find((x) => x.id === d.versiAktifId);
-    if (v) isiSub.set(d.subBagianId, bacaDokumen(v.isi));
+    if (v) isiSub.set(d.subBagianId, { isi: bacaDokumen(v.isi), legenda: (v.sumber ?? {}) as Record<string, string> });
   }
-  const dokumen = await prisma.dokumen.findMany({ where: { OR: [{ proyekId }, { proyekId: null }] }, select: { id: true, lokasi: true, jenis: true, judul: true, namaBerkas: true, tautanBukti: true } });
+  const dokumen = await prisma.dokumen.findMany({
+    where: { OR: [{ proyekId }, { proyekId: null }] },
+    select: { id: true, lokasi: true, jenis: true, judul: true, namaBerkas: true, tautanBukti: true, tahunTerbit: true, proyekId: true },
+  });
+  const dokumenRujukan: DokumenRujukan[] = dokumen.map((d) => ({
+    id: d.id, judul: d.judul, namaBerkas: d.namaBerkas, tahunTerbit: d.tahunTerbit, tautanBukti: d.tautanBukti, bersama: d.proyekId === null,
+  }));
+  // kode metrik → tabel LKPS sumbernya, untuk rujukan "(LKPS Tabel …, diolah)"
+  const tabelMetrik = new Map<string, string[]>();
+  for (const n of (await nilaiButirUntukProyek(proyek)).daftar) {
+    for (const m of n.hasil?.metrik ?? []) tabelMetrik.set(m.kode, [...new Set([...(tabelMetrik.get(m.kode) ?? []), ...n.hasil!.tabel])]);
+  }
   const ctx = konteksBaru(async (id) => {
     const d = dokumen.find((x) => x.id === id && x.jenis === "gambar");
     return d ? { data: await bacaBerkas(d.lokasi) } : null;
@@ -165,25 +185,27 @@ export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
     if (!laporan.placeholder.includes(s.kode)) continue;
     const indent = indentasi[s.kode] ?? 0;
     if (s.kode.startsWith("LAMPIRAN")) {
-      patches[s.kode] = patchIsi(lampiranTautan(dokumen, indent));
+      patches[s.kode] = patchIsi(daftarRujukanWord(dokumenDirujuk([...isiSub.values()], dokumenRujukan), indent));
       continue;
     }
-    const doc = isiSub.get(s.id);
-    if (!doc) {
+    const d = isiSub.get(s.id);
+    if (!d) {
       ctx.masalah.push(`${s.label} belum punya draf.`);
       patches[s.kode] = patchIsi([new Paragraph({ indent: { left: indent }, children: [new TextRun({ text: "–", font: "Arial", size: 22 })] })]);
       continue;
     }
-    kata += hitungKata(teksDokumen(doc, { tanpaTabel: true }));
-    patches[s.kode] = patchIsi(await dokumenKeWord(doc, { bagianKode: s.bagianKode, indent, label: s.label }, ctx));
+    kata += hitungKata(teksDokumen(d.isi, { tanpaTabel: true }));
+    const rujukan = (kode: string[]) => rujukanSingkat(kode, { legenda: d.legenda, dokumen: dokumenRujukan, tabelMetrik });
+    patches[s.kode] = patchIsi(await dokumenKeWord(d.isi, { bagianKode: s.bagianKode, indent, label: s.label, rujukan }, ctx));
   }
   patches["DAFTAR-TABEL"] = patchDaftar("t");
   patches["DAFTAR-GAMBAR"] = patchDaftar("g");
 
-  const isi = await patchDocument({ outputType: "nodebuffer", data: disiapkan, keepOriginalStyles: true, patches });
+  let isi: Buffer = Buffer.from(await patchDocument({ outputType: "nodebuffer", data: disiapkan, keepOriginalStyles: true, patches }));
+  if (jenis === "draf") isi = await tandaiBerkasDraf(isi);
   const { pengaturan } = bacaAnggaran(proyek.anggaran);
   return {
-    isi: Buffer.from(isi),
+    isi,
     peringatan: terisi.peringatan,
     masalah: ctx.masalah,
     laporan,
@@ -197,16 +219,56 @@ export async function bangunDocx(proyekId: string): Promise<HasilBangun> {
   };
 }
 
-function lampiranTautan(dokumen: { judul: string | null; namaBerkas: string; tautanBukti: string | null }[], indent: number): Paragraph[] {
-  const ada = dokumen.filter((d) => d.tautanBukti);
-  const par = (teks: string) => new Paragraph({
+/**
+ * Daftar Rujukan di Lampiran (revisi 22 Okt 2026, menggantikan daftar tautan bukti): semua dokumen yang dirujuk
+ * narasi, dengan nomor, judul, tahun, asal, dan tautan bukti sahih.
+ */
+function daftarRujukanWord(dokumen: DokumenRujukan[], indent: number): (Paragraph | Table)[] {
+  const par = (teks: string, o: { bold?: boolean; size?: number } = {}) => new Paragraph({
     alignment: AlignmentType.LEFT,
-    spacing: { line: 276, lineRule: LineRuleType.AUTO, after: 80 },
-    indent: { left: indent },
-    children: [new TextRun({ text: teks, font: "Arial", size: 22 })],
+    spacing: { line: 240, lineRule: LineRuleType.AUTO, after: 60 },
+    children: [new TextRun({ text: teks, font: "Arial", size: o.size ?? 20, bold: o.bold })],
   });
-  if (ada.length === 0) return [par("Tautan bukti sahih belum dicantumkan.")];
-  return ada.map((d, i) => par(`${i + 1}. ${d.judul ?? d.namaBerkas}: ${d.tautanBukti}`));
+  const judul = new Paragraph({
+    indent: { left: indent },
+    spacing: { after: 120 },
+    children: [new TextRun({ text: "Daftar Rujukan", font: "Arial", size: 22, bold: true })],
+  });
+  if (dokumen.length === 0) {
+    return [judul, new Paragraph({ indent: { left: indent }, children: [new TextRun({ text: "Narasi tidak merujuk dokumen unggahan.", font: "Arial", size: 22 })] })];
+  }
+  const kepala = ["No.", "Judul dokumen", "Tahun", "Asal", "Tautan bukti sahih"];
+  const baris = dokumen.map((d, i) => [
+    String(i + 1), namaDokumen(d), d.tahunTerbit ? String(d.tahunTerbit) : "t.t.",
+    d.bersama ? "Dokumen bersama fakultas" : "Dokumen LED", d.tautanBukti ?? "belum ada tautan",
+  ]);
+  return [judul, new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    indent: { size: indent, type: WidthType.DXA },
+    rows: [kepala, ...baris].map((r, i) => new TableRow({
+      tableHeader: i === 0,
+      cantSplit: true,
+      children: r.map((c) => new TableCell({ children: [par(c, { bold: i === 0 })] })),
+    })),
+  })];
+}
+
+/** Tanggal ekspor untuk kaki halaman draf. */
+function tanggalPanjang(): string {
+  return new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long", year: "numeric" }).format(new Date());
+}
+
+/** Setiap halaman draf bertanda DRAF (header) dan kaki halaman memuat tanggal ekspor (footer). */
+async function tandaiBerkasDraf(isi: Buffer): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(isi);
+  const tanggal = tanggalPanjang();
+  for (const nama of Object.keys(zip.files)) {
+    const m = /^word\/(header|footer)\d*\.xml$/.exec(nama);
+    if (!m) continue;
+    const xml = await zip.file(nama)!.async("string");
+    zip.file(nama, tandaiDraf(xml, m[1] as "header" | "footer", m[1] === "header" ? "DRAF" : `DRAF · diekspor ${tanggal} · belum final`));
+  }
+  return Buffer.from(await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
 }
 
 /** Kerjakan satu ekspor (worker). */
@@ -214,10 +276,13 @@ export async function prosesEkspor(eksporId: string): Promise<string> {
   const klaim = await prisma.ekspor.updateMany({ where: { id: eksporId, status: "antre" }, data: { status: "diproses", pesan: null } });
   if (klaim.count === 0) return "dilewati";
   const e = await prisma.ekspor.findUniqueOrThrow({ where: { id: eksporId }, include: { proyek: { include: { prodi: true } } } });
+  const draf = e.jenis === "draf";
   try {
-    const h = await bangunDocx(e.proyekId);
+    const h = await bangunDocx(e.proyekId, { jenis: draf ? "draf" : "final" });
     const lama = (e.pemeriksaan ?? {}) as { galat?: string[]; peringatan?: string[] };
-    if (h.masalah.length > 0) {
+    // ekspor DRAF bisa kapan saja: isi yang belum lengkap hanya menjadi peringatan
+    if (draf) h.peringatan.push(...h.masalah.map((m) => `Belum lengkap: ${m}`));
+    if (!draf && h.masalah.length > 0) {
       await prisma.ekspor.update({
         where: { id: eksporId },
         data: { status: "gagal", pesan: "Pemeriksaan isi gagal.", pemeriksaan: { galat: h.masalah, peringatan: [...(lama.peringatan ?? []), ...h.peringatan] } },
@@ -228,10 +293,11 @@ export async function prosesEkspor(eksporId: string): Promise<string> {
       console.error("[ekspor] hitung halaman gagal:", err instanceof Error ? err.message : err);
       return null;
     });
-    const jumlah = halaman ?? h.perkiraanHalaman;
-    const nama = namaAman(`LED ${e.proyek.prodi.nama} ${e.proyek.nama}.docx`);
+    // revisi 22 Okt 2026: yang dibatasi 150 halaman hanya halaman sebelum judul LAMPIRAN
+    const jumlah = halaman?.sebelumLampiran ?? h.perkiraanHalaman;
+    const nama = namaAman(`${draf ? "DRAF " : ""}LED ${e.proyek.prodi.nama} ${e.proyek.nama}.docx`);
     const simpan = await simpanBerkas(`ekspor/${e.proyekId}`, nama, h.isi);
-    const ditahan = jumlah > BATAS_HALAMAN;
+    const ditahan = !draf && jumlah > BATAS_HALAMAN;
     const peringatan = [...(lama.peringatan ?? []), ...h.peringatan];
     if (halaman === null) peringatan.push("LibreOffice tidak tersedia: jumlah halaman diperkirakan dari jumlah kata, tabel, dan gambar.");
     await prisma.ekspor.update({
@@ -242,6 +308,7 @@ export async function prosesEkspor(eksporId: string): Promise<string> {
         namaBerkas: nama,
         ukuran: h.isi.length,
         jumlahHalaman: jumlah,
+        jumlahHalamanTotal: halaman?.total ?? null,
         halamanPerkiraan: halaman === null,
         pesan: ditahan ? `Dokumen ${jumlah} halaman, melebihi batas ${BATAS_HALAMAN} halaman. Ringkas narasi lalu ekspor ulang.` : null,
         pemeriksaan: { galat: [], peringatan, template: h.laporan } as unknown as Prisma.InputJsonValue,

@@ -405,6 +405,7 @@ model Dokumen {
   lokasi      String
   ukuran      Int
   tautanBukti String?   // tautan penyimpanan awan untuk lampiran (usulan U-02)
+  tahunTerbit Int?      // revisi 22 Okt 2026: tahun untuk rujukan di Word; kosong = "t.t."
   jenis       String    @default("pdf") // pdf, docx, gambar
   judul       String?   // judul gambar/dokumen untuk disisipkan ke narasi
   hash        String?   // SHA-256 berkas asli
@@ -483,7 +484,9 @@ model Ekspor {
   lokasi       String?   // berkas .docx di UPLOAD_DIR (null selama diproses atau bila gagal)
   namaBerkas   String?
   ukuran       Int?
-  jumlahHalaman Int?
+  jumlahHalaman Int? // revisi 22 Okt 2026: halaman sebelum judul LAMPIRAN (yang dibatasi 150)
+  jumlahHalamanTotal Int? // seluruh berkas termasuk lampiran
+  jenis         String @default("final") // draf (bertanda DRAF, kapan saja) atau final
   halamanPerkiraan Boolean @default(false) // true bila LibreOffice tidak tersedia (jumlah halaman diperkirakan)
   status       String    @default("antre") // antre, diproses, siap, ditahan (> 150 halaman), gagal
   pesan        String?

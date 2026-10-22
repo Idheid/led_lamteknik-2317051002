@@ -6,6 +6,7 @@ import {
   adalahJudulTabel, bersihkanJudul, nomorBab, skalaGambar, TABEL_TEMPLATE, ukuranGambar,
 } from '@/lib/domain/ekspor';
 import type { DokTiptap, NodeTiptap } from '@/lib/domain/narasi';
+import { kodeParagraf } from '@/lib/domain/rujukan';
 
 /**
  * Tiptap JSON → isi placeholder template LEDPS (pustaka docx, patchDocument). Paragraf rata kiri-kanan, Arial 11,
@@ -113,7 +114,11 @@ function tabel(n: NodeTiptap, indent: number, ctx: KonteksWord): Table {
 }
 
 /** Ubah satu dokumen Tiptap menjadi anak-anak placeholder. */
-export async function dokumenKeWord(doc: DokTiptap, o: { bagianKode: string; indent: number; label: string }, ctx: KonteksWord) {
+export async function dokumenKeWord(
+  doc: DokTiptap,
+  o: { bagianKode: string; indent: number; label: string; rujukan?: (kode: string[]) => string | null },
+  ctx: KonteksWord,
+) {
   const bab = nomorBab(o.bagianKode);
   const hasil: (Paragraph | Table)[] = [];
   const isi = doc.content;
@@ -128,7 +133,9 @@ export async function dokumenKeWord(doc: DokTiptap, o: { bagianKode: string; ind
         continue;
       }
       if (!teks(n).trim() && !(n.content ?? []).some((c) => c.type === 'hardBreak')) continue;
-      hasil.push(paragrafNarasi(inline(n), o.indent));
+      // revisi 22 Okt 2026: kode sumber paragraf diganti rujukan singkat di akhir paragraf
+      const r = o.rujukan && n.attrs?.peran !== 'judul-tabel' ? o.rujukan(kodeParagraf(n.attrs)) : null;
+      hasil.push(paragrafNarasi(r ? [...inline(n), new TextRun({ text: ` ${r}`, ...HURUF })] : inline(n), o.indent));
     } else if (n.type === 'bulletList' || n.type === 'orderedList') {
       let k = Number(n.attrs?.start ?? 1);
       for (const li of n.content ?? []) {

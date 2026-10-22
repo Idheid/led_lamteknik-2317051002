@@ -141,6 +141,30 @@ test("F-22 pemeriksaan sebelum ekspor menolak bagian belum selesai, penanda belu
   );
   await simpanSuntingan(pj, proyekId, "C.2-IKU-a.i.I", isi);
   await tandaiBagianSelesai(pj, proyekId, "C.2");
+
+  // revisi 22 Okt 2026: satu paragraf C.1-LB merujuk dokumen LED (D1) yang belum bertautan bukti
+  const renstra = await unggahDokumen(pj, proyekId, { nama: "renstra.docx", isi: readFileSync(resolve(process.cwd(), "tests/fikstur/instrumen/template-ledps-2025.docx")) });
+  await prisma.dokumen.update({ where: { id: renstra.id }, data: { judul: "Renstra FT 2021–2025", tahunTerbit: 2021 } });
+  const lb = await prisma.bagianDraf.findFirstOrThrow({ where: { proyekId, subBagian: { kode: "C.1-LB" } } });
+  const vlb = await prisma.versiDraf.findUniqueOrThrow({ where: { id: lb.versiAktifId! } });
+  const isiLb = structuredClone(vlb.isi) as unknown as { content: { type: string; attrs?: Record<string, unknown> }[] };
+  isiLb.content.find((n) => n.type === "paragraph")!.attrs = { sumber: "D1, J" };
+  await prisma.versiDraf.update({
+    where: { id: vlb.id },
+    data: { isi: isiLb as never, sumber: { ...(vlb.sumber as Record<string, string>), D1: "Dokumen: Renstra FT 2021–2025, hlm. 2" } },
+  });
+  cek = await periksaEkspor(pj, proyekId);
+  assert.deepEqual(cek.tanpaTautan.map((x) => x.judul), ["Renstra FT 2021–2025"], "dokumen yang dirujuk tanpa tautan");
+  assert.ok(cek.galat.some((g) => /Layak diajukan/.test(g)), "ekspor final menunggu asesor");
+  assert.equal(cek.galat.length, 2);
+  // ekspor DRAF bisa kapan saja: galat menjadi peringatan
+  const draf = await periksaEkspor(pj, proyekId, "draf");
+  assert.deepEqual(draf.galat, []);
+  assert.ok(draf.peringatan.some((g) => /tautan bukti/.test(g)));
+
+  await prisma.dokumen.update({ where: { id: renstra.id }, data: { tautanBukti: "https://drive.example/renstra" } });
+  // status Layak diajukan diberikan asesor (fitur asesor revisi 22 Okt tahap 7); di sini diatur langsung
+  await prisma.proyekLED.update({ where: { id: proyekId }, data: { statusReview: "layak" } });
   cek = await periksaEkspor(pj, proyekId);
   assert.deepEqual(cek.galat, []);
   assert.equal(cek.templateAda, true);
@@ -184,6 +208,12 @@ test("F-22/F-23/F-24 berkas Word: instruksi, catatan, dan kotak isian hilang; da
   assert.ok((await zip.file("word/settings.xml")!.async("string")).includes('<w:updateFields w:val="true"/>'));
   assert.ok(doc.includes("<w:i/>") || doc.includes('<w:i w:val="true"/>'), "istilah asing miring");
   assert.ok(!/Sumber: /.test(teks), "penanda sumber tidak ikut diekspor");
+  // revisi 22 Okt 2026: rujukan singkat di akhir paragraf dan Daftar Rujukan di Lampiran
+  assert.ok(teks.includes("terdokumentasi dengan melibatkan stakeholder. (Tim Penyusun LED)") || /\(Tim Penyusun LED\)/.test(teks), "rujukan jawaban penyusun");
+  assert.ok(teks.includes("(Renstra FT 2021–2025, 2021; Tim Penyusun LED)"), "rujukan dokumen dengan judul dan tahun");
+  assert.ok(teks.includes("Daftar Rujukan") && teks.includes("https://drive.example/renstra") && teks.includes("Dokumen LED"), "Daftar Rujukan di Lampiran");
+  assert.equal(x.jenis, "final");
+  assert.ok(x.jumlahHalamanTotal === null || x.jumlahHalaman! < x.jumlahHalamanTotal!, `Lampiran tidak dihitung: ${x.jumlahHalaman} / ${x.jumlahHalamanTotal}`);
   // sub-bagian khusus jenjang lain (PPI) tidak ada di LED Sarjana
   assert.ok(!/Program Profesi Insinyur \(DTPSPPI\)/.test(teks));
 });
@@ -201,4 +231,22 @@ test("Template LED per versi: PJ mengunggah .docx, laporan pemetaan per jenjang;
   // ekspor memakai template unggahan
   const e = await mulaiEkspor(pj, proyekId);
   assert.equal(await prosesEkspor(e.id), "siap");
+});
+
+test("Ekspor DRAF: kapan saja, setiap halaman bertanda DRAF dan tanggal ekspor, tidak ditahan", { skip: lewati }, async () => {
+  // buat LED belum lengkap: tandai satu kriteria belum selesai
+  await prisma.statusKriteria.updateMany({ where: { proyekId, bagianKode: "C.3" }, data: { status: "draf" } });
+  await assert.rejects(mulaiEkspor(pj, proyekId, "final"), GalatPengguna);
+  const e = await mulaiEkspor(pj, proyekId, "draf");
+  assert.equal(e.jenis, "draf");
+  assert.equal(await prosesEkspor(e.id), "siap");
+  const { ekspor, isi } = await berkasEkspor(pj, e.id);
+  assert.match(ekspor.namaBerkas ?? "", /^DRAF/);
+  const zip = await JSZip.loadAsync(isi);
+  const header = Object.keys(zip.files).filter((f) => /^word\/header\d*\.xml$/.test(f));
+  const footer = Object.keys(zip.files).filter((f) => /^word\/footer\d*\.xml$/.test(f));
+  assert.ok(header.length > 0 && footer.length > 0);
+  for (const f of header) assert.match(await zip.file(f)!.async("string"), /<w:t xml:space="preserve">DRAF<\/w:t>/, f);
+  for (const f of footer) assert.match(await zip.file(f)!.async("string"), /DRAF · diekspor \d{1,2} \w+ \d{4}/, f);
+  await prisma.statusKriteria.updateMany({ where: { proyekId, bagianKode: "C.3" }, data: { status: "selesai" } });
 });
