@@ -291,6 +291,10 @@ model ProyekLED {
   diarsipkanPada DateTime?   // proyek periode lama: tetap tersimpan sebagai rujukan, hanya baca
   // revisi 19 Okt 2026: satu LED = satu pengajuan akreditasi berlaku 5 tahun (periode tahunPengajuan s.d. +5)
   tahunPengajuan Int
+  // revisi 22 Okt 2026: batas pengajuan dan jadwal kerja mundur (tanggal tonggak yang diubah PJ), status review asesor
+  batasPengajuan DateTime?
+  jadwal         Json? // { kodeTonggak: "YYYY-MM-DD" }
+  statusReview   String    @default("draf") // draf, direview, perlu_revisi, layak
   nilaiManual NilaiManual[]
   status      StatusKriteria[]
   berkasLkps  BerkasLKPS[]

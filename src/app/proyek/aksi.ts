@@ -10,6 +10,7 @@ import * as pencarian from "@/lib/data/pencarian";
 import * as generate from "@/lib/data/generate";
 import * as ekspor from "@/lib/data/ekspor";
 import { simpanNilaiManual } from "@/lib/data/nilai-butir";
+import { simpanJadwal } from "@/lib/data/kesiapan";
 
 export async function aksiBuatProyek(masukan: MasukanProyek) {
   const r = await jalankanAksi(async (p) => (await buatProyek(p, masukan)).id);
@@ -181,4 +182,11 @@ export async function aksiHapusProyek(proyekId: string, konfirmasiNama: string) 
 /** Nilai hitung manual butir angka (revisi 19 Okt 2026); simpan otomatis tanpa memuat ulang halaman. */
 export async function aksiSimpanNilaiManual(proyekId: string, butirKode: string, nilai: string, keterangan: string) {
   return jalankanAksi((p) => simpanNilaiManual(p, proyekId, { butirKode, nilai, keterangan }).then(() => null));
+}
+
+/** Batas pengajuan dan jadwal kerja mundur (revisi 22 Okt 2026). */
+export async function aksiSimpanJadwal(proyekId: string, masukan: { batasPengajuan: string | null; jadwal: Record<string, string | null> }) {
+  const r = await jalankanAksi((p) => simpanJadwal(p, proyekId, masukan as Parameters<typeof simpanJadwal>[2]).then(() => null));
+  revalidatePath("/proyek", "layout");
+  return r;
 }

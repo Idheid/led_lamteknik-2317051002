@@ -11,6 +11,8 @@ import { bacaAnggaran, targetKataSubBagian } from "@/lib/domain/anggaran-proyek"
 import { bacaVarian, berlakuUntukJenjang, varianUntukJenjang } from "@/lib/domain/instrumen";
 import type { HasilButirAngka } from "@/lib/domain/metrik-lkps";
 import { kodeSumberManual } from "@/lib/domain/butir-angka";
+import { jadwalMundur } from "@/lib/domain/kesiapan";
+import { bacaTim } from "@/lib/proses/ekspor";
 import { nilaiButirUntukProyek } from "@/lib/data/nilai-butir";
 import {
   bacaDokumen, keluaranKeDokumen, kumpulkanAngkaSah, perluRingkasanIku, perluRingkasanSemua, periksaDokumen, ringkasIku, samarkanTeks,
@@ -32,6 +34,49 @@ const TARGET_CADANGAN = 250;
 /** Pengguna sistem untuk memakai fungsi data yang memeriksa peran (worker tidak punya sesi). */
 function penggunaSistem(): Pengguna {
   return { id: "sistem", nama: "Sistem", email: "", peran: "PENANGGUNG_JAWAB" };
+}
+
+const fmtTanggalPrompt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
+/**
+ * Konteks Bab II.A: susunan tim penyusun (jabatan, tugas, jumlah; nama dan NIP/NIDN tidak dikirim ke LLM) dan
+ * tonggak jadwal kerja yang dihitung mundur dari batas pengajuan.
+ */
+export function konteksTimDanJadwal(
+  proyek: { timPenyusun: unknown; batasPengajuan: Date | null; jadwal: unknown },
+  legenda: Record<string, string>,
+): KonteksSubBagian["metrik"] {
+  const hasil: KonteksSubBagian["metrik"] = [];
+  const tim = bacaTim(proyek.timPenyusun);
+  const ringkasTim = (daftar: { jabatan: string | null; tugas: string | null }[]) => {
+    const per = new Map<string, { n: number; tugas: Set<string> }>();
+    for (const x of daftar) {
+      const k = x.jabatan?.trim() || "Anggota";
+      const v = per.get(k) ?? { n: 0, tugas: new Set<string>() };
+      v.n += 1;
+      if (x.tugas?.trim()) v.tugas.add(x.tugas.trim());
+      per.set(k, v);
+    }
+    return [...per].map(([j, v]) => `${j} (${v.n} orang)${v.tugas.size ? `: ${[...v.tugas].join("; ")}` : ""}`).join(" | ");
+  };
+  if (tim.dosen.length || tim.tendik.length) {
+    legenda["M-TIM"] = "Tim penyusun (menu Tim penyusun)";
+    hasil.push({
+      id: "M-TIM", nama: "Susunan tim penyusun",
+      nilaiTeks: `${tim.dosen.length} dosen, ${tim.tendik.length} tenaga kependidikan`,
+      keterangan: [tim.dosen.length ? `Dosen: ${ringkasTim(tim.dosen)}` : "", tim.tendik.length ? `Tenaga kependidikan: ${ringkasTim(tim.tendik)}` : ""].filter(Boolean).join(". "),
+    });
+  }
+  if (proyek.batasPengajuan) {
+    legenda["M-JADWAL"] = "Jadwal kerja LED (dihitung mundur dari batas pengajuan)";
+    const t = jadwalMundur(proyek.batasPengajuan, (proyek.jadwal ?? {}) as Record<string, string>);
+    hasil.push({
+      id: "M-JADWAL", nama: "Jadwal kerja penyusunan LED",
+      nilaiTeks: `batas pengajuan ${fmtTanggalPrompt.format(proyek.batasPengajuan)}`,
+      keterangan: t.map((x) => `${x.nama}: ${fmtTanggalPrompt.format(new Date(`${x.tanggal}T00:00:00Z`))}`).join("; "),
+    });
+  }
+  return hasil;
 }
 
 /** Sub-bagian yang berlaku untuk jenjang proyek di satu bagian, beserta butirnya. */
@@ -104,7 +149,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   const nilai = (await nilaiButirUntukProyek(proyek)).daftar.filter((n) => butir.some((b) => b.kode === n.butir));
   const metrikButir: HasilButirAngka[] = nilai.flatMap((n) => (n.sumber === "rumus" && n.hasil ? [n.hasil] : []));
   const manualButir = nilai.filter((n) => n.sumber === "manual" && n.manual);
-  const metrik = [
+  const metrik: KonteksSubBagian["metrik"] = [
     ...metrikButir.flatMap((h) => h.metrik.filter((m) => m.nilai !== null).map((m) => {
       legenda[m.kode] = `Metrik sistem: ${m.nama}`;
       return { id: m.kode, nama: m.nama, nilaiTeks: formatMetrik(m), keterangan: m.rumus };
@@ -118,6 +163,8 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   for (const n of nilai.filter((x) => x.sumber === "belum" && x.perluManual)) {
     catatan.push(`Butir ${n.butir}: ${n.alasan ?? "nilai hitung belum ada."}`);
   }
+  // revisi 22 Okt 2026: Bab II.A memakai jadwal kerja dan susunan tim penyusun (tanpa nama dan nomor induk)
+  if (s.bagian.kode === "II.A") metrik.push(...konteksTimDanJadwal(proyek, legenda));
   const kodeTabel = new Set(butir.flatMap((b) => b.tabelLkps));
   const tabel = tabelLkps.filter((t) => kodeTabel.has(t.kode)).map((t) => {
     const judul = `Tabel ${t.kode}${t.blok ? ` (${t.blok})` : ""} ${t.judul}`.trim();

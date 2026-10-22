@@ -39,3 +39,26 @@ export function periksaIsi(tabel: TabelBaca[], jenjang: string): MasalahLkps[] {
   }
   return hasil;
 }
+
+/**
+ * Persentase LKPS terisi (revisi 22 Okt 2026; Pak Tris: "data LKPS-nya sudah berapa persen diisi"). Untuk setiap
+ * tabel wajib jenjang ini: sel wajib terisi dibagi sel wajib pada baris yang berisi data; tabel yang belum diisi
+ * sama sekali bernilai 0. Hasil = rata-rata semua tabel wajib (0–100, dibulatkan).
+ */
+export function persenTerisi(tabel: Pick<TabelBaca, "sheet" | "baris">[], jenjang: string): { persen: number; tabelTerisi: number; tabelWajib: number } {
+  const wajibJenjang = SHEET_WAJIB.filter((s) => sheetBerlakuUntuk(s, jenjang) && (KOLOM_WAJIB[s] ?? []).length > 0);
+  if (wajibJenjang.length === 0) return { persen: 0, tabelTerisi: 0, tabelWajib: 0 };
+  let jumlah = 0;
+  let terisiTabel = 0;
+  for (const sheet of wajibJenjang) {
+    const t = tabel.find((x) => x.sheet === sheet);
+    const kolom = KOLOM_WAJIB[sheet] ?? [];
+    const barisIsi = (t?.baris ?? []).filter((b) => kolom.some((k) => terisi(b.sel[k])));
+    if (barisIsi.length === 0) continue;
+    terisiTabel += 1;
+    const sel = barisIsi.length * kolom.length;
+    const isi = barisIsi.reduce((n, b) => n + kolom.filter((k) => terisi(b.sel[k])).length, 0);
+    jumlah += isi / sel;
+  }
+  return { persen: Math.round((jumlah / wajibJenjang.length) * 100), tabelTerisi: terisiTabel, tabelWajib: wajibJenjang.length };
+}

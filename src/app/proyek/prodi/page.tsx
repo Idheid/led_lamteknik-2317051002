@@ -5,6 +5,9 @@ import { wajibPenanggungJawab } from "@/lib/sesi";
 import { ambilFakultas, daftarProdi } from "@/lib/data/organisasi";
 import { namaJenjang } from "@/lib/domain/instrumen";
 import { labelPeriode } from "@/lib/domain/tahun-akademik";
+import { sisaBulan } from "@/lib/domain/kesiapan";
+import { kesiapanSemua } from "@/lib/data/kesiapan";
+import { RingkasKesiapan } from "@/components/kesiapan";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
@@ -18,15 +21,11 @@ export const metadata: Metadata = { title: "Program studi" };
 
 const fmtTanggal = new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" });
 
-/** Sisa bulan sampai akreditasi berakhir (negatif bila sudah lewat). */
-function sisaBulan(sampai: Date): number {
-  const s = new Date();
-  return (sampai.getUTCFullYear() - s.getUTCFullYear()) * 12 + (sampai.getUTCMonth() - s.getUTCMonth());
-}
-
 export default async function HalamanProdi() {
   const p = await wajibPenanggungJawab();
   const [fakultas, prodi] = await Promise.all([ambilFakultas(), daftarProdi(p)]);
+  const hariIni = new Date();
+  const kesiapan = await kesiapanSemua(p, prodi.flatMap((x) => x.proyek.filter((l) => !l.diarsipkanPada).map((l) => l.id)));
   return (
     <>
       <JudulHalaman
@@ -72,13 +71,15 @@ export default async function HalamanProdi() {
                   <TableHead>Kode PDDikti</TableHead>
                   <TableHead>Akreditasi berlaku sampai</TableHead>
                   <TableHead>LED</TableHead>
+                  <TableHead>Kesiapan</TableHead>
                   <TableHead className="w-20 pr-4" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {prodi.map((x) => {
                   const aktif = x.proyek.find((l) => !l.diarsipkanPada);
-                  const sisa = x.akreditasiBerlakuSampai ? sisaBulan(x.akreditasiBerlakuSampai) : null;
+                  const sisa = sisaBulan(x.akreditasiBerlakuSampai, hariIni);
+                  const k = aktif ? kesiapan.get(aktif.id) : undefined;
                   return (
                     <TableRow key={x.id}>
                       <TableCell className="pl-4 font-medium">{x.nama}</TableCell>
@@ -97,6 +98,14 @@ export default async function HalamanProdi() {
                         {aktif
                           ? <Link className="text-primary hover:underline" href={`/proyek/${aktif.id}`}>{aktif.nama} · {labelPeriode(aktif.tahunPengajuan)}</Link>
                           : <span className="text-muted-foreground">Tidak ada LED aktif{x.proyek.length ? ` (${x.proyek.length} arsip)` : ""}</span>}
+                        {!aktif && sisa !== null && sisa <= 12 && (
+                          <Button asChild size="sm" variant="outline" className="mt-1.5 flex w-fit">
+                            <Link href={`/proyek?prodi=${x.id}#led-baru`}><Plus aria-hidden />Buat LED</Link>
+                          </Button>
+                        )}
+                      </TableCell>
+                      <TableCell className="min-w-56 whitespace-normal">
+                        {k ? <RingkasKesiapan k={k} ringkas /> : <span className="text-xs text-muted-foreground">—</span>}
                       </TableCell>
                       <TableCell className="pr-4 text-right">
                         <Button asChild variant="ghost" size="icon-sm" aria-label={`Ubah ${x.nama}`}>

@@ -4,6 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { daftarProyek, instrumenAktifUntuk } from "@/lib/data/proyek";
 import { daftarProdi } from "@/lib/data/organisasi";
+import { kesiapanSemua } from "@/lib/data/kesiapan";
+import { RingkasKesiapan, kelasWarna } from "@/components/kesiapan";
 import { namaJenjang } from "@/lib/domain/instrumen";
 import { formatTahunAkademik, labelPeriode } from "@/lib/domain/tahun-akademik";
 import { ShellDaftarProyek } from "@/components/shell/shell-daftar-proyek";
@@ -15,9 +17,11 @@ import { FormProyekBaru, type PilihanProdiLed } from "./form-proyek-baru";
 
 export const metadata: Metadata = { title: "Semua LED" };
 
-export default async function HalamanDaftarProyek() {
+export default async function HalamanDaftarProyek({ searchParams }: PageProps<"/proyek">) {
   const p = await wajibPenanggungJawab();
+  const { prodi: prodiDipilih } = await searchParams;
   const [proyek, prodi] = await Promise.all([daftarProyek(p), daftarProdi(p)]);
+  const kesiapan = await kesiapanSemua(p, proyek.filter((x) => !x.diarsipkanPada).map((x) => x.id));
   const tahunIni = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date()));
 
   // pilihan prodi untuk LED baru: nonaktif bila masih ada LED aktif atau instrumen jenjangnya belum aktif
@@ -32,15 +36,18 @@ export default async function HalamanDaftarProyek() {
       : !instrumen.get(x.jenjang) ? `instrumen ${namaJenjang(x.jenjang)} belum aktif` : null,
   }));
 
+  // revisi 22 Okt 2026: LED aktif diurutkan menurut tanggal akreditasi prodi berakhir (terdekat di atas; daftar prodi
+  // sudah terurut begitu); LED yang diarsipkan dikumpulkan di paling bawah
   const perProdi = prodi
-    .map((x) => ({ prodi: x, led: proyek.filter((l) => l.prodiId === x.id) }))
+    .map((x) => ({ prodi: x, led: proyek.filter((l) => l.prodiId === x.id && !l.diarsipkanPada) }))
     .filter((g) => g.led.length > 0);
+  const arsip = prodi.flatMap((x) => proyek.filter((l) => l.prodiId === x.id && l.diarsipkanPada).map((l) => ({ prodi: x, led: l })));
 
   return (
     <ShellDaftarProyek pengguna={p}>
       <JudulHalaman
         judul="Semua LED"
-        deskripsi="Satu LED adalah satu pengajuan akreditasi satu program studi yang berlaku 5 tahun."
+        deskripsi="Satu LED adalah satu pengajuan akreditasi satu program studi yang berlaku 5 tahun. Prodi yang akreditasinya paling dekat berakhir tampil paling atas."
       />
       <Petunjuk
         kunci="pj-semua-led"
@@ -66,34 +73,52 @@ export default async function HalamanDaftarProyek() {
                 <h2 className="text-sm font-semibold text-muted-foreground">
                   {g.prodi.nama} <span className="font-normal">({namaJenjang(g.prodi.jenjang)})</span>
                 </h2>
-                {g.led.map((x) => (
-                  <Link key={x.id} href={`/proyek/${x.id}`} className="group">
-                    <Card className={`transition-colors group-hover:border-primary/40 ${x.diarsipkanPada ? "opacity-75" : ""}`}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between gap-2">
-                          {x.nama}
-                          <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
-                        </CardTitle>
-                        <CardDescription className="flex flex-wrap items-center gap-2">
-                          <Badge variant="secondary">{labelPeriode(x.tahunPengajuan)}</Badge>
-                          {x.diarsipkanPada ? <Badge variant="outline">Diarsipkan</Badge> : <Badge>Aktif</Badge>}
-                          <span>Data LKPS TS {formatTahunAkademik(x.tsTahunMulai)} · {x.versi.nama}</span>
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
-                  </Link>
-                ))}
+                {g.led.map((x) => {
+                  const k = kesiapan.get(x.id);
+                  return (
+                    <Link key={x.id} href={`/proyek/${x.id}`} className="group">
+                      <Card className={`transition-colors group-hover:border-primary/40 ${kelasWarna(k?.warna ?? null)}`}>
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between gap-2">
+                            {x.nama}
+                            <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
+                          </CardTitle>
+                          <CardDescription className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary">{labelPeriode(x.tahunPengajuan)}</Badge>
+                            <span>Data LKPS TS {formatTahunAkademik(x.tsTahunMulai)} · {x.versi.nama}</span>
+                          </CardDescription>
+                        </CardHeader>
+                        {k && <CardContent><RingkasKesiapan k={k} /></CardContent>}
+                      </Card>
+                    </Link>
+                  );
+                })}
               </section>
             ))
           )}
+          {arsip.length > 0 && (
+            <section className="flex flex-col gap-2" aria-label="LED diarsipkan">
+              <h2 className="text-sm font-semibold text-muted-foreground">LED diarsipkan</h2>
+              <ul className="divide-y rounded-lg border text-sm">
+                {arsip.map(({ prodi: pr, led: x }) => (
+                  <li key={x.id}>
+                    <Link href={`/proyek/${x.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-muted/60">
+                      <span>{x.nama} <span className="text-muted-foreground">· {pr.nama}</span></span>
+                      <span className="flex items-center gap-2"><Badge variant="secondary">{labelPeriode(x.tahunPengajuan)}</Badge><Badge variant="outline">Diarsipkan</Badge></span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
-        <Card className="h-fit xl:col-span-2">
+        <Card id="led-baru" className="h-fit scroll-mt-20 xl:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">LED baru</CardTitle>
             <CardDescription>Jenjang diambil dari data prodi dan instrumennya otomatis instrumen aktif jenjang itu.</CardDescription>
           </CardHeader>
           <CardContent>
-            <FormProyekBaru prodi={pilihan} tahunUsulan={tahunIni} />
+            <FormProyekBaru prodi={pilihan} tahunUsulan={tahunIni} awalProdiId={typeof prodiDipilih === "string" ? prodiDipilih : undefined} />
           </CardContent>
         </Card>
       </div>

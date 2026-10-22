@@ -24,10 +24,11 @@ export interface PilihanProdiLed {
  * LED baru (revisi 19 Okt 2026): pilih prodi, tahun pengajuan, dan nama. Jenjang diambil dari data prodi dan
  * instrumen otomatis instrumen aktif jenjang itu. TS (tahun data LKPS) dihitung dari tahun pengajuan.
  */
-export function FormProyekBaru({ prodi, tahunUsulan }: { prodi: PilihanProdiLed[]; tahunUsulan: number }) {
+export function FormProyekBaru({ prodi, tahunUsulan, awalProdiId }: { prodi: PilihanProdiLed[]; tahunUsulan: number; awalProdiId?: string }) {
   const router = useRouter();
   const { sibuk, jalankan } = useAksi();
-  const pertama = prodi.find((x) => !x.alasan);
+  // revisi 22 Okt 2026: tombol Buat LED di daftar Program studi memilih prodinya langsung
+  const pertama = prodi.find((x) => x.id === awalProdiId && !x.alasan) ?? prodi.find((x) => !x.alasan);
   const form = useForm<MasukanProyek>({
     resolver: zodResolver(skemaProyek),
     defaultValues: { prodiId: pertama?.id ?? "", nama: pertama ? `LED ${pertama.nama} ${tahunUsulan}` : "", tahunPengajuan: tahunUsulan },

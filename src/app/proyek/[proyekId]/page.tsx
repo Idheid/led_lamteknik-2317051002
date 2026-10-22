@@ -13,6 +13,10 @@ import { formatAngka } from "@/lib/domain/teks";
 import { formatTahunAkademik, labelPeriode } from "@/lib/domain/tahun-akademik";
 import type { IdentitasProdi } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
+import { kesiapanLed } from "@/lib/data/kesiapan";
+import { tanggalIso, usulanBatasPengajuan } from "@/lib/domain/kesiapan";
+import { RingkasKesiapan, kelasWarna } from "@/components/kesiapan";
+import { JadwalKerja } from "./jadwal-kerja";
 import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -35,12 +39,13 @@ const LABEL_JENIS: Record<string, string> = {
 export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]">) {
   const p = await wajibPenanggungJawab();
   const { proyekId } = await params;
-  const [{ proyek, bagian }, { butir }, ringkas, bahan, kunci] = await Promise.all([
+  const [{ proyek, bagian }, { butir }, ringkas, bahan, kunci, kesiapan] = await Promise.all([
     bagianProyek(p, proyekId),
     butirAnggaranProyek(p, proyekId),
     ringkasanBagianProyek(p, proyekId),
     ringkasanBahan(p, proyekId),
     daftarKunci(p),
+    kesiapanLed(proyekId),
   ]);
   const kunciAktif = kunci.filter((k) => k.statusEfektif === "aktif").length;
   const statusKunci = await ringkasanKunci();
@@ -151,6 +156,25 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
           </CardContent>
         </Card>
       </div>
+
+      <Card className={kelasWarna(kesiapan.warna)}>
+        <CardHeader>
+          <CardTitle className="text-base">Kesiapan dan jadwal kerja</CardTitle>
+          <CardDescription>
+            Tonggak dihitung mundur dari batas pengajuan dan bisa diubah. Tonggak yang terlewat dan belum tercapai ditandai merah.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <RingkasKesiapan k={kesiapan} ringkas />
+          <JadwalKerja
+            proyekId={proyek.id}
+            batasPengajuan={kesiapan.batasPengajuan}
+            usulanBatas={proyek.prodi.akreditasiBerlakuSampai ? tanggalIso(usulanBatasPengajuan(proyek.prodi.akreditasiBerlakuSampai)) : null}
+            tonggak={kesiapan.tonggak}
+            terkunci={Boolean(proyek.diarsipkanPada)}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -4,6 +4,7 @@ import { GalatAkses, GalatPengguna, pastikanPenanggungJawab, type Pengguna } fro
 import { catatAktivitas } from "@/lib/data/log";
 import { hapusBerkas } from "@/lib/penyimpanan";
 import { berlakuUntukJenjang, namaJenjang } from "@/lib/domain/instrumen";
+import { usulanBatasPengajuan } from "@/lib/domain/kesiapan";
 import { labelPeriode, tsDariTahunPengajuan } from "@/lib/domain/tahun-akademik";
 import { skemaJawabanForm, skemaProyek, skemaTahunTs, type MasukanProyek } from "@/lib/validasi";
 
@@ -66,6 +67,8 @@ export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
       tsTahunMulai: tsDariTahunPengajuan(data.tahunPengajuan),
       // salinan anggaran versi: bisa diubah per LED tanpa mengubah versi
       anggaran: versi.anggaranBawaan as Prisma.InputJsonValue,
+      // revisi 22 Okt 2026: usulan awal batas pengajuan (6 bulan sebelum akreditasi berakhir), bisa diubah PJ
+      batasPengajuan: prodi.akreditasiBerlakuSampai ? usulanBatasPengajuan(prodi.akreditasiBerlakuSampai) : null,
     },
   });
   await catatAktivitas(p, "buat", "proyek", proyek.id, { nama: proyek.nama, prodi: prodi.nama, versi: versi.kode });
