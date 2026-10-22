@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/db";
-import type { Pengguna } from "@/lib/akses";
+import { GalatPengguna, type Pengguna } from "@/lib/akses";
 import { ambilProyek } from "@/lib/data/proyek";
 import { modelEmbeddingAktif, penyediaEmbedding } from "@/lib/data/kunci-api";
-import { gabungRRF, kueriKataKunci } from "@/lib/domain/rrf";
+import { gabungRRF, kueriGenerate, kueriKataKunci } from "@/lib/domain/rrf";
+import { bacaVarian, varianUntukJenjang } from "@/lib/domain/instrumen";
+import { gantiLabelTS } from "@/lib/domain/tahun-akademik";
 import { literalVektor } from "@/lib/llm/embedding";
 
 /**
@@ -41,6 +43,18 @@ export interface OpsiCari {
 
 interface Baris {
   id: string;
+}
+
+/** Kueri yang dipakai generate untuk satu sub-bagian (uji cari "Pakai kueri generate"). */
+export async function kueriSubBagian(p: Pengguna, proyekId: string, subBagianKode: string): Promise<string> {
+  const proyek = await ambilProyek(p, proyekId);
+  const s = await prisma.subBagian.findFirst({
+    where: { kode: subBagianKode, bagian: { versiId: proyek.versiId } },
+    include: { butir: { where: { butir: { jenjang: proyek.jenjang } }, include: { butir: true } } },
+  });
+  if (!s) throw new GalatPengguna("Sub-bagian tidak ada di LED ini.");
+  const instruksi = gantiLabelTS(varianUntukJenjang(bacaVarian(s.varian), proyek.jenjang)?.instruksi ?? "", proyek.tsTahunMulai);
+  return kueriGenerate(s.judul, instruksi, s.butir.map((r) => r.butir).sort((a, b) => a.urutan - b.urutan));
 }
 
 export async function cariPotongan(p: Pengguna, proyekId: string, kueri: string, opsi: OpsiCari = {}) {

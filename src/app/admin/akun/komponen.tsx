@@ -17,10 +17,26 @@ import {
 } from "@/components/ui/alert-dialog";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
 import { skemaAkunPenanggungJawab, skemaAkunSuperAdmin, type MasukanAkun, type MasukanAkunSuperAdmin } from "@/lib/validasi";
-import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAkun, aksiBuatSuperAdmin, aksiHapusAkun } from "../aksi";
+import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAkun, aksiBuatAsesor, aksiBuatSuperAdmin, aksiHapusAkun } from "../aksi";
 
-/** Akun PJ fakultas (revisi 19 Okt 2026: tidak terikat ke satu prodi). */
-export function DialogBuatAkun() {
+const TEKS_AKUN = {
+  PJ: {
+    tombol: "Buat akun PJ",
+    judul: "Akun PJ fakultas baru",
+    deskripsi: "PJ mengelola semua prodi, LED, instrumen, dan dokumen fakultas. Saat petugas berganti, buat akun pengganti lalu nonaktifkan akun lama.",
+    sukses: "Akun PJ dibuat. Sampaikan email dan kata sandinya ke pemilik akun.",
+  },
+  ASESOR: {
+    tombol: "Akun asesor",
+    judul: "Akun asesor baru",
+    deskripsi: "Asesor hanya membaca LED yang ditugaskan kepadanya, memberi catatan revisi, dan memberi skor. Tugaskan ke LED di menu Penugasan asesor.",
+    sukses: "Akun asesor dibuat. Tugaskan ke LED di menu Penugasan asesor.",
+  },
+};
+
+/** Akun PJ fakultas (revisi 19 Okt 2026: tidak terikat ke satu prodi) atau asesor (revisi 22 Okt 2026). */
+export function DialogBuatAkun({ peran = "PJ" }: { peran?: "PJ" | "ASESOR" }) {
+  const t = TEKS_AKUN[peran];
   const [buka, setBuka] = useState(false);
   const { sibuk, jalankan } = useAksi();
   const form = useForm<MasukanAkun>({
@@ -28,8 +44,8 @@ export function DialogBuatAkun() {
     defaultValues: { nama: "", email: "", kataSandi: "" },
   });
   const kirim = form.handleSubmit((nilai) =>
-    jalankan(() => aksiBuatAkun(nilai), {
-      sukses: "Akun PJ dibuat. Sampaikan email dan kata sandinya ke pemilik akun.",
+    jalankan(() => (peran === "ASESOR" ? aksiBuatAsesor(nilai) : aksiBuatAkun(nilai)), {
+      sukses: t.sukses,
       lalu: () => {
         setBuka(false);
         form.reset({ nama: "", email: "", kataSandi: "" });
@@ -39,15 +55,15 @@ export function DialogBuatAkun() {
   return (
     <Dialog open={buka} onOpenChange={setBuka}>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant={peran === "ASESOR" ? "outline" : "default"}>
           <Plus aria-hidden />
-          Buat akun PJ
+          {t.tombol}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Akun PJ fakultas baru</DialogTitle>
-          <DialogDescription>PJ mengelola semua prodi, LED, instrumen, dan dokumen fakultas. Saat petugas berganti, buat akun pengganti lalu nonaktifkan akun lama.</DialogDescription>
+          <DialogTitle>{t.judul}</DialogTitle>
+          <DialogDescription>{t.deskripsi}</DialogDescription>
         </DialogHeader>
         <form onSubmit={kirim} noValidate>
           <FieldGroup>

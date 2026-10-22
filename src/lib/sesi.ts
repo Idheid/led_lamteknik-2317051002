@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import type { Pengguna } from "@/lib/akses";
-import { PERAN, type Peran } from "@/lib/peran";
+import { PERAN, berandaPeran, type Peran } from "@/lib/peran";
 
 export const HALAMAN_GANTI_SANDI = "/akun/ganti-sandi";
 
@@ -32,12 +32,18 @@ export async function wajibLogin(opsi: { bolehBelumGantiSandi?: boolean } = {}):
 
 export async function wajibSuperAdmin(): Promise<Pengguna> {
   const p = await wajibLogin();
-  if (p.peran !== "SUPER_ADMIN") redirect("/proyek");
+  if (p.peran !== "SUPER_ADMIN") redirect(berandaPeran(p.peran));
   return p;
 }
 
 export async function wajibPenanggungJawab(): Promise<Pengguna> {
   const p = await wajibLogin();
-  if (p.peran !== "PENANGGUNG_JAWAB") redirect("/admin/akun");
+  if (p.peran !== "PENANGGUNG_JAWAB") redirect(berandaPeran(p.peran));
+  return p;
+}
+
+export async function wajibAsesor(): Promise<Pengguna> {
+  const p = await wajibLogin();
+  if (p.peran !== "ASESOR") redirect(berandaPeran(p.peran));
   return p;
 }

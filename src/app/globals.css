@@ -162,6 +162,31 @@
     text-decoration-color: oklch(0.63 0.2 25 / 0.85);
     text-underline-offset: 3px;
   }
+  /* revisi 22 Okt 2026: sorotan catatan revisi asesor */
+  .catatan-sorot {
+    @apply cursor-pointer rounded-sm;
+  }
+  .catatan-terbuka {
+    background-color: oklch(0.88 0.06 250 / 0.7);
+  }
+  .catatan-diperbaiki {
+    background-color: oklch(0.92 0.08 85 / 0.7);
+  }
+  .catatan-diterima {
+    background-color: oklch(0.94 0.04 155 / 0.5);
+  }
+  .dark .catatan-terbuka {
+    background-color: oklch(0.4 0.08 250 / 0.6);
+  }
+  .dark .catatan-diperbaiki {
+    background-color: oklch(0.42 0.08 85 / 0.6);
+  }
+  .dark .catatan-diterima {
+    background-color: oklch(0.4 0.05 155 / 0.4);
+  }
+  .catatan-aktif {
+    box-shadow: 0 0 0 2px var(--primary);
+  }
   .editor-narasi p[data-peran="judul-tabel"] {
     @apply text-left font-medium;
   }

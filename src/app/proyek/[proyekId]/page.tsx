@@ -29,6 +29,10 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { DialogUbahTs } from "./dialog-ubah-ts";
 import { DialogUbahTahun } from "./dialog-ubah-tahun";
 import { PengaturanProyek } from "./pengaturan-proyek";
+import { ringkasReview } from "@/lib/data/review";
+import { LABEL_REVIEW } from "@/lib/domain/kesiapan";
+import { bolehAjukanReview } from "@/lib/domain/review";
+import { TombolAjukanReview } from "@/components/review/tombol-ajukan";
 
 export const metadata: Metadata = { title: "Beranda" };
 
@@ -39,13 +43,14 @@ const LABEL_JENIS: Record<string, string> = {
 export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]">) {
   const p = await wajibPenanggungJawab();
   const { proyekId } = await params;
-  const [{ proyek, bagian }, { butir }, ringkas, bahan, kunci, kesiapan] = await Promise.all([
+  const [{ proyek, bagian }, { butir }, ringkas, bahan, kunci, kesiapan, review] = await Promise.all([
     bagianProyek(p, proyekId),
     butirAnggaranProyek(p, proyekId),
     ringkasanBagianProyek(p, proyekId),
     ringkasanBahan(p, proyekId),
     daftarKunci(p),
     kesiapanLed(proyekId),
+    ringkasReview(p, proyekId),
   ]);
   const kunciAktif = kunci.filter((k) => k.statusEfektif === "aktif").length;
   const statusKunci = await ringkasanKunci();
@@ -79,7 +84,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
         langkah={[
           "Pastikan kunci API Gemini sudah ditambahkan (menu Kunci API fakultas).",
           "Unggah LKPS di menu Data LKPS, lalu periksa tabel dan metrik hasil bacaan.",
-          "Unggah dokumen pendukung di menu Dokumen.",
+          "Unggah dokumen pendukung di menu Basis Pengetahuan.",
           "Buka kriteria di tabel di bawah, isi jawaban penyusun, lalu klik Generate kriteria.",
         ]}
       />
@@ -156,6 +161,38 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Review asesor</CardTitle>
+          <CardDescription>
+            {review.asesor
+              ? `Asesor: ${review.asesor}. Catatan revisi muncul di halaman sub-bagian dan di ikon lonceng; ekspor Word final terbuka setelah asesor menyatakan Layak diajukan.`
+              : "Admin belum menugaskan asesor untuk LED ini. Ekspor DRAF tetap bisa dipakai untuk sosialisasi."}
+          </CardDescription>
+          <CardAction>
+            <Badge variant={review.review === "layak" ? "default" : "outline"}>{LABEL_REVIEW[review.review]}</Badge>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <span>
+            <span className="font-medium tabular-nums">{review.catatan.terbuka}</span> catatan terbuka ·{" "}
+            <span className="tabular-nums">{review.catatan.diperbaiki}</span> menunggu asesor ·{" "}
+            <span className="tabular-nums">{review.catatan.diterima}</span> diterima
+          </span>
+          {review.keputusan && (
+            <span className="text-muted-foreground">
+              Nilai simulasi asesor {formatAngka(review.keputusan.total)}{review.keputusan.perkiraan ? ` (${review.keputusan.perkiraan})` : ""}
+              {review.keputusan.catatan ? `: ${review.keputusan.catatan}` : ""}
+            </span>
+          )}
+          {bolehAjukanReview(review.review) && (
+            <span className="ml-auto">
+              <TombolAjukanReview proyekId={proyek.id} ulang={review.review === "perlu_revisi"} nonaktif={!review.asesor || Boolean(proyek.diarsipkanPada)} />
+            </span>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className={kelasWarna(kesiapan.warna)}>
         <CardHeader>

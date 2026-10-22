@@ -11,6 +11,7 @@ import type { Pengguna } from "@/lib/akses";
 import { LABEL_PERAN } from "@/lib/peran";
 import { MenuPengguna } from "./menu-pengguna";
 import { NavSidebar, type GrupNav } from "./nav-sidebar";
+import { Lonceng } from "./lonceng";
 
 interface Props {
   pengguna: Pengguna;
@@ -60,6 +61,7 @@ export async function ShellAplikasi({ pengguna, grup, subjudul, beranda, atasMen
           <SidebarTrigger className="-ml-1" aria-label="Ciutkan atau buka sidebar" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
           <span className="text-sm text-muted-foreground">LAM Teknik · Laporan Evaluasi Diri</span>
+          {pengguna.peran !== "SUPER_ADMIN" && <span className="ml-auto"><Lonceng /></span>}
         </header>
         <div className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">{children}</div>
       </SidebarInset>

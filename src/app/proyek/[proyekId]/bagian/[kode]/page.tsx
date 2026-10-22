@@ -16,6 +16,7 @@ import { Petunjuk } from "@/components/petunjuk";
 import { TombolGenerate, TombolTandaiSelesai } from "@/components/narasi/tombol-generate";
 import { hrefSub, muatKriteria } from "./muat";
 import { LABEL_TIPE, LencanaStatusSub } from "./lencana-sub";
+import { jumlahCatatanPerSub } from "@/lib/data/review";
 
 export async function generateMetadata({ params }: PageProps<"/proyek/[proyekId]/bagian/[kode]">): Promise<Metadata> {
   const { kode } = await params;
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: PageProps<"/proyek/[proyekId]
 export default async function HalamanRingkasanKriteria({ params }: PageProps<"/proyek/[proyekId]/bagian/[kode]">) {
   const p = await wajibPenanggungJawab();
   const { proyekId, kode: kodeMentah } = await params;
-  const d = await muatKriteria(p, proyekId, decodeURIComponent(kodeMentah));
+  const [d, catatan] = await Promise.all([muatKriteria(p, proyekId, decodeURIComponent(kodeMentah)), jumlahCatatanPerSub(p, proyekId)]);
   if (!d) notFound();
   const { proyek, bagian, target, statusSub, subGenerate, jumlahDraf, anggaranBagian, status } = d;
   const ts = proyek.tsTahunMulai;
@@ -138,6 +139,11 @@ export default async function HalamanRingkasanKriteria({ params }: PageProps<"/p
                           {t != null && <span>target ± {formatAngka(t, 0)} kata</span>}
                         </span>
                       </span>
+                      {catatan[s.kode] && (
+                        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary" title="Catatan asesor belum selesai">
+                          {catatan[s.kode].terbuka + catatan[s.kode].diperbaiki} catatan
+                        </span>
+                      )}
                       <LencanaStatusSub status={statusSub[s.kode]} />
                       <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                     </Link>

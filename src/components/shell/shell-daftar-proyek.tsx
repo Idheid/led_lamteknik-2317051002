@@ -11,7 +11,7 @@ export const MENU_FAKULTAS: GrupNav = {
     { judul: "Semua LED", href: "/proyek", ikon: "proyek", persis: true },
     { judul: "Program studi", href: "/proyek/prodi", ikon: "prodi" },
     { judul: "Instrumen", href: "/proyek/instrumen", ikon: "instrumen" },
-    { judul: "Dokumen bersama fakultas", href: "/proyek/dokumen-bersama", ikon: "dokumen" },
+    { judul: "Basis Pengetahuan fakultas", href: "/proyek/dokumen-bersama", ikon: "dokumen" },
     { judul: "Kunci API fakultas", href: "/proyek/kunci-api", ikon: "kunci" },
   ],
 };

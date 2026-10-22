@@ -84,6 +84,14 @@ export async function aksiProsesUlangDokumen(proyekId: string, dokumenId: string
   return r;
 }
 
+export async function aksiKueriGenerate(proyekId: string, subBagianKode: string) {
+  return jalankanAksi((p) => pencarian.kueriSubBagian(p, proyekId, subBagianKode));
+}
+
+export async function aksiPotonganDokumen(dokumenId: string) {
+  return jalankanAksi((p) => dokumen.potonganDokumen(p, dokumenId));
+}
+
 export async function aksiCariDokumen(proyekId: string, kueri: string, subBagianKode: string | null) {
   return jalankanAksi(async (p) => {
     const q = kueri.trim().slice(0, 500);

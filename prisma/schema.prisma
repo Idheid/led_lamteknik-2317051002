@@ -17,6 +17,7 @@ datasource db {
 enum Peran {
   SUPER_ADMIN
   PENANGGUNG_JAWAB
+  ASESOR // revisi 22 Okt 2026: reviewer internal yang ditugaskan admin ke satu LED
 }
 
 model User {
@@ -41,6 +42,11 @@ model User {
   kunciApi      KunciAPI[]
   logAktivitas  LogAktivitas[]
   versiDraf     VersiDraf[]
+  // revisi 22 Okt 2026 (asesor)
+  ledDireview   ProyekLED[]      @relation("AsesorLED")
+  catatanRevisi CatatanRevisi[]
+  balasan       BalasanCatatan[]
+  pemberitahuan Pemberitahuan[]
 
   @@map("user")
 }
@@ -296,6 +302,12 @@ model ProyekLED {
   jadwal         Json? // { kodeTonggak: "YYYY-MM-DD" }
   statusReview   String    @default("draf") // draf, direview, perlu_revisi, layak
   alasanKonsistensi Json? // { "metrik|sub|angka": alasan } untuk perbedaan angka antar kriteria yang disengaja
+  // revisi 22 Okt 2026: satu asesor per LED (ditugaskan admin) dan keputusan akhirnya
+  asesorId          String?
+  asesor            User?            @relation("AsesorLED", fields: [asesorId], references: [id], onDelete: SetNull)
+  keputusanReview   Json? // { keputusan, catatan, total, perkiraan, waktu, olehId }
+  catatanRevisi     CatatanRevisi[]
+  skorAsesor        SkorAsesor[]
   nilaiManual NilaiManual[]
   targetButir TargetButir[]
   status      StatusKriteria[]
@@ -626,4 +638,73 @@ model Cadangan {
   pesan    String?
 
   @@index([mulai])
+}
+
+// ----------------------------------------------------------------- Review asesor (revisi 22 Okt 2026)
+
+/// Catatan revisi asesor pada teks yang diblok. Jangkar = teks persis + teks di sekitarnya, supaya sorotan tetap
+/// menempel saat PJ mengubah kalimat lain; bila teksnya hilang, catatan tetap ada dengan tanda "teks asli berubah".
+model CatatanRevisi {
+  id               String           @id @default(cuid())
+  proyekId         String
+  proyek           ProyekLED        @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  bagianKode       String
+  subBagianKode    String
+  asesorId         String?
+  asesor           User?            @relation(fields: [asesorId], references: [id], onDelete: SetNull)
+  teks             String // teks yang diblok
+  sebelum          String           @default("") // konteks sebelum (maks. 60 karakter)
+  sesudah          String           @default("") // konteks sesudah
+  isi              String // catatan revisi
+  status           String           @default("terbuka") // terbuka, diperbaiki, diterima
+  versiAwalId      String? // versi aktif saat catatan dibuat
+  versiPerbaikanId String? // versi aktif saat PJ menandai Sudah diperbaiki
+  balasan          BalasanCatatan[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([proyekId, subBagianKode])
+}
+
+/// Balasan dan riwayat status satu catatan (jenis: balasan, diperbaiki, diterima, dibuka).
+model BalasanCatatan {
+  id        String        @id @default(cuid())
+  catatanId String
+  catatan   CatatanRevisi @relation(fields: [catatanId], references: [id], onDelete: Cascade)
+  penulisId String?
+  penulis   User?         @relation(fields: [penulisId], references: [id], onDelete: SetNull)
+  jenis     String        @default("balasan")
+  isi       String        @default("")
+  createdAt DateTime      @default(now())
+
+  @@index([catatanId])
+}
+
+/// Skor asesor 0-4 per butir. Untuk butir angka, skorSistem = hitungan LKPS saat dinilai; skor berbeda wajib beralasan.
+model SkorAsesor {
+  id         String    @id @default(cuid())
+  proyekId   String
+  proyek     ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  butirKode  String
+  skor       Float
+  skorSistem Float?
+  alasan     String?
+  asesorId   String?
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([proyekId, butirKode])
+}
+
+/// Pemberitahuan di ikon lonceng (catatan baru, sudah diperbaiki, diterima, review diajukan, keputusan).
+model Pemberitahuan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proyekId  String?
+  pesan     String
+  tautan    String?
+  dibaca    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, dibaca, createdAt])
 }

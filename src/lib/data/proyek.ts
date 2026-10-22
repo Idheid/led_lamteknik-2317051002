@@ -76,8 +76,12 @@ export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
 }
 
 /** Ambil LED (PJ fakultas boleh membuka semua LED). */
-export async function ambilProyek(p: Pengguna, proyekId: string) {
-  pastikanPenanggungJawab(p);
+/**
+ * Proyek untuk PJ. `baca: true` (hanya fungsi baca) juga mengizinkan asesor yang ditugaskan ke LED ini
+ * (revisi 22 Okt 2026); fungsi ubah memakai ambilProyekUbah sehingga asesor tidak pernah bisa mengubah.
+ */
+export async function ambilProyek(p: Pengguna, proyekId: string, opsi: { baca?: boolean } = {}) {
+  if (!(opsi.baca && p.peran === "ASESOR")) pastikanPenanggungJawab(p);
   const proyek = await prisma.proyekLED.findUnique({
     where: { id: proyekId },
     include: {
@@ -87,6 +91,7 @@ export async function ambilProyek(p: Pengguna, proyekId: string) {
     },
   });
   if (!proyek) throw new GalatAkses("LED tidak ditemukan.");
+  if (p.peran === "ASESOR" && proyek.asesorId !== p.id) throw new GalatAkses("LED ini tidak ditugaskan kepada Anda.");
   return proyek;
 }
 
@@ -165,7 +170,7 @@ export async function ubahTsProyek(p: Pengguna, proyekId: string, tsTahunMulai: 
 
 /** Bagian yang punya halaman form (kriteria C.1–C.7 dan bab lain) untuk sidebar. */
 export async function bagianProyek(p: Pengguna, proyekId: string) {
-  const proyek = await ambilProyek(p, proyekId);
+  const proyek = await ambilProyek(p, proyekId, { baca: true });
   const bagian = await prisma.bagian.findMany({
     where: { versiId: proyek.versiId },
     orderBy: { urutan: "asc" },
@@ -177,7 +182,7 @@ export async function bagianProyek(p: Pengguna, proyekId: string) {
 
 /** Isi halaman form satu kriteria/bagian: sub-bagian yang berlaku untuk jenjang proyek beserta butirnya. */
 export async function halamanBagian(p: Pengguna, proyekId: string, kodeBagian: string) {
-  const proyek = await ambilProyek(p, proyekId);
+  const proyek = await ambilProyek(p, proyekId, { baca: true });
   const bagian = await prisma.bagian.findUnique({
     where: { versiId_kode: { versiId: proyek.versiId, kode: kodeBagian } },
     include: {

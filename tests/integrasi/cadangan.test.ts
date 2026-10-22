@@ -83,7 +83,8 @@ test("Cadangan harian: basis data + unggahan, sisakan N terakhir, lalu dipulihka
   assert.deepEqual(folder, [hasil[1].folder, hasil[2].folder], "hanya 2 cadangan terbaru yang disimpan");
   assert.match(hasil[2].pesan, /1 berkas unggahan; 1 cadangan lama dihapus/);
   const info = JSON.parse(await readFile(join(folderCadangan(), hasil[2].folder!, "info.json"), "utf8"));
-  assert.match(info.migrasiTerakhir, /_cadangan$/);
+  const migrasi = (await readdir(join(process.cwd(), "prisma", "migrations"), { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name).sort();
+  assert.equal(info.migrasiTerakhir, migrasi.at(-1), "info.json mencatat migrasi terakhir yang diterapkan");
 
   const s = await statusCadangan(admin);
   assert.equal(s.terakhir?.berhasil, true);

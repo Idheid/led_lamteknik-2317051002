@@ -37,3 +37,8 @@ export function pastikanSuperAdmin(p: Pengguna): void {
 export function pastikanPenanggungJawab(p: Pengguna): void {
   if (p.peran !== "PENANGGUNG_JAWAB") throw new GalatAkses();
 }
+
+/** Asesor (revisi 22 Okt 2026): hanya membaca LED yang ditugaskan, memberi catatan revisi, dan memberi skor. */
+export function pastikanAsesor(p: Pengguna): void {
+  if (p.peran !== "ASESOR") throw new GalatAkses();
+}

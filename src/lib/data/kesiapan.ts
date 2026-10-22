@@ -9,6 +9,7 @@ import {
   type KodeTonggak, type StatusReview, type StatusTonggak, type Tonggak, type WarnaKesiapan,
 } from "@/lib/domain/kesiapan";
 import { persenTerisi } from "@/lib/lkps/periksa";
+import { CATATAN_BELUM_SELESAI } from "@/lib/domain/review";
 import type { TabelBaca } from "@/lib/lkps/jenis";
 
 /**
@@ -77,10 +78,9 @@ export async function kesiapanLed(proyekId: string, hariIni = new Date()): Promi
   };
 }
 
-/** Jumlah catatan revisi asesor yang belum diterima (0 sebelum fitur asesor). */
+/** Jumlah catatan revisi asesor yang belum diterima. */
 async function hitungCatatanTerbuka(proyekId: string): Promise<number> {
-  const t = (prisma as unknown as { catatanRevisi?: { count: (a: unknown) => Promise<number> } }).catatanRevisi;
-  return t ? t.count({ where: { proyekId, status: { in: ["terbuka", "diperbaiki"] } } }) : 0;
+  return prisma.catatanRevisi.count({ where: { proyekId, status: { in: CATATAN_BELUM_SELESAI } } });
 }
 
 export async function kesiapanSemua(p: Pengguna, proyekIds: string[]): Promise<Map<string, KesiapanLed>> {

@@ -14,6 +14,12 @@ export async function aksiBuatAkun(masukan: MasukanAkun) {
   return r;
 }
 
+export async function aksiBuatAsesor(masukan: MasukanAkun) {
+  const r = await jalankanAksi(async (p) => (await org.buatAkunAsesor(p, masukan)).id);
+  revalidatePath("/admin", "layout");
+  return r;
+}
+
 export async function aksiBuatSuperAdmin(masukan: MasukanAkunSuperAdmin) {
   const r = await jalankanAksi(async (p) => (await org.buatAkunSuperAdmin(p, masukan)).id);
   revalidatePath("/admin", "layout");

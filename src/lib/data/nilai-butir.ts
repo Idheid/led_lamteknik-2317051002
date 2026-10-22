@@ -36,7 +36,7 @@ export async function nilaiButirUntukProyek(proyek: { id: string; versiId: strin
 }
 
 export async function nilaiButirProyek(p: Pengguna, proyekId: string) {
-  return nilaiButirUntukProyek(await ambilProyek(p, proyekId));
+  return nilaiButirUntukProyek(await ambilProyek(p, proyekId, { baca: true }));
 }
 
 const skemaNilaiManual = z.object({

@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { daftarkanPenyimpan } from "@/lib/simpan-tertunda";
 import type { LabelKalimat } from "@/lib/domain/verifikasi";
 import { SorotanKalimat, kunciSorotan } from "./sorotan-kalimat";
+import { SorotanCatatan, kunciCatatan, type SorotCatatan } from "@/components/review/sorotan-catatan";
 import type { DokTiptap, HasilPemeriksaan } from "@/lib/domain/narasi";
 import { aksiSimpanSuntingan } from "@/app/proyek/aksi";
 
@@ -42,6 +43,29 @@ const ParagrafBersumber = Paragraph.extend({
     };
   },
 });
+
+/** Ekstensi Tiptap narasi; dipakai editor PJ dan pembaca asesor (revisi 22 Okt 2026) supaya tampilannya sama. */
+export function ekstensiNarasi() {
+  return [
+    StarterKit.configure({
+      paragraph: false, heading: false, blockquote: false, code: false, codeBlock: false, horizontalRule: false,
+      strike: false, link: false, underline: false,
+    }),
+    ParagrafBersumber,
+    Image.configure({ inline: false }),
+    Table.configure({ resizable: false }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    SorotanKalimat,
+    SorotanCatatan,
+  ];
+}
+
+/** id catatan pada sorotan yang diklik, atau null. */
+export function catatanDariKlik(ev: Event): string | null {
+  return (ev.target as HTMLElement | null)?.closest?.("[data-catatan-id]")?.getAttribute("data-catatan-id") ?? null;
+}
 
 export interface GambarProyek {
   id: string;
@@ -145,7 +169,7 @@ function BilahAlat({ editor, gambar }: { editor: Editor; gambar: GambarProyek[] 
 }
 
 export function EditorNarasi({
-  proyekId, subBagianKode, isi, gambar, onTersimpan, labelKalimat,
+  proyekId, subBagianKode, isi, gambar, onTersimpan, labelKalimat, catatan, onKlikCatatan,
 }: {
   proyekId: string;
   subBagianKode: string;
@@ -154,6 +178,9 @@ export function EditorNarasi({
   onTersimpan?: (h: { nomor: number; pemeriksaan: HasilPemeriksaan; disimpan: string }) => void;
   /** revisi 22 Okt 2026: label verifikasi per kalimat (kunci = kunciKalimat) untuk garis bawah berwarna */
   labelKalimat?: Record<string, LabelKalimat>;
+  /** revisi 22 Okt 2026: catatan revisi asesor yang disorot di teks */
+  catatan?: SorotCatatan[];
+  onKlikCatatan?: (id: string) => void;
 }) {
   const [status, setStatus] = useState<Status>("tersimpan");
   const [pesan, setPesan] = useState<string | null>(null);
@@ -162,27 +189,26 @@ export function EditorNarasi({
   const antre = useRef<Promise<void>>(Promise.resolve());
   const terakhirBerhasil = useRef(true);
   const callback = useRef(onTersimpan);
+  const klikCatatan = useRef(onKlikCatatan);
   useEffect(() => {
     callback.current = onTersimpan;
-  }, [onTersimpan]);
+    klikCatatan.current = onKlikCatatan;
+  }, [onTersimpan, onKlikCatatan]);
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        paragraph: false, heading: false, blockquote: false, code: false, codeBlock: false, horizontalRule: false,
-        strike: false, link: false, underline: false,
-      }),
-      ParagrafBersumber,
-      Image.configure({ inline: false }),
-      Table.configure({ resizable: false }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      SorotanKalimat,
-    ],
+    extensions: ekstensiNarasi(),
     content: isi ?? { type: "doc", content: [{ type: "paragraph" }] },
-    editorProps: { attributes: { class: "editor-narasi min-h-40 px-4 py-3 focus:outline-none", "aria-label": "Narasi" } },
+    editorProps: {
+      attributes: { class: "editor-narasi min-h-40 px-4 py-3 focus:outline-none", "aria-label": "Narasi" },
+      handleDOMEvents: {
+        click: (_v, ev) => {
+          const id = catatanDariKlik(ev);
+          if (id) klikCatatan.current?.(id);
+          return false;
+        },
+      },
+    },
     onUpdate: ({ editor: e }) => {
       setStatus("berubah");
       if (pewaktu.current) clearTimeout(pewaktu.current);
@@ -224,6 +250,12 @@ export function EditorNarasi({
     if (!editor || editor.isDestroyed) return;
     editor.view.dispatch(editor.state.tr.setMeta(kunciSorotan, labelKalimat ?? {}));
   }, [labelKalimat, editor]);
+
+  // catatan revisi asesor berubah (pembaruan berkala): gambar ulang sorotan
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    editor.view.dispatch(editor.state.tr.setMeta(kunciCatatan, catatan ?? []));
+  }, [catatan, editor]);
 
   // simpan segera sebelum pindah halaman (Sebelumnya/Berikutnya) atau saat editor dilepas
   const editorRef = useRef(editor);

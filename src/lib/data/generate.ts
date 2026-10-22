@@ -158,7 +158,7 @@ function pemakaian(json: unknown): { tokenMasuk: number; tokenKeluar: number; du
 
 /** Draf semua sub-bagian di satu bagian: versi aktif lengkap dan daftar versi. */
 export async function drafBagian(p: Pengguna, proyekId: string, bagianKode: string) {
-  const proyek = await ambilProyek(p, proyekId);
+  const proyek = await ambilProyek(p, proyekId, { baca: true });
   const draf = await prisma.bagianDraf.findMany({
     where: { proyekId: proyek.id, subBagian: { bagian: { versiId: proyek.versiId, kode: bagianKode } } },
     include: {
@@ -232,7 +232,12 @@ export async function simpanSuntingan(p: Pengguna, proyekId: string, subBagianKo
   const pemeriksaan = periksaDokumen(isi, rujukan, (lamaPeriksa?.masalahSumber ?? []).filter((m) => m.jenis === "unsur_hilang"));
   const simpanPeriksa = { ...pemeriksaan, rujukan } as unknown as Prisma.InputJsonValue;
 
-  const lanjutkan = terakhir && dasar && terakhir.id === dasar.id && terakhir.asal === "sunting"
+  // versi yang dirujuk catatan asesor (versi saat catatan dibuat atau ditandai diperbaiki) tidak ditimpa, supaya
+  // asesor bisa membandingkan sebelum dan sesudah perbaikan (revisi 22 Okt 2026)
+  const dirujukCatatan = terakhir
+    ? await prisma.catatanRevisi.count({ where: { OR: [{ versiAwalId: terakhir.id }, { versiPerbaikanId: terakhir.id }] } })
+    : 0;
+  const lanjutkan = terakhir && dasar && terakhir.id === dasar.id && terakhir.asal === "sunting" && !dirujukCatatan
     && terakhir.dibuatOlehId === p.id && Date.now() - terakhir.createdAt.getTime() < JENDELA_SUNTING_MS;
   const v = lanjutkan
     ? await prisma.versiDraf.update({
@@ -264,7 +269,7 @@ async function versiMilik(p: Pengguna, versiId: string, opsi: { ubah?: boolean }
     include: { bagianDraf: { include: { subBagian: { include: { bagian: true } } } } },
   });
   if (!v) throw new GalatAkses("Versi tidak ditemukan.");
-  const proyek = await ambilProyek(p, v.bagianDraf.proyekId);
+  const proyek = await ambilProyek(p, v.bagianDraf.proyekId, { baca: !opsi.ubah });
   if (opsi.ubah) pastikanBisaDiubah(proyek);
   return v;
 }

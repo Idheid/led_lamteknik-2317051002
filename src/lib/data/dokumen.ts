@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/lib/akses";
+import { GalatAkses, GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/lib/akses";
 import { ambilProyek, ambilProyekUbah } from "@/lib/data/proyek";
 import { catatAktivitas } from "@/lib/data/log";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
@@ -159,6 +159,16 @@ export async function unggahDokumen(p: Pengguna, proyekId: string, m: MasukanDok
 }
 
 /** Dokumen yang boleh diakses PJ: dokumen LED (lewat pemeriksaan LED) atau dokumen bersama fakultas. */
+async function dokumenUntukAsesor(p: Pengguna, id: string) {
+  const d = await prisma.dokumen.findUnique({ where: { id } });
+  if (!d) throw new GalatPengguna("Dokumen tidak ditemukan.");
+  const boleh = d.proyekId
+    ? await prisma.proyekLED.count({ where: { id: d.proyekId, asesorId: p.id } })
+    : await prisma.proyekLED.count({ where: { asesorId: p.id } });
+  if (!boleh) throw new GalatAkses();
+  return d;
+}
+
 export async function dokumenMilik(p: Pengguna, id: string) {
   const d = await prisma.dokumen.findUnique({ where: { id } });
   if (!d) throw new GalatPengguna("Dokumen tidak ditemukan.");
@@ -167,7 +177,19 @@ export async function dokumenMilik(p: Pengguna, id: string) {
   return d;
 }
 
-/** Dokumen LED ditambah dokumen bersama fakultas (`bersama` = true; dikelola di menu Dokumen bersama fakultas). */
+/** Potongan satu dokumen untuk dilihat di Basis Pengetahuan (revisi 22 Okt 2026). */
+export async function potonganDokumen(p: Pengguna, id: string) {
+  const d = await dokumenMilik(p, id);
+  const potongan = await prisma.$queryRaw<{ urutan: number; halaman: number | null; teks: string; terindeks: boolean; modelEmbedding: string }[]>`
+    SELECT "urutan", "halaman", "teks", "embedding" IS NOT NULL AS "terindeks", "modelEmbedding"
+    FROM "Potongan" WHERE "dokumenId" = ${d.id} ORDER BY "urutan"`;
+  return {
+    model: potongan[0]?.modelEmbedding ?? null,
+    potongan: potongan.map((x) => ({ urutan: x.urutan, halaman: x.halaman, teks: x.teks, terindeks: x.terindeks })),
+  };
+}
+
+/** Dokumen LED ditambah dokumen bersama fakultas (`bersama` = true; tab kedua menu Basis Pengetahuan). */
 export async function daftarDokumen(p: Pengguna, proyekId: string, saring: { subBagianKode?: string } = {}) {
   const proyek = await ambilProyek(p, proyekId);
   const daftar = await prisma.dokumen.findMany({
@@ -228,7 +250,8 @@ export async function prosesUlangDokumen(p: Pengguna, id: string) {
 
 /** Isi berkas asli untuk diunduh/ditampilkan (byte sama persis dengan unggahan). */
 export async function berkasDokumen(p: Pengguna, id: string) {
-  const d = await dokumenMilik(p, id);
+  // asesor membaca gambar yang disisipkan di narasi LED yang ditugaskan kepadanya (revisi 22 Okt 2026)
+  const d = p.peran === "ASESOR" ? await dokumenUntukAsesor(p, id) : await dokumenMilik(p, id);
   return { dokumen: d, isi: await bacaBerkas(d.lokasi) };
 }
 

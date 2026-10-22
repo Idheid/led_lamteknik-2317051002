@@ -46,7 +46,7 @@ export default async function LayoutProyekLED({ children, params }: LayoutProps<
       item: [
         { judul: "Beranda", href: dasar, ikon: "beranda", persis: true },
         { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },
-        { judul: "Dokumen", href: `${dasar}/dokumen`, ikon: "dokumen" },
+        { judul: "Basis Pengetahuan", href: `${dasar}/dokumen`, ikon: "dokumen" },
         { judul: "Tim penyusun", href: `${dasar}/tim`, ikon: "tim" },
         { judul: "Ekspor Word", href: `${dasar}/ekspor`, ikon: "ekspor" },
       ],

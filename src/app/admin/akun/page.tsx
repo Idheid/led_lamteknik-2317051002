@@ -53,6 +53,7 @@ export default async function HalamanAkun() {
         aksi={
           <>
           <DialogBuatSuperAdmin />
+          <DialogBuatAkun peran="ASESOR" />
           <DialogBuatAkun />
           </>
         }

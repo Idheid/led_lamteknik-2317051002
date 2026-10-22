@@ -4,6 +4,7 @@ import type { Pengguna } from "@/lib/akses";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { GalatTanpaKunci } from "@/lib/data/kunci-api";
 import { cariPotongan } from "@/lib/data/pencarian";
+import { kueriGenerate } from "@/lib/domain/rrf";
 import type { KolomLkps, BarisLkps } from "@/lib/lkps/jenis";
 import { formatMetrik } from "@/lib/tampil";
 import { hitungAnggaran } from "@/lib/domain/anggaran";
@@ -206,7 +207,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   if (kodeTabel.size > 0 && !berkas) catatan.push("LKPS belum diunggah: tabel dan metrik tidak tersedia.");
 
   // potongan dokumen (RAG)
-  const kueri = [s.judul, instruksi.slice(0, 400), ...butir.flatMap((b) => [b.indikator, ...b.unsurSkor4])].join(". ").slice(0, 1500);
+  const kueri = kueriGenerate(s.judul, instruksi, butir);
   const cari = await cariPotongan(penggunaSistem(), proyekId, kueri, { subBagianKode, k: 8 });
   catatan.push(...cari.catatan);
   // dokumen proyek D1, D2, ...; bahan bersama UPPS (U-10) U1, U2, ... supaya penyusun tahu bukti berasal dari fakultas

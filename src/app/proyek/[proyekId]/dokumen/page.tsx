@@ -1,52 +1,61 @@
 import type { Metadata } from "next";
-import { FileImage, FileText } from "lucide-react";
+import Link from "next/link";
 import { wajibPenanggungJawab } from "@/lib/sesi";
-import { daftarDokumen } from "@/lib/data/dokumen";
+import { daftarDokumen, daftarDokumenBersama, pilihanSubBagianBersama } from "@/lib/data/dokumen";
 import { pilihanSubBagianProyek } from "@/lib/data/proyek";
 import { daftarKunci } from "@/lib/data/kunci-api";
 import { pakaiPenyediaUji } from "@/lib/llm/embedding";
-import { fmtWaktu, formatUkuran } from "@/lib/tampil";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
-import { LencanaProses, PemantauProses } from "@/components/status-proses";
+import { PemantauProses } from "@/components/status-proses";
 import { STATUS_BERJALAN } from "@/lib/tampil";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AksiDokumen } from "./aksi-dokumen";
+import { TabelDokumen } from "@/components/basis-pengetahuan/tabel-dokumen";
 import { PanelCari } from "./panel-cari";
 import { UnggahDokumenUmum } from "./unggah-umum";
 
-export const metadata: Metadata = { title: "Dokumen" };
+export const metadata: Metadata = { title: "Basis Pengetahuan" };
 
-export default async function HalamanDokumen({ params }: PageProps<"/proyek/[proyekId]/dokumen">) {
+/**
+ * Basis Pengetahuan (revisi 22 Okt 2026): menu Dokumen dan Dokumen bersama fakultas digabung menjadi satu menu dengan
+ * dua tab, ditambah lihat potongan, kolom tahun, dan uji cari (8 potongan yang diberikan ke AI beserta skornya).
+ */
+export default async function HalamanBasisPengetahuan({ params, searchParams }: PageProps<"/proyek/[proyekId]/dokumen">) {
   const p = await wajibPenanggungJawab();
   const { proyekId } = await params;
-  const [dokumen, pilihan, kunci] = await Promise.all([
-    daftarDokumen(p, proyekId), pilihanSubBagianProyek(p, proyekId), daftarKunci(p),
+  const tab = (await searchParams).tab === "bersama" ? "bersama" : "led";
+  const [semua, bersama, pilihan, pilihanBersama, kunci] = await Promise.all([
+    daftarDokumen(p, proyekId), daftarDokumenBersama(p), pilihanSubBagianProyek(p, proyekId), pilihanSubBagianBersama(p), daftarKunci(p),
   ]);
+  const milikLed = semua.filter((d) => !d.bersama);
   const namaSub = new Map(pilihan.map((s) => [s.kode, s.label]));
-  const berjalan = dokumen.some((d) => STATUS_BERJALAN.includes(d.status));
-  const menungguKunci = dokumen.filter((d) => d.status === "menunggu_kunci").length;
+  const namaSubBersama = new Map(pilihanBersama.map((s) => [s.kode, s.label]));
+  const berjalan = semua.some((d) => STATUS_BERJALAN.includes(d.status));
+  const menungguKunci = semua.filter((d) => d.status === "menunggu_kunci").length;
   const tanpaKunci = kunci.length === 0 && !pakaiPenyediaUji();
-  const siap = dokumen.filter((d) => d.status === "siap").length;
+  const siap = semua.filter((d) => d.status === "siap" && d.jenis !== "gambar");
+  const potongan = siap.reduce((a, d) => a + d.jumlahPotongan, 0);
+  const dasar = `/proyek/${proyekId}/dokumen`;
+  const kelasTab = (aktif: boolean) =>
+    `rounded-md px-3 py-1.5 text-sm font-medium ${aktif ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`;
 
   return (
     <>
       <PemantauProses aktif={berjalan} />
       <JudulHalaman
-        judul="Dokumen pendukung"
-        deskripsi="PDF dan DOCX diekstrak, dipotong, dan diindeks (vektor + kata kunci) supaya bisa dipakai sebagai sumber narasi. Gambar disimpan utuh untuk disisipkan ke narasi."
-        remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Dokumen" }]}
+        judul="Basis Pengetahuan"
+        deskripsi={`Dokumen rujukan yang dipotong dan diindeks (vektor + kata kunci). Saat generate, 8 potongan paling relevan diberikan ke AI sehingga narasi ditulis dari isi dokumen prodi. Siap dicari: ${siap.length} dokumen, ${potongan.toLocaleString("id-ID")} potongan.`}
+        remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Basis Pengetahuan" }]}
       />
       <Petunjuk
         kunci="proyek-dokumen"
-        fungsi="Dokumen pendukung (PDF, DOCX, gambar) yang menjadi sumber narasi. Daftar cek menunjukkan dokumen yang diharapkan per kriteria."
+        fungsi="Dokumen pendukung (PDF, DOCX, gambar) yang menjadi sumber narasi: dokumen LED ini dan dokumen bersama fakultas (dipakai semua LED)."
         langkah={[
-          "Unggah dokumen lalu pilih kriteria terkait agar mudah ditemukan saat generate.",
-          "Tunggu status Siap; dokumen yang gagal bisa diproses ulang.",
-          "Periksa daftar cek dokumen yang masih kurang, lalu lengkapi.",
+          "Unggah dokumen lalu pilih sub-bagian terkait agar mudah ditemukan saat generate.",
+          "Tunggu status Siap; klik angka potongan untuk melihat teks yang terbaca.",
+          "Isi tahun terbit (untuk rujukan Word) dan tautan bukti (wajib sebelum ekspor final).",
+          "Pakai Uji cari untuk mengecek apakah bukti sudah terbaca sebelum generate.",
         ]}
       />
       {(tanpaKunci || menungguKunci > 0) && (
@@ -58,75 +67,54 @@ export default async function HalamanDokumen({ params }: PageProps<"/proyek/[pro
           </AlertDescription>
         </Alert>
       )}
-      <div className="grid gap-6 xl:grid-cols-5">
-        <Card className="xl:col-span-2">
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Uji cari</CardTitle>
+          <CardDescription>
+            Ketik pertanyaan, atau pilih sub-bagian lalu pakai kueri generate-nya. Hasilnya adalah 8 potongan yang akan diberikan ke AI,
+            diurutkan menurut skor gabungan vektor dan kata kunci (reciprocal rank fusion, k = 60).
+            {siap.length === 0 && " Belum ada dokumen yang siap dicari."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PanelCari proyekId={proyekId} pilihan={pilihan} />
+        </CardContent>
+      </Card>
+
+      <nav className="inline-flex w-fit gap-1 rounded-lg bg-muted p-1" aria-label="Tab Basis Pengetahuan">
+        <Link href={dasar} className={kelasTab(tab === "led")} aria-current={tab === "led" ? "page" : undefined}>
+          Dokumen LED ini ({milikLed.length})
+        </Link>
+        <Link href={`${dasar}?tab=bersama`} className={kelasTab(tab === "bersama")} aria-current={tab === "bersama" ? "page" : undefined}>
+          Dokumen bersama fakultas ({bersama.length})
+        </Link>
+      </nav>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Unggah dokumen</CardTitle>
-            <CardDescription>Biasanya diunggah dari halaman kriteria agar langsung terkait butirnya. Di sini bisa untuk dokumen umum.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <UnggahDokumenUmum proyekId={proyekId} pilihan={pilihan} />
-          </CardContent>
-        </Card>
-        <Card className="xl:col-span-3">
-          <CardHeader>
-            <CardTitle className="text-base">Uji pencarian</CardTitle>
+            <CardTitle className="text-base">{tab === "led" ? "Unggah dokumen LED" : "Unggah dokumen bersama"}</CardTitle>
             <CardDescription>
-              Pencarian gabungan yang dipakai mesin penyusun: kemiripan vektor dan kata kunci, digabung reciprocal rank fusion.
-              {siap === 0 && " Belum ada dokumen yang siap dicari."}
+              {tab === "led"
+                ? "Biasanya diunggah dari halaman sub-bagian agar langsung terkait butirnya. Di sini untuk dokumen umum LED ini."
+                : "Dipakai semua LED di fakultas (kode sumber U1, U2, …): VMTS UPPS, Renstra, SK organisasi, SPMI, laporan keuangan."}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PanelCari proyekId={proyekId} pilihan={pilihan} />
+            {tab === "led"
+              ? <UnggahDokumenUmum proyekId={proyekId} pilihan={pilihan} />
+              : <UnggahDokumenUmum pilihan={pilihanBersama} url="/api/dokumen-bersama" />}
+          </CardContent>
+        </Card>
+        <Card className="py-0 xl:col-span-2">
+          <CardContent className="overflow-x-auto px-0">
+            {tab === "led"
+              ? <TabelDokumen dokumen={milikLed} namaSub={namaSub} proyekId={proyekId} bolehUbah />
+              : <TabelDokumen dokumen={bersama} namaSub={namaSubBersama} proyekId="" bolehUbah />}
           </CardContent>
         </Card>
       </div>
-      <Card className="py-0">
-        <CardContent className="overflow-x-auto px-0">
-          {dokumen.length === 0 ? (
-            <p className="p-8 text-center text-sm text-muted-foreground">Belum ada dokumen.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="pl-4">Dokumen</TableHead>
-                  <TableHead>Sub-bagian</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Potongan</TableHead>
-                  <TableHead>Tautan bukti</TableHead>
-                  <TableHead className="w-12 pr-4" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dokumen.map((d) => (
-                  <TableRow key={d.id} className="align-top">
-                    <TableCell className="max-w-80 pl-4">
-                      <a href={`/api/dokumen/${d.id}/berkas`} target="_blank" rel="noreferrer" className="flex items-center gap-2 font-medium hover:underline">
-                        {d.jenis === "gambar" ? <FileImage className="size-4 shrink-0" aria-hidden /> : <FileText className="size-4 shrink-0" aria-hidden />}
-                        <span className="truncate">{d.namaBerkas}</span>
-                      </a>
-                      {d.bersama && <Badge variant="secondary" className="mt-1">Bahan bersama fakultas</Badge>}
-                      {d.judul && <div className="text-xs">Judul: {d.judul}</div>}
-                      {d.dokumenDiharapkan && <div className="text-xs text-muted-foreground">Memenuhi: {d.dokumenDiharapkan.nama}</div>}
-                      <div className="text-xs text-muted-foreground">{d.jenis.toUpperCase()} · {formatUkuran(d.ukuran)} · {fmtWaktu.format(d.createdAt)}</div>
-                      {d.pesan && <div className="text-xs text-destructive">{d.pesan}</div>}
-                    </TableCell>
-                    <TableCell className="max-w-56 whitespace-normal text-xs">{d.subBagianKode ? namaSub.get(d.subBagianKode) ?? d.subBagianKode : <span className="text-muted-foreground">Umum</span>}</TableCell>
-                    <TableCell><LencanaProses status={d.status} /></TableCell>
-                    <TableCell className="text-right tabular-nums">{d.jenis === "gambar" ? "—" : d.jumlahPotongan}</TableCell>
-                    <TableCell className="max-w-48 truncate text-xs">
-                      {d.tautanBukti ? <a href={d.tautanBukti} target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">{d.tautanBukti}</a> : <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="pr-4 text-right">
-                      {!d.bersama && <AksiDokumen proyekId={proyekId} id={d.id} nama={d.namaBerkas} jenis={d.jenis} judul={d.judul} tautanBukti={d.tautanBukti} tahunTerbit={d.tahunTerbit} />}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
     </>
   );
 }

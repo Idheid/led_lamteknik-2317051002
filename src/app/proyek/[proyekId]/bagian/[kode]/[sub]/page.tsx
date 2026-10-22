@@ -27,6 +27,7 @@ import { capaianButirProyek, type CapaianButir } from "@/lib/data/target-butir";
 import { teksCapaian, teksTren } from "@/lib/domain/capaian";
 import { LABEL_TIPE, LencanaStatusSub } from "../lencana-sub";
 import { TautanSimpan } from "../tautan-simpan";
+import { daftarCatatan } from "@/lib/data/review";
 
 export async function generateMetadata({ params }: PageProps<"/proyek/[proyekId]/bagian/[kode]/[sub]">): Promise<Metadata> {
   const { sub } = await params;
@@ -59,7 +60,11 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
   const posisi = posisiSub(bagian.subBagian.map((x) => x.kode), kodeSub);
   if (!s || !posisi) notFound();
 
-  const [semuaDokumen, nilai, capaian] = await Promise.all([daftarDokumen(p, proyekId), nilaiButirProyek(p, proyekId), capaianButirProyek(p, proyekId)]);
+  const [semuaDokumen, nilai, capaian, catatan] = await Promise.all([
+    daftarDokumen(p, proyekId), nilaiButirProyek(p, proyekId), capaianButirProyek(p, proyekId), daftarCatatan(p, proyekId, kodeSub),
+  ]);
+  // panel catatan asesor tampil bila LED punya asesor atau sudah ada catatan (revisi 22 Okt 2026)
+  const review = proyek.asesorId || catatan.catatan.length ? { catatan: catatan.catatan, bolehUbah: !proyek.diarsipkanPada } : null;
   const ts = proyek.tsTahunMulai;
   const digenerate = subDigenerate(s.tipe);
   const v = varianUntukJenjang(bacaVarian(s.varian), proyek.jenjang);
@@ -271,6 +276,7 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
                 butir={[]}
                 gambar={gambar}
                 tugasAktif={d.sedangDisusun}
+                review={review}
               />
             </section>
           )}

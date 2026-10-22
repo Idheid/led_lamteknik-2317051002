@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { aksiBandingkanVersi, aksiPeriksaDenganAi, aksiPulihkanVersi, aksiTandaiSubBagian } from "@/app/proyek/aksi";
 import { LABEL_KALIMAT, kunciKalimat, ringkasVerifikasi, teksRingkas, type KalimatTerperiksa, type LabelKalimat } from "@/lib/domain/verifikasi";
 import type { HasilVerifikasiAi } from "@/lib/data/verifikasi";
+import type { CatatanTampil } from "@/lib/data/review";
+import { PanelCatatan, keSorotan, useCatatanLangsung } from "@/components/review/panel-catatan";
 
 export interface ButirCek {
   kode: string;
@@ -276,7 +278,7 @@ function RiwayatVersi({ proyekId, draf }: { proyekId: string; draf: NonNullable<
 // ------------------------------------------------------------------ panel utama
 
 export function PanelDraf({
-  proyekId, subBagianKode, draf, butir, gambar, tugasAktif,
+  proyekId, subBagianKode, draf, butir, gambar, tugasAktif, review,
 }: {
   proyekId: string;
   subBagianKode: string;
@@ -284,8 +286,17 @@ export function PanelDraf({
   butir: ButirCek[];
   gambar: GambarProyek[];
   tugasAktif: boolean;
+  /** revisi 22 Okt 2026: catatan asesor (null bila LED belum punya asesor dan belum ada catatan) */
+  review: { catatan: CatatanTampil[]; bolehUbah: boolean } | null;
 }) {
   const aktif = draf?.aktif ?? null;
+  const { catatan, muat } = useCatatanLangsung(proyekId, subBagianKode, review?.catatan ?? []);
+  const [catatanAktif, setCatatanAktif] = useState<string | null>(null);
+  const sorotan = useMemo(() => keSorotan(catatan, catatanAktif), [catatan, catatanAktif]);
+  const pilihCatatan = (id: string) => {
+    setCatatanAktif(id);
+    document.getElementById(`catatan-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
   const [periksa, setPeriksa] = useState<(HasilPemeriksaan & { catatanSistem?: string[] }) | null>(null);
   // label kalimat: hasil Periksa dengan AI bila ada (dan belum disunting), selain itu cek otomatis
   const ai = periksa ? null : aktif?.pemeriksaan?.kalimatAi ?? null;
@@ -345,8 +356,14 @@ export function PanelDraf({
                 subBagianKode={subBagianKode}
                 isi={aktif?.isi ?? null}
                 gambar={gambar}
-                onTersimpan={(h) => setPeriksa(h.pemeriksaan)}
+                onTersimpan={(h) => {
+                  setPeriksa(h.pemeriksaan);
+                  // jangkar catatan diperiksa ulang terhadap versi baru (penanda "teks asli berubah")
+                  if (review) void muat();
+                }}
                 labelKalimat={labelKalimat}
+                catatan={sorotan}
+                onKlikCatatan={pilihCatatan}
               />
               {aktif && Object.keys(aktif.legenda).length > 0 && (
                 <details className="text-xs text-muted-foreground">
@@ -363,6 +380,9 @@ export function PanelDraf({
               )}
             </div>
             <div className="flex flex-col gap-3">
+              {review && (
+                <PanelCatatan catatan={catatan} peran="PJ" bolehUbah={review.bolehUbah} aktif={catatanAktif} onPilih={pilihCatatan} muat={muat} />
+              )}
               <PanelPemeriksaan h={periksa ?? aktif?.pemeriksaan ?? null} />
               <PanelVerifikasi
                 proyekId={proyekId}

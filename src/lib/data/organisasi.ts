@@ -134,6 +134,17 @@ export async function buatAkunPenanggungJawab(p: Pengguna, masukan: MasukanAkun)
   return hasil.user;
 }
 
+/** Akun asesor (revisi 22 Okt 2026): reviewer internal; ditugaskan admin ke LED di menu Penugasan asesor. */
+export async function buatAkunAsesor(p: Pengguna, masukan: MasukanAkun) {
+  pastikanSuperAdmin(p);
+  const data = skemaAkunPenanggungJawab.parse(masukan);
+  await pastikanEmailBaru(data.email);
+  const hasil = await auth.api.createUser({ body: { email: data.email, password: data.kataSandi, name: data.nama, role: "ASESOR" } });
+  await prisma.user.update({ where: { id: hasil.user.id }, data: { wajibGantiSandi: true } });
+  await catatAktivitas(p, "buat", "akun_asesor", hasil.user.id, { email: data.email });
+  return hasil.user;
+}
+
 /** Admin membuat admin lain (misalnya untuk serah terima). */
 export async function buatAkunSuperAdmin(p: Pengguna, masukan: MasukanAkunSuperAdmin) {
   pastikanSuperAdmin(p);
