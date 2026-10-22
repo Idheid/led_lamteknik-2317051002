@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { wajibSuperAdmin } from "@/lib/sesi";
 import { daftarAkun } from "@/lib/data/organisasi";
+import { statusCadangan } from "@/lib/data/cadangan";
 import { LABEL_PERAN, type Peran } from "@/lib/peran";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
@@ -12,10 +13,38 @@ import { AksiBarisAkun, DialogBuatAkun, DialogBuatSuperAdmin } from "./komponen"
 export const metadata: Metadata = { title: "Akun PJ" };
 
 const fmtTanggal = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "Asia/Jakarta" });
+const fmtWaktu = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" });
+
+/** Status cadangan harian (revisi 22 Okt 2026): hanya tanggal dan berhasil/gagal, tanpa menu baru. */
+function StatusCadangan({ status }: { status: Awaited<ReturnType<typeof statusCadangan>> }) {
+  const { terakhir, terakhirBerhasil } = status;
+  // eslint-disable-next-line react-hooks/purity -- halaman server dirender per permintaan
+  const basi = !terakhirBerhasil || Date.now() - terakhirBerhasil.mulai.getTime() > 48 * 3600_000;
+  return (
+    <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-2 text-sm ${basi ? "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40" : ""}`}>
+      <span className="font-medium">Cadangan otomatis:</span>
+      {!terakhir && <span className="text-muted-foreground">belum ada. Pastikan worker berjalan; cadangan dibuat setiap hari.</span>}
+      {terakhir && (
+        <>
+          <span>{fmtWaktu.format(terakhir.mulai)}</span>
+          {terakhir.berhasil === true && <Badge variant="secondary">Berhasil{terakhir.ukuranMb !== null ? `, ${terakhir.ukuranMb.toLocaleString("id-ID")} MB` : ""}</Badge>}
+          {terakhir.berhasil === false && <Badge variant="destructive">Gagal</Badge>}
+          {terakhir.berhasil === null && <Badge variant="outline">Sedang berjalan</Badge>}
+          {terakhir.berhasil === false && <span className="w-full text-xs text-muted-foreground">{terakhir.pesan}</span>}
+          {terakhir.berhasil !== true && (
+            <span className="text-xs text-muted-foreground">
+              {terakhirBerhasil ? `Cadangan berhasil terakhir: ${fmtWaktu.format(terakhirBerhasil.mulai)}.` : "Belum ada cadangan yang berhasil."}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default async function HalamanAkun() {
   const p = await wajibSuperAdmin();
-  const akun = await daftarAkun(p);
+  const [akun, cadangan] = await Promise.all([daftarAkun(p), statusCadangan(p)]);
   return (
     <>
       <JudulHalaman
@@ -38,6 +67,7 @@ export default async function HalamanAkun() {
           "Atur ulang kata sandi bila pengguna lupa. Akun sendiri tidak bisa dinonaktifkan atau dihapus.",
         ]}
       />
+      <StatusCadangan status={cadangan} />
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">
           <Table>

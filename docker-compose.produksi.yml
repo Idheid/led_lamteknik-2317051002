@@ -1,0 +1,78 @@
+# Produksi (revisi 22 Okt 2026): web, worker, PostgreSQL + pgvector, dan Caddy (HTTPS). Lihat docs/PANDUAN-SERVER.md.
+#   Salin .env.produksi.example menjadi .env.produksi lalu isi, kemudian:
+#   docker compose -f docker-compose.produksi.yml --env-file .env.produksi up -d --build
+# Berbeda dari docker-compose.yml (hanya basis data untuk pengembangan): proyek, volume, dan port terpisah.
+name: led-lamteknik-produksi
+
+x-aplikasi: &aplikasi
+  build: .
+  image: led-lamteknik:produksi
+  restart: unless-stopped
+  env_file: .env.produksi
+  environment:
+    DATABASE_URL: postgresql://led:${POSTGRES_PASSWORD}@db:5432/led_lamteknik?schema=public
+  volumes:
+    - unggahan:/data/unggahan
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: led
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD di .env.produksi}
+      POSTGRES_DB: led_lamteknik
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U led -d led_lamteknik"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrasi:
+    <<: *aplikasi
+    restart: "no"
+    command: ["npx", "prisma", "migrate", "deploy"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    <<: *aplikasi
+    command: ["npm", "start"]
+    depends_on:
+      migrasi:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *aplikasi
+    command: ["npm", "run", "worker"]
+    volumes:
+      - unggahan:/data/unggahan
+      # cadangan harian: arahkan ke disk lain atau drive fakultas yang dipasang di server
+      - ${CADANGAN_FOLDER:-./cadangan}:/cadangan
+    depends_on:
+      migrasi:
+        condition: service_completed_successfully
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ALAMAT_SITUS: ${ALAMAT_SITUS:?isi ALAMAT_SITUS di .env.produksi}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  pgdata:
+  unggahan:
+  caddy_data:
+  caddy_config:

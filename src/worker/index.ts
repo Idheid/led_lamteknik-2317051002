@@ -1,6 +1,7 @@
 /**
  * Worker antrean (pg-boss): membaca LKPS, memproses dokumen (ekstraksi, pemotongan, embedding), dan menyusun
- * narasi (tugas generate), membuat berkas Word (ekspor), dan mengekstrak instrumen yang diunggah PJ.
+ * narasi (tugas generate), membuat berkas Word (ekspor), mengekstrak instrumen yang diunggah PJ, dan membuat
+ * cadangan harian.
  * Jalankan terpisah dari aplikasi web:  npm run worker
  */
 import "dotenv/config";
@@ -11,6 +12,7 @@ import { prosesTugasGenerate, pulihkanTugasTerputus } from "@/lib/proses/generat
 import { prosesEkspor } from "@/lib/proses/ekspor";
 import { prosesEkstraksiInstrumen, pulihkanEkstraksiTerputus } from "@/lib/proses/instrumen";
 import { prisma } from "@/lib/db";
+import { buatCadangan, jadwalCadangan } from "@/lib/proses/cadangan";
 
 async function main() {
   const bos = buatBos();
@@ -38,6 +40,15 @@ async function main() {
     console.log(`[instrumen] ${tugas.data.versiId}`);
     console.log(`[instrumen] ${tugas.data.versiId} ${await prosesEkstraksiInstrumen(tugas.data.versiId)}`);
   });
+  // cadangan harian (revisi 22 Okt 2026); "missed: once" = laptop/server yang mati saat jadwal tetap mencadangkan
+  // sekali ketika worker menyala lagi
+  await bos.work(ANTREAN.cadangan, { localConcurrency: 1 }, async () => {
+    const h = await buatCadangan();
+    console.log(`[cadangan] ${h.berhasil ? `berhasil ${h.folder}` : `gagal: ${h.pesan}`}`);
+    if (!h.berhasil) throw new Error(h.pesan);
+  });
+  if (process.env.CADANGAN_NONAKTIF === "1") await bos.unschedule(ANTREAN.cadangan);
+  else await bos.schedule(ANTREAN.cadangan, jadwalCadangan(), null, { tz: "Asia/Jakarta", missed: "once" });
   // ekspor yang terputus saat worker mati dikirim ulang
   await prisma.ekspor.updateMany({ where: { status: "diproses" }, data: { status: "antre" } });
   for (const e of await prisma.ekspor.findMany({ where: { status: "antre" }, select: { id: true } })) {
@@ -48,6 +59,7 @@ async function main() {
   const ekstraksi = await pulihkanEkstraksiTerputus();
   if (ekstraksi) console.log(`${ekstraksi} ekstraksi instrumen dikirim ulang.`);
   console.log("Worker berjalan. Antrean:", Object.values(ANTREAN).join(", "));
+  console.log(process.env.CADANGAN_NONAKTIF === "1" ? "Cadangan harian dimatikan (CADANGAN_NONAKTIF=1)." : `Cadangan harian: ${jadwalCadangan()} WIB.`);
 
   const berhenti = async () => {
     console.log("Worker berhenti...");

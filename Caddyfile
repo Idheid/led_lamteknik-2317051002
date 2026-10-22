@@ -1,0 +1,8 @@
+# Proksi HTTPS (revisi 22 Okt 2026). ALAMAT_SITUS di .env.produksi:
+#   led.ft.unila.ac.id      domain publik: sertifikat HTTPS otomatis (Let's Encrypt; port 80 dan 443 harus terbuka)
+#   https://192.168.1.10    alamat IP: sertifikat dari CA internal Caddy (browser memberi peringatan sekali)
+#   http://192.168.1.10     uji awal di jaringan lokal tanpa HTTPS
+{$ALAMAT_SITUS} {
+	encode zstd gzip
+	reverse_proxy web:3000
+}

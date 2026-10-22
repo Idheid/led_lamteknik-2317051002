@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env
+.env.*
+uploads
+cadangan
+led-tmp
+coverage
+docs
+src/generated
+*.log
+*.tsbuildinfo
+jalankan-website.bat

@@ -612,3 +612,18 @@ model TugasGenerate {
 
   @@index([proyekId, status])
 }
+
+// ----------------------------------------------------------------- Cadangan
+
+/// Revisi 22 Okt 2026: riwayat cadangan harian (basis data dan folder unggahan). Admin hanya melihat yang terakhir.
+model Cadangan {
+  id       String    @id @default(cuid())
+  mulai    DateTime  @default(now())
+  selesai  DateTime?
+  berhasil Boolean? // null = sedang berjalan
+  folder   String? // nama folder di CADANGAN_DIR
+  ukuranMb Float?
+  pesan    String?
+
+  @@index([mulai])
+}
