@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import type { Pengguna } from "@/lib/akses";
 import { ANTREAN, kirimTugas } from "@/lib/antrean";
 import { GalatTanpaKunci } from "@/lib/data/kunci-api";
@@ -232,7 +232,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
 export async function generateSubBagian(
   proyekId: string,
   subBagianKode: string,
-  opsi: { tugasId?: string | null; dibuatOlehId?: string | null } = {},
+  opsi: { tugasId?: string | null; dibuatOlehId?: string | null; onSebagian?: (sebagian: unknown) => void } = {},
 ) {
   const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId } });
   const k = await susunKonteks(proyekId, subBagianKode);
@@ -243,6 +243,7 @@ export async function generateSubBagian(
     subBagianKode,
     sistem: susunSistem(),
     pengguna: susunPengguna(k.konteks),
+    onSebagian: opsi.onSebagian,
   });
   const doc = keluaranKeDokumen(hasil.keluaran, k.tabelSistem);
   const pemeriksaan = periksaDokumen(doc, k.rujukan, periksaKeluaran(k.konteks, hasil.keluaran));
@@ -301,38 +302,124 @@ async function jadwalkanSetelahReset(tugasId: string): Promise<Date | null> {
   return waktu;
 }
 
+/** Teks keluaran sebagian (paragraf yang sudah ditulis) untuk pratinjau bertahap. */
+export function teksSebagian(sebagian: unknown): string {
+  const p = (sebagian as { paragraf?: ({ teks?: string } | undefined)[] } | null)?.paragraf ?? [];
+  return p.map((x) => x?.teks ?? "").filter(Boolean).join("\n\n");
+}
+
+const JEDA_PRATINJAU_MS = 1200;
+
+/**
+ * Penulis pratinjau satu sub-bagian: menyimpan teks yang sedang ditulis ke `TugasGenerate.pratinjau[kode]` paling
+ * sering sekali per 1,2 detik. Digabung dengan jsonb `||` supaya dua sub-bagian yang ditulis bersamaan tidak saling menimpa.
+ */
+function penulisPratinjau(tugasId: string, kode: string) {
+  let terakhir = 0;
+  let antre: Promise<unknown> = Promise.resolve();
+  const tulis = (teks: string) => {
+    antre = antre.then(() => prisma.$executeRaw`
+      UPDATE "TugasGenerate"
+      SET "pratinjau" = COALESCE("pratinjau", '{}'::jsonb) || jsonb_build_object(${kode}::text, jsonb_build_object('teks', ${teks}::text, 'diperbarui', now()))
+      WHERE id = ${tugasId}`).catch(() => undefined);
+  };
+  return {
+    onSebagian(sebagian: unknown) {
+      const sekarang = Date.now();
+      if (sekarang - terakhir < JEDA_PRATINJAU_MS) return;
+      const teks = teksSebagian(sebagian);
+      if (!teks) return;
+      terakhir = sekarang;
+      tulis(teks);
+    },
+    async hapus() {
+      await antre;
+      await prisma.$executeRaw`UPDATE "TugasGenerate" SET "pratinjau" = "pratinjau" - ${kode}::text WHERE id = ${tugasId}`.catch(() => undefined);
+    },
+  };
+}
+
+/** Keluaran dialirkan (streaming) supaya teks tampil bertahap; GENERATE_STREAM=0 mematikannya. */
+function pakaiAliran(): boolean {
+  return process.env.GENERATE_STREAM !== "0";
+}
+
+/** Jumlah sub-bagian indikator kinerja yang dikerjakan bersamaan (revisi 22 Okt 2026; bawaan 2). */
+function jumlahParalel(): number {
+  const n = Number(process.env.GENERATE_PARALEL);
+  return Number.isInteger(n) && n >= 1 ? Math.min(n, 4) : 2;
+}
+
+/** Kelompok berikutnya mulai indeks i: sub-bagian IKU berurutan dikerjakan bersamaan; AF, SWOT, dll. satu per satu. */
+export function kelompokGenerate(kode: string[], i: number, paralel: number): string[] {
+  const iku = (k: string) => /-IKU-/.test(k);
+  const grup = [kode[i]];
+  if (!iku(kode[i])) return grup;
+  while (grup.length < paralel && i + grup.length < kode.length && iku(kode[i + grup.length])) grup.push(kode[i + grup.length]);
+  return grup;
+}
+
 /**
  * Kerjakan tugas generate dari indeks terakhir. Hanya tugas berstatus antre/tertunda yang diambil (mencegah
  * dua worker mengerjakan tugas yang sama). Berhenti rapi bila kunci habis (tertunda) dan lanjut dari sub-bagian itu.
+ * Revisi 22 Okt 2026: sub-bagian IKU dikerjakan dua sekaligus; teks yang sedang ditulis disimpan sebagai pratinjau.
  */
 export async function prosesTugasGenerate(tugasId: string): Promise<string> {
   const klaim = await ubahTugas(tugasId, ["antre", "tertunda"], { status: "berjalan", pesan: null, dilanjutkanPada: null });
   if (klaim.count === 0) return "dilewati";
   const tugas = await prisma.tugasGenerate.findUniqueOrThrow({ where: { id: tugasId }, include: { proyek: true } });
-  for (let i = tugas.indeks; i < tugas.subBagianKode.length; i++) {
+  const paralel = jumlahParalel();
+  try {
+    return await kerjakanTugas(tugas, paralel);
+  } finally {
+    await prisma.tugasGenerate.update({ where: { id: tugasId }, data: { pratinjau: Prisma.DbNull } }).catch(() => undefined);
+  }
+}
+
+async function kerjakanTugas(
+  tugas: { id: string; proyekId: string; indeks: number; subBagianKode: string[]; dibuatOlehId: string | null },
+  paralel: number,
+): Promise<string> {
+  const tugasId = tugas.id;
+  for (let i = tugas.indeks; i < tugas.subBagianKode.length;) {
     const kini = await prisma.tugasGenerate.findUnique({ where: { id: tugasId }, select: { status: true } });
     if (!kini || kini.status !== "berjalan") return kini?.status ?? "dibatalkan";
-    const kode = tugas.subBagianKode[i];
-    try {
-      await generateSubBagian(tugas.proyekId, kode, { tugasId, dibuatOlehId: tugas.dibuatOlehId });
-    } catch (e) {
-      if (e instanceof GalatTanpaKunci) {
-        await ubahTugas(tugasId, ["berjalan"], { status: "tertunda", pesan: e.message });
-        await jadwalkanSetelahReset(tugasId);
-        return "tertunda";
+    const grup = kelompokGenerate(tugas.subBagianKode, i, paralel);
+    const hasil = await Promise.allSettled(grup.map(async (kode) => {
+      const pratinjau = penulisPratinjau(tugasId, kode);
+      try {
+        await generateSubBagian(tugas.proyekId, kode, {
+          tugasId, dibuatOlehId: tugas.dibuatOlehId, onSebagian: pakaiAliran() ? pratinjau.onSebagian : undefined,
+        });
+      } finally {
+        await pratinjau.hapus();
       }
-      if (e instanceof GalatSementara) {
-        const waktu = new Date(Date.now() + Math.max(e.tungguMs, 30_000));
-        await ubahTugas(tugasId, ["berjalan"], { status: "tertunda", pesan: e.message, dilanjutkanPada: waktu });
-        await kirimTugas(ANTREAN.generate, { tugasId }, { mulaiSetelah: waktu });
-        return "tertunda";
-      }
-      const pesan = e instanceof Error ? e.message : String(e);
-      console.error(`[generate] ${tugasId} ${kode}:`, pesan);
-      await ubahTugas(tugasId, ["berjalan"], { status: "gagal", pesan: `Gagal menyusun ${kode}: ${pesan.slice(0, 300)}` });
-      return "gagal";
+    }));
+    const gagal = hasil.findIndex((r) => r.status === "rejected");
+    if (gagal === -1) {
+      i += grup.length;
+      await prisma.tugasGenerate.update({ where: { id: tugasId }, data: { indeks: i } });
+      continue;
     }
-    await prisma.tugasGenerate.update({ where: { id: tugasId }, data: { indeks: i + 1 } });
+    // sub-bagian sebelum yang gagal sudah selesai; lanjutkan dari yang gagal
+    if (gagal > 0) await prisma.tugasGenerate.update({ where: { id: tugasId }, data: { indeks: i + gagal } });
+    const kode = grup[gagal];
+    const e = (hasil[gagal] as PromiseRejectedResult).reason;
+    if (e instanceof GalatTanpaKunci) {
+      await ubahTugas(tugasId, ["berjalan"], { status: "tertunda", pesan: e.message });
+      await jadwalkanSetelahReset(tugasId);
+      return "tertunda";
+    }
+    if (e instanceof GalatSementara) {
+      const waktu = new Date(Date.now() + Math.max(e.tungguMs, 30_000));
+      await ubahTugas(tugasId, ["berjalan"], { status: "tertunda", pesan: e.message, dilanjutkanPada: waktu });
+      await kirimTugas(ANTREAN.generate, { tugasId }, { mulaiSetelah: waktu });
+      return "tertunda";
+    }
+    const pesan = e instanceof Error ? e.message : String(e);
+    console.error(`[generate] ${tugasId} ${kode}:`, pesan);
+    await ubahTugas(tugasId, ["berjalan"], { status: "gagal", pesan: `Gagal menyusun ${kode}: ${pesan.slice(0, 300)}` });
+    return "gagal";
   }
   await ubahTugas(tugasId, ["berjalan"], { status: "selesai", pesan: null });
   return "selesai";

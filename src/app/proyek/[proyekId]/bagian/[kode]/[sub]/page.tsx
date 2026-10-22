@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Loader2 } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { daftarDokumen } from "@/lib/data/dokumen";
 import { nilaiButirProyek } from "@/lib/data/nilai-butir";
@@ -68,6 +68,9 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
     .filter((x) => x.jenis === "gambar" && x.status === "siap")
     .map((x) => ({ id: x.id, judul: x.judul ?? x.namaBerkas, src: `/api/dokumen/${x.id}/berkas` }));
   const adaProses = terunggah.some((x) => STATUS_BERJALAN.includes(x.status));
+  // revisi 22 Okt 2026: teks yang sedang ditulis untuk sub-bagian ini (tampil bertahap, diperbarui berkala)
+  const sedangDitulis = d.tugasAktif.map((t) => t.pratinjau[s.kode]).find(Boolean) ?? null;
+  const ditulisDiTugas = d.tugasAktif.some((t) => t.status === "berjalan" || t.status === "antre");
 
   const lanjutBagian = bagianBerikutnya(d.urutanBagian.map((b) => b.kode), bagian.kode);
   const namaLanjutBagian = d.urutanBagian.find((b) => b.kode === lanjutBagian)?.nama;
@@ -94,7 +97,7 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
 
   return (
     <>
-      <PemantauProses aktif={adaProses} />
+      <PemantauProses aktif={adaProses || ditulisDiTugas} detik={ditulisDiTugas ? 2 : 3} />
       <JudulHalaman
         judul={
           <span className="leading-snug">
@@ -239,6 +242,14 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
           {digenerate && (
             <section aria-label="Hasil generate">
               <JudulSeksi aksi={tombolGenerate}>Hasil generate</JudulSeksi>
+              {sedangDitulis && (
+                <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm" aria-live="polite">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary">
+                    <Loader2 className="size-3.5 animate-spin" aria-hidden />Sedang ditulis
+                  </div>
+                  <div className="whitespace-pre-line text-muted-foreground">{sedangDitulis}</div>
+                </div>
+              )}
               <PanelDraf
                 key={s.kode}
                 proyekId={proyek.id}

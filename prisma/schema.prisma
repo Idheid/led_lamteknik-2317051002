@@ -581,6 +581,7 @@ model TugasGenerate {
   status        String    @default("antre") // antre, berjalan, tertunda, selesai, gagal, dibatalkan
   pesan         String?
   dilanjutkanPada DateTime? // perkiraan waktu dicoba lagi (reset kuota)
+  pratinjau       Json? // revisi 22 Okt 2026: teks yang sedang ditulis per sub-bagian { kode: { teks, diperbarui } }
   dibuatOlehId  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt

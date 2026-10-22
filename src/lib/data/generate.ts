@@ -102,6 +102,8 @@ export interface RingkasTugas {
   sedang: string | null;
   dilanjutkanPada: string | null;
   diperbarui: string;
+  /** revisi 22 Okt 2026: teks yang sedang ditulis per kode sub-bagian */
+  pratinjau: Record<string, string>;
 }
 
 /** Tugas yang sedang berjalan/tertunda/gagal, ditambah yang baru selesai (10 menit terakhir), untuk banner antrean. */
@@ -133,6 +135,8 @@ export async function tugasProyek(p: Pengguna, proyekId: string): Promise<Ringka
     sedang: t.indeks < t.subBagianKode.length ? nama.get(t.subBagianKode[t.indeks]) ?? t.subBagianKode[t.indeks] : null,
     dilanjutkanPada: t.dilanjutkanPada?.toISOString() ?? null,
     diperbarui: t.updatedAt.toISOString(),
+    pratinjau: Object.fromEntries(Object.entries((t.pratinjau ?? {}) as Record<string, { teks?: string }>)
+      .map(([k, v]) => [k, v?.teks ?? ""]).filter(([, v]) => v)),
   }));
 }
 

@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateText, Output, streamText } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { catatGalatKunci, GalatTanpaKunci, isiKunci, kunciFakultas } from "@/lib/data/kunci-api";
@@ -75,9 +75,14 @@ function pesanGalat(e: unknown): string {
   return `${g.status ? `${g.status} ` : ""}${g.message ?? ""}`.slice(0, 500);
 }
 
-/** Panggilan untuk satu sub-bagian narasi (skema keluaran narasi). */
-export async function panggilNarasi(a: PanggilanNarasi): Promise<HasilPanggilan> {
-  return panggilTerstruktur<KeluaranSubBagian>({ ...a, skema: skemaKeluaran as unknown as z.ZodType<KeluaranSubBagian>, ujiNarasi: true });
+/**
+ * Panggilan untuk satu sub-bagian narasi (skema keluaran narasi). Revisi 22 Okt 2026: thinking Gemini 3 rendah
+ * untuk narasi, dan `onSebagian` menerima keluaran sebagian selama ditulis (teks tampil bertahap).
+ */
+export async function panggilNarasi(a: PanggilanNarasi & { onSebagian?: (sebagian: unknown) => void }): Promise<HasilPanggilan> {
+  return panggilTerstruktur<KeluaranSubBagian>({
+    ...a, skema: skemaKeluaran as unknown as z.ZodType<KeluaranSubBagian>, ujiNarasi: true, pikir: "rendah",
+  });
 }
 
 export interface PanggilanTerstruktur<T> extends PanggilanNarasi {
@@ -85,6 +90,57 @@ export interface PanggilanTerstruktur<T> extends PanggilanNarasi {
   /** mode uji LLM_NARASI=uji hanya untuk narasi; panggilan lain tetap memakai Gemini */
   ujiNarasi?: boolean;
   maksTokenKeluaran?: number;
+  /** "rendah": thinking Gemini 3 level low (narasi); bawaan: thinking normal (ekstraksi instrumen) */
+  pikir?: "rendah" | "normal";
+  /** bila diisi, keluaran dialirkan (streaming) dan setiap keluaran sebagian dikirim ke sini */
+  onSebagian?: (sebagian: unknown) => void;
+}
+
+/** Batas waktu satu panggilan; lewat batas → diulang sekali, lalu pindah ke model atau kunci berikutnya. */
+export function batasPanggilanMs(): number {
+  const n = Number(process.env.GENERATE_BATAS_MS);
+  return Number.isFinite(n) && n > 0 ? n : 90_000;
+}
+
+function habisWaktu(e: unknown): boolean {
+  const x = e as { name?: string; cause?: { name?: string } } | null;
+  return x?.name === "TimeoutError" || x?.name === "AbortError" || x?.cause?.name === "TimeoutError" || x?.cause?.name === "AbortError";
+}
+
+/** Opsi penyedia: thinking rendah untuk Gemini 3 bila diminta. */
+function opsiPenyedia(kodeModel: string, pikir: PanggilanTerstruktur<unknown>["pikir"]) {
+  if (pikir !== "rendah" || versiModel(kodeModel) < 3) return undefined;
+  return { google: { thinkingConfig: { thinkingLevel: "low" as const } } };
+}
+
+/** Satu panggilan ke model: biasa atau dialirkan (streaming) bila `onSebagian` diisi. */
+async function panggilModel<T>(
+  a: PanggilanTerstruktur<T>,
+  model: Parameters<typeof generateText>[0]["model"],
+  opsi: { maxOutputTokens: number; temperature?: number; providerOptions?: ReturnType<typeof opsiPenyedia> },
+): Promise<{ output: T; tokenMasuk: number; tokenKeluar: number }> {
+  const abortSignal = AbortSignal.timeout(batasPanggilanMs());
+  const dasar = {
+    model, system: a.sistem, prompt: a.pengguna, output: Output.object({ schema: a.skema }), maxRetries: 0, abortSignal,
+    maxOutputTokens: opsi.maxOutputTokens,
+    ...(opsi.temperature !== undefined ? { temperature: opsi.temperature } : {}),
+    ...(opsi.providerOptions ? { providerOptions: opsi.providerOptions } : {}),
+  };
+  if (!a.onSebagian) {
+    const r = await generateText(dasar);
+    return { output: r.output as T, tokenMasuk: r.usage.inputTokens ?? 0, tokenKeluar: r.usage.outputTokens ?? 0 };
+  }
+  let galat: unknown = null;
+  const r = streamText({ ...dasar, onError: ({ error }) => { galat ??= error; } });
+  try {
+    for await (const sebagian of r.partialOutputStream) a.onSebagian(sebagian);
+    const output = await r.output;
+    const usage = await r.usage;
+    return { output: output as T, tokenMasuk: usage.inputTokens ?? 0, tokenKeluar: usage.outputTokens ?? 0 };
+  } catch (e) {
+    // galat asli penyedia (429, 403, batas waktu) dipakai untuk klasifikasi kunci/model
+    throw galat ?? e;
+  }
 }
 
 /**
@@ -132,25 +188,32 @@ export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise
 
     for (const kodeModel of daftarModel) {
       let lanjutModel = false;
+      let pernahHabisWaktu = false;
       for (let coba = 0; coba < 3 && !lanjutModel; coba++) {
         const mulai = Date.now();
         try {
-          const r = await generateText({
-            model: buatModelNarasi(apiKey, kodeModel),
-            system: a.sistem,
-            prompt: a.pengguna,
-            output: Output.object({ schema: a.skema }),
+          const r = await panggilModel(a, buatModelNarasi(apiKey, kodeModel), {
             maxOutputTokens: Math.max(atur.maksTokenKeluaran, a.maksTokenKeluaran ?? 8192),
             // Gemini 3 disarankan memakai suhu bawaan (1,0); suhu rendah hanya untuk model lama
-            ...(versiModel(kodeModel) > 0 && versiModel(kodeModel) < 3 ? { temperature: atur.suhu } : {}),
-            maxRetries: 0,
+            temperature: versiModel(kodeModel) > 0 && versiModel(kodeModel) < 3 ? atur.suhu : undefined,
+            providerOptions: opsiPenyedia(kodeModel, a.pikir),
           });
           const durasiMs = Date.now() - mulai;
-          const tokenMasuk = r.usage.inputTokens ?? 0;
-          const tokenKeluar = r.usage.outputTokens ?? 0;
-          await catat({ kunciId: k.id, model: kodeModel, berhasil: true, tokenMasuk, tokenKeluar, durasiMs });
-          return { keluaran: r.output as T, model: kodeModel, kunciId: k.id, tokenMasuk, tokenKeluar, durasiMs };
+          await catat({ kunciId: k.id, model: kodeModel, berhasil: true, tokenMasuk: r.tokenMasuk, tokenKeluar: r.tokenKeluar, durasiMs });
+          return { keluaran: r.output, model: kodeModel, kunciId: k.id, tokenMasuk: r.tokenMasuk, tokenKeluar: r.tokenKeluar, durasiMs };
         } catch (e) {
+          if (habisWaktu(e)) {
+            // revisi 22 Okt 2026: panggilan yang menggantung dihentikan setelah batas waktu, diulang sekali,
+            // lalu pindah ke model berikutnya (dan akhirnya kunci berikutnya) supaya tugas tidak macet 5 menit
+            await catat({ kunciId: k.id, model: kodeModel, berhasil: false, galat: `batas_waktu: lebih dari ${Math.round(batasPanggilanMs() / 1000)} detik`, durasiMs: Date.now() - mulai });
+            if (pernahHabisWaktu) {
+              lanjutModel = true;
+              adaSementara = true;
+              tunggu = 10_000;
+            }
+            pernahHabisWaktu = true;
+            continue;
+          }
           const jenis = klasifikasiGalat(galatPenyedia(e));
           await catat({ kunciId: k.id, model: kodeModel, berhasil: false, galat: `${jenis}: ${pesanGalat(e)}`, durasiMs: Date.now() - mulai });
           const status = galatPenyedia(e).status;
