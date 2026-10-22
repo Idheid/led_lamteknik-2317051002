@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MoreHorizontal, PlugZap, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,8 @@ import {
 import { IkonSibuk, TombolKonfirmasi, useAksi } from "@/components/aksi-klien";
 import { aksiHapusKunci, aksiTambahKunci, aksiUjiKunci } from "@/app/aksi-kunci";
 
-export function FormKunci() {
+export function FormKunci({ kembaliKe }: { kembaliKe?: string }) {
+  const router = useRouter();
   const { sibuk, jalankan } = useAksi();
   const [label, setLabel] = useState("Kunci utama");
   const [kunci, setKunci] = useState("");
@@ -25,6 +27,7 @@ export function FormKunci() {
             setKunci("");
             const lanjut = [dokumen ? `${dokumen} dokumen diproses ulang` : "", tugas ? `${tugas} penyusunan dilanjutkan` : ""].filter(Boolean).join(", ");
             toast.success(lanjut ? `Kunci disimpan. ${lanjut}.` : "Kunci disimpan.");
+            if (kembaliKe) router.push(kembaliKe);
           },
         });
       }}

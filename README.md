@@ -20,8 +20,7 @@ npm install
 copy .env.example .env      # lalu isi BETTER_AUTH_SECRET, ENCRYPTION_KEY, SUPERADMIN_*
 docker compose up -d
 npm run db:migrate
-npm run db:seed
-npm run dev                 # http://localhost:3000, masuk dengan SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD
+npm run dev                 # http://localhost:3000; pertama kali: isi formulir "Buat akun admin pertama"
 npm run worker              # terminal kedua: LKPS, dokumen, narasi, ekspor Word, ekstraksi instrumen, cadangan harian
 ```
 

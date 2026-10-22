@@ -28,7 +28,7 @@ export default async function HalamanKunciAdmin({ searchParams }: PageProps<"/ad
           </Button>
         ))}
       </nav>
-      {tab === "kunci" && <HalamanKunci pengguna={p} />}
+      {tab === "kunci" && <HalamanKunci pengguna={p} hrefTambah="/admin/kunci-api/tambah" />}
       {tab === "model" && <BagianModel p={p} />}
       {tab === "pemakaian" && <BagianLog p={p} hariMasukan={typeof q.hari === "string" ? q.hari : undefined} />}
     </>

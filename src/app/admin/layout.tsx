@@ -10,7 +10,7 @@ const MENU: GrupNav[] = [
   {
     label: "Admin",
     item: [
-      { judul: "Akun PJ", href: "/admin/akun", ikon: "akun" },
+      { judul: "Kelola akun", href: "/admin/akun", ikon: "akun" },
       { judul: "Penugasan asesor", href: "/admin/penugasan", ikon: "review" },
       { judul: "Kunci API", href: "/admin/kunci-api", ikon: "kunci" },
     ],

@@ -34,8 +34,8 @@ export default async function HalamanEkspor({ params }: PageProps<"/proyek/[proy
       <PemantauProses aktif={berjalan} />
       <JudulHalaman
         judul="Ekspor Word"
-        deskripsi={`Mengisi template LEDPS resmi: narasi menggantikan instruksi dan kotak isian, setiap paragraf diberi rujukan sumber, halaman muka dan identitas diisi dari data proyek. Maksimal ${BATAS_HALAMAN} halaman sebelum Lampiran.`}
-        remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Ekspor Word" }]}
+        deskripsi={`Maksimal ${BATAS_HALAMAN} halaman sebelum Lampiran`}
+        remah={[{ label: "Beranda LED", href: `/proyek/${proyekId}` }, { label: "Ekspor Word" }]}
         aksi={
           <>
             <TombolEkspor proyekId={proyekId} jenis="draf" bisa={cekDraf.galat.length === 0 && !berjalan} />

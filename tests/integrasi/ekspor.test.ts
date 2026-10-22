@@ -209,8 +209,8 @@ test("F-22/F-23/F-24 berkas Word: instruksi, catatan, dan kotak isian hilang; da
   assert.ok(doc.includes("<w:i/>") || doc.includes('<w:i w:val="true"/>'), "istilah asing miring");
   assert.ok(!/Sumber: /.test(teks), "penanda sumber tidak ikut diekspor");
   // revisi 22 Okt 2026: rujukan singkat di akhir paragraf dan Daftar Rujukan di Lampiran
-  assert.ok(teks.includes("terdokumentasi dengan melibatkan stakeholder. (Tim Penyusun LED)") || /\(Tim Penyusun LED\)/.test(teks), "rujukan jawaban penyusun");
-  assert.ok(teks.includes("(Renstra FT 2021–2025, 2021; Tim Penyusun LED)"), "rujukan dokumen dengan judul dan tahun");
+  assert.ok(!teks.includes("Tim Penyusun LED)"), "jawaban penyusun tidak diberi rujukan (revisi 23 Okt 2026)");
+  assert.ok(teks.includes("(Renstra FT 2021–2025, 2021)"), "rujukan dokumen dengan judul dan tahun");
   assert.ok(teks.includes("Daftar Rujukan") && teks.includes("https://drive.example/renstra") && teks.includes("Dokumen LED"), "Daftar Rujukan di Lampiran");
   assert.equal(x.jenis, "final");
   assert.ok(x.jumlahHalamanTotal === null || x.jumlahHalaman! < x.jumlahHalamanTotal!, `Lampiran tidak dihitung: ${x.jumlahHalaman} / ${x.jumlahHalamanTotal}`);

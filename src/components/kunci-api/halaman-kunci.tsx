@@ -7,9 +7,12 @@ import { JudulHalaman, type Remah } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AksiKunci, FormKunci } from "./komponen";
+import { AksiKunci } from "./komponen";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const LABEL_STATUS: Record<string, { label: string; varian: "secondary" | "destructive" | "outline" }> = {
   aktif: { label: "Aktif", varian: "secondary" },
@@ -19,17 +22,15 @@ const LABEL_STATUS: Record<string, { label: string; varian: "secondary" | "destr
 };
 
 /** Halaman kunci API: PJ mengelola kunci fakultas, admin mengelola kunci cadangan. */
-export async function HalamanKunci({ pengguna, remah }: { pengguna: Pengguna; remah?: Remah[] }) {
+export async function HalamanKunci({ pengguna, remah, hrefTambah }: { pengguna: Pengguna; remah?: Remah[]; hrefTambah: string }) {
   const kunci = await daftarKunci(pengguna);
   const admin = pengguna.peran === "SUPER_ADMIN";
   return (
     <>
       <JudulHalaman
         judul={admin ? "Kunci API cadangan" : "Kunci API fakultas"}
-        deskripsi={admin
-          ? "Kunci cadangan admin, dipakai semua LED setelah kunci fakultas habis (bila diizinkan di tab Model Gemini)."
-          : "Kunci berlaku untuk semua LED fakultas. Tambahkan kunci kapan saja, misalnya saat kuota kunci lama habis. Urutan pemakaian: kunci fakultas dulu (berurutan); bila semuanya habis, sistem memakai kunci cadangan admin bila diizinkan."}
         remah={remah}
+        aksi={<Button asChild size="lg"><Link href={hrefTambah}><Plus aria-hidden />Tambah kunci</Link></Button>}
       />
       <Petunjuk
         kunci={admin ? "kunci-admin" : "kunci-pj"}
@@ -47,21 +48,12 @@ export async function HalamanKunci({ pengguna, remah }: { pengguna: Pengguna; re
           <AlertDescription>EMBEDDING_PENYEDIA=uji: dokumen diindeks dengan embedding uji lokal tanpa memanggil Gemini.</AlertDescription>
         </Alert>
       )}
-      <div className="grid gap-6 xl:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Tambah kunci</CardTitle>
-            <CardDescription>Buat kunci di Google AI Studio (aistudio.google.com) → Get API key.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FormKunci />
-          </CardContent>
-        </Card>
+      <div>
         <div className="flex flex-col gap-6 xl:col-span-2">
           <Card className="py-0">
             <CardContent className="px-0">
               {kunci.length === 0 ? (
-                <p className="p-8 text-center text-sm text-muted-foreground">Belum ada kunci API.</p>
+                <p className="p-8 text-center text-sm text-muted-foreground">Belum ada kunci API. Klik <span className="font-medium text-foreground">Tambah kunci</span>.</p>
               ) : (
                 <Table>
                   <TableHeader>

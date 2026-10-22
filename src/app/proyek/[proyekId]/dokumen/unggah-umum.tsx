@@ -8,8 +8,15 @@ import { UnggahBerkas } from "@/components/unggah-berkas";
 
 export const TERIMA_DOKUMEN = ".pdf,.docx,.png,.jpg,.jpeg,.gif";
 
-export function UnggahDokumenUmum({ proyekId, pilihan, url }: { proyekId?: string; pilihan: { kode: string; label: string }[]; url?: string }) {
-  const [sub, setSub] = useState("umum");
+export function UnggahDokumenUmum({ proyekId, pilihan, url, awalSub, kembaliKe }: {
+  proyekId?: string;
+  pilihan: { kode: string; label: string }[];
+  url?: string;
+  /** sub-bagian terpilih saat dibuka dari halaman sub-bagian */
+  awalSub?: string;
+  kembaliKe?: string;
+}) {
+  const [sub, setSub] = useState(awalSub && pilihan.some((s) => s.kode === awalSub) ? awalSub : "umum");
   const [tautan, setTautan] = useState("");
   return (
     <div className="space-y-4">
@@ -36,6 +43,7 @@ export function UnggahDokumenUmum({ proyekId, pilihan, url }: { proyekId?: strin
         keterangan="PDF, DOCX, PNG, JPG, GIF · maksimal 25 MB per berkas, 10 berkas sekaligus"
         isian={{ subBagianKode: sub === "umum" ? null : sub, tautanBukti: tautan }}
         onSelesai={() => setTautan("")}
+        kembaliKe={kembaliKe}
       />
     </div>
   );

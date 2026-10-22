@@ -1,127 +1,83 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
-import { daftarProyek, instrumenAktifUntuk } from "@/lib/data/proyek";
+import { daftarProyek } from "@/lib/data/proyek";
 import { daftarProdi } from "@/lib/data/organisasi";
 import { kesiapanSemua } from "@/lib/data/kesiapan";
-import { RingkasKesiapan, kelasWarna } from "@/components/kesiapan";
+import { KartuLed } from "@/components/kesiapan";
 import { namaJenjang } from "@/lib/domain/instrumen";
-import { formatTahunAkademik, labelPeriode } from "@/lib/domain/tahun-akademik";
+import { labelPeriode } from "@/lib/domain/tahun-akademik";
 import { ShellDaftarProyek } from "@/components/shell/shell-daftar-proyek";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FormProyekBaru, type PilihanProdiLed } from "./form-proyek-baru";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Semua LED" };
 
-export default async function HalamanDaftarProyek({ searchParams }: PageProps<"/proyek">) {
+/**
+ * Semua LED fakultas (revisi 23 Okt 2026): LED aktif sebagai kartu besar, diurutkan menurut tanggal akreditasi prodi
+ * berakhir; LED dengan jadwal terlewat berwarna merah. LED baru dibuat di halaman sendiri (/proyek/baru).
+ */
+export default async function HalamanDaftarProyek() {
   const p = await wajibPenanggungJawab();
-  const { prodi: prodiDipilih } = await searchParams;
   const [proyek, prodi] = await Promise.all([daftarProyek(p), daftarProdi(p)]);
   const kesiapan = await kesiapanSemua(p, proyek.filter((x) => !x.diarsipkanPada).map((x) => x.id));
-  const tahunIni = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date()));
 
-  // pilihan prodi untuk LED baru: nonaktif bila masih ada LED aktif atau instrumen jenjangnya belum aktif
-  const instrumen = new Map<string, boolean>();
-  for (const j of new Set(prodi.map((x) => x.jenjang))) instrumen.set(j, Boolean(await instrumenAktifUntuk(j)));
-  const pilihan: PilihanProdiLed[] = prodi.map((x) => ({
-    id: x.id,
-    nama: x.nama,
-    jenjang: x.jenjang,
-    alasan: x.proyek.some((l) => !l.diarsipkanPada)
-      ? "masih ada LED aktif"
-      : !instrumen.get(x.jenjang) ? `instrumen ${namaJenjang(x.jenjang)} belum aktif` : null,
-  }));
-
-  // revisi 22 Okt 2026: LED aktif diurutkan menurut tanggal akreditasi prodi berakhir (terdekat di atas; daftar prodi
-  // sudah terurut begitu); LED yang diarsipkan dikumpulkan di paling bawah
-  const perProdi = prodi
-    .map((x) => ({ prodi: x, led: proyek.filter((l) => l.prodiId === x.id && !l.diarsipkanPada) }))
-    .filter((g) => g.led.length > 0);
+  // daftar prodi sudah terurut menurut akreditasi berakhir (terdekat di atas); LED arsip dikumpulkan di bawah
+  const aktif = prodi.flatMap((x) => proyek.filter((l) => l.prodiId === x.id && !l.diarsipkanPada).map((l) => ({ prodi: x, led: l })));
   const arsip = prodi.flatMap((x) => proyek.filter((l) => l.prodiId === x.id && l.diarsipkanPada).map((l) => ({ prodi: x, led: l })));
 
   return (
     <ShellDaftarProyek pengguna={p}>
       <JudulHalaman
         judul="Semua LED"
-        deskripsi="Satu LED adalah satu pengajuan akreditasi satu program studi yang berlaku 5 tahun. Prodi yang akreditasinya paling dekat berakhir tampil paling atas."
+        aksi={<Button asChild size="lg"><Link href="/proyek/baru"><Plus aria-hidden />Buat LED baru</Link></Button>}
       />
       <Petunjuk
         kunci="pj-semua-led"
-        fungsi="Semua LED fakultas, dikelompokkan per program studi. Setiap prodi hanya punya satu LED aktif; LED periode lama diarsipkan dan tetap bisa dibuka sebagai rujukan."
+        fungsi="Semua LED fakultas. Prodi yang akreditasinya paling dekat berakhir tampil paling atas. Kartu merah berarti ada jadwal yang terlewat."
         langkah={[
           "Pastikan program studi sudah terdaftar (menu Program studi) dan instrumen jenjangnya aktif (menu Instrumen).",
-          "Tambahkan kunci API Gemini di menu Kunci API fakultas bila belum ada.",
-          "Buat LED baru: pilih prodi, tahun pengajuan, dan nama LED.",
-          "Buka LED untuk mengunggah LKPS dan dokumen, lalu menyusun narasi per kriteria.",
+          "Klik Buat LED baru: pilih prodi, tahun pengajuan, dan nama LED.",
+          "Klik kartu LED untuk membukanya, lalu unggah LKPS dan dokumen dan susun narasi per kriteria.",
         ]}
       />
-      <div className="grid gap-6 xl:grid-cols-5">
-        <div className="flex flex-col gap-6 xl:col-span-3">
-          {perProdi.length === 0 ? (
-            <Card>
-              <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                Belum ada LED. Buat LED pertama di formulir sebelah.
-              </CardContent>
-            </Card>
-          ) : (
-            perProdi.map((g) => (
-              <section key={g.prodi.id} className="flex flex-col gap-3" aria-label={g.prodi.nama}>
-                <h2 className="text-sm font-semibold text-muted-foreground">
-                  {g.prodi.nama} <span className="font-normal">({namaJenjang(g.prodi.jenjang)})</span>
-                </h2>
-                {g.led.map((x) => {
-                  const k = kesiapan.get(x.id);
-                  return (
-                    <Link key={x.id} href={`/proyek/${x.id}`} className="group">
-                      <Card className={`transition-colors group-hover:border-primary/40 ${kelasWarna(k?.warna ?? null)}`}>
-                        <CardHeader>
-                          <CardTitle className="flex items-center justify-between gap-2">
-                            {x.nama}
-                            <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
-                          </CardTitle>
-                          <CardDescription className="flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary">{labelPeriode(x.tahunPengajuan)}</Badge>
-                            <span>Data LKPS TS {formatTahunAkademik(x.tsTahunMulai)} · {x.versi.nama}</span>
-                          </CardDescription>
-                        </CardHeader>
-                        {k && <CardContent><RingkasKesiapan k={k} /></CardContent>}
-                      </Card>
-                    </Link>
-                  );
-                })}
-              </section>
-            ))
-          )}
-          {arsip.length > 0 && (
-            <section className="flex flex-col gap-2" aria-label="LED diarsipkan">
-              <h2 className="text-sm font-semibold text-muted-foreground">LED diarsipkan</h2>
-              <ul className="divide-y rounded-lg border text-sm">
-                {arsip.map(({ prodi: pr, led: x }) => (
-                  <li key={x.id}>
-                    <Link href={`/proyek/${x.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-muted/60">
-                      <span>{x.nama} <span className="text-muted-foreground">· {pr.nama}</span></span>
-                      <span className="flex items-center gap-2"><Badge variant="secondary">{labelPeriode(x.tahunPengajuan)}</Badge><Badge variant="outline">Diarsipkan</Badge></span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+      {aktif.length === 0 ? (
+        <div className="rounded-xl border-2 border-dashed p-10 text-center">
+          <p className="text-muted-foreground">Belum ada LED.</p>
+          <Button asChild size="lg" className="mt-4"><Link href="/proyek/baru"><Plus aria-hidden />Buat LED pertama</Link></Button>
         </div>
-        <Card id="led-baru" className="h-fit scroll-mt-20 xl:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">LED baru</CardTitle>
-            <CardDescription>Jenjang diambil dari data prodi dan instrumennya otomatis instrumen aktif jenjang itu.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FormProyekBaru prodi={pilihan} tahunUsulan={tahunIni} awalProdiId={typeof prodiDipilih === "string" ? prodiDipilih : undefined} />
-          </CardContent>
-        </Card>
-      </div>
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-2">
+          {aktif.map(({ prodi: pr, led: x }) => (
+            <KartuLed
+              key={x.id}
+              href={`/proyek/${x.id}`}
+              nama={x.nama}
+              prodi={`${pr.nama} (${namaJenjang(pr.jenjang)})`}
+              periode={labelPeriode(x.tahunPengajuan)}
+              k={kesiapan.get(x.id) ?? null}
+            />
+          ))}
+        </div>
+      )}
+      {arsip.length > 0 && (
+        <section className="flex flex-col gap-2" aria-label="LED diarsipkan">
+          <h2 className="text-sm font-semibold text-muted-foreground">LED diarsipkan</h2>
+          <ul className="divide-y rounded-lg border text-sm">
+            {arsip.map(({ prodi: pr, led: x }) => (
+              <li key={x.id}>
+                <Link href={`/proyek/${x.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-muted/60">
+                  <span>{x.nama} <span className="text-muted-foreground">· {pr.nama}</span></span>
+                  <span className="flex items-center gap-2"><Badge variant="secondary">{labelPeriode(x.tahunPengajuan)}</Badge><Badge variant="outline">Diarsipkan</Badge></span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </ShellDaftarProyek>
   );
 }

@@ -14,8 +14,7 @@ import { formatTahunAkademik, labelPeriode } from "@/lib/domain/tahun-akademik";
 import type { IdentitasProdi } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { kesiapanLed } from "@/lib/data/kesiapan";
-import { tanggalIso, usulanBatasPengajuan } from "@/lib/domain/kesiapan";
-import { RingkasKesiapan, kelasWarna } from "@/components/kesiapan";
+import { labelSisa, tanggalIso, usulanBatasPengajuan } from "@/lib/domain/kesiapan";
 import { JadwalKerja } from "./jadwal-kerja";
 import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -30,9 +29,7 @@ import { DialogUbahTs } from "./dialog-ubah-ts";
 import { DialogUbahTahun } from "./dialog-ubah-tahun";
 import { PengaturanProyek } from "./pengaturan-proyek";
 import { ringkasReview } from "@/lib/data/review";
-import { LABEL_REVIEW } from "@/lib/domain/kesiapan";
-import { bolehAjukanReview } from "@/lib/domain/review";
-import { TombolAjukanReview } from "@/components/review/tombol-ajukan";
+import { KartuReview } from "@/components/review/kartu-review";
 
 export const metadata: Metadata = { title: "Beranda" };
 
@@ -105,6 +102,26 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
         </Alert>
       )}
 
+      <div className="grid gap-4 xl:grid-cols-2">
+        <KartuReview
+          proyekId={proyek.id}
+          asesor={review.asesor}
+          review={review.review}
+          catatan={review.catatan}
+          keputusan={review.keputusan}
+          arsip={Boolean(proyek.diarsipkanPada)}
+        />
+        <JadwalKerja
+          proyekId={proyek.id}
+          batasPengajuan={kesiapan.batasPengajuan}
+          usulanBatas={proyek.prodi.akreditasiBerlakuSampai ? tanggalIso(usulanBatasPengajuan(proyek.prodi.akreditasiBerlakuSampai)) : null}
+          tonggak={kesiapan.tonggak}
+          terkunci={Boolean(proyek.diarsipkanPada)}
+          warna={kesiapan.warna}
+          sisa={labelSisa(kesiapan.sisaBulan)}
+        />
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader>
@@ -164,62 +181,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Review asesor</CardTitle>
-          <CardDescription>
-            {review.asesor
-              ? `Asesor: ${review.asesor}. Catatan revisi muncul di halaman sub-bagian dan di ikon lonceng; ekspor Word final terbuka setelah asesor menyatakan Layak diajukan.`
-              : "Admin belum menugaskan asesor untuk LED ini. Ekspor DRAF tetap bisa dipakai untuk sosialisasi."}
-          </CardDescription>
-          <CardAction>
-            <Badge variant={review.review === "layak" ? "default" : "outline"}>{LABEL_REVIEW[review.review]}</Badge>
-          </CardAction>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <span>
-            <span className="font-medium tabular-nums">{review.catatan.terbuka}</span> catatan terbuka ·{" "}
-            <span className="tabular-nums">{review.catatan.diperbaiki}</span> menunggu asesor ·{" "}
-            <span className="tabular-nums">{review.catatan.diterima}</span> diterima
-          </span>
-          {review.keputusan && (
-            <span className="text-muted-foreground">
-              Nilai simulasi asesor {formatAngka(review.keputusan.total)}{review.keputusan.perkiraan ? ` (${review.keputusan.perkiraan})` : ""}
-              {review.keputusan.catatan ? `: ${review.keputusan.catatan}` : ""}
-            </span>
-          )}
-          {bolehAjukanReview(review.review) && (
-            <span className="ml-auto">
-              <TombolAjukanReview proyekId={proyek.id} ulang={review.review === "perlu_revisi"} nonaktif={!review.asesor || Boolean(proyek.diarsipkanPada)} />
-            </span>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className={kelasWarna(kesiapan.warna)}>
-        <CardHeader>
-          <CardTitle className="text-base">Kesiapan dan jadwal kerja</CardTitle>
-          <CardDescription>
-            Tonggak dihitung mundur dari batas pengajuan dan bisa diubah. Tonggak yang terlewat dan belum tercapai ditandai merah.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <RingkasKesiapan k={kesiapan} ringkas />
-          <JadwalKerja
-            proyekId={proyek.id}
-            batasPengajuan={kesiapan.batasPengajuan}
-            usulanBatas={proyek.prodi.akreditasiBerlakuSampai ? tanggalIso(usulanBatasPengajuan(proyek.prodi.akreditasiBerlakuSampai)) : null}
-            tonggak={kesiapan.tonggak}
-            terkunci={Boolean(proyek.diarsipkanPada)}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle className="text-base">Progres dan anggaran kriteria</CardTitle>
-          <CardDescription>
-            Halaman per kriteria dibagi menurut bobot butir (butir angka setengah porsi), minimum {pengaturan.halamanMinimumKriteria} halaman;
-            35% untuk latar belakang, kebijakan, analisis faktor, dan SWOT.
-          </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto px-0">
           <Table>

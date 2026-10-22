@@ -25,9 +25,16 @@ export function lokasiSoffice(): string | null {
   return CALON.find((p) => existsSync(p)) ?? null;
 }
 
+/**
+ * Tanpa printer: LibreOffice di Windows menanyakan printer bawaan saat memuat dokumen; printer jaringan/Wi-Fi (WSD)
+ * memunculkan dialog "menyambung ke printer" di layar pengguna setiap ekspor. Tata letak tidak memakai metrik printer,
+ * jadi jumlah halaman tidak berubah.
+ */
+const TANPA_PRINTER = { SAL_DISABLE_DEFAULTPRINTER: "1", SAL_DISABLE_PRINTERLIST: "1" };
+
 function jalankan(perintah: string, argumen: string[], batasMs: number): Promise<void> {
   return new Promise((ok, gagal) => {
-    execFile(perintah, argumen, { timeout: batasMs, windowsHide: true }, (e) => (e ? gagal(e) : ok()));
+    execFile(perintah, argumen, { timeout: batasMs, windowsHide: true, env: { ...process.env, ...TANPA_PRINTER } }, (e) => (e ? gagal(e) : ok()));
   });
 }
 

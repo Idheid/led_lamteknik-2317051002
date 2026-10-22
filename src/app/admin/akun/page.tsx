@@ -8,9 +8,9 @@ import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AksiBarisAkun, DialogBuatAkun, DialogBuatSuperAdmin } from "./komponen";
+import { AksiBarisAkun, DialogTambahAkun } from "./komponen";
 
-export const metadata: Metadata = { title: "Akun PJ" };
+export const metadata: Metadata = { title: "Kelola akun" };
 
 const fmtTanggal = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "Asia/Jakarta" });
 const fmtWaktu = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" });
@@ -48,21 +48,14 @@ export default async function HalamanAkun() {
   return (
     <>
       <JudulHalaman
-        judul="Akun PJ"
-        deskripsi="Semua akun dibuat di sini; tidak ada pendaftaran mandiri. Akun baru wajib mengganti kata sandi saat login pertama. Menonaktifkan akun langsung mengeluarkan penggunanya."
-        aksi={
-          <>
-          <DialogBuatSuperAdmin />
-          <DialogBuatAkun peran="ASESOR" />
-          <DialogBuatAkun />
-          </>
-        }
+        judul="Kelola akun"
+        aksi={<DialogTambahAkun />}
       />
       <Petunjuk
         kunci="admin-akun"
-        fungsi="Mengelola akun PJ fakultas dan admin. PJ mengerjakan semua penyusunan LED; LED, kunci API, dan riwayat versi milik fakultas, jadi tetap ada walaupun akun diganti."
+        fungsi="Admin mengelola akun. PJ (penanggung jawab) menyusun semua LED fakultas; asesor mereview LED yang ditugaskan; admin mengurus akun, penugasan asesor, dan kunci API. LED dan kunci API milik fakultas, jadi tetap ada walaupun akun diganti."
         langkah={[
-          "Buat akun PJ fakultas (biasanya satu) atau akun admin lain untuk serah terima.",
+          "Klik Tambah akun, pilih peran (PJ, Asesor, atau Admin), lalu isi nama, email, dan kata sandi awal.",
           "Berikan kata sandi sementara; pengguna wajib menggantinya saat login pertama.",
           "Saat petugas berganti: buat akun PJ pengganti, lalu nonaktifkan akun lama.",
           "Atur ulang kata sandi bila pengguna lupa. Akun sendiri tidak bisa dinonaktifkan atau dihapus.",

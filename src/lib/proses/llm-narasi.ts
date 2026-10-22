@@ -1,9 +1,10 @@
-import { generateText, Output, streamText } from "ai";
+import { generateText, NoObjectGeneratedError, Output, streamText } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { catatGalatKunci, GalatTanpaKunci, isiKunci, kunciFakultas } from "@/lib/data/kunci-api";
 import { klasifikasiGalat, pesanKunciHabis, pilihKunci } from "@/lib/domain/kunci-api";
 import { versiModel } from "@/lib/domain/model-llm";
+import { perbaikiJson } from "@/lib/domain/json";
 import type { KeluaranSubBagian } from "@/lib/domain/prompt";
 import { galatPenyedia } from "@/lib/llm/embedding";
 import { buatModelNarasi } from "@/lib/llm/narasi";
@@ -31,6 +32,17 @@ export const skemaKeluaran = z.object({
   dokumenKurang: z.array(z.string()),
   catatanUntukPenyusun: z.string().optional(),
 });
+
+/**
+ * Jawaban model tidak bisa dibaca sebagai JSON sesuai skema (kosong, terpotong, atau rusak) walau sudah diperbaiki
+ * ringan. Revisi 23 Okt 2026: diulang sekali, lalu pindah ke model cadangan; bukan langsung menggagalkan tugas.
+ */
+export class GalatKeluaranRusak extends Error {
+  constructor(pesan: string) {
+    super(pesan);
+    this.name = "GalatKeluaranRusak";
+  }
+}
 
 /** Semua model kena batas per menit atau galat sementara: tugas dilanjutkan otomatis sebentar lagi. */
 export class GalatSementara extends Error {
@@ -127,8 +139,13 @@ async function panggilModel<T>(
     ...(opsi.providerOptions ? { providerOptions: opsi.providerOptions } : {}),
   };
   if (!a.onSebagian) {
-    const r = await generateText(dasar);
-    return { output: r.output as T, tokenMasuk: r.usage.inputTokens ?? 0, tokenKeluar: r.usage.outputTokens ?? 0 };
+    try {
+      const r = await generateText(dasar);
+      return { output: r.output as T, tokenMasuk: r.usage.inputTokens ?? 0, tokenKeluar: r.usage.outputTokens ?? 0 };
+    } catch (e) {
+      if (NoObjectGeneratedError.isInstance(e)) return pulihkanKeluaran(a, e);
+      throw e;
+    }
   }
   let galat: unknown = null;
   const r = streamText({ ...dasar, onError: ({ error }) => { galat ??= error; } });
@@ -139,8 +156,21 @@ async function panggilModel<T>(
     return { output: output as T, tokenMasuk: usage.inputTokens ?? 0, tokenKeluar: usage.outputTokens ?? 0 };
   } catch (e) {
     // galat asli penyedia (429, 403, batas waktu) dipakai untuk klasifikasi kunci/model
-    throw galat ?? e;
+    if (galat) throw galat;
+    if (NoObjectGeneratedError.isInstance(e)) return pulihkanKeluaran(a, e);
+    throw e;
   }
+}
+
+/** Coba baca jawaban yang gagal di-parse (pagar kode, teks tambahan, koma berlebih); gagal → GalatKeluaranRusak. */
+function pulihkanKeluaran<T>(a: PanggilanTerstruktur<T>, e: NoObjectGeneratedError): { output: T; tokenMasuk: number; tokenKeluar: number } {
+  const hasil = a.skema.safeParse(perbaikiJson(e.text));
+  const tokenMasuk = e.usage?.inputTokens ?? 0;
+  const tokenKeluar = e.usage?.outputTokens ?? 0;
+  if (hasil.success) return { output: hasil.data, tokenMasuk, tokenKeluar };
+  throw new GalatKeluaranRusak(
+    `jawaban tidak terbaca (finishReason ${e.finishReason ?? "?"}, ${e.text?.length ?? 0} karakter, ${tokenKeluar} token)`,
+  );
 }
 
 /**
@@ -184,6 +214,7 @@ export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise
     let galatHarian: unknown = null;
     let kunciDitolak = false;
     let adaSementara = false;
+    let adaRusak = false;
     let tunggu = 60_000;
 
     for (const kodeModel of daftarModel) {
@@ -212,6 +243,12 @@ export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise
               tunggu = 10_000;
             }
             pernahHabisWaktu = true;
+            continue;
+          }
+          if (e instanceof GalatKeluaranRusak) {
+            await catat({ kunciId: k.id, model: kodeModel, berhasil: false, galat: `keluaran_rusak: ${e.message}`, durasiMs: Date.now() - mulai });
+            adaRusak = true;
+            if (coba >= 1) lanjutModel = true; // dua kali rusak di model ini: coba model cadangan
             continue;
           }
           const jenis = klasifikasiGalat(galatPenyedia(e));
@@ -247,6 +284,11 @@ export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise
       // model yang hanya kena batas per menit masih bisa dipakai nanti: jangan tandai kunci habis
       if (adaSementara) {
         throw new GalatSementara("Layanan Gemini sedang membatasi permintaan. Penyusunan dilanjutkan otomatis sebentar lagi.", tunggu);
+      }
+      if (!galatHarian && adaRusak) {
+        throw new Error(
+          "Gemini dua kali mengirim jawaban yang tidak terbaca. Klik Generate lagi; bila berulang, admin dapat menambah model cadangan di Kunci API → Model Gemini.",
+        );
       }
       if (!galatHarian) throw new Error("Tidak ada model narasi yang bisa dipakai. Periksa pengaturan Model LLM.");
       await catatGalatKunci(k.id, galatHarian);

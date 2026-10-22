@@ -658,3 +658,25 @@ Di luar kode: Figma, peta form, diagram use case tiga aktor, dan Bab 1–3.
 | Catatan asesor muncul tanpa muat ulang (dua sesi) | uji browser, `review.test.ts` | Lulus |
 | Lihat potongan dan uji cari | `basis-pengetahuan.test.ts`, browser | Lulus |
 | `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus (107 uji unit, 53 uji integrasi) |
+
+## Perbaikan setelah uji pengguna (23 Oktober 2026, Claude Code)
+
+Umpan balik Adrianne setelah mencoba revisi 22 Okt (11 butir):
+
+| Butir | Masalah | Perbaikan |
+| --- | --- | --- |
+| 1 | Ekspor DRAF memunculkan dialog "menyambung ke printer" | LibreOffice di Windows menanyakan printer bawaan (printer Wi-Fi/WSD) saat menghitung halaman. `soffice` kini dijalankan dengan `SAL_DISABLE_DEFAULTPRINTER=1` dan `SAL_DISABLE_PRINTERLIST=1`; jumlah halaman template uji sama (37) dengan dan tanpa printer. |
+| 2 | "(Tim Penyusun LED)" di akhir paragraf Word | Jawaban, susunan tim, dan jadwal penyusun bukan sumber yang dirujuk; hanya dokumen dan LKPS yang diberi rujukan. |
+| 3 | Unggah dokumen masih ada di halaman sub-bagian | Diganti daftar dokumen terkait + tombol "Tambah ke Basis Pengetahuan" (sub-bagian terpilih otomatis, lalu kembali). |
+| 4 | "No object generated: could not parse the response" | Jawaban Gemini yang tidak terbaca kini diperbaiki ringan (`perbaikiJson`: pagar kode, teks tambahan, koma berlebih), bila gagal diulang sekali lalu pindah ke model cadangan, dan alasannya dicatat (`keluaran_rusak: finishReason, panjang`). Sebelumnya dua kegagalan langsung menggagalkan tugas. Catatan: model cadangan di pengaturan masih kosong; kuota gratis gemini-3-flash 5/menit dan 20/hari per project. |
+| 5 | Formulir LED baru di samping daftar | Halaman sendiri `/proyek/baru` dan tombol "Buat LED baru". |
+| 6 | Teks di bawah judul terlalu panjang | Deskripsi judul dipendekkan atau dihapus (petunjuk halaman tetap ada). |
+| 7 | Review asesor dan jadwal kerja tidak terlihat di Beranda | Dua kartu utama di atas Beranda: pita judul berwarna, tahap review, angka besar, tombol Ajukan review besar; jadwal kerja dengan pita merah dan tonggak berwarna. |
+| 8 | Unggah data bercampur dengan daftar | Halaman tambah tersendiri: Tambah data LKPS, Tambah dokumen (LED/bersama), Tambah kunci (PJ dan admin). |
+| 9 | Pindah antara LED dan menu fakultas membingungkan | Satu sidebar PJ (`ShellPj`): pemilih LED di atas, menu LED yang dibuka (diingat di kuki `led_terakhir`) selalu tampil, Pengaturan fakultas di bawah. Ditemukan juga: konten melebar keluar layar karena `SidebarInset` tidak menyusut (`min-w-0`). |
+| 10 | Peran admin vs PJ tidak jelas; tombol buat akun tidak terlihat | Satu tombol "Tambah akun" dengan pilihan peran beserta penjelasan; menu "Kelola akun"; tombol judul halaman kini membungkus (sebelumnya terpotong di layar sempit). Admin pertama dibuat dari halaman login, tidak lagi dari `.env` (`src/lib/data/pemasangan.ts`). |
+| 11 | Jadwal terlewat kurang terlihat di Semua LED | Kartu LED besar (`KartuLed`): seluruh kartu merah dengan pita "Jadwal terlewat: …" bila ada tonggak terlewat. |
+
+Uji baru: `tests/integrasi/keluaran-rusak.test.ts`, `tests/integrasi/pemasangan.test.ts`, `src/lib/domain/__tests__/json.test.ts`.
+Catatan diagnosa: 10 panggilan Gemini sungguhan untuk mencari penyebab butir 4 menghabiskan kuota harian kunci uji.
+

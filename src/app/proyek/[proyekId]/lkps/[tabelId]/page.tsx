@@ -31,7 +31,7 @@ export default async function HalamanTabelLkps({ params }: PageProps<"/proyek/[p
             {tabel.dikoreksi && <Badge variant="outline">dikoreksi</Badge>}
           </span>
         }
-        remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Data LKPS", href: `/proyek/${proyekId}/lkps` }, { label: `Tabel ${tabel.kode}` }]}
+        remah={[{ label: "Beranda LED", href: `/proyek/${proyekId}` }, { label: "Data LKPS", href: `/proyek/${proyekId}/lkps` }, { label: `Tabel ${tabel.kode}` }]}
       />
       <Petunjuk
         kunci="proyek-lkps-tabel"

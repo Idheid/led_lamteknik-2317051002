@@ -54,7 +54,7 @@ export default async function HalamanRingkasanKriteria({ params }: PageProps<"/p
           </span>
         }
         deskripsi={`${bagian.subBagian.length} sub-bagian untuk jenjang ${namaJenjang(proyek.jenjang)}${d.jumlahButir ? ` · ${d.jumlahButir} butir penilaian, bobot ${formatAngka(d.bobot)}` : ""}${anggaranBagian ? ` · target ${anggaranBagian.halaman} halaman (± ${formatAngka(anggaranBagian.kataTotal, 0)} kata)` : ""}`}
-        remah={[{ label: "Beranda", href: `/proyek/${proyek.id}` }, { label: bagian.kode }]}
+        remah={[{ label: "Beranda LED", href: `/proyek/${proyek.id}` }, { label: bagian.kode }]}
         aksi={
           <>
             <LencanaStatus status={status} />

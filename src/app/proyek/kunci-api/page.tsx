@@ -9,7 +9,7 @@ export default async function HalamanKunciProdi() {
   const p = await wajibPenanggungJawab();
   return (
     <ShellDaftarProyek pengguna={p}>
-      <HalamanKunci pengguna={p} remah={[{ label: "Semua LED", href: "/proyek" }, { label: "Kunci API fakultas" }]} />
+      <HalamanKunci pengguna={p} hrefTambah="/proyek/kunci-api/tambah" />
     </ShellDaftarProyek>
   );
 }

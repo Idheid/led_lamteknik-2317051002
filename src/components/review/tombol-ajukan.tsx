@@ -9,7 +9,7 @@ import { aksiAjukanReview } from "@/app/review/aksi";
 export function TombolAjukanReview({ proyekId, ulang, nonaktif }: { proyekId: string; ulang: boolean; nonaktif?: boolean }) {
   const { sibuk, jalankan } = useAksi();
   return (
-    <Button size="sm" disabled={sibuk || nonaktif} onClick={() => jalankan(() => aksiAjukanReview(proyekId), { sukses: "Review diajukan; asesor diberi tahu." })}>
+    <Button size="lg" className="w-full sm:w-fit" disabled={sibuk || nonaktif} onClick={() => jalankan(() => aksiAjukanReview(proyekId), { sukses: "Review diajukan; asesor diberi tahu." })}>
       {sibuk ? <IkonSibuk sibuk /> : <Send aria-hidden />}
       {ulang ? "Ajukan review ulang" : "Ajukan review"}
     </Button>

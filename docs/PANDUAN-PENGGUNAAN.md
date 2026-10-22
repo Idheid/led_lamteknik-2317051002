@@ -5,7 +5,8 @@ Panduan singkat Sistem Penyusun LED LAM Teknik (setelah revisi 22 Okt 2026) untu
 punya kotak **Petunjuk halaman ini** yang menjelaskan fungsi halaman dan langkah berikutnya; kotak itu bisa ditutup dan
 pilihannya diingat di browser.
 
-Semua akun dibuat admin; tidak ada pendaftaran mandiri. Akun baru dan akun yang kata sandinya diatur ulang **wajib
+**Pemasangan pertama**: selama website belum punya admin, halaman login menampilkan formulir **Buat akun admin
+pertama** (tidak perlu mengisi berkas `.env`). Setelah itu semua akun dibuat admin; tidak ada pendaftaran mandiri. Akun baru dan akun yang kata sandinya diatur ulang **wajib
 mengganti kata sandi** saat login pertama. Setiap pengguna bisa mengganti kata sandinya sendiri lewat menu akun (pojok
 kiri bawah) → **Ganti kata sandi** (wajib mengisi kata sandi lama).
 
@@ -28,13 +29,14 @@ halamannya. Pemberitahuan diperbarui otomatis tanpa muat ulang.
 
 ## A. Admin
 
-Menu admin: **Akun PJ**, **Penugasan asesor**, dan **Kunci API**. Admin tidak membuka isi LED, prodi, instrumen, atau
-dokumen.
+Admin adalah **pengelola sistem**, bukan penyusun: membuat akun, menugaskan asesor, dan mengatur kunci API dan model AI.
+Seluruh isi LED (prodi, LKPS, dokumen, narasi, ekspor) dikerjakan **PJ**. Menu admin: **Kelola akun**, **Penugasan
+asesor**, dan **Kunci API**.
 
-### Akun PJ
+### Kelola akun
 
-- Buat satu akun **penanggung jawab fakultas** (atau akun admin lain) dan berikan kata sandi sementara.
-- Tombol **Akun asesor** membuat akun asesor (reviewer internal).
+- Klik **Tambah akun**, pilih peran (**Penanggung jawab**, **Asesor**, atau **Admin**; setiap pilihan diberi penjelasan
+  singkat), lalu isi nama, email, dan kata sandi awal.
 - **Lupa kata sandi**: menu baris akun → **Atur ulang kata sandi**; pemilik akun wajib menggantinya saat login.
 - **Pergantian PJ**: nonaktifkan akun lama, lalu buat akun baru. LED, kunci API, dan riwayat versi milik fakultas,
   jadi tidak ada yang hilang.
@@ -61,9 +63,13 @@ Asesor langsung diberi tahu. Asesor hanya bisa membuka LED yang ditugaskan kepad
 
 ## B. Penanggung jawab fakultas
 
-Menu utama: **Semua LED**, **Program studi**, **Instrumen**, **Basis Pengetahuan fakultas**, **Kunci API fakultas**.
-Di dalam satu LED: **Beranda**, **Data LKPS**, **Basis Pengetahuan**, **Tim penyusun**, **Ekspor Word**, kriteria
-C.1–C.7, dan bab lain.
+Sidebar PJ selalu sama: di atas ada kotak **LED yang dibuka** (klik untuk pindah LED atau membuat LED baru), lalu menu
+**LED ini** (Beranda LED, Data LKPS, Basis Pengetahuan, Tim penyusun, Ekspor Word), kriteria C.1–C.7, bab lain, dan di
+bawah **Pengaturan fakultas** (Semua LED, Program studi, Instrumen, Basis Pengetahuan fakultas, Kunci API fakultas).
+Membuka menu fakultas tidak menghilangkan menu LED, jadi bila salah klik cukup klik menu LED lagi.
+
+Menambah data selalu lewat tombol biru di kanan atas (**Buat LED baru**, **Tambah data LKPS**, **Tambah dokumen**,
+**Tambah kunci**) yang membuka halaman tersendiri; setelah berhasil, sistem kembali ke daftar.
 
 ### 1. Persiapan (sekali di awal)
 
@@ -105,12 +111,14 @@ jenjang (10 jenjang); LED baru otomatis memakai instrumen aktif jenjang prodinya
 
 ### 3. Membuat LED, kesiapan, dan jadwal kerja
 
-1. Menu **Semua LED** → **LED baru**: pilih prodi, tahun pengajuan, dan nama. Instrumen dipilih otomatis menurut
+1. Menu **Semua LED** → tombol **Buat LED baru**: pilih prodi, tahun pengajuan, dan nama. Instrumen dipilih otomatis menurut
    jenjang prodi. Prodi yang masih punya LED aktif, atau jenjangnya belum punya instrumen aktif, tidak bisa dipilih.
-2. **Semua LED** diurutkan menurut tanggal akreditasi berakhir (paling dekat di atas); LED yang diarsipkan di bawah.
-   Kolom **Kesiapan**: persentase LKPS terisi, sub-bagian berdraf/selesai, catatan asesor terbuka, status review, dan
-   sisa waktu. Merah: ≤ 6 bulan dan belum Layak diajukan; kuning: ≤ 12 bulan.
-3. Beranda LED → **Kesiapan dan jadwal kerja**: batas pengajuan (usulan 6 bulan sebelum akreditasi berakhir) dan
+2. **Semua LED** menampilkan kartu besar per LED, diurutkan menurut tanggal akreditasi berakhir (paling dekat di atas);
+   LED yang diarsipkan di bawah. Kartu berisi persentase LKPS terisi, sub-bagian berdraf/selesai, catatan asesor, dan
+   status review. **Seluruh kartu merah** bila ada jadwal kerja yang terlewat (atau akreditasi berakhir ≤ 6 bulan dan
+   belum Layak diajukan); kuning bila ≤ 12 bulan.
+3. Beranda LED menampilkan dua kotak utama di atas: **Review asesor** (tahap review, jumlah catatan, tombol **Ajukan
+   review**) dan **Jadwal kerja** (pita merah bila ada jadwal terlewat). Jadwal kerja: batas pengajuan (usulan 6 bulan sebelum akreditasi berakhir) dan
    tonggak yang dihitung mundur (LKPS lengkap, semua kriteria selesai, bab lain selesai, review asesor, ekspor final).
    Tanggal tonggak bisa diubah; tonggak yang terlewat dan belum tercapai ditandai merah.
 4. Label periode tampil sebagai "Periode 2026–2031". **Tahun data LKPS (TS)** dihitung dari tahun pengajuan
@@ -123,8 +131,8 @@ jenjang (10 jenjang); LED baru otomatis memakai instrumen aktif jenjang prodinya
 1. **Data LKPS**: unggah LKPS dari template LAM Teknik 2025 (Excel). PDF bisa dipakai sebagai cadangan, tetapi
    tabelnya wajib dicek. Tabel **Metrik butir angka** menunjukkan sumber nilai tiap butir angka: dihitung rumus,
    diisi manual, atau belum ada.
-2. **Basis Pengetahuan** (dua tab: **Dokumen LED ini** dan **Dokumen bersama fakultas**): unggah PDF/DOCX/gambar dan
-   kaitkan ke sub-bagian. Setiap dokumen menampilkan status, **jumlah potongan** (klik untuk melihat teks setiap
+2. **Basis Pengetahuan** (dua tab: **Dokumen LED ini** dan **Dokumen bersama fakultas**): klik **Tambah dokumen**,
+   unggah PDF/DOCX/gambar dan kaitkan ke sub-bagian. Setiap dokumen menampilkan status, **jumlah potongan** (klik untuk melihat teks setiap
    potongan), **tahun** terbit (untuk rujukan Word; kosong = "t.t."), dan tautan bukti.
 3. **Uji cari**: ketik pertanyaan, atau pilih sub-bagian lalu **Pakai kueri generate**. Hasilnya adalah 8 potongan yang
    akan diberikan ke AI saat generate, dengan skor gabungan (RRF) dan peringkat vektor/kata kunci. Pakai untuk mengecek
@@ -143,7 +151,8 @@ Setiap **halaman sub-bagian** berisi berurutan:
    isian target opsional (angka, satuan, sumber seperti Renstra); sistem menghitung persen capaian dan tren TS-2, TS-1,
    TS dari LKPS;
 4. **Jawaban penyusun** (tersimpan otomatis, sumber `[J]`);
-5. **Dokumen pendukung** (unggah langsung ke sub-bagian ini);
+5. **Dokumen dari Basis Pengetahuan** yang dikaitkan ke sub-bagian ini; tombol **Tambah ke Basis Pengetahuan** membuka
+   halaman tambah dokumen dengan sub-bagian ini sudah terpilih, lalu kembali ke sini;
 6. **Hasil generate**, **Riwayat versi**, dan (bila LED punya asesor) **Catatan asesor**.
 
 Langkah:
@@ -187,8 +196,9 @@ Langkah:
    - **Ekspor final**: terbuka setelah asesor menyatakan **Layak diajukan**, semua bagian selesai, tidak ada penanda
      `[BELUM ADA BUKTI: …]`, setiap dokumen yang dirujuk punya **tautan bukti** (bisa diisi langsung dari daftar), dan
      setiap **perbedaan angka antar kriteria** sudah diperbaiki atau diberi alasan.
-4. Di Word, setiap paragraf diberi rujukan singkat di akhir, misalnya "(LKPS Tabel 4.a; Renstra FT Unila 2021–2025, 2021)", dan
-   **Daftar Rujukan** ditambahkan di Lampiran. Halaman Lampiran tidak dihitung dalam batas 150 halaman; daftar ekspor
+4. Di Word, paragraf yang bersumber dokumen atau LKPS diberi rujukan singkat di akhir, misalnya "(LKPS Tabel 4.a; Renstra
+   FT Unila 2021–2025, 2021)", dan **Daftar Rujukan** ditambahkan di Lampiran. Paragraf yang hanya bersumber jawaban tim
+   penyusun tidak diberi rujukan. Halaman Lampiran tidak dihitung dalam batas 150 halaman; daftar ekspor
    menampilkan halaman sebelum Lampiran dan total halaman.
 5. Buka di Microsoft Word, pilih **Yes/Ya** saat diminta memperbarui field, ganti kotak **Logo Perguruan Tinggi**,
    periksa, lalu simpan. Berkas final lebih dari 150 halaman (sebelum Lampiran) **ditahan**: ringkas narasi lalu ekspor
@@ -200,6 +210,12 @@ Gemini versi gratis membatasi jumlah permintaan per hari per project Google. Saa
 instrumen **berhenti rapi** dan pemberitahuan meminta kunci baru. Tambahkan kunci dari **project/akun Google lain** di
 menu Kunci API fakultas (proses lanjut otomatis dari bagian yang tertunda), atau tunggu reset kuota harian (sekitar
 pukul 14.00–15.00 WIB).
+
+Kuota gratis sangat kecil (pada Oktober 2026 model gemini-3-flash hanya 5 permintaan per menit dan 20 per hari per
+project Google), sedangkan satu LED butuh puluhan generate. Admin sebaiknya mengisi **model cadangan** di Kunci API →
+Model Gemini (misalnya gemini-2.5-flash dan gemini-2.5-flash-lite): kuota dihitung per model, jadi model cadangan
+menambah kuota harian. Bila Gemini sesekali mengirim jawaban yang tidak terbaca, sistem memperbaikinya otomatis atau
+mengulang lalu pindah ke model cadangan; bila tetap gagal, pesannya meminta Generate diulang.
 
 ### 9. Data pribadi
 

@@ -31,7 +31,6 @@ export default async function HalamanButir({ params, searchParams }: PageProps<"
     <>
       <JudulHalaman
         judul={`Butir penilaian ${namaJenjang(jenjang)}`}
-        deskripsi="Bobot, jenis, deskriptor dan unsur skor 4, tabel LKPS, pertanyaan pemandu, dokumen pendukung, dan pemetaan ke sub-bagian."
         remah={[
           { label: "Instrumen", href: "/proyek/instrumen" },
           { label: versi.kode, href: `/proyek/instrumen/${versiId}` },

@@ -17,10 +17,12 @@ interface Props {
   isian?: Record<string, string | null | undefined>;
   ringkas?: boolean;
   onSelesai?: () => void;
+  /** revisi 23 Okt 2026: halaman tambah data kembali ke daftar setelah berhasil diunggah */
+  kembaliKe?: string;
 }
 
 /** Unggah berkas lewat Route Handler (bukan aksi server: batas 1 MB). Bisa klik atau seret-lepas. */
-export function UnggahBerkas({ url, accept, label = "Pilih berkas", keterangan, multiple, isian, ringkas, onSelesai }: Props) {
+export function UnggahBerkas({ url, accept, label = "Pilih berkas", keterangan, multiple, isian, ringkas, onSelesai, kembaliKe }: Props) {
   const router = useRouter();
   const masukan = useRef<HTMLInputElement>(null);
   const [sibuk, setSibuk] = useState(false);
@@ -42,7 +44,8 @@ export function UnggahBerkas({ url, accept, label = "Pilih berkas", keterangan, 
       }
       toast.success(daftar.length > 1 ? `${daftar.length} berkas diunggah. Diproses di latar.` : `${daftar[0].name} diunggah. Diproses di latar.`);
       onSelesai?.();
-      router.refresh();
+      if (kembaliKe) router.push(kembaliKe);
+      else router.refresh();
     } catch {
       toast.error("Koneksi terputus saat mengunggah. Coba lagi.");
     } finally {

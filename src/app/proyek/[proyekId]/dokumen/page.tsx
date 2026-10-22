@@ -13,7 +13,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabelDokumen } from "@/components/basis-pengetahuan/tabel-dokumen";
 import { PanelCari } from "./panel-cari";
-import { UnggahDokumenUmum } from "./unggah-umum";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export const metadata: Metadata = { title: "Basis Pengetahuan" };
 
@@ -45,8 +46,13 @@ export default async function HalamanBasisPengetahuan({ params, searchParams }: 
       <PemantauProses aktif={berjalan} />
       <JudulHalaman
         judul="Basis Pengetahuan"
-        deskripsi={`Dokumen rujukan yang dipotong dan diindeks (vektor + kata kunci). Saat generate, 8 potongan paling relevan diberikan ke AI sehingga narasi ditulis dari isi dokumen prodi. Siap dicari: ${siap.length} dokumen, ${potongan.toLocaleString("id-ID")} potongan.`}
-        remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Basis Pengetahuan" }]}
+        deskripsi={`${siap.length} dokumen siap dicari · ${potongan.toLocaleString("id-ID")} potongan`}
+        remah={[{ label: "Beranda LED", href: `/proyek/${proyekId}` }, { label: "Basis Pengetahuan" }]}
+        aksi={
+          <Button asChild size="lg">
+            <Link href={`${dasar}/tambah${tab === "bersama" ? "?tab=bersama" : ""}`}><Plus aria-hidden />Tambah dokumen</Link>
+          </Button>
+        }
       />
       <Petunjuk
         kunci="proyek-dokumen"
@@ -72,9 +78,7 @@ export default async function HalamanBasisPengetahuan({ params, searchParams }: 
         <CardHeader>
           <CardTitle className="text-base">Uji cari</CardTitle>
           <CardDescription>
-            Ketik pertanyaan, atau pilih sub-bagian lalu pakai kueri generate-nya. Hasilnya adalah 8 potongan yang akan diberikan ke AI,
-            diurutkan menurut skor gabungan vektor dan kata kunci (reciprocal rank fusion, k = 60).
-            {siap.length === 0 && " Belum ada dokumen yang siap dicari."}
+            8 potongan yang akan diberikan ke AI beserta skornya.{siap.length === 0 && " Belum ada dokumen yang siap dicari."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -91,30 +95,13 @@ export default async function HalamanBasisPengetahuan({ params, searchParams }: 
         </Link>
       </nav>
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{tab === "led" ? "Unggah dokumen LED" : "Unggah dokumen bersama"}</CardTitle>
-            <CardDescription>
-              {tab === "led"
-                ? "Biasanya diunggah dari halaman sub-bagian agar langsung terkait butirnya. Di sini untuk dokumen umum LED ini."
-                : "Dipakai semua LED di fakultas (kode sumber U1, U2, …): VMTS UPPS, Renstra, SK organisasi, SPMI, laporan keuangan."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {tab === "led"
-              ? <UnggahDokumenUmum proyekId={proyekId} pilihan={pilihan} />
-              : <UnggahDokumenUmum pilihan={pilihanBersama} url="/api/dokumen-bersama" />}
-          </CardContent>
-        </Card>
-        <Card className="py-0 xl:col-span-2">
-          <CardContent className="overflow-x-auto px-0">
-            {tab === "led"
-              ? <TabelDokumen dokumen={milikLed} namaSub={namaSub} proyekId={proyekId} bolehUbah />
-              : <TabelDokumen dokumen={bersama} namaSub={namaSubBersama} proyekId="" bolehUbah />}
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="py-0">
+        <CardContent className="overflow-x-auto px-0">
+          {tab === "led"
+            ? <TabelDokumen dokumen={milikLed} namaSub={namaSub} proyekId={proyekId} bolehUbah />
+            : <TabelDokumen dokumen={bersama} namaSub={namaSubBersama} proyekId="" bolehUbah />}
+        </CardContent>
+      </Card>
     </>
   );
 }

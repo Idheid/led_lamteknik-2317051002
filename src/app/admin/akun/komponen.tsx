@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { KeyRound, MoreHorizontal, Plus, Power, ShieldPlus, Trash2 } from "lucide-react";
+import { KeyRound, MoreHorizontal, Plus, Power, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -16,36 +16,30 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
-import { skemaAkunPenanggungJawab, skemaAkunSuperAdmin, type MasukanAkun, type MasukanAkunSuperAdmin } from "@/lib/validasi";
+import { skemaAkunPenanggungJawab, type MasukanAkun } from "@/lib/validasi";
 import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAkun, aksiBuatAsesor, aksiBuatSuperAdmin, aksiHapusAkun } from "../aksi";
 
-const TEKS_AKUN = {
-  PJ: {
-    tombol: "Buat akun PJ",
-    judul: "Akun PJ fakultas baru",
-    deskripsi: "PJ mengelola semua prodi, LED, instrumen, dan dokumen fakultas. Saat petugas berganti, buat akun pengganti lalu nonaktifkan akun lama.",
-    sukses: "Akun PJ dibuat. Sampaikan email dan kata sandinya ke pemilik akun.",
-  },
-  ASESOR: {
-    tombol: "Akun asesor",
-    judul: "Akun asesor baru",
-    deskripsi: "Asesor hanya membaca LED yang ditugaskan kepadanya, memberi catatan revisi, dan memberi skor. Tugaskan ke LED di menu Penugasan asesor.",
-    sukses: "Akun asesor dibuat. Tugaskan ke LED di menu Penugasan asesor.",
-  },
-};
+type PeranBaru = "PJ" | "ASESOR" | "ADMIN";
 
-/** Akun PJ fakultas (revisi 19 Okt 2026: tidak terikat ke satu prodi) atau asesor (revisi 22 Okt 2026). */
-export function DialogBuatAkun({ peran = "PJ" }: { peran?: "PJ" | "ASESOR" }) {
-  const t = TEKS_AKUN[peran];
+/** Tiga peran (revisi 22 Okt 2026), dijelaskan singkat supaya admin tahu akun mana yang dibuat. */
+const PERAN_BARU: { kunci: PeranBaru; judul: string; isi: string }[] = [
+  { kunci: "PJ", judul: "Penanggung jawab (PJ)", isi: "Menyusun semua LED fakultas: prodi, LKPS, dokumen, narasi, ekspor Word." },
+  { kunci: "ASESOR", judul: "Asesor", isi: "Membaca LED yang ditugaskan, memberi catatan revisi dan skor. Tugaskan di menu Penugasan asesor." },
+  { kunci: "ADMIN", judul: "Admin", isi: "Mengelola akun, penugasan asesor, kunci API cadangan, dan model AI." },
+];
+
+/** Satu tombol Tambah akun dengan pilihan peran (revisi 23 Okt 2026; sebelumnya tiga tombol yang mudah terlewat). */
+export function DialogTambahAkun() {
   const [buka, setBuka] = useState(false);
+  const [peran, setPeran] = useState<PeranBaru>("PJ");
   const { sibuk, jalankan } = useAksi();
   const form = useForm<MasukanAkun>({
     resolver: zodResolver(skemaAkunPenanggungJawab),
     defaultValues: { nama: "", email: "", kataSandi: "" },
   });
   const kirim = form.handleSubmit((nilai) =>
-    jalankan(() => (peran === "ASESOR" ? aksiBuatAsesor(nilai) : aksiBuatAkun(nilai)), {
-      sukses: t.sukses,
+    jalankan(() => (peran === "ASESOR" ? aksiBuatAsesor(nilai) : peran === "ADMIN" ? aksiBuatSuperAdmin(nilai) : aksiBuatAkun(nilai)), {
+      sukses: "Akun dibuat. Sampaikan email dan kata sandi awalnya; pemilik akun wajib menggantinya saat login pertama.",
       lalu: () => {
         setBuka(false);
         form.reset({ nama: "", email: "", kataSandi: "" });
@@ -55,18 +49,33 @@ export function DialogBuatAkun({ peran = "PJ" }: { peran?: "PJ" | "ASESOR" }) {
   return (
     <Dialog open={buka} onOpenChange={setBuka}>
       <DialogTrigger asChild>
-        <Button variant={peran === "ASESOR" ? "outline" : "default"}>
+        <Button size="lg">
           <Plus aria-hidden />
-          {t.tombol}
+          Tambah akun
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t.judul}</DialogTitle>
-          <DialogDescription>{t.deskripsi}</DialogDescription>
+          <DialogTitle>Tambah akun</DialogTitle>
+          <DialogDescription>Pilih peran, lalu isi nama, email, dan kata sandi awal.</DialogDescription>
         </DialogHeader>
         <form onSubmit={kirim} noValidate>
           <FieldGroup>
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-2 text-sm font-medium">Peran</legend>
+              {PERAN_BARU.map((x) => (
+                <label
+                  key={x.kunci}
+                  className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm ${peran === x.kunci ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
+                >
+                  <input type="radio" name="peran" value={x.kunci} checked={peran === x.kunci} onChange={() => setPeran(x.kunci)} className="mt-1 accent-[var(--primary)]" />
+                  <span>
+                    <span className="block font-medium">{x.judul}</span>
+                    <span className="block text-muted-foreground">{x.isi}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
             <Controller
               name="nama"
               control={form.control}
@@ -193,69 +202,5 @@ export function AksiBarisAkun({ id, nama, email, aktif }: { id: string; nama: st
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-}
-
-export function DialogBuatSuperAdmin() {
-  const [buka, setBuka] = useState(false);
-  const { sibuk, jalankan } = useAksi();
-  const form = useForm<MasukanAkunSuperAdmin>({
-    resolver: zodResolver(skemaAkunSuperAdmin),
-    defaultValues: { nama: "", email: "", kataSandi: "" },
-  });
-  const kirim = form.handleSubmit((nilai) =>
-    jalankan(() => aksiBuatSuperAdmin(nilai), {
-      sukses: "Akun admin dibuat. Pemilik akun wajib mengganti kata sandi saat login pertama.",
-      lalu: () => {
-        setBuka(false);
-        form.reset({ nama: "", email: "", kataSandi: "" });
-      },
-    }),
-  );
-  const kolom = [
-    { name: "nama", label: "Nama", tipe: "text" },
-    { name: "email", label: "Email", tipe: "email" },
-    { name: "kataSandi", label: "Kata sandi awal", tipe: "password" },
-  ] as const;
-  return (
-    <Dialog open={buka} onOpenChange={setBuka}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <ShieldPlus aria-hidden />
-          Admin baru
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Akun admin baru</DialogTitle>
-          <DialogDescription>Untuk serah terima pengelolaan ke fakultas. Admin bisa mengelola instrumen, prodi, dan semua akun.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={kirim} noValidate>
-          <FieldGroup>
-            {kolom.map((k) => (
-              <Controller
-                key={k.name}
-                name={k.name}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor={`sa-${k.name}`}>{k.label}</FieldLabel>
-                    <Input {...field} id={`sa-${k.name}`} type={k.tipe} autoComplete="off" aria-invalid={fieldState.invalid} />
-                    {k.name === "kataSandi" && <FieldDescription>Minimal 8 karakter.</FieldDescription>}
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-            ))}
-          </FieldGroup>
-          <DialogFooter className="mt-6">
-            <Button type="submit" disabled={sibuk}>
-              <IkonSibuk sibuk={sibuk} />
-              Buat admin
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }

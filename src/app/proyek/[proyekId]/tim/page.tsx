@@ -16,8 +16,7 @@ export default async function HalamanTim({ params }: PageProps<"/proyek/[proyekI
     <>
       <JudulHalaman
         judul="Tim penyusun"
-        deskripsi="Data tim dipakai untuk halaman Identitas Tim Penyusun serta Tabel 2.1 dan 2.2 di Bab II.A saat ekspor Word."
-        remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Tim penyusun" }]}
+        remah={[{ label: "Beranda LED", href: `/proyek/${proyekId}` }, { label: "Tim penyusun" }]}
       />
       <Petunjuk
         kunci="proyek-tim"

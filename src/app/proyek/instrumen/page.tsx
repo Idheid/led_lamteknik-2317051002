@@ -26,7 +26,7 @@ export default async function HalamanInstrumen() {
     <>
       <JudulHalaman
         judul="Instrumen"
-        deskripsi="Instrumen LAM Teknik per jenjang, diunggah setiap ada instrumen baru (± 5 tahun sekali). LED baru otomatis memakai instrumen aktif jenjang prodinya; LED lama tetap memakai versinya."
+        deskripsi="Instrumen LAM Teknik per jenjang"
         aksi={<TombolInstrumenBaru tahun={new Date().getFullYear()} />}
       />
       <Petunjuk

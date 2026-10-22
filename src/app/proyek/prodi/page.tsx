@@ -30,7 +30,6 @@ export default async function HalamanProdi() {
     <>
       <JudulHalaman
         judul="Program studi"
-        deskripsi="Identitas fakultas dan daftar program studi. Data diisi sekali dan dipakai lagi tiap periode LED."
         aksi={<Button asChild><Link href="/proyek/prodi/baru"><Plus aria-hidden />Tambah prodi</Link></Button>}
       />
       <Petunjuk
@@ -100,7 +99,7 @@ export default async function HalamanProdi() {
                           : <span className="text-muted-foreground">Tidak ada LED aktif{x.proyek.length ? ` (${x.proyek.length} arsip)` : ""}</span>}
                         {!aktif && sisa !== null && sisa <= 12 && (
                           <Button asChild size="sm" variant="outline" className="mt-1.5 flex w-fit">
-                            <Link href={`/proyek?prodi=${x.id}#led-baru`}><Plus aria-hidden />Buat LED</Link>
+                            <Link href={`/proyek/baru?prodi=${x.id}`}><Plus aria-hidden />Buat LED</Link>
                           </Button>
                         )}
                       </TableCell>

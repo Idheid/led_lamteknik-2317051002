@@ -4,7 +4,8 @@ import type { DokTiptap } from './narasi.ts';
  * Rujukan sumber di Word (revisi 22 Okt 2026). Kode sumber per paragraf (D1, U1, T-4a, M-…, J) diganti rujukan singkat
  * di akhir paragraf, dan Lampiran berisi Daftar Rujukan dokumen yang dirujuk narasi:
  *   D/U → (Judul dokumen, tahun) · T → (LKPS Tabel 4.a) · M → (LKPS Tabel …, diolah)
- *   nilai manual → (LKPS, dihitung tim penyusun) · J, tim, jadwal → (Tim Penyusun LED)
+ *   nilai manual → (LKPS, dihitung tim penyusun) · J, tim, jadwal → tanpa rujukan (revisi 23 Okt 2026: pernyataan
+ *   prodi sendiri, bukan sumber yang bisa dirujuk; "(Tim Penyusun LED)" di akhir paragraf membingungkan pembaca)
  * Beberapa sumber dalam satu paragraf dipisah titik koma. Tahun kosong ditulis "t.t." (tanpa tahun).
  */
 
@@ -64,7 +65,7 @@ export function rujukanKode(kode: string, k: KonteksRujukan): string | null {
     return `LKPS Tabel ${m ? m[1] : kode.slice(2)}`;
   }
   if (kode.startsWith('M-NILAI-')) return 'LKPS, dihitung tim penyusun';
-  if (kode === 'M-TIM' || kode === 'M-JADWAL' || kode === 'J') return 'Tim Penyusun LED';
+  if (kode === 'M-TIM' || kode === 'M-JADWAL' || kode === 'J') return null;
   if (kode.startsWith('M-')) {
     const t = k.tabelMetrik.get(kode) ?? [];
     return t.length ? `LKPS Tabel ${t.join(', ')}, diolah` : 'LKPS, diolah';

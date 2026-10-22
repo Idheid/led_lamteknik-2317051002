@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Loader2, Plus } from "lucide-react";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { daftarDokumen } from "@/lib/data/dokumen";
 import { nilaiButirProyek } from "@/lib/data/nilai-butir";
@@ -10,7 +10,6 @@ import { formatAngka } from "@/lib/domain/teks";
 import { gantiLabelTS } from "@/lib/domain/tahun-akademik";
 import { LABEL_STATUS_SUB, bagianBerikutnya, persenPosisi, peringatanSebelumGenerate, posisiSub, subDigenerate } from "@/lib/domain/navigasi";
 import { STATUS_BERJALAN } from "@/lib/tampil";
-import { UnggahBerkas } from "@/components/unggah-berkas";
 import { LencanaProses, PemantauProses } from "@/components/status-proses";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Badge } from "@/components/ui/badge";
@@ -33,8 +32,6 @@ export async function generateMetadata({ params }: PageProps<"/proyek/[proyekId]
   const { sub } = await params;
   return { title: decodeURIComponent(sub) };
 }
-
-const TERIMA_DOKUMEN = ".pdf,.docx,.png,.jpg,.jpeg,.gif";
 
 function JudulSeksi({ children, aksi }: { children: ReactNode; aksi?: ReactNode }) {
   return (
@@ -123,7 +120,7 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
           </span>
         }
         remah={[
-          { label: "Beranda", href: `/proyek/${proyek.id}` },
+          { label: "Beranda LED", href: `/proyek/${proyek.id}` },
           { label: bagian.kode, href: hrefKriteria(proyek.id, bagian.kode) },
           { label: s.label || `${posisi.nomor} dari ${posisi.total}` },
         ]}
@@ -221,19 +218,18 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
 
           {digenerate && (
             <section aria-label="Dokumen pendukung" className="text-sm">
+              {/* revisi 23 Okt 2026: dokumen dikelola di Basis Pengetahuan; di sini hanya daftar dan tautan ke sana */}
               <JudulSeksi
-                aksi={
-                  <UnggahBerkas
-                    ringkas
-                    multiple
-                    label="Unggah dokumen"
-                    accept={TERIMA_DOKUMEN}
-                    url={`/api/proyek/${proyek.id}/dokumen`}
-                    isian={{ subBagianKode: s.kode, butirKode: s.butir[0]?.kode }}
-                  />
-                }
+                aksi={!proyek.diarsipkanPada && (
+                  <TautanSimpan
+                    href={`/proyek/${proyek.id}/dokumen/tambah?sub=${encodeURIComponent(s.kode)}&kembali=${encodeURIComponent(hrefSub(proyek.id, bagian.kode, s.kode))}`}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium hover:bg-muted"
+                  >
+                    <Plus className="size-3.5" aria-hidden />Tambah ke Basis Pengetahuan
+                  </TautanSimpan>
+                )}
               >
-                Dokumen pendukung{terunggah.length > 0 ? ` · ${terunggah.length}` : ""}
+                Dokumen dari Basis Pengetahuan{terunggah.length > 0 ? ` · ${terunggah.length}` : ""}
               </JudulSeksi>
               {terunggah.length > 0 ? (
                 <ul className="space-y-1 rounded-lg border p-3">
@@ -251,7 +247,8 @@ export default async function HalamanSubBagian({ params }: PageProps<"/proyek/[p
                 </ul>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Belum ada dokumen khusus sub-bagian ini. Sistem tetap mencari di semua dokumen LED dan dokumen bersama fakultas.
+                  Belum ada dokumen yang dikaitkan ke sub-bagian ini. Saat generate, sistem tetap mencari di semua dokumen{" "}
+                  <TautanSimpan href={`/proyek/${proyek.id}/dokumen`} className="text-primary underline">Basis Pengetahuan</TautanSimpan>.
                 </p>
               )}
             </section>

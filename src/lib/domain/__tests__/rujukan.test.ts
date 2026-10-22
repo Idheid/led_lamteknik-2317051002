@@ -24,7 +24,8 @@ test('rujukan singkat per paragraf dari kode sumber', () => {
   assert.equal(rujukanSingkat(['T-4a', 'U1'], k), '(LKPS Tabel 4.a; Renstra FT Unila 2021–2025, 2021)');
   assert.equal(rujukanSingkat(['D1'], k), '(notulen-rapat, t.t.)', 'tanpa tahun: t.t.; judul dari nama berkas');
   assert.equal(rujukanSingkat(['M-NDTPS', 'M-NILAI-27'], k), '(LKPS Tabel 4.a, diolah; LKPS, dihitung tim penyusun)');
-  assert.equal(rujukanSingkat(['J', 'M-TIM'], k), '(Tim Penyusun LED)', 'sama → sekali');
+  assert.equal(rujukanSingkat(['J', 'M-TIM'], k), null, 'jawaban, tim, dan jadwal penyusun tidak dirujuk');
+  assert.equal(rujukanSingkat(['J', 'U1'], k), '(Renstra FT Unila 2021–2025, 2021)', 'hanya dokumen yang dirujuk');
   assert.equal(rujukanSingkat(['X9'], k), null);
   assert.equal(rujukanSingkat([], k), null);
   assert.deepEqual(kodeParagraf({ sumber: 'D1, T-4a' }), ['D1', 'T-4a']);

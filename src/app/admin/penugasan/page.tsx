@@ -20,10 +20,10 @@ export default async function HalamanPenugasan() {
     <>
       <JudulHalaman
         judul="Penugasan asesor"
-        deskripsi="Satu LED dinilai satu asesor; satu asesor boleh menilai beberapa LED. Asesor hanya bisa membuka LED yang ditugaskan kepadanya. Buat akun asesor di halaman Akun PJ."
+        deskripsi="Satu LED dinilai satu asesor"
       />
       {asesor.length === 0 && (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Belum ada akun asesor aktif. Buat dulu lewat tombol Akun asesor di halaman Akun PJ.</p>
+        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Belum ada akun asesor aktif. Buat dulu di Kelola akun → Tambah akun → peran Asesor.</p>
       )}
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">

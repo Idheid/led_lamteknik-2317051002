@@ -35,12 +35,12 @@ export function JudulHalaman({
           </BreadcrumbList>
         </Breadcrumb>
       )}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">{judul}</h1>
           {deskripsi && <p className="max-w-3xl text-sm text-muted-foreground">{deskripsi}</p>}
         </div>
-        {aksi && <div className="flex shrink-0 flex-wrap gap-2">{aksi}</div>}
+        {aksi && <div className="flex max-w-full flex-wrap gap-2">{aksi}</div>}
       </div>
     </div>
   );

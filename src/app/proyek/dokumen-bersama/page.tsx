@@ -10,8 +10,9 @@ import { ShellDaftarProyek } from "@/components/shell/shell-daftar-proyek";
 import { Petunjuk } from "@/components/petunjuk";
 import { PemantauProses } from "@/components/status-proses";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UnggahDokumenUmum } from "@/app/proyek/[proyekId]/dokumen/unggah-umum";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { TabelDokumen } from "@/components/basis-pengetahuan/tabel-dokumen";
 
 export const metadata: Metadata = { title: "Basis Pengetahuan fakultas" };
@@ -25,7 +26,8 @@ export default async function HalamanDokumenBersama() {
       <PemantauProses aktif={dokumen.some((d) => STATUS_BERJALAN.includes(d.status))} />
       <JudulHalaman
         judul="Basis Pengetahuan fakultas"
-        deskripsi="Dokumen bersama fakultas yang berlaku untuk semua prodi. Diunggah dan diindeks sekali, lalu ikut dicari saat menyusun narasi setiap LED dengan kode sumber U1, U2, …. Di dalam LED, dokumen ini tampil di tab kedua menu Basis Pengetahuan."
+        deskripsi="Dokumen bersama untuk semua LED"
+        aksi={<Button asChild size="lg"><Link href="/proyek/dokumen-bersama/tambah"><Plus aria-hidden />Tambah dokumen</Link></Button>}
       />
       <Petunjuk
         kunci="pj-dokumen-bersama"
@@ -44,22 +46,11 @@ export default async function HalamanDokumenBersama() {
           </AlertDescription>
         </Alert>
       )}
-      <div className="grid gap-6 xl:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Unggah dokumen bersama</CardTitle>
-            <CardDescription>Dipakai semua LED di fakultas.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <UnggahDokumenUmum pilihan={pilihan} url="/api/dokumen-bersama" />
-          </CardContent>
-        </Card>
-        <Card className="py-0 xl:col-span-2">
-          <CardContent className="overflow-x-auto px-0">
-            <TabelDokumen dokumen={dokumen} namaSub={namaSub} proyekId="" bolehUbah />
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="py-0">
+        <CardContent className="overflow-x-auto px-0">
+          <TabelDokumen dokumen={dokumen} namaSub={namaSub} proyekId="" bolehUbah />
+        </CardContent>
+      </Card>
     </ShellDaftarProyek>
   );
 }

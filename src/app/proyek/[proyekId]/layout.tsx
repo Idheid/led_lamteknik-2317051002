@@ -1,81 +1,34 @@
 import { notFound } from "next/navigation";
-import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
-import type { GrupNav, StatusLencana } from "@/components/shell/nav-sidebar";
+import { ShellPj } from "@/components/shell/shell-daftar-proyek";
 import { GalatAkses } from "@/lib/akses";
-import { bagianProyek } from "@/lib/data/proyek";
+import { ambilProyek } from "@/lib/data/proyek";
 import { tugasProyek } from "@/lib/data/generate";
 import { BannerAntrean } from "@/components/narasi/banner-antrean";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 
-const NAMA_PENDEK: Record<string, string> = {
-  AWAL: "Halaman awal",
-  I: "Bab I Pendahuluan",
-  "II.A": "Bab II.A Tim penyusun",
-  "II.B": "Bab II.B Lingkungan eksternal",
-  III: "Bab III Pengembangan",
-  IV: "Bab IV Penutup",
-  LAMPIRAN: "Lampiran",
-};
-
+/** Satu LED: sidebar PJ bersama (menu LED ini + pengaturan fakultas), banner antrean, tanda arsip. */
 export default async function LayoutProyekLED({ children, params }: LayoutProps<"/proyek/[proyekId]">) {
   const p = await wajibPenanggungJawab();
   const { proyekId } = await params;
-  let data;
+  let proyek;
   try {
-    data = await bagianProyek(p, proyekId);
+    proyek = await ambilProyek(p, proyekId);
   } catch (e) {
     if (e instanceof GalatAkses) notFound();
     throw e;
   }
-  const { proyek, bagian } = data;
   const tugas = await tugasProyek(p, proyekId);
-  const dasar = `/proyek/${proyekId}`;
-  const kriteria = bagian.filter((b) => b.jenis === "kriteria");
-  const lain = bagian.filter((b) => b.jenis !== "kriteria");
-  const grup: GrupNav[] = [
-    {
-      label: "Fakultas",
-      item: [
-        { judul: "Semua LED", href: "/proyek", ikon: "proyek", persis: true },
-        { judul: "Kunci API fakultas", href: "/proyek/kunci-api", ikon: "kunci" },
-      ],
-    },
-    {
-      label: "LED ini",
-      item: [
-        { judul: "Beranda", href: dasar, ikon: "beranda", persis: true },
-        { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },
-        { judul: "Basis Pengetahuan", href: `${dasar}/dokumen`, ikon: "dokumen" },
-        { judul: "Tim penyusun", href: `${dasar}/tim`, ikon: "tim" },
-        { judul: "Ekspor Word", href: `${dasar}/ekspor`, ikon: "ekspor" },
-      ],
-    },
-    {
-      label: "Kriteria",
-      item: kriteria.map((b) => ({
-        judul: b.nama, kode: b.kode, href: `${dasar}/bagian/${b.kode}`, ikon: "kriteria" as const, status: b.status as StatusLencana,
-      })),
-    },
-    {
-      label: "Bagian lain",
-      item: lain.map((b) => ({
-        judul: NAMA_PENDEK[b.kode] ?? b.nama, href: `${dasar}/bagian/${b.kode}`, ikon: "bab" as const, status: b.status as StatusLencana,
-      })),
-    },
-  ];
   return (
-    <ShellAplikasi pengguna={p} grup={grup} subjudul={proyek.prodi.nama} beranda={dasar}>
+    <ShellPj pengguna={p} proyekId={proyekId}>
       {proyek.diarsipkanPada && (
         <Alert>
-          <AlertTitle>Proyek diarsipkan</AlertTitle>
-          <AlertDescription>
-            Proyek ini hanya untuk dibaca dan diekspor. Aktifkan kembali di Beranda proyek (Pengaturan proyek) untuk mengubahnya.
-          </AlertDescription>
+          <AlertTitle>LED ini diarsipkan</AlertTitle>
+          <AlertDescription>Hanya bisa dibaca dan diekspor. Aktifkan kembali di Beranda LED → Pengaturan LED.</AlertDescription>
         </Alert>
       )}
       <BannerAntrean proyekId={proyekId} awal={tugas} />
       {children}
-    </ShellAplikasi>
+    </ShellPj>
   );
 }

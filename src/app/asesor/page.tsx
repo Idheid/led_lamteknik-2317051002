@@ -21,7 +21,7 @@ export default async function HalamanAsesor() {
   const led = await ledAsesor(p);
   return (
     <ShellAplikasi pengguna={p} grup={[MENU_ASESOR]} subjudul="Asesor" beranda="/asesor">
-      <JudulHalaman judul="LED ditugaskan" deskripsi="LED yang ditugaskan admin kepada Anda. Anda membaca narasi, memberi catatan revisi, lalu memberi skor 0–4 per butir." />
+      <JudulHalaman judul="LED ditugaskan" />
       <Petunjuk
         kunci="asesor-beranda"
         fungsi="Mereview LED sebelum diajukan ke LAM Teknik."

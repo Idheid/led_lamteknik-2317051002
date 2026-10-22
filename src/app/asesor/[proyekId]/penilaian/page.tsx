@@ -17,7 +17,7 @@ export default async function HalamanPenilaian({ params }: PageProps<"/asesor/[p
     <>
       <JudulHalaman
         judul="Penilaian akhir"
-        deskripsi="Pilih skor 0–4 per butir; setiap pilihan menampilkan deskriptor matriks untuk skor itu. Untuk butir angka, skor hitungan sistem dari LKPS menjadi acuan; skor yang berbeda wajib diberi alasan."
+        deskripsi="Skor 0–4 per butir sesuai deskriptor matriks"
         remah={[{ label: "Ringkasan review", href: `/asesor/${proyekId}` }, { label: "Penilaian akhir" }]}
         aksi={<Badge variant={n.review === "direview" ? "default" : "outline"}>{LABEL_REVIEW[n.review]}</Badge>}
       />

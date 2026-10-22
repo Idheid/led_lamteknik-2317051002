@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, ChevronRight, CircleX, FileSpreadsheet } from "lucide-react";
+import { AlertTriangle, ChevronRight, CircleX, FileSpreadsheet, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 import { ambilProyek } from "@/lib/data/proyek";
 import { daftarBerkasLkps, lkpsAktif } from "@/lib/data/lkps";
@@ -10,7 +11,6 @@ import { formatTahunAkademik } from "@/lib/domain/tahun-akademik";
 import { fmtWaktu, formatMetrik, formatUkuran } from "@/lib/tampil";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
-import { UnggahBerkas } from "@/components/unggah-berkas";
 import { LencanaProses, PemantauProses } from "@/components/status-proses";
 import { STATUS_BERJALAN } from "@/lib/tampil";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -40,8 +40,11 @@ export default async function HalamanLkps({ params }: PageProps<"/proyek/[proyek
       <PemantauProses aktif={berjalan} />
       <JudulHalaman
         judul="Data LKPS"
-        deskripsi={`Unggah LKPS dari template LKPS LAM Teknik 2025 (Excel). PDF bisa dipakai sebagai cadangan, tetapi hasilnya harus dicek. TS proyek: ${formatTahunAkademik(proyek.tsTahunMulai)}.`}
-        remah={[{ label: "Beranda", href: `/proyek/${proyekId}` }, { label: "Data LKPS" }]}
+        deskripsi={`TS ${formatTahunAkademik(proyek.tsTahunMulai)}`}
+        remah={[{ label: "Beranda LED", href: `/proyek/${proyekId}` }, { label: "Data LKPS" }]}
+        aksi={!proyek.diarsipkanPada && (
+          <Button asChild size="lg"><Link href={`/proyek/${proyekId}/lkps/tambah`}><Plus aria-hidden />Tambah data LKPS</Link></Button>
+        )}
       />
       <Petunjuk
         kunci="proyek-lkps"
@@ -53,28 +56,14 @@ export default async function HalamanLkps({ params }: PageProps<"/proyek/[proyek
         ]}
       />
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-1">
+      <div>
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Unggah LKPS</CardTitle>
-            <CardDescription>Jangan mengubah nama sheet atau struktur template. Berkas terbaru yang terbaca menjadi sumber data.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <UnggahBerkas
-              url={`/api/proyek/${proyekId}/lkps`}
-              accept=".xlsx,.pdf"
-              label="Pilih berkas LKPS"
-              keterangan="Excel (.xlsx) atau PDF, maksimal 25 MB"
-            />
-          </CardContent>
-        </Card>
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Berkas yang diunggah</CardTitle>
+            <CardTitle className="text-base">Berkas LKPS</CardTitle>
           </CardHeader>
           <CardContent className="px-0">
             {berkas.length === 0 ? (
-              <p className="px-6 text-sm text-muted-foreground">Belum ada berkas LKPS.</p>
+              <p className="px-6 text-sm text-muted-foreground">Belum ada berkas LKPS. Klik <span className="font-medium text-foreground">Tambah data LKPS</span>.</p>
             ) : (
               <Table>
                 <TableHeader>
