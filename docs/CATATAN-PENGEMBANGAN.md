@@ -545,3 +545,116 @@ rujukan tidak punya tabel LKPS acuan (kini memakai kerangka bawaan).
 | Butir berumus otomatis; tanpa rumus/rumus gagal → nilai manual menjadi sumber | `generate.test.ts` (tahap 5), `butir-angka.test.ts` | Lulus |
 | Alur penuh sampai ekspor Word | `alur-penuh.test.ts` | Lulus |
 | `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus (90 uji unit, 35 uji integrasi) |
+
+## Revisi 22 Oktober 2026 (Claude Code)
+
+Sumber: tab "Revisi 22 Oktober" pada dokumen rencana revisi (artifact Claude Docs). Urutan kerja mengikuti dokumen;
+setiap tahap diuji sebelum tahap berikutnya.
+
+### Tahap 1 — Kecepatan generate (commit `3320cf3`)
+
+- Gemini 3 dipanggil dengan `thinkingLevel: "low"`, batas 90 detik per panggilan (`GENERATE_BATAS_MS`; habis waktu →
+  coba sekali lagi, lalu model cadangan), keluaran dialirkan (`streamText` + `partialOutputStream`) dan teks sementara
+  disimpan di `TugasGenerate.pratinjau` (kotak "Sedang ditulis", dibaca ulang tiap 2 detik). Dua sub-bagian IKU
+  berurutan dikerjakan bersamaan (`GENERATE_PARALEL`, bawaan 2).
+- Ukuran nyata: rata-rata 5,8 detik per sub-bagian (sebelumnya 12,9 detik dengan model dan kunci yang sama), teks pertama
+  tampil ± 2 detik.
+
+### Tahap 2 — Deadline, kesiapan, jadwal kerja mundur (commit `457a9d6`)
+
+- `ProyekLED.batasPengajuan` (usulan: akreditasi berakhir − 6 bulan), `jadwal` (tonggak yang diubah PJ), `statusReview`.
+  Tonggak dihitung mundur: LKPS 8 minggu, kriteria 6, bab lain 4, review 2, ekspor 0 minggu sebelum batas.
+- Semua LED diurutkan menurut tanggal akreditasi berakhir, arsip di bawah; kolom kesiapan (LKPS %, draf/selesai, catatan
+  asesor, status review, sisa waktu; merah ≤ 6 bulan dan belum layak, kuning ≤ 12 bulan); tombol Buat LED di daftar
+  prodi. Bab II.A memakai jadwal dan susunan tim tanpa nama.
+
+### Tahap 3 — Rujukan, Lampiran, tautan bukti, DRAF (commit `28249d6`)
+
+- Rujukan singkat di akhir paragraf Word dari kode sumber (dokumen + tahun terbit, tabel LKPS, metrik); Daftar Rujukan
+  di Lampiran; jumlah halaman dihitung sampai judul LAMPIRAN (Lampiran tidak dihitung dalam 150 halaman).
+- Ekspor final wajib Layak diajukan dan tautan bukti untuk setiap dokumen yang dirujuk; ekspor DRAF kapan saja dengan
+  tanda DRAF di header/footer, pemeriksaan menjadi peringatan.
+
+### Tahap 4 — Target dan capaian (commit `7e0f3ea`)
+
+- `TargetButir` per butir angka; persen capaian, status tercapai, dan tren TS-2 → TS dihitung di kode
+  (`src/lib/domain/capaian.ts`), masuk prompt sebagai metrik `M-CAPAIAN-*`/`M-TREN-*`; aturan prompt baru: evaluasi
+  capaian memakai angka sistem.
+
+### Tahap 5 — Verifikasi per kalimat dan konsistensi angka (commit `47f028c`)
+
+- Cek otomatis per kalimat tanpa kuota AI: angka harus ada di sumber yang dirujuk paragraf, lalu kecocokan kata kunci
+  (ambang 0,6/0,3; kalimat berangka yang semua angkanya cocok cukup 0,2). Garis bawah hijau/kuning/merah di editor,
+  ringkasan, saringan kalimat bermasalah, tombol **Periksa dengan AI** (satu panggilan Gemini per sub-bagian).
+- Konsistensi angka antar kriteria dan terhadap LKPS (angka sebanding 0,5–2× nilai metrik, toleransi 1%); perbedaan
+  menahan ekspor final sampai diperbaiki atau diberi alasan.
+- Bahan Bab 4: `npx tsx scripts/sampel-verifikasi.ts ekspor <proyekId> sampel.csv` mengambil 50 kalimat acak (seed
+  tetap) dengan label otomatis dan label AI; peneliti mengisi `label_manual`, lalu `... nilai sampel.csv` menghitung
+  akurasi, matriks kebingungan, dan persentase kalimat sesuai sumber (faithfulness). **Penilaian manual 50 kalimat belum
+  dilakukan** karena LED pengembangan belum punya draf hasil generate; jalankan setelah satu LED digenerate.
+
+### Tahap 6 — Server dan cadangan (commit `2e814f9`)
+
+- `Dockerfile` (Node 22, LibreOffice Writer, font Liberation/Carlito/Caladea, pg_dump 17), `docker-compose.produksi.yml`
+  (migrasi, web `next start`, worker, PostgreSQL + pgvector, Caddy untuk HTTPS), `.env.produksi.example`,
+  `docs/PANDUAN-SERVER.md`.
+- Akses dari perangkat lain: `BETTER_AUTH_TRUSTED_ORIGINS` (dibaca Better Auth langsung). Diuji di laptop mode produksi
+  lewat IP Wi-Fi: login dari alamat IP yang dipercaya diterima, alamat lain ditolak `INVALID_ORIGIN`.
+- Cadangan harian oleh worker (pg-boss `schedule`, 02.00 WIB, `missed: once`): pg_dump format custom + zip unggahan,
+  ditulis ke folder sementara lalu diganti nama, sisakan 14; status terakhir di halaman Akun PJ admin. Pemulihan
+  `npm run cadangan -- pulihkan`. Diuji: cadangan data pengembangan dipulihkan ke basis data terpisah, jumlah baris
+  semua tabel utama dan isi semua berkas unggahan identik.
+- Belum: build image Docker di server sungguhan (menunggu alamat server; membangun image mengunduh paket).
+
+### Tahap 7 — Asesor (commit `6836f72`)
+
+- Akses: `ambilProyek(p, id, { baca: true })` mengizinkan asesor yang ditugaskan hanya pada fungsi baca; semua fungsi
+  ubah tetap lewat `ambilProyekUbah` (PJ), jadi asesor tidak bisa menyunting, generate, atau ekspor.
+- Catatan revisi berjangkar pada teks polos versi aktif (paragraf depth-first dipisah baris baru): teks persis + 60
+  karakter konteks kiri/kanan; letaknya dicari ulang setiap dokumen berubah, kemunculan dengan konteks paling cocok
+  dipilih. Bila teks hilang, catatan ditandai "Teks asli sudah berubah".
+- Alur: terbuka → diperbaiki (PJ, versi aktif dicatat) → diterima atau dibuka lagi (asesor, wajib balasan). Versi yang
+  dirujuk catatan tidak ditimpa simpan otomatis (cacat yang ditemukan uji integrasi: suntingan PJ dalam 30 menit
+  menimpa versi saat catatan dibuat sehingga tidak ada yang bisa dibandingkan).
+- Real time memakai polling (catatan 4 detik, lonceng 15 detik) supaya tidak butuh server WebSocket.
+- Penilaian akhir: skor 0–4 dengan deskriptor matriks, skor sistem butir angka sebagai acuan (beda wajib beralasan),
+  Σ bobot × skor (bobot Sarjana berjumlah 100,01 sehingga maksimum 400,04), perkiraan status dari
+  `VersiInstrumen.statusAkreditasi`. Instrumen seed lama hanya memuat deskriptor skor 4; deskriptor 0–3 terisi bila
+  instrumen jenjang diekstrak dari Matriks Penilaian (halaman memberi keterangan).
+- Uji dua sesi bersamaan (PJ di `localhost`, asesor di `127.0.0.1` supaya kuki terpisah): catatan asesor muncul di
+  layar PJ tanpa muat ulang, Sudah diperbaiki muncul di layar asesor beserta tanda versi baru, Bandingkan menampilkan
+  kalimat tambahan, Terima. Data uji di LED pengembangan dihapus lagi; akun asesor uji dan penugasannya dibiarkan
+  (kredensial di `.env`: `DEMO_ASESOR_*`).
+
+### Tahap 8 — Basis Pengetahuan (commit `6836f72`)
+
+- Menu digabung: di dalam LED **Basis Pengetahuan** dengan tab Dokumen LED ini dan Dokumen bersama fakultas; di menu
+  fakultas **Basis Pengetahuan fakultas**. Tabel dokumen bersama (`src/components/basis-pengetahuan/`): status, jumlah
+  potongan (klik untuk melihat teks setiap potongan), tahun ("t.t." bila kosong), tautan bukti.
+- Uji cari menampilkan skor RRF, peringkat vektor/kata kunci, kode sumber D/U sama dengan saat generate, dan tombol
+  **Pakai kueri generate** (`kueriGenerate` dipakai bersama oleh generate dan uji cari).
+
+### Tahap 9 — One Data
+
+Menunggu persetujuan daftar data dan akses API. Disiapkan `docs/ONE-DATA-KEBUTUHAN.md` (data per prioritas dari kolom
+LKPS, data yang tidak diminta seperti NIK, rancangan ID sinkron, kebutuhan dari pihak One Data). Belum ada perubahan kode.
+
+### Tahap 10 — Dokumen
+
+Diperbarui: `CLAUDE.md` (keputusan 2, 6, 9, 11; struktur kode revisi 22 Okt), `docs/PANDUAN-PENGGUNAAN.md` (tiga peran),
+`README.md`, `docs/RENCANA-ITERASI.md`, catatan ini; baru: `docs/PANDUAN-SERVER.md`, `docs/ONE-DATA-KEBUTUHAN.md`.
+Di luar kode: Figma, peta form, diagram use case tiga aktor, dan Bab 1–3.
+
+### Hasil pemeriksaan revisi 22 Okt
+
+| Hal | Cara diperiksa | Hasil |
+| --- | --- | --- |
+| Generate lebih cepat dan bertahap | `kecepatan.test.ts`, ukuran nyata | 5,8 detik vs 12,9 detik per sub-bagian |
+| Prodi paling dekat berakhir di atas; tonggak terlewat merah | `kesiapan.test.ts` | Lulus |
+| Rujukan, Daftar Rujukan, halaman tanpa Lampiran, DRAF | `ekspor.test.ts` | Lulus |
+| Angka capaian sama dengan hitungan sistem | `generate.test.ts` (tahap 4), `capaian.test.ts` | Lulus |
+| Angka yang sengaja dibuat berbeda tertangkap | `verifikasi.test.ts` | Lulus |
+| Dibuka dari alamat lain; cadangan dipulihkan | uji LAN mode produksi, `cadangan.test.ts`, pemulihan data pengembangan | Lulus |
+| Catatan asesor muncul tanpa muat ulang (dua sesi) | uji browser, `review.test.ts` | Lulus |
+| Lihat potongan dan uji cari | `basis-pengetahuan.test.ts`, browser | Lulus |
+| `npm run lint`, `npm run typecheck`, `npm test` | dijalankan | Lulus (107 uji unit, 53 uji integrasi) |

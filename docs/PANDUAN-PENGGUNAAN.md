@@ -1,27 +1,51 @@
 # Panduan penggunaan
 
-Panduan singkat Sistem Penyusun LED LAM Teknik (setelah revisi 19 Okt 2026) untuk dua peran: **Admin** dan
-**Penanggung jawab fakultas (PJ)**. Satu instalasi website dipakai satu fakultas. Setiap halaman juga punya kotak
-**Petunjuk halaman ini** yang menjelaskan fungsi halaman dan langkah berikutnya; kotak itu bisa ditutup dan pilihannya
-diingat di browser.
+Panduan singkat Sistem Penyusun LED LAM Teknik (setelah revisi 22 Okt 2026) untuk tiga peran: **Admin**,
+**Penanggung jawab fakultas (PJ)**, dan **Asesor**. Satu instalasi website dipakai satu fakultas. Setiap halaman juga
+punya kotak **Petunjuk halaman ini** yang menjelaskan fungsi halaman dan langkah berikutnya; kotak itu bisa ditutup dan
+pilihannya diingat di browser.
 
 Semua akun dibuat admin; tidak ada pendaftaran mandiri. Akun baru dan akun yang kata sandinya diatur ulang **wajib
 mengganti kata sandi** saat login pertama. Setiap pengguna bisa mengganti kata sandinya sendiri lewat menu akun (pojok
 kiri bawah) → **Ganti kata sandi** (wajib mengisi kata sandi lama).
 
+Ikon **lonceng** di kanan atas (PJ dan asesor) menampilkan pemberitahuan review: catatan revisi baru, catatan yang
+sudah diperbaiki atau diterima, balasan, pengajuan review, dan keputusan asesor. Klik pemberitahuan untuk membuka
+halamannya. Pemberitahuan diperbarui otomatis tanpa muat ulang.
+
+| Aksi | Admin | PJ | Asesor |
+|---|---|---|---|
+| Membuat akun dan menugaskan asesor ke LED | Ya | – | – |
+| Menyusun, generate, dan menyunting narasi | – | Ya | – |
+| Membaca LED | – | Semua LED | Hanya LED yang ditugaskan |
+| Memblok kalimat dan memberi catatan revisi | – | – | Ya |
+| Menandai Sudah diperbaiki | – | Ya | – |
+| Menerima perbaikan atau membuka lagi catatan | – | – | Ya |
+| Memberi skor 0–4 per butir dan menyatakan Layak diajukan | – | – | Ya |
+| Ekspor Word final | – | Ya, setelah Layak diajukan | – |
+
 ---
 
 ## A. Admin
 
-Menu admin hanya dua: **Akun PJ** dan **Kunci API**. Admin tidak membuka LED, prodi, instrumen, atau dokumen.
+Menu admin: **Akun PJ**, **Penugasan asesor**, dan **Kunci API**. Admin tidak membuka isi LED, prodi, instrumen, atau
+dokumen.
 
 ### Akun PJ
 
 - Buat satu akun **penanggung jawab fakultas** (atau akun admin lain) dan berikan kata sandi sementara.
+- Tombol **Akun asesor** membuat akun asesor (reviewer internal).
 - **Lupa kata sandi**: menu baris akun → **Atur ulang kata sandi**; pemilik akun wajib menggantinya saat login.
 - **Pergantian PJ**: nonaktifkan akun lama, lalu buat akun baru. LED, kunci API, dan riwayat versi milik fakultas,
   jadi tidak ada yang hilang.
 - Admin tidak bisa menonaktifkan atau menghapus akunnya sendiri, dan sistem selalu menyisakan minimal satu admin aktif.
+- Kotak **Cadangan otomatis** menampilkan cadangan terakhir (tanggal, berhasil atau gagal, ukuran). Kotak berwarna
+  kuning bila cadangan berhasil terakhir lebih dari dua hari lalu. Lihat docs/PANDUAN-SERVER.md.
+
+### Penugasan asesor
+
+Satu LED dinilai satu asesor; satu asesor boleh menilai beberapa LED. Pilih asesor di kolom **Asesor** setiap LED.
+Asesor langsung diberi tahu. Asesor hanya bisa membuka LED yang ditugaskan kepadanya.
 
 ### Kunci API (tiga tab)
 
@@ -29,16 +53,17 @@ Menu admin hanya dua: **Akun PJ** dan **Kunci API**. Admin tidak membuka LED, pr
   diizinkan.
 - **Model Gemini**: klik **Muat ulang daftar** (perlu minimal satu kunci aktif), pilih model narasi, model cadangan, dan
   model embedding; klik **Uji model**. Mengganti model embedding membuat semua dokumen diindeks ulang.
-- **Log pemakaian**: panggilan model, token masuk/keluar, dan galat. Galat `kuota_harian` (429) berarti kuota kunci
-  habis; sistem otomatis mencoba model cadangan lalu kunci berikutnya.
+- **Log pemakaian**: panggilan model, token masuk/keluar, durasi, dan galat. Galat `kuota_harian` (429) berarti kuota
+  kunci habis; `batas_waktu` berarti satu panggilan lebih dari 90 detik. Sistem otomatis mencoba lagi, lalu model
+  cadangan, lalu kunci berikutnya.
 
 ---
 
 ## B. Penanggung jawab fakultas
 
-Menu utama: **Semua LED**, **Program studi**, **Instrumen**, **Dokumen bersama fakultas**, **Kunci API fakultas**.
-Di dalam satu LED: **Beranda**, **Data LKPS**, **Dokumen**, **Tim penyusun**, kriteria C.1–C.7 dan bab lain,
-**Ekspor Word**.
+Menu utama: **Semua LED**, **Program studi**, **Instrumen**, **Basis Pengetahuan fakultas**, **Kunci API fakultas**.
+Di dalam satu LED: **Beranda**, **Data LKPS**, **Basis Pengetahuan**, **Tim penyusun**, **Ekspor Word**, kriteria
+C.1–C.7, dan bab lain.
 
 ### 1. Persiapan (sekali di awal)
 
@@ -47,8 +72,9 @@ Di dalam satu LED: **Beranda**, **Data LKPS**, **Dokumen**, **Tim penyusun**, kr
    Kunci berlaku untuk semua LED, disimpan terenkripsi, dan hanya 4 karakter terakhir yang ditampilkan.
 3. **Program studi**: isi **identitas fakultas** sekali (nama fakultas, perguruan tinggi, alamat, kota; pengganti UPPS),
    lalu tambah program studi beserta jenjang, kode PDDikti, dan tanggal **akreditasi berlaku sampai**. Daftar prodi
-   diurutkan dari akreditasi yang paling dekat berakhir.
-4. **Dokumen bersama fakultas**: unggah sekali dokumen yang berlaku untuk semua prodi (VMTS dan Renstra fakultas,
+   diurutkan dari akreditasi yang paling dekat berakhir dan menampilkan kolom **Kesiapan**. Prodi yang tinggal
+   ≤ 12 bulan dan belum punya LED mendapat tombol **Buat LED**.
+4. **Basis Pengetahuan fakultas**: unggah sekali dokumen yang berlaku untuk semua prodi (VMTS dan Renstra fakultas,
    SK struktur organisasi, keuangan, sarana-prasarana dan K3L, SPMI dan audit mutu). Semua LED memakainya saat menyusun
    narasi (kode sumber U1, U2, …).
 
@@ -60,7 +86,7 @@ jenjang (10 jenjang); LED baru otomatis memakai instrumen aktif jenjang prodinya
 1. Menu **Instrumen** → **Instrumen baru**: pilih jenjang; nama dan kode terisi otomatis.
 2. Unggah tiga berkas jenjang itu (skema Pasca Terakreditasi Pertama dan Unggul):
    - **Template LED (.docx)**: dipakai juga untuk ekspor Word;
-   - **Matriks Penilaian (.pdf)** jenjang tersebut;
+   - **Matriks Penilaian (.pdf)** jenjang tersebut (sumber deskriptor skor 0–4 yang dipakai asesor);
    - **Pedoman Penilaian (.pdf)** beserta **halaman tabel bobot** jenjang itu (nomor halaman PDF, contoh Sarjana
      `223-227`). Letak tabel dideteksi otomatis setelah pedoman diunggah; periksa dan simpan.
 3. Klik **Mulai ekstraksi**. Template diurai tanpa AI (bagian, sub-bagian, instruksi), tabel bobot dibaca tanpa AI,
@@ -77,15 +103,19 @@ jenjang (10 jenjang); LED baru otomatis memakai instrumen aktif jenjang prodinya
 6. Klik **Sudah dicek, aktifkan**. Instrumen aktif sebelumnya untuk jenjang itu dinonaktifkan tetapi tetap tersimpan;
    LED lama tetap memakai versinya.
 
-### 3. Membuat LED (per periode 5 tahun)
+### 3. Membuat LED, kesiapan, dan jadwal kerja
 
-1. Menu **Semua LED** (dikelompokkan per prodi) → **LED baru**: pilih prodi, tahun pengajuan, dan nama. Instrumen
-   dipilih otomatis menurut jenjang prodi. Prodi yang masih punya LED aktif, atau jenjangnya belum punya instrumen
-   aktif, tidak bisa dipilih (alasannya tampil di daftar).
-2. Label periode tampil sebagai "Periode 2026–2031". **Tahun data LKPS (TS)** dihitung dari tahun pengajuan
-   (pengajuan 2026 → TS 2025/2026) dan bisa diubah di Beranda → **Pengaturan LED**. Label TS di LKPS dan instruksi
-   diganti tahun akademik nyata di narasi.
-3. LED periode lama cukup **diarsipkan** (tetap tersimpan, hanya baca). LED baru untuk prodi yang sama baru bisa dibuat
+1. Menu **Semua LED** → **LED baru**: pilih prodi, tahun pengajuan, dan nama. Instrumen dipilih otomatis menurut
+   jenjang prodi. Prodi yang masih punya LED aktif, atau jenjangnya belum punya instrumen aktif, tidak bisa dipilih.
+2. **Semua LED** diurutkan menurut tanggal akreditasi berakhir (paling dekat di atas); LED yang diarsipkan di bawah.
+   Kolom **Kesiapan**: persentase LKPS terisi, sub-bagian berdraf/selesai, catatan asesor terbuka, status review, dan
+   sisa waktu. Merah: ≤ 6 bulan dan belum Layak diajukan; kuning: ≤ 12 bulan.
+3. Beranda LED → **Kesiapan dan jadwal kerja**: batas pengajuan (usulan 6 bulan sebelum akreditasi berakhir) dan
+   tonggak yang dihitung mundur (LKPS lengkap, semua kriteria selesai, bab lain selesai, review asesor, ekspor final).
+   Tanggal tonggak bisa diubah; tonggak yang terlewat dan belum tercapai ditandai merah.
+4. Label periode tampil sebagai "Periode 2026–2031". **Tahun data LKPS (TS)** dihitung dari tahun pengajuan
+   (pengajuan 2026 → TS 2025/2026) dan bisa diubah di Beranda → **Pengaturan LED**.
+5. LED periode lama cukup **diarsipkan** (tetap tersimpan, hanya baca). LED baru untuk prodi yang sama baru bisa dibuat
    setelah LED lama diarsipkan. **Hapus LED** hanya untuk LED yang salah dibuat (wajib mengetik ulang namanya).
 
 ### 4. Bahan penyusunan di dalam LED
@@ -93,59 +123,108 @@ jenjang (10 jenjang); LED baru otomatis memakai instrumen aktif jenjang prodinya
 1. **Data LKPS**: unggah LKPS dari template LAM Teknik 2025 (Excel). PDF bisa dipakai sebagai cadangan, tetapi
    tabelnya wajib dicek. Tabel **Metrik butir angka** menunjukkan sumber nilai tiap butir angka: dihitung rumus,
    diisi manual, atau belum ada.
-2. **Dokumen**: unggah PDF/DOCX/gambar dan kaitkan ke sub-bagian. Dokumen berlencana **bersama fakultas** sudah
-   tersedia untuk semua LED. Tunggu status **Siap dicari**.
+2. **Basis Pengetahuan** (dua tab: **Dokumen LED ini** dan **Dokumen bersama fakultas**): unggah PDF/DOCX/gambar dan
+   kaitkan ke sub-bagian. Setiap dokumen menampilkan status, **jumlah potongan** (klik untuk melihat teks setiap
+   potongan), **tahun** terbit (untuk rujukan Word; kosong = "t.t."), dan tautan bukti.
+3. **Uji cari**: ketik pertanyaan, atau pilih sub-bagian lalu **Pakai kueri generate**. Hasilnya adalah 8 potongan yang
+   akan diberikan ke AI saat generate, dengan skor gabungan (RRF) dan peringkat vektor/kata kunci. Pakai untuk mengecek
+   apakah buktinya sudah terbaca sebelum generate.
 
 ### 5. Menyusun narasi: satu sub-bagian satu halaman
 
 Buka kriteria di sidebar (C.1–C.7). **Ringkasan kriteria** menampilkan bobot, target halaman, daftar sub-bagian dengan
-status (belum diisi, ada jawaban, ada draf, selesai) dan target kata, tombol **Lanjutkan** (membuka sub-bagian pertama
-yang belum selesai), **Generate semua**, dan **Tandai selesai**.
+status dan jumlah catatan asesor yang belum selesai, tombol **Lanjutkan**, **Generate semua**, dan **Tandai selesai**.
 
-Setiap **halaman sub-bagian** (judulnya misalnya "C.4 · 3 dari 14", dengan bilah kemajuan) berisi berurutan:
+Setiap **halaman sub-bagian** berisi berurutan:
 
 1. **Instruksi template** resmi (inilah pertanyaannya);
-2. **Butir penilaian** dengan deskriptor skor 4 resmi dan **daftar cek unsur skor 4** (dipecah dari nomor (1), (2), …);
-3. untuk butir angka: **Data LKPS** yang dihitung sistem, atau isian **Nilai hitung** bila butir tidak punya rumus atau
-   rumus tidak bisa membaca LKPS (isi nilai dan cara menghitungnya; nilai ini menjadi sumber angka narasi);
+2. **Butir penilaian** dengan deskriptor skor 4 resmi dan **daftar cek unsur skor 4**;
+3. untuk butir angka: **Data LKPS** yang dihitung sistem atau isian **Nilai hitung**, ditambah **Target dan capaian**:
+   isian target opsional (angka, satuan, sumber seperti Renstra); sistem menghitung persen capaian dan tren TS-2, TS-1,
+   TS dari LKPS;
 4. **Jawaban penyusun** (tersimpan otomatis, sumber `[J]`);
 5. **Dokumen pendukung** (unggah langsung ke sub-bagian ini);
-6. **Hasil generate** dan **Riwayat versi**.
+6. **Hasil generate**, **Riwayat versi**, dan (bila LED punya asesor) **Catatan asesor**.
 
 Langkah:
 
-1. Isi jawaban dan nilai yang diperlukan, unggah dokumen, lalu klik **Generate** (satu sub-bagian) atau kembali ke
-   ringkasan dan klik **Generate semua** (urutan: IKU, latar belakang dan kebijakan, analisis faktor, SWOT). Analisis
-   faktor dan SWOT memberi peringatan bila belum ada draf IKU karena keduanya memakai ringkasan IKU.
-2. Pindah dengan **Sebelumnya** dan **Berikutnya** atau daftar sub-bagian di samping; isian disimpan dulu sebelum
-   pindah. Di sub-bagian terakhir, Berikutnya membuka ringkasan kriteria berikutnya.
+1. Isi jawaban dan nilai yang diperlukan, unggah dokumen, lalu klik **Generate** (satu sub-bagian) atau **Generate
+   semua** di ringkasan. Teks tampil bertahap di kotak **Sedang ditulis**; dua sub-bagian indikator dikerjakan
+   bersamaan.
+2. Pindah dengan **Sebelumnya** dan **Berikutnya**; isian disimpan dulu sebelum pindah.
 3. Baca hasil: penanda **Sumber** di bawah setiap paragraf (D dokumen, U dokumen bersama, T tabel LKPS, M metrik atau
-   nilai hitung, J jawaban), panel **Pemeriksaan otomatis** (panjang, angka tanpa dasar data, paragraf tanpa sumber,
-   penanda `[BELUM ADA BUKTI: …]`), dan status unsur skor 4.
-4. **Sunting langsung** di editor; perubahan tersimpan otomatis sebagai versi suntingan. Di **Riwayat versi**, bandingkan
-   dua versi atau pulihkan versi lama.
-5. Tandai **Selesai** per sub-bagian, atau **Tandai selesai** di ringkasan setelah semua sub-bagian punya draf.
+   nilai hitung, J jawaban), panel **Pemeriksaan otomatis**, dan status unsur skor 4.
+4. **Verifikasi per kalimat**: setiap kalimat diberi garis bawah hijau (sesuai sumber), kuning (sebagian), atau merah
+   bergelombang (tidak didukung sumber). Panel **Verifikasi per kalimat** menampilkan ringkasan dan saringan
+   **Hanya kalimat bermasalah**. **Periksa dengan AI** memeriksa ulang kalimat memakai Gemini (satu panggilan).
+5. **Sunting langsung** di editor; perubahan tersimpan otomatis sebagai versi suntingan dan diperiksa ulang. Di
+   **Riwayat versi**, bandingkan dua versi atau pulihkan versi lama.
+6. Tandai **Selesai** per sub-bagian, atau **Tandai selesai** di ringkasan setelah semua sub-bagian punya draf.
 
-### 6. Tim penyusun dan ekspor Word
+### 6. Review asesor
+
+1. Setelah narasi siap, buka Beranda LED → kotak **Review asesor** → **Ajukan review** (perlu asesor yang sudah
+   ditugaskan admin). Status berubah dari Draf menjadi **Direview** dan asesor diberi tahu.
+2. Catatan asesor muncul langsung di halaman sub-bagian tanpa muat ulang: kalimatnya disorot biru di editor dan
+   catatannya tampil di panel **Catatan asesor**. Klik sorotan atau catatan untuk saling melompat.
+3. Perbaiki narasinya (tersimpan otomatis), lalu klik **Sudah diperbaiki** pada catatan itu; sorotan berubah kuning.
+   Bila kalimat yang diblok sudah diubah total, catatan tetap ada dengan tanda **Teks asli sudah berubah**.
+4. Asesor membandingkan versi sebelum dan sesudah, lalu **Terima** (sorotan hijau) atau **Buka lagi** dengan balasan.
+   PJ dan asesor bisa saling **Balas** di setiap catatan.
+5. Bila asesor menyatakan **Perlu revisi**, perbaiki lalu klik **Ajukan review ulang**. Bila **Layak diajukan**,
+   ekspor Word final terbuka.
+
+### 7. Tim penyusun dan ekspor Word
 
 1. Menu **Tim penyusun**: isi dosen (urutan pertama = ketua) dan tenaga kependidikan. Data ini mengisi halaman
-   Identitas Tim Penyusun serta Tabel 2.1 dan 2.2, dan tidak dikirim ke Gemini.
+   Identitas Tim Penyusun serta Tabel 2.1 dan 2.2. Nama dan nomor induk tidak dikirim ke Gemini; Bab II.A hanya memakai
+   jabatan, tugas, dan jumlah anggota.
 2. Susun **Kata Pengantar dan Ringkasan Eksekutif**, **Bab III**, dan **Bab IV** paling akhir karena keempatnya
    merangkum seluruh kriteria.
-3. Menu **Ekspor Word**: selesaikan daftar pemeriksaan (semua bagian selesai, tidak ada penanda `[BELUM ADA BUKTI: …]`,
-   tabel dan gambar berjudul), lalu klik **Ekspor ke Word**. Berkas memakai Template LED instrumen LED itu.
-4. Buka di Microsoft Word, pilih **Yes/Ya** saat diminta memperbarui field, ganti kotak **Logo Perguruan Tinggi**,
-   periksa, lalu simpan. Berkas lebih dari 150 halaman **ditahan**: ringkas narasi lalu ekspor ulang.
+3. Menu **Ekspor Word** punya dua tombol:
+   - **Ekspor DRAF**: kapan saja, misalnya untuk sosialisasi. Setiap halaman bertanda DRAF; pemeriksaan hanya
+     memberi peringatan.
+   - **Ekspor final**: terbuka setelah asesor menyatakan **Layak diajukan**, semua bagian selesai, tidak ada penanda
+     `[BELUM ADA BUKTI: …]`, setiap dokumen yang dirujuk punya **tautan bukti** (bisa diisi langsung dari daftar), dan
+     setiap **perbedaan angka antar kriteria** sudah diperbaiki atau diberi alasan.
+4. Di Word, setiap paragraf diberi rujukan singkat di akhir, misalnya "(LKPS Tabel 4.a; Renstra FT Unila 2021–2025, 2021)", dan
+   **Daftar Rujukan** ditambahkan di Lampiran. Halaman Lampiran tidak dihitung dalam batas 150 halaman; daftar ekspor
+   menampilkan halaman sebelum Lampiran dan total halaman.
+5. Buka di Microsoft Word, pilih **Yes/Ya** saat diminta memperbarui field, ganti kotak **Logo Perguruan Tinggi**,
+   periksa, lalu simpan. Berkas final lebih dari 150 halaman (sebelum Lampiran) **ditahan**: ringkas narasi lalu ekspor
+   ulang.
 
-### 7. Bila kuota kunci habis
+### 8. Bila kuota kunci habis
 
 Gemini versi gratis membatasi jumlah permintaan per hari per project Google. Saat kuota habis, penyusunan dan ekstraksi
 instrumen **berhenti rapi** dan pemberitahuan meminta kunci baru. Tambahkan kunci dari **project/akun Google lain** di
 menu Kunci API fakultas (proses lanjut otomatis dari bagian yang tertunda), atau tunggu reset kuota harian (sekitar
 pukul 14.00–15.00 WIB).
 
-### 8. Data pribadi
+### 9. Data pribadi
 
 Sebelum konteks dikirim ke Gemini, NIDN/NIDK/NIP/NIM/NIK dan nama mahasiswa di tabel LKPS, jawaban penyusun, dan
 potongan dokumen disamarkan otomatis. Tetap hindari menulis data pribadi yang tidak perlu di jawaban penyusun.
 Berkas instrumen (template, matriks, pedoman) adalah dokumen publik LAM Teknik.
+
+---
+
+## C. Asesor
+
+Menu asesor: **LED ditugaskan**. Di dalam satu LED: **Ringkasan review**, **Penilaian akhir**, lalu daftar kriteria dan
+bab. Asesor hanya membaca: tidak bisa menyunting narasi, menjalankan generate, atau mengekspor.
+
+1. **LED ditugaskan** menampilkan LED dari admin beserta status review dan jumlah catatan. Catatan dan skor bisa
+   diberikan setelah PJ menekan **Ajukan review** (status **Direview**).
+2. Buka sub-bagian: instruksi template dan butir beserta deskriptor skor 4 bisa dibuka di atas narasi.
+3. **Blok (sorot) kalimat** di narasi, tulis catatan revisi, lalu **Kirim catatan**. Catatan langsung muncul di layar
+   PJ. Catatan yang masih Terbuka bisa dihapus bila salah blok.
+4. Saat PJ menandai **Sudah diperbaiki**, pemberitahuan masuk ke lonceng dan **Ringkasan review** menampilkannya di
+   bagian *Menunggu Anda*. Bila PJ menyimpan versi baru, muncul tombol **Tampilkan versi terbaru**. Klik **Bandingkan**
+   untuk melihat versi saat catatan dibuat dan saat ditandai diperbaiki, lalu **Terima** atau **Balas** → **Buka lagi**.
+5. **Penilaian akhir**: pilih skor 0–4 per butir; setiap pilihan menampilkan deskriptor matriks untuk skor itu (bila
+   instrumen jenjang diekstrak dari Matriks Penilaian). Untuk butir angka, skor hitungan sistem dari LKPS menjadi
+   acuan; skor yang berbeda wajib diberi alasan. Sistem menjumlahkan bobot × skor (maksimal 400) dan menampilkan
+   perkiraan status menurut ambang Pedoman Penilaian. Ini simulasi internal, bukan keputusan LAM.
+6. **Layak diajukan** bisa dipilih setelah semua catatan diterima dan semua butir diberi skor; ekspor final PJ lalu
+   terbuka. **Perlu revisi** mengembalikan LED ke PJ (tulis catatan umum bila tidak ada catatan yang masih terbuka).

@@ -3,11 +3,13 @@
 Website untuk membantu program studi menyusun draf Laporan Evaluasi Diri (LED) akreditasi LAM Teknik dengan LLM dan RAG.
 Skripsi Adrianne Julian, Ilmu Komputer Universitas Lampung.
 
-Status: **revisi 19 Okt 2026 selesai** di atas iterasi 1–4: peran Admin (akun PJ dan kunci API) dan Penanggung jawab
-fakultas (semua prodi), LED per periode 5 tahun, satu sub-bagian satu halaman, unggah instrumen per jenjang (template,
-matriks, pedoman; ekstraksi dan halaman cek), butir angka dengan rumus atau nilai manual. Iterasi 1–4: login dan akun,
-instrumen dinamis, unggah LKPS dan dokumen, RAG, mesin penyusun narasi dengan antrean dan riwayat versi, ekspor Word ke
-template LEDPS resmi. Rincian dan hasil uji: `docs/CATATAN-PENGEMBANGAN.md`. Cara pakai: `docs/PANDUAN-PENGGUNAAN.md`.
+Status: **revisi 22 Okt 2026** di atas revisi 19 Okt dan iterasi 1–4. Tiga peran: Admin (akun, penugasan asesor,
+kunci API), Penanggung jawab fakultas (semua prodi dan LED), dan Asesor (review real time, skor 0–4, Layak diajukan).
+Fitur 22 Okt: generate lebih cepat dan bertahap, deadline dan kesiapan LED dengan jadwal kerja mundur, rujukan sumber dan
+Daftar Rujukan di Word (Lampiran tidak dihitung dalam 150 halaman), ekspor DRAF, target dan capaian dengan tren tiga
+tahun, verifikasi per kalimat dan konsistensi angka, Basis Pengetahuan dengan uji cari, server produksi Docker dengan
+HTTPS, dan cadangan harian. Sinkron One Data menunggu akses API (`docs/ONE-DATA-KEBUTUHAN.md`). Rincian dan hasil uji:
+`docs/CATATAN-PENGEMBANGAN.md`. Cara pakai: `docs/PANDUAN-PENGGUNAAN.md`. Server dan cadangan: `docs/PANDUAN-SERVER.md`.
 
 ## Menjalankan di komputer lokal
 
@@ -20,7 +22,7 @@ docker compose up -d
 npm run db:migrate
 npm run db:seed
 npm run dev                 # http://localhost:3000, masuk dengan SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD
-npm run worker              # terminal kedua: LKPS, dokumen, narasi, ekspor Word, ekstraksi instrumen
+npm run worker              # terminal kedua: LKPS, dokumen, narasi, ekspor Word, ekstraksi instrumen, cadangan harian
 ```
 
 Pemeriksaan: `npm run lint`, `npm run typecheck`, `npm test` (uji integrasi memakai basis data `led_lamteknik_test`).
@@ -38,7 +40,9 @@ tanpa LibreOffice jumlah halaman diperkirakan.
 - `docs/RENCANA-ITERASI.md` — tugas dan kriteria selesai iterasi 1 sampai 4
 - `docs/SPESIFIKASI.md` — aturan domain (RAG, anggaran halaman, ekspor Word, tampilan, keamanan)
 - `docs/CATATAN-PENGEMBANGAN.md` — log per iterasi (bahan Bab 3/4)
-- `docs/PANDUAN-PENGGUNAAN.md` — panduan untuk admin dan penanggung jawab fakultas
+- `docs/PANDUAN-PENGGUNAAN.md` — panduan untuk admin, penanggung jawab fakultas, dan asesor
+- `docs/PANDUAN-SERVER.md` — produksi Docker, HTTPS, akses jaringan lokal, cadangan dan pemulihan
+- `docs/ONE-DATA-KEBUTUHAN.md` — daftar kebutuhan data untuk permintaan akses API One Data
 - `prisma/` — skema, migrasi, seed; `data/instrumen/` — data awal instrumen LAM Teknik 2025 (Sarjana; juga kerangka
   bawaan bila belum ada instrumen); `tests/fikstur/instrumen/` — template, matriks Sarjana, dan pedoman penilaian resmi
 - `src/lib/domain/` — logika inti teruji; `src/lib/data/` — akses data dengan pemeriksaan peran; `src/app/` — halaman

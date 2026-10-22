@@ -147,3 +147,22 @@ Urutan kerja; setiap tahap diuji sebelum tahap berikutnya. Semua tahap selesai (
 | 5 | Butir angka: rumus lama atau nilai manual, beralih otomatis bila rumus gagal | Butir berumus dihitung; tanpa rumus memakai nilai manual sebagai sumber | Selesai |
 | 6 | Uji alur penuh | Tambah prodi, unggah instrumen S1, buat LED, isi satu kriteria, generate, ekspor Word | Selesai |
 | 7 | Desain/dokumen | Dokumen repo diperbarui; Figma dan peta form di luar kode | Dokumen repo selesai; Figma/peta form manual |
+
+## Revisi 22 Oktober 2026 (tab "Revisi 22 Oktober" pada dokumen yang sama)
+
+Urutan kerja dari dokumen revisi; setiap tahap diuji sebelum tahap berikutnya. Rincian di
+`docs/CATATAN-PENGEMBANGAN.md`.
+
+| Tahap | Isi | Uji | Status |
+| --- | --- | --- | --- |
+| 1 | Kecepatan generate: thinking rendah, batas 90 detik, teks bertahap, dua IKU bersamaan | Waktu per sub-bagian sebelum dan sesudah | Selesai |
+| 2 | Deadline, kesiapan, jadwal kerja mundur | Prodi paling dekat berakhir di atas; tonggak terlewat merah | Selesai |
+| 3 | Rujukan sumber, Daftar Rujukan, Lampiran tidak dihitung, tautan bukti wajib, ekspor DRAF | Ekspor satu LED: rujukan, jumlah halaman, tanda DRAF | Selesai |
+| 4 | Target dan capaian, tren tiga tahun | Angka capaian di narasi sama dengan hitungan sistem | Selesai |
+| 5 | Verifikasi per kalimat dan konsistensi angka | 50 kalimat contoh vs cek manual (skrip `sampel-verifikasi.ts`); angka yang sengaja dibuat berbeda tertangkap | Selesai (penilaian manual 50 kalimat oleh peneliti) |
+| 6 | Server dan cadangan | Dibuka dari perangkat lain; cadangan dipulihkan ke basis data uji | Selesai di laptop (LAN, pemulihan); build Docker di server menunggu alamat server |
+| 7 | Asesor | Dua sesi bersamaan (PJ dan asesor), catatan muncul tanpa muat ulang | Selesai |
+| 8 | Basis Pengetahuan | Gabung menu, lihat potongan, uji cari, kolom tahun | Selesai |
+| 9 | One Data | Sinkron satu prodi, ID tersimpan, batas sekali sehari | Menunggu persetujuan daftar data dan akses API |
+| 10 | Dokumen | Dokumen repo; Figma, peta form, use case tiga aktor, Bab 1–3 di luar kode | Dokumen repo selesai; lainnya manual |
+

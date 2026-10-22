@@ -25,7 +25,8 @@ Dokumen rencana lengkap (Claude Doc): https://claude.ai/code/artifact/ba67e45c-5
 ## Keputusan yang sudah dikunci (jangan diubah tanpa persetujuan Adrianne)
 
 Revisi 19 Okt 2026 (dokumen "Rencana Revisi Website LED LAM Teknik", disetujui Adrianne) mengubah butir 1–4 dan 8;
-rinciannya di `docs/CATATAN-PENGEMBANGAN.md` bagian Revisi 19 Okt 2026.
+rinciannya di `docs/CATATAN-PENGEMBANGAN.md` bagian Revisi 19 Okt 2026. Revisi 22 Okt 2026 (tab "Revisi 22 Oktober"
+di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revisi 22 Okt 2026.
 
 1. Lembaga: **LAM Teknik saja**, dibedakan per **jenjang** (10 jenjang), bukan per jurusan. Skema: Pasca Terakreditasi
    Pertama dan Unggul (Peraturan LAM Teknik No. 5 dan 6 Tahun 2025), 7 kriteria C.1–C.7. **Instrumen diunggah PJ per
@@ -33,12 +34,17 @@ rinciannya di `docs/CATATAN-PENGEMBANGAN.md` bagian Revisi 19 Okt 2026.
    template diurai tanpa AI, tabel bobot dibaca tanpa AI, tabel matriks dibaca AI per kelompok kecil; hasil dicek PJ di
    halaman cek (PDF di samping tabel, usulan AI ditandai, pemeriksaan otomatis) lalu diaktifkan. Satu versi aktif per
    jenjang; versi lama tetap tersimpan dan LED lama tetap memakai versinya.
-2. **Dua peran**, semua lewat login:
-   - **Admin**: hanya **Akun PJ** dan **Kunci API** (kunci cadangan, model Gemini, log pemakaian). Admin tidak membuka LED.
+2. **Tiga peran** (revisi 22 Okt 2026), semua lewat login:
+   - **Admin**: **Akun PJ** (juga akun asesor), **Penugasan asesor**, dan **Kunci API** (kunci cadangan, model Gemini,
+     log pemakaian), serta melihat status cadangan terakhir. Admin tidak membuka LED.
    - **Penanggung jawab fakultas** (satu akun untuk seluruh fakultas): semua LED (dikelompokkan per prodi), program
      studi dan identitas fakultas (pengganti UPPS), instrumen, dokumen bersama fakultas, kunci API fakultas; di dalam LED:
      Data LKPS, dokumen, tim penyusun, kriteria, ekspor Word.
-   - Tidak ada peran peninjau dan tidak ada pembagian kriteria ke anggota.
+   - **Asesor**: reviewer internal, satu asesor per LED (ditugaskan admin). Hanya membaca LED yang ditugaskan, memblok
+     teks dan memberi catatan revisi (real time di layar PJ), menerima/membuka lagi perbaikan, memberi skor 0–4 per butir,
+     dan menyatakan Layak diajukan atau Perlu revisi. Tidak bisa menyunting, generate, atau ekspor. Ekspor final PJ
+     terbuka setelah Layak diajukan; ekspor DRAF kapan saja.
+   - Tidak ada pembagian kriteria ke anggota.
    - Aturan akun: semua pengguna bisa mengganti kata sandi sendiri (wajib kata sandi lama); akun baru dan akun yang
      sandinya diatur ulang wajib mengganti sandi saat login. Hanya admin yang mengatur ulang sandi, menonaktifkan, dan
      menghapus akun; admin tidak bisa menonaktifkan/menghapus diri sendiri dan minimal ada satu admin aktif. LED, kunci
@@ -56,7 +62,8 @@ rinciannya di `docs/CATATAN-PENGEMBANGAN.md` bagian Revisi 19 Okt 2026.
    membaca LKPS → nilai hitung diisi PJ (`NilaiManual`) dan menjadi sumber narasi.
 5. Bagian di luar kriteria (kata pengantar, ringkasan eksekutif, Bab I, II.A, II.B, Bab III, Bab IV) **ikut di-generate**
    mengikuti instruksi template. Halaman muka, identitas, dan tabel tim diisi dari data.
-6. **Maksimal 150 halaman termasuk cover dan kata pengantar** (arahan pembimbing, lebih ketat dari template).
+6. **Maksimal 150 halaman termasuk cover dan kata pengantar** (arahan pembimbing, lebih ketat dari template);
+   **halaman Lampiran tidak dihitung** (revisi 22 Okt 2026).
    Panjang narasi per butir mengikuti bobot; butir berjenis angka ditulis singkat. Lihat `src/lib/domain/anggaran.ts`.
 7. **TS** = tahun akademik penuh terakhir saat pengajuan (Okt 2026 -> TS 2025/2026). Disimpan per proyek sebagai
    tahun mulai; label TS di LKPS diganti tahun nyata di narasi. Lihat `src/lib/domain/tahun-akademik.ts`.
@@ -68,11 +75,15 @@ rinciannya di `docs/CATATAN-PENGEMBANGAN.md` bagian Revisi 19 Okt 2026.
    spasi 1,15, paragraf rata kiri-kanan, judul memakai gaya template, gambar persis seperti diunggah, tebal hanya
    untuk judul. Narasi **menggantikan** isi template di bawah setiap judul sub-bagian: instruksi "Bagian ini ...",
    catatan biru "(Penjelasan ... disampaikan ...)", dan kotak isian kosong dihapus; judul bernomor template tetap.
-   Spesifikasi lengkap di `docs/SPESIFIKASI.md`, contoh kerja di `docs/spike-ekspor/`.
+   Spesifikasi lengkap di `docs/SPESIFIKASI.md`, contoh kerja di `docs/spike-ekspor/`. Revisi 22 Okt 2026: rujukan
+   singkat di akhir paragraf, Daftar Rujukan di Lampiran, tautan bukti wajib dan perbedaan angka antar kriteria harus
+   diperbaiki atau diberi alasan sebelum ekspor final, ekspor DRAF bertanda DRAF di setiap halaman.
 10. **Tampilan**: sidebar (bisa diciutkan), modern, nyaman, mudah dipakai, berbahasa Indonesia. Menu per peran di
     `docs/SPESIFIKASI.md`.
 11. **Data LKPS** masuk lewat unggah Excel (utama, template LKPS LAM Teknik 2025) atau PDF (cadangan, angka ditandai
-    perlu dicek). Bukan tarik langsung dari One Data.
+    perlu dicek). Revisi 22 Okt 2026: sinkron One Data Unila direncanakan (ID sinkron di prodi dan setiap baris yang
+    ditarik, tombol sinkron sekali sehari di worker, NIK tidak disimpan, kunci API One Data dikelola admin terenkripsi);
+    dikerjakan setelah daftar kebutuhan data disetujui dan akses API didapat. Unggah Excel dan isian manual tetap ada.
 12. Pengujian dijalankan setelah sistem jadi (rencana uji di dokumen rencana). Prodi uji belum ditetapkan.
 
 ## Teknologi
@@ -90,7 +101,7 @@ rinciannya di `docs/CATATAN-PENGEMBANGAN.md` bagian Revisi 19 Okt 2026.
 | Antrean | pg-boss | Generate, proses dokumen, ekspor berjalan di worker terpisah (`npm run worker`) |
 | Baca berkas | ExcelJS atau SheetJS (LKPS), unpdf (PDF), mammoth (DOCX) | |
 | Ekspor | `docx` (fitur `patchDocument`) + LibreOffice (`soffice`) untuk hitung halaman | docxtemplater gratis tidak bisa gambar/HTML (modul berbayar) |
-| Pemasangan | Docker Compose (PostgreSQL+pgvector sekarang; aplikasi+worker nanti) | Server fakultas harus bisa Node.js/Docker |
+| Pemasangan | Docker Compose: `docker-compose.yml` (DB pengembangan), `docker-compose.produksi.yml` (web, worker, DB, Caddy HTTPS) | Lihat `docs/PANDUAN-SERVER.md` |
 
 Pasang versi terbaru yang stabil saat mulai, lalu kunci di `package.json`. Bila API pustaka berbeda dari catatan di
 sini, ikuti dokumentasi resmi versi yang terpasang dan catat perbedaannya di `docs/CATATAN-PENGEMBANGAN.md`.
@@ -146,6 +157,9 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 - `npm run worker` — worker antrean pg-boss: baca LKPS, proses dokumen, generate narasi (wajib berjalan bersama `npm run dev`)
 - Tanpa kunci Gemini (pengembangan): `EMBEDDING_PENYEDIA=uji` dan `LLM_NARASI=uji` untuk aplikasi dan worker
 - `npm run db:migrate` — terapkan migrasi (`prisma migrate deploy`); `npm run db:seed` — super admin + instrumen (idempoten)
+- `npm run cadangan [-- daftar | pulihkan <folder> --db <url> --unggahan <folder>]` — cadangan manual/pemulihan
+  (worker juga mencadangkan harian); produksi: `docker compose -f docker-compose.produksi.yml --env-file .env.produksi up -d --build`
+- `npx tsx scripts/sampel-verifikasi.ts ekspor|nilai` — sampel 50 kalimat untuk evaluasi verifikasi per kalimat (Bab 4)
 - `npm run lint`, `npm run typecheck` (`next typegen` + `tsc`), `npm test` (= `test:unit` + `test:integrasi`)
 - `npm run test:integrasi` membuat/memigrasi basis data `led_lamteknik_test` sendiri; basis data pengembangan tidak disentuh
 - Migrasi baru: `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`
@@ -238,6 +252,31 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 - Butir angka: `src/lib/domain/butir-angka.ts`, `src/lib/data/nilai-butir.ts`; katalog rumus `katalogRumus()` di
   `src/lib/domain/metrik-lkps.ts`.
 
+## Struktur kode (revisi 22 Okt 2026)
+
+- Kecepatan generate: `src/lib/proses/llm-narasi.ts` (thinking rendah, batas `GENERATE_BATAS_MS` 90 detik, aliran
+  `partialOutputStream`), `src/lib/proses/generate.ts` (pratinjau `TugasGenerate.pratinjau`, dua IKU bersamaan
+  `GENERATE_PARALEL`).
+- Kesiapan dan jadwal kerja mundur: `src/lib/domain/kesiapan.ts`, `src/lib/data/kesiapan.ts`, `src/components/kesiapan.tsx`;
+  `ProyekLED.batasPengajuan`, `jadwal`, `statusReview` (draf, direview, perlu_revisi, layak).
+- Rujukan dan ekspor: `src/lib/domain/rujukan.ts`, `Ekspor.jenis` (draf/final), `halamanSebelumLampiran`
+  (`src/lib/ekspor/halaman.ts`), `tandaiDraf` (`src/lib/ekspor/xml.ts`), `Dokumen.tahunTerbit`.
+- Target dan capaian: `src/lib/domain/capaian.ts`, `src/lib/data/target-butir.ts` (model `TargetButir`).
+- Verifikasi per kalimat: `src/lib/domain/verifikasi.ts`, `src/lib/data/verifikasi.ts` (Periksa dengan AI),
+  `src/components/narasi/sorotan-kalimat.ts`; konsistensi angka: `src/lib/domain/konsistensi.ts`,
+  `src/lib/data/konsistensi.ts` (`ProyekLED.alasanKonsistensi`).
+- Asesor: peran `ASESOR`; `ambilProyek(p, id, { baca: true })` mengizinkan asesor yang ditugaskan (`ProyekLED.asesorId`)
+  hanya untuk fungsi baca, fungsi ubah tetap lewat `ambilProyekUbah` (PJ saja). Domain `src/lib/domain/review.ts`
+  (jangkar teks + konteks, alur status, nilai akhir dan perkiraan status), data `src/lib/data/review.ts` (model
+  `CatatanRevisi`, `BalasanCatatan`, `SkorAsesor`, `Pemberitahuan`), aksi `src/app/review/aksi.ts`, halaman `/asesor/*`
+  dan `/admin/penugasan`, komponen `src/components/review/` (sorotan catatan, panel catatan dengan polling 4 detik
+  `GET /api/proyek/[id]/catatan`), lonceng `src/components/shell/lonceng.tsx` (`GET /api/pemberitahuan`). Versi yang
+  dirujuk catatan tidak ditimpa simpan otomatis (`simpanSuntingan`).
+- Basis Pengetahuan: `/proyek/[id]/dokumen?tab=led|bersama`, `src/components/basis-pengetahuan/` (tabel dokumen, lihat
+  potongan), uji cari dengan kueri generate (`kueriGenerate`).
+- Server dan cadangan: `Dockerfile`, `docker-compose.produksi.yml`, `Caddyfile`, `src/lib/proses/cadangan.ts` (antrean
+  `cadangan-harian`, model `Cadangan`), `scripts/cadangan.ts`, `docs/PANDUAN-SERVER.md`.
+
 ## Konvensi
 
 - Teks antarmuka, pesan galat, dan nama domain dalam **Bahasa Indonesia** (kode boleh campuran; ikuti istilah domain:
@@ -245,8 +284,8 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 - TypeScript strict, tanpa `any`. Validasi semua masukan dengan Zod di server.
 - Logika domain murni ditaruh di `src/lib/domain/` dan diberi uji. Akses data di `src/lib/data/` atau server actions,
   bukan di komponen.
-- Setiap aksi server memeriksa sesi dan peran: PJ fakultas mengakses semua LED fakultas; admin tidak mengakses LED,
-  prodi, instrumen, maupun dokumen (hanya akun dan kunci API).
+- Setiap aksi server memeriksa sesi dan peran: PJ fakultas mengakses semua LED fakultas; asesor hanya membaca LED yang
+  ditugaskan; admin tidak mengakses LED, prodi, instrumen, maupun dokumen (hanya akun, penugasan asesor, dan kunci API).
 - Kunci API dienkripsi (AES-256-GCM, kunci dari `ENCRYPTION_KEY`), hanya didekripsi di server/worker, tidak pernah
   dikirim ke browser atau ditulis ke log. Tampilkan hanya 4 karakter terakhir.
 - Angka di narasi dihitung sistem dari LKPS, bukan oleh LLM. Format Indonesia lewat `src/lib/domain/teks.ts`.
@@ -257,7 +296,8 @@ Lembar kerja `../Led Lamteknik/Matriks butir LED Sarjana.xlsx` berisi pemetaan b
 
 ## Jangan
 
-- Jangan membuat fitur unggah ke LAM Teknik, peran peninjau, atau pembagian kriteria ke anggota.
+- Jangan membuat fitur unggah ke LAM Teknik, peran peninjau selain asesor (revisi 22 Okt 2026), atau pembagian kriteria
+  ke anggota.
 - Jangan mengubah logo/perwajahan halaman awal template LEDPS.
 - Jangan mengirim data pribadi (NIP, NIDN, NIM, nama mahasiswa) ke LLM bila memakai kunci gratis tanpa penyamaran
   (layanan gratis Gemini boleh memakai data untuk pengembangan produk). Lihat `docs/SPESIFIKASI.md`.

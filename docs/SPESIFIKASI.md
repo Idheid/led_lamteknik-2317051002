@@ -6,7 +6,10 @@ Bila ada yang bertentangan, dokumen rencana yang terbaru yang berlaku; catat per
 ## 1. Alur kerja
 
 Revisi 19 Okt 2026: peran Admin (akun PJ, kunci API) dan Penanggung jawab fakultas (PJ); instrumen diunggah PJ per
-jenjang; satu sub-bagian satu halaman. Rincian di `CATATAN-PENGEMBANGAN.md`.
+jenjang; satu sub-bagian satu halaman. Revisi 22 Okt 2026: peran ketiga **Asesor** (review real time, skor 0–4,
+Layak diajukan), Basis Pengetahuan, rujukan dan Daftar Rujukan di Word, verifikasi per kalimat, konsistensi angka,
+target dan capaian, kesiapan dan jadwal kerja mundur, ekspor DRAF, server produksi dan cadangan harian. Rincian di
+`CATATAN-PENGEMBANGAN.md`.
 
 1. Admin membuat akun PJ fakultas. PJ mengisi identitas fakultas dan program studi, lalu mengunggah instrumen per
    jenjang (Template LED, Matriks Penilaian, Pedoman Penilaian), memeriksa hasil ekstraksi, dan mengaktifkannya.
@@ -101,8 +104,11 @@ Sub-bagian yang tidak berlaku untuk jenjang proyek dihapus beserta judulnya. Con
 Cara menjaga format: narasi disimpan sebagai JSON Tiptap (paragraf, tebal, miring, daftar, tabel, gambar), lalu
 dipetakan ke gaya template saat ekspor. Pengguna tidak memformat manual.
 
-Pemeriksaan sebelum ekspor: semua bagian terisi dan ditandai selesai; total ≤ 150 halaman (hitung lewat LibreOffice);
-tidak ada penanda "belum ada bukti"; setiap tabel dan gambar berjudul.
+Pemeriksaan sebelum ekspor: semua bagian terisi dan ditandai selesai; ≤ 150 halaman sebelum judul LAMPIRAN (hitung
+lewat LibreOffice; Lampiran tidak dihitung); tidak ada penanda "belum ada bukti"; setiap tabel dan gambar berjudul.
+Ekspor final juga mensyaratkan status review **Layak diajukan**, tautan bukti untuk setiap dokumen yang dirujuk, dan
+setiap perbedaan angka antar kriteria diperbaiki atau diberi alasan. Ekspor DRAF boleh kapan saja (bertanda DRAF,
+pemeriksaan hanya peringatan). Setiap paragraf diberi rujukan singkat; Daftar Rujukan ditambahkan di Lampiran.
 
 ## 7. Antarmuka
 
@@ -111,18 +117,22 @@ progres selalu terlihat. Bahasa Indonesia.
 
 | Menu | Isi | Peran |
 | --- | --- | --- |
-| Akun PJ | Akun penanggung jawab dan admin, atur ulang sandi, nonaktifkan | Admin |
+| Akun PJ | Akun penanggung jawab, asesor, dan admin; atur ulang sandi, nonaktifkan; status cadangan terakhir | Admin |
+| Penugasan asesor | Satu asesor per LED | Admin |
 | Kunci API (tab Kunci, Model Gemini, Log pemakaian) | Kunci cadangan, model narasi/cadangan/embedding, pemakaian token | Admin |
 | Semua LED | LED dikelompokkan per prodi, label periode, LED baru | PJ fakultas |
 | Program studi | Identitas fakultas, daftar prodi (urut akreditasi berakhir) | PJ fakultas |
 | Instrumen | Instrumen per jenjang: unggah berkas, ekstraksi, periksa hasil, aktifkan | PJ fakultas |
-| Dokumen bersama fakultas | Dokumen yang dipakai semua LED (kode sumber U) | PJ fakultas |
+| Basis Pengetahuan fakultas | Dokumen bersama yang dipakai semua LED (kode sumber U) | PJ fakultas |
 | Kunci API fakultas | Daftar kunci, status, tambah kunci, uji koneksi | PJ fakultas |
 | Beranda LED | Progres, periode akreditasi, Pengaturan LED (TS, nama, arsip) | PJ fakultas |
 | Data LKPS | Unggah Excel/PDF, hasil baca per tabel, sumber nilai butir angka | PJ fakultas |
 | Kriteria C.1 … C.7 dan bab lain | Ringkasan kriteria + satu halaman per sub-bagian (instruksi, butir dan daftar cek skor 4, data LKPS/nilai manual, jawaban, dokumen, hasil generate dan riwayat); Sebelumnya/Berikutnya | PJ fakultas |
-| Dokumen, Tim penyusun | Berkas LED, tautan bukti sahih; tim penyusun | PJ fakultas |
-| Ekspor Word | Pemeriksaan sebelum ekspor, jumlah halaman, unduh .docx | PJ fakultas |
+| Basis Pengetahuan, Tim penyusun | Tab Dokumen LED ini / Dokumen bersama fakultas, lihat potongan, uji cari, tahun, tautan bukti; tim penyusun | PJ fakultas |
+| Ekspor Word | Pemeriksaan sebelum ekspor, ekspor DRAF dan final, jumlah halaman, unduh .docx | PJ fakultas |
+| LED ditugaskan, Ringkasan review | LED dari admin, status review, catatan yang menunggu | Asesor |
+| Sub-bagian (hanya baca) | Blok teks → catatan revisi, Bandingkan, Terima, Buka lagi, Balas | Asesor |
+| Penilaian akhir | Skor 0–4 per butir dengan deskriptor, nilai akhir dan perkiraan status, Layak diajukan / Perlu revisi | Asesor |
 
 Aturan tampilan: komponen shadcn/ui; teks isi ≥ 14 px, kontras WCAG AA; lencana status (belum, draf, selesai) di menu
 kriteria; simpan otomatis + peringatan saat meninggalkan halaman yang belum tersimpan; proses lama tampil sebagai
