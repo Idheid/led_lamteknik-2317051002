@@ -14,7 +14,7 @@ import { periksaEkspor } from "@/lib/data/ekspor";
 import { kesiapanLed } from "@/lib/data/kesiapan";
 import {
   ajukanReview, balasCatatan, bandingkanCatatan, buatCatatan, daftarCatatan, daftarPemberitahuan, daftarPenugasan, hapusCatatan,
-  jumlahCatatanPerSub, ledAsesor, penilaianProyek, putuskanReview, ringkasReview, simpanSkor, tandaiDibaca, tugaskanAsesor, ubahStatusCatatan,
+  jumlahCatatanPerSub, ledAsesor, penilaianProyek, perbaikanMenunggu, putuskanReview, ringkasReview, simpanSkor, tandaiDibaca, tugaskanAsesor, ubahStatusCatatan,
 } from "@/lib/data/review";
 import { buatJangkar, teksPolos } from "@/lib/domain/review";
 import type { DokTiptap } from "@/lib/domain/narasi";
@@ -118,6 +118,12 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   assert.equal(lihat.catatan[0].ditemukan, false, "teks asli sudah berubah");
   await assert.rejects(ubahStatusCatatan(pj, c.id, "diterima"), /tidak bisa diubah/);
   await ubahStatusCatatan(pj, c.id, "diperbaiki", "Sudah ditambah SK peninjauan.");
+  // revisi 26 Okt 2026: kotak "Perbaikan dari PJ" di ringkasan asesor menautkan langsung ke catatannya
+  const masuk = await perbaikanMenunggu(asesor, proyekId);
+  assert.equal(masuk.length, 1);
+  assert.deepEqual([masuk[0].id, masuk[0].pesanPj, masuk[0].teks], [c.id, "Sudah ditambah SK peninjauan.", j.teks]);
+  assert.equal(masuk[0].href, `/asesor/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
+  await assert.rejects(perbaikanMenunggu(pj, proyekId), GalatAkses);
   assert.match((await daftarPemberitahuan(asesor)).daftar[0].pesan, /sudah diperbaiki/);
 
   // asesor membandingkan versi sebelum dan sesudah, membuka lagi dengan balasan, lalu menerima

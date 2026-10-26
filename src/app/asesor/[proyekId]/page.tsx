@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { wajibAsesor } from "@/lib/sesi";
 import { bagianProyek } from "@/lib/data/proyek";
-import { daftarCatatan, penilaianProyek } from "@/lib/data/review";
+import { daftarCatatan, penilaianProyek, perbaikanMenunggu } from "@/lib/data/review";
+import { KotakPerbaikan } from "@/components/review/kotak-perbaikan";
 import { LABEL_REVIEW } from "@/lib/domain/kesiapan";
 import { LABEL_CATATAN } from "@/lib/domain/review";
 import { formatAngka } from "@/lib/domain/teks";
@@ -23,12 +24,13 @@ const PENJELASAN = {
 export default async function HalamanRingkasanAsesor({ params }: PageProps<"/asesor/[proyekId]">) {
   const p = await wajibAsesor();
   const { proyekId } = await params;
-  const [{ proyek, bagian }, { catatan, review }, nilai] = await Promise.all([bagianProyek(p, proyekId), daftarCatatan(p, proyekId), penilaianProyek(p, proyekId)]);
+  const [{ proyek, bagian }, { catatan, review }, nilai, perbaikan] = await Promise.all([
+    bagianProyek(p, proyekId), daftarCatatan(p, proyekId), penilaianProyek(p, proyekId), perbaikanMenunggu(p, proyekId),
+  ]);
   const hitung = (s: string) => catatan.filter((c) => c.status === s).length;
   const perBagian = bagian
     .filter((b) => b.jenis === "kriteria" || b.jenis === "bab" || b.jenis === "butir")
     .map((b) => ({ ...b, c: catatan.filter((c) => c.bagianKode === b.kode) }));
-  const perluTindakan = catatan.filter((c) => c.status === "diperbaiki");
   return (
     <>
       <JudulHalaman
@@ -65,24 +67,7 @@ export default async function HalamanRingkasanAsesor({ params }: PageProps<"/ase
         </Card>
       </div>
 
-      {perluTindakan.length > 0 && (
-        <section className="rounded-lg border p-4">
-          <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Menunggu Anda: sudah diperbaiki PJ</h2>
-          <ul className="divide-y text-sm">
-            {perluTindakan.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="min-w-0 flex-1 truncate">&ldquo;{c.teks}&rdquo;</span>
-                <Link
-                  className="text-primary underline"
-                  href={`/asesor/${proyekId}/bagian/${encodeURIComponent(c.bagianKode)}/${encodeURIComponent(c.subBagianKode)}#catatan-${c.id}`}
-                >
-                  {c.subBagianKode}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <KotakPerbaikan daftar={perbaikan} />
 
       <section className="rounded-lg border">
         <ul className="divide-y text-sm">

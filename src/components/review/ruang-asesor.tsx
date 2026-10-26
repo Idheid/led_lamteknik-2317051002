@@ -61,6 +61,17 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
     };
   });
 
+  // revisi 26 Okt 2026: dibuka dari Ringkasan review (…#catatan-<id>): catatan itu disorot dan digulir ke tengah
+  useEffect(() => {
+    const m = /^#catatan-(.+)$/.exec(window.location.hash);
+    if (!m) return;
+    const t = setTimeout(() => {
+      setAktif(m[1]);
+      document.getElementById(`catatan-${m[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
+
   const sorotan = useMemo(() => keSorotan(catatan, aktif), [catatan, aktif]);
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;

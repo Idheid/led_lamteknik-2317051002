@@ -483,3 +483,49 @@ export async function ringkasReview(p: Pengguna, proyekId: string) {
     perkiraan: n.perkiraan?.status ?? null,
   };
 }
+
+export interface PerbaikanMenunggu {
+  id: string;
+  bagianKode: string;
+  subBagianKode: string;
+  label: string;
+  judul: string;
+  /** teks yang diblok asesor */
+  teks: string;
+  /** catatan revisi asesor */
+  isi: string;
+  /** pesan PJ saat menandai Sudah diperbaiki (boleh kosong) */
+  pesanPj: string;
+  waktu: string;
+  /** halaman asesor sub-bagian itu, langsung ke catatannya */
+  href: string;
+}
+
+/**
+ * Perbaikan PJ yang menunggu diperiksa asesor (revisi 26 Okt 2026): catatan berstatus diperbaiki beserta sub-bagian,
+ * pesan PJ, dan waktunya, paling lama di atas. Ringkasan review asesor menautkan langsung ke catatannya.
+ */
+export async function perbaikanMenunggu(p: Pengguna, proyekId: string): Promise<PerbaikanMenunggu[]> {
+  pastikanAsesor(p);
+  const proyek = await ambilProyek(p, proyekId, { baca: true });
+  const catatan = await prisma.catatanRevisi.findMany({
+    where: { proyekId: proyek.id, status: "diperbaiki" },
+    include: { balasan: { where: { jenis: "diperbaiki" }, orderBy: { createdAt: "desc" }, take: 1 } },
+  });
+  if (!catatan.length) return [];
+  const sub = await prisma.subBagian.findMany({
+    where: { kode: { in: [...new Set(catatan.map((c) => c.subBagianKode))] }, bagian: { versiId: proyek.versiId } },
+    select: { kode: true, label: true, judul: true },
+  });
+  return catatan
+    .map((c) => {
+      const s = sub.find((x) => x.kode === c.subBagianKode);
+      const tanda = c.balasan[0];
+      return {
+        id: c.id, bagianKode: c.bagianKode, subBagianKode: c.subBagianKode, label: s?.label ?? "", judul: s?.judul ?? c.subBagianKode,
+        teks: c.teks, isi: c.isi, pesanPj: tanda?.isi ?? "", waktu: (tanda?.createdAt ?? c.updatedAt).toISOString(),
+        href: `${tautanSub("ASESOR", proyek.id, c.bagianKode, c.subBagianKode)}#catatan-${c.id}`,
+      };
+    })
+    .sort((a, b) => a.waktu.localeCompare(b.waktu));
+}
