@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  jadwalMundur, labelSisa, sisaBulan, statusTonggak, tambahBulan, tanggalIso, usulanBatasPengajuan, warnaKesiapan,
+  jadwalMundur, kalimatSisa, labelSisa, sisaBulan, statusTonggak, tambahBulan, tanggalIso, usulanBatasPengajuan, warnaKesiapan,
 } from '../kesiapan.ts';
 
 const t = (s: string) => new Date(`${s}T00:00:00Z`);
@@ -40,4 +40,11 @@ test('sisa bulan dan tanda warna (merah ≤ 6 bulan belum layak, kuning ≤ 12 b
 test('usulan batas pengajuan 6 bulan sebelum akreditasi berakhir; tambah bulan menjaga akhir bulan', () => {
   assert.equal(tanggalIso(usulanBatasPengajuan(t('2027-08-31'))), '2027-02-28');
   assert.equal(tanggalIso(tambahBulan(t('2026-01-31'), 1)), '2026-02-28');
+});
+
+test('kalimatSisa: kalimat utuh untuk pil sisa waktu', () => {
+  assert.equal(kalimatSisa(null), 'Tanggal akreditasi belum diisi');
+  assert.equal(kalimatSisa(-2), 'Akreditasi sudah berakhir');
+  assert.equal(kalimatSisa(0), 'Akreditasi berakhir bulan ini');
+  assert.equal(kalimatSisa(5), 'Akreditasi berakhir 5 bulan lagi');
 });

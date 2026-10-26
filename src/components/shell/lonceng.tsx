@@ -50,10 +50,10 @@ export function Lonceng() {
   return (
     <DropdownMenu onOpenChange={(b) => b && void muat()}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" className="relative" aria-label={`Pemberitahuan${data.belumDibaca ? `, ${data.belumDibaca} belum dibaca` : ""}`}>
+        <Button variant="ghost" size="icon" className="relative size-9 rounded-full [&_svg]:size-5" aria-label={`Pemberitahuan${data.belumDibaca ? `, ${data.belumDibaca} belum dibaca` : ""}`}>
           <Bell aria-hidden />
           {data.belumDibaca > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-medium text-primary-foreground tabular-nums">
+            <span className="absolute top-0 right-0 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[0.65rem] font-semibold text-white tabular-nums ring-2 ring-background">
               {data.belumDibaca > 99 ? "99+" : data.belumDibaca}
             </span>
           )}

@@ -65,8 +65,8 @@ Asesor langsung diberi tahu. Asesor hanya bisa membuka LED yang ditugaskan kepad
 
 Setelah login PJ masuk ke **Menu Utama** (sidebar: Semua LED, Program studi, Instrumen, Basis Pengetahuan fakultas,
 Kunci API fakultas). Klik sebuah LED: sidebar berganti menjadi menu **LED ini** (Beranda LED, Data LKPS, Basis
-Pengetahuan, Tim penyusun, Ekspor Word), kriteria C.1–C.7, dan bab lain. Di atasnya ada tombol **Kembali ke Menu
-Utama** dan kotak **LED yang dibuka** untuk pindah ke LED lain.
+Pengetahuan, Tim penyusun, Ekspor Word), kriteria C.1–C.7, dan bab lain. Di paling atas ada kotak **LED yang dibuka**
+(klik untuk pindah ke LED lain), lalu menu **Menu Utama** di bawah judul *Kembali ke Menu Utama*.
 
 Menambah data selalu lewat tombol biru di kanan atas (**Buat LED baru**, **Tambah data LKPS**, **Tambah dokumen**,
 **Tambah kunci**) yang membuka halaman tersendiri; setelah berhasil, sistem kembali ke daftar.

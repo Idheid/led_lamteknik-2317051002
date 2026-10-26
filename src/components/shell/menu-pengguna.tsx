@@ -24,8 +24,8 @@ export function MenuPengguna({ nama, email, peran }: { nama: string; email: stri
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2 rounded-full py-1 pr-2 pl-1 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted">
-        <Avatar className="size-7">
-          <AvatarFallback className="bg-primary text-[11px] font-semibold text-primary-foreground">{inisial(nama)}</AvatarFallback>
+        <Avatar className="size-6">
+          <AvatarFallback className="bg-primary/10 text-[10px] font-semibold text-primary">{inisial(nama)}</AvatarFallback>
         </Avatar>
         <span className="hidden max-w-40 truncate font-medium sm:block">{nama}</span>
         <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />

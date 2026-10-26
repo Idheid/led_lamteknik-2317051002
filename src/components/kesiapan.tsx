@@ -1,7 +1,7 @@
 import { AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, CircleAlert, MessageSquareWarning } from "lucide-react";
 import Link from "next/link";
 import type { KesiapanLed } from "@/lib/data/kesiapan";
-import { LABEL_REVIEW, labelSisa, type WarnaKesiapan } from "@/lib/domain/kesiapan";
+import { LABEL_REVIEW, kalimatSisa, labelSisa, type WarnaKesiapan } from "@/lib/domain/kesiapan";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -114,8 +114,8 @@ export function KartuLed({ href, nama, prodi, periode, k }: { href: string; nama
       </div>
       <div className="flex flex-wrap gap-2">
         {terlewat.length > 0 && <Pil warna="merah"><AlertTriangle className="size-3.5" aria-hidden />{terlewat.length} jadwal terlewat</Pil>}
-        {merah && !terlewat.length && <Pil warna="merah"><CalendarClock className="size-3.5" aria-hidden />Akreditasi berakhir {labelSisa(k?.sisaBulan ?? null)}</Pil>}
-        {kuning && <Pil warna="kuning"><CalendarClock className="size-3.5" aria-hidden />Akreditasi berakhir {labelSisa(k?.sisaBulan ?? null)}</Pil>}
+        {merah && !terlewat.length && <Pil warna="merah"><CalendarClock className="size-3.5" aria-hidden />{kalimatSisa(k?.sisaBulan ?? null)}</Pil>}
+        {kuning && <Pil warna="kuning"><CalendarClock className="size-3.5" aria-hidden />{kalimatSisa(k?.sisaBulan ?? null)}</Pil>}
         {k && <Pil warna={k.review === "layak" ? "hijau" : k.review === "perlu_revisi" ? "kuning" : "biru"}>Review: {LABEL_REVIEW[k.review]}</Pil>}
         {k?.catatanTerbuka ? <Pil warna="kuning"><MessageSquareWarning className="size-3.5" aria-hidden />{k.catatanTerbuka} catatan asesor</Pil> : null}
       </div>

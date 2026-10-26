@@ -109,3 +109,11 @@ export function labelSisa(sisa: number | null): string {
   if (sisa === 0) return 'berakhir bulan ini';
   return `${sisa} bulan lagi`;
 }
+
+/** Kalimat utuh sisa waktu untuk pil status, mis. "Akreditasi berakhir 5 bulan lagi". */
+export function kalimatSisa(sisa: number | null): string {
+  if (sisa === null) return 'Tanggal akreditasi belum diisi';
+  if (sisa < 0) return 'Akreditasi sudah berakhir';
+  if (sisa === 0) return 'Akreditasi berakhir bulan ini';
+  return `Akreditasi berakhir ${sisa} bulan lagi`;
+}

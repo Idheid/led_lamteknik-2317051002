@@ -14,7 +14,7 @@ import { formatTahunAkademik, labelPeriode } from "@/lib/domain/tahun-akademik";
 import type { IdentitasProdi } from "@/lib/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { kesiapanLed } from "@/lib/data/kesiapan";
-import { labelSisa, tanggalIso, usulanBatasPengajuan } from "@/lib/domain/kesiapan";
+import { kalimatSisa, tanggalIso, usulanBatasPengajuan } from "@/lib/domain/kesiapan";
 import { JadwalKerja } from "./jadwal-kerja";
 import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -119,7 +119,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
           tonggak={kesiapan.tonggak}
           terkunci={Boolean(proyek.diarsipkanPada)}
           warna={kesiapan.warna}
-          sisa={labelSisa(kesiapan.sisaBulan)}
+          sisa={kalimatSisa(kesiapan.sisaBulan)}
         />
       </div>
 

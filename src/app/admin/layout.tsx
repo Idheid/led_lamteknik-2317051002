@@ -1,26 +1,12 @@
 import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
-import type { GrupNav } from "@/components/shell/nav-sidebar";
+import { MENU_ADMIN } from "@/components/shell/menu-peran";
 import { wajibSuperAdmin } from "@/lib/sesi";
 
-/**
- * Revisi 19 Okt 2026: admin hanya mengurus akun PJ dan kunci API (beserta pilihan model dan log pemakaian).
- * Revisi 22 Okt 2026: ditambah akun asesor dan penugasannya ke LED.
- */
-const MENU: GrupNav[] = [
-  {
-    label: "Admin",
-    item: [
-      { judul: "Kelola akun", href: "/admin/akun", ikon: "akun" },
-      { judul: "Penugasan asesor", href: "/admin/penugasan", ikon: "review" },
-      { judul: "Kunci API", href: "/admin/kunci-api", ikon: "kunci" },
-    ],
-  },
-];
-
+/** Admin: Kelola akun, Penugasan asesor, Kunci API (menu di src/components/shell/menu-peran.ts). */
 export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
   const p = await wajibSuperAdmin();
   return (
-    <ShellAplikasi pengguna={p} grup={MENU} subjudul="Admin" beranda="/admin/akun">
+    <ShellAplikasi pengguna={p} grup={[MENU_ADMIN]} subjudul="Admin" beranda="/admin/akun">
       {children}
     </ShellAplikasi>
   );

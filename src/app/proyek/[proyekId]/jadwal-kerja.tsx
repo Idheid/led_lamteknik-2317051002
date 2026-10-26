@@ -35,7 +35,7 @@ export function JadwalKerja({
   terkunci: boolean;
   /** tanda kesiapan: merah ≤ 6 bulan dan belum layak, kuning ≤ 12 bulan */
   warna: "merah" | "kuning" | null;
-  /** sisa waktu sampai akreditasi berakhir, mis. "5 bulan lagi" */
+  /** kalimat sisa waktu, mis. "Akreditasi berakhir 5 bulan lagi" */
   sisa: string;
 }) {
   const { sibuk, jalankan } = useAksi();
@@ -101,7 +101,7 @@ export function JadwalKerja({
         </h2>
         {terlewat.length > 0
           ? <Pil warna="merah"><AlertTriangle className="size-3.5" aria-hidden />{terlewat.length} jadwal terlewat</Pil>
-          : <Pil warna={kuning ? "kuning" : "abu"}>Akreditasi berakhir {sisa}</Pil>}
+          : <Pil warna={kuning ? "kuning" : "abu"}>{sisa}</Pil>}
       </div>
       {ubah ? formulir : (
         <>

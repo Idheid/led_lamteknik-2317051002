@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import type { Pengguna } from "@/lib/akses";
 import { ambilFakultas } from "@/lib/data/organisasi";
 import { bagianProyek, daftarProyek } from "@/lib/data/proyek";
@@ -36,7 +34,7 @@ const NAMA_PENDEK: Record<string, string> = {
 /**
  * Sidebar PJ dengan dua keadaan (revisi 26 Okt 2026):
  * - di luar LED: hanya Menu Utama (tidak perlu menggulir mencari menu);
- * - di dalam LED: tombol "Kembali ke Menu Utama", pemilih LED, lalu menu LED itu saja.
+ * - di dalam LED: pemilih LED, menu "Kembali ke Menu Utama", lalu menu LED itu saja.
  */
 export async function ShellPj({ pengguna, proyekId, children }: { pengguna: Pengguna; proyekId?: string; children: ReactNode }) {
   const [fakultas, data] = await Promise.all([
@@ -57,6 +55,8 @@ export async function ShellPj({ pengguna, proyekId, children }: { pengguna: Peng
   const kriteria = data.bagian.filter((b) => b.jenis === "kriteria");
   const lain = data.bagian.filter((b) => b.jenis !== "kriteria");
   const grup: GrupNav[] = [
+    // revisi 26 Okt 2026: kembali ke Menu Utama sebagai menu biasa di bawah kartu LED, di atas "LED ini"
+    { label: "Kembali ke Menu Utama", item: [{ judul: "Menu Utama", href: "/proyek", ikon: "kembali", persis: true }] },
     {
       label: "LED ini",
       item: [
@@ -89,14 +89,7 @@ export async function ShellPj({ pengguna, proyekId, children }: { pengguna: Peng
       grup={grup}
       subjudul={subjudul}
       beranda={dasar}
-      atasMenu={
-        <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
-          <Link href="/proyek" className="flex w-fit items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-primary">
-            <ArrowLeft className="size-3.5" aria-hidden />Menu Utama
-          </Link>
-          <PemilihLed aktif={{ id: data.proyek.id, nama: data.proyek.nama, prodi: data.proyek.prodi.nama }} pilihan={pilihan} />
-        </div>
-      }
+      atasMenu={<PemilihLed aktif={{ id: data.proyek.id, nama: data.proyek.nama, prodi: data.proyek.prodi.nama }} pilihan={pilihan} />}
     >
       {children}
     </ShellAplikasi>

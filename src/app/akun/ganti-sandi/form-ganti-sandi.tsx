@@ -53,8 +53,8 @@ export function FormGantiSandi() {
     router.refresh();
   });
   return (
-    <form onSubmit={kirim} noValidate>
-      <FieldGroup>
+    <form onSubmit={kirim} noValidate className="flex flex-col gap-6">
+      <FieldGroup className="grid gap-5 lg:grid-cols-3">
         {KOLOM.map((k) => (
           <Controller
             key={k.name}
@@ -89,11 +89,14 @@ export function FormGantiSandi() {
             )}
           />
         ))}
-        <Button type="submit" size="lg" disabled={form.formState.isSubmitting} className="h-11 w-full">
+      </FieldGroup>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
           <IkonSibuk sibuk={form.formState.isSubmitting} />
           Simpan kata sandi baru
         </Button>
-      </FieldGroup>
+        <span className="text-sm text-muted-foreground">Minimal 8 karakter. Perangkat lain akan keluar otomatis.</span>
+      </div>
     </form>
   );
 }
