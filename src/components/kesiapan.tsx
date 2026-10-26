@@ -64,72 +64,78 @@ export function tonggakTerlewat(k: KesiapanLed) {
   return k.tonggak.find((t) => t.status === "terlewat") ?? null;
 }
 
-function Angka({ nilai, label }: { nilai: string; label: string }) {
+/** Pil status kecil berwarna lembut (gaya minimalis, revisi 26 Okt 2026). */
+export function Pil({ warna, children }: { warna: "merah" | "kuning" | "hijau" | "biru" | "abu"; children: React.ReactNode }) {
+  const kelas = {
+    merah: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
+    kuning: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+    hijau: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+    biru: "bg-primary/10 text-primary",
+    abu: "bg-muted text-muted-foreground",
+  }[warna];
+  return <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", kelas)}>{children}</span>;
+}
+
+function Statistik({ label, nilai, sub }: { label: string; nilai: string; sub?: React.ReactNode }) {
   return (
-    <div className="rounded-lg bg-background/80 px-3 py-2">
-      <div className="text-xl font-semibold tabular-nums leading-tight">{nilai}</div>
+    <div className="min-w-0">
       <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-xl font-semibold tabular-nums tracking-tight">{nilai}</div>
+      {sub}
     </div>
   );
 }
 
 /**
- * Kartu satu LED di Semua LED (revisi 23 Okt 2026): seluruh kartu merah bila ada jadwal yang terlewat (atau sisa waktu
- * ≤ 6 bulan dan belum layak), kuning bila ≤ 12 bulan, supaya mudah terlihat; angka kesiapan dibuat besar.
+ * Kartu satu LED di Semua LED (revisi 26 Okt 2026, gaya minimalis): kartu putih bersudut besar; bila ada jadwal
+ * terlewat kartu bernuansa merah lembut dengan pil merah dan nama jadwalnya, kuning bila sisa waktu ≤ 12 bulan.
  */
 export function KartuLed({ href, nama, prodi, periode, k }: { href: string; nama: string; prodi: string; periode: string; k: KesiapanLed | null }) {
-  const terlewat = k ? tonggakTerlewat(k) : null;
-  const merah = Boolean(terlewat) || k?.warna === "merah";
+  const terlewat = k?.tonggak.filter((t) => t.status === "terlewat") ?? [];
+  const merah = terlewat.length > 0 || k?.warna === "merah";
   const kuning = !merah && k?.warna === "kuning";
+  const persenDraf = k && k.sub.total ? Math.round((k.sub.draf / k.sub.total) * 100) : 0;
   return (
     <Link
       href={href}
       className={cn(
-        "group block overflow-hidden rounded-xl border-2 transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        merah ? "border-rose-400 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40"
-          : kuning ? "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30"
-            : "border-border bg-card hover:border-primary/40",
+        "group flex flex-col gap-4 rounded-2xl border p-5 shadow-xs transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        merah ? "border-rose-200 bg-linear-to-br from-rose-50 to-card dark:border-rose-900 dark:from-rose-950/50"
+          : kuning ? "border-amber-200 bg-linear-to-br from-amber-50 to-card dark:border-amber-900 dark:from-amber-950/40"
+            : "bg-card hover:border-primary/40",
       )}
     >
-      {merah && (
-        <div className="flex items-center gap-2 bg-rose-600 px-4 py-2 text-sm font-semibold text-white">
-          <AlertTriangle className="size-4 shrink-0" aria-hidden />
-          {terlewat
-            ? `Jadwal terlewat: ${terlewat.nama} (${formatTanggal(terlewat.tanggal)})`
-            : `Akreditasi berakhir ${labelSisa(k?.sisaBulan ?? null)}; belum Layak diajukan`}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-lg font-semibold tracking-tight">{prodi}</div>
+          <div className="truncate text-sm text-muted-foreground">{nama} · {periode}</div>
         </div>
-      )}
-      {kuning && (
-        <div className="flex items-center gap-2 bg-amber-400 px-4 py-1.5 text-sm font-semibold text-amber-950">
-          <CalendarClock className="size-4 shrink-0" aria-hidden />Akreditasi berakhir {labelSisa(k?.sisaBulan ?? null)}
-        </div>
-      )}
-      <div className="flex flex-col gap-3 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-lg font-semibold leading-snug">{prodi}</div>
-            <div className="text-sm text-muted-foreground">{nama} · {periode}</div>
-          </div>
-          <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary">
-            Buka<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-          </span>
-        </div>
-        {k && (
-          <>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Angka nilai={k.lkpsPersen === null ? "—" : `${k.lkpsPersen}%`} label="LKPS terisi" />
-              <Angka nilai={`${k.sub.draf}/${k.sub.total}`} label="sub-bagian berdraf" />
-              <Angka nilai={String(k.sub.selesai)} label="selesai" />
-              <Angka nilai={String(k.catatanTerbuka)} label="catatan asesor" />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={k.review === "layak" ? "default" : "secondary"}>Review: {LABEL_REVIEW[k.review]}</Badge>
-              {!merah && !kuning && <LencanaSisa sisa={k.sisaBulan} warna={k.warna} />}
-              {!k.batasPengajuan && <span className="text-sm text-muted-foreground">Batas pengajuan belum diisi</span>}
-            </div>
-          </>
-        )}
+        <ArrowRight className="mt-1 size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" aria-hidden />
       </div>
+      <div className="flex flex-wrap gap-2">
+        {terlewat.length > 0 && <Pil warna="merah"><AlertTriangle className="size-3.5" aria-hidden />{terlewat.length} jadwal terlewat</Pil>}
+        {merah && !terlewat.length && <Pil warna="merah"><CalendarClock className="size-3.5" aria-hidden />Akreditasi berakhir {labelSisa(k?.sisaBulan ?? null)}</Pil>}
+        {kuning && <Pil warna="kuning"><CalendarClock className="size-3.5" aria-hidden />Akreditasi berakhir {labelSisa(k?.sisaBulan ?? null)}</Pil>}
+        {k && <Pil warna={k.review === "layak" ? "hijau" : k.review === "perlu_revisi" ? "kuning" : "biru"}>Review: {LABEL_REVIEW[k.review]}</Pil>}
+        {k?.catatanTerbuka ? <Pil warna="kuning"><MessageSquareWarning className="size-3.5" aria-hidden />{k.catatanTerbuka} catatan asesor</Pil> : null}
+      </div>
+      {terlewat.length > 0 && (
+        <p className="text-sm text-rose-700 dark:text-rose-300">
+          Terlewat: {terlewat[0].nama} ({formatTanggal(terlewat[0].tanggal)}){terlewat.length > 1 ? ` · +${terlewat.length - 1} lainnya` : ""}
+        </p>
+      )}
+      {k && (
+        <div className="grid grid-cols-3 gap-4 border-t pt-4">
+          <Statistik label="LKPS terisi" nilai={k.lkpsPersen === null ? "—" : `${k.lkpsPersen}%`} />
+          <Statistik
+            label="Narasi berdraf"
+            nilai={`${k.sub.draf}/${k.sub.total}`}
+            sub={<div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${persenDraf}%` }} /></div>}
+          />
+          <Statistik label="Selesai" nilai={String(k.sub.selesai)} />
+        </div>
+      )}
+      {k && !k.batasPengajuan && <p className="text-xs text-muted-foreground">Batas pengajuan belum diisi</p>}
     </Link>
   );
 }

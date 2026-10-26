@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
 import { cn } from "@/lib/utils";
+import { Pil } from "@/components/kesiapan";
 import { aksiSimpanJadwal } from "@/app/proyek/aksi";
 import type { StatusTonggak } from "@/lib/domain/kesiapan";
 
@@ -85,70 +86,65 @@ export function JadwalKerja({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border-2 bg-card",
-        merah ? "border-rose-400 dark:border-rose-800" : kuning ? "border-amber-300 dark:border-amber-800" : "border-primary/30",
+        "flex flex-col gap-5 rounded-2xl border p-5 shadow-xs",
+        merah ? "border-rose-200 bg-linear-to-br from-rose-50 to-card dark:border-rose-900 dark:from-rose-950/50"
+          : kuning ? "border-amber-200 bg-linear-to-br from-amber-50 to-card dark:border-amber-900 dark:from-amber-950/40" : "bg-card",
       )}
       aria-label="Jadwal kerja"
     >
-      <div
-        className={cn(
-          "flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 font-semibold",
-          merah ? "bg-rose-600 text-white" : kuning ? "bg-amber-400 text-amber-950" : "bg-primary text-primary-foreground",
-        )}
-      >
-        <h2 className="flex items-center gap-2">
-          {merah ? <AlertTriangle className="size-5" aria-hidden /> : <CalendarClock className="size-5" aria-hidden />}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="flex items-center gap-3 text-base font-semibold">
+          <span className={cn("flex size-9 items-center justify-center rounded-full", merah ? "bg-rose-100 text-rose-600 dark:bg-rose-950" : "bg-primary/10 text-primary")}>
+            <CalendarClock className="size-4.5" aria-hidden />
+          </span>
           Jadwal kerja
         </h2>
-        <span className="text-sm">
-          {terlewat.length > 0 ? `${terlewat.length} jadwal terlewat` : `Akreditasi berakhir ${sisa}`}
-        </span>
+        {terlewat.length > 0
+          ? <Pil warna="merah"><AlertTriangle className="size-3.5" aria-hidden />{terlewat.length} jadwal terlewat</Pil>
+          : <Pil warna={kuning ? "kuning" : "abu"}>Akreditasi berakhir {sisa}</Pil>}
       </div>
-      <div className="flex flex-col gap-4 p-4 text-sm">
-        {ubah ? formulir : (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span>
-                <span className="text-muted-foreground">Batas pengajuan: </span>
-                <span className="text-base font-semibold">{batasPengajuan ? tampilTanggal(batasPengajuan) : "belum diisi"}</span>
-              </span>
-              {!terkunci && <Button variant="outline" onClick={() => setUbah(true)}><CalendarCheck aria-hidden />Ubah jadwal</Button>}
+      {ubah ? formulir : (
+        <>
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <div className="text-xs text-muted-foreground">Batas pengajuan</div>
+              <div className="text-xl font-semibold tracking-tight">{batasPengajuan ? tampilTanggal(batasPengajuan) : "Belum diisi"}</div>
             </div>
-            {tonggak.length > 0 ? (
-              <ol className="grid gap-2 sm:grid-cols-5" aria-label="Tonggak jadwal kerja">
-                {tonggak.map((t) => (
-                  <li
-                    key={t.kode}
-                    className={cn(
-                      "flex items-start gap-2 rounded-lg border p-2.5 sm:flex-col sm:items-center sm:text-center",
-                      t.status === "terlewat" && "border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40",
-                      t.status === "tercapai" && "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30",
-                    )}
-                  >
+            {!terkunci && <Button variant="outline" size="sm" className="rounded-full" onClick={() => setUbah(true)}><CalendarCheck aria-hidden />Ubah jadwal</Button>}
+          </div>
+          {tonggak.length > 0 ? (
+            <ol className="flex flex-col gap-3 sm:flex-row sm:gap-0" aria-label="Tonggak jadwal kerja">
+              {tonggak.map((t, i) => (
+                <li key={t.kode} className="flex gap-3 sm:flex-1 sm:flex-col sm:items-center sm:gap-2 sm:text-center">
+                  <div className="flex items-center sm:w-full">
+                    <span className={cn("hidden h-px flex-1 sm:block", i === 0 ? "bg-transparent" : "bg-border")} aria-hidden />
                     <span
                       className={cn(
-                        "flex size-8 shrink-0 items-center justify-center rounded-full",
-                        t.status === "tercapai" ? "bg-emerald-600 text-white" : t.status === "terlewat" ? "bg-rose-600 text-white" : "border-2 border-muted-foreground/30",
+                        "flex size-7 shrink-0 items-center justify-center rounded-full",
+                        t.status === "tercapai" ? "bg-emerald-500 text-white"
+                          : t.status === "terlewat" ? "bg-rose-500 text-white ring-4 ring-rose-500/15"
+                            : "border-2 border-border bg-card",
                       )}
                     >
-                      {t.status === "tercapai" && <Check className="size-4" aria-label="tercapai" />}
-                      {t.status === "terlewat" && <X className="size-4" aria-label="terlewat" />}
+                      {t.status === "tercapai" && <Check className="size-3.5" aria-label="tercapai" />}
+                      {t.status === "terlewat" && <X className="size-3.5" aria-label="terlewat" />}
                     </span>
-                    <span className="flex flex-col">
-                      <span className="font-medium leading-snug">{t.nama}</span>
-                      <span className={cn("text-xs tabular-nums", t.status === "terlewat" ? "font-semibold text-rose-700 dark:text-rose-300" : "text-muted-foreground")}>
-                        {tampilTanggal(t.tanggal)}{t.status === "terlewat" ? " · terlewat" : t.status === "tercapai" ? " · tercapai" : ""}
-                      </span>
+                    <span className={cn("hidden h-px flex-1 sm:block", i === tonggak.length - 1 ? "bg-transparent" : "bg-border")} aria-hidden />
+                  </div>
+                  <div className="flex flex-col sm:px-1">
+                    <span className="text-sm font-medium leading-snug">{t.nama}</span>
+                    <span className={cn("text-xs tabular-nums", t.status === "terlewat" ? "font-medium text-rose-600 dark:text-rose-400" : "text-muted-foreground")}>
+                      {tampilTanggal(t.tanggal)}
                     </span>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="text-muted-foreground">Klik Ubah jadwal dan isi batas pengajuan untuk membuat jadwal kerja.</p>
-            )}
-          </>
-        )}
-      </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-sm text-muted-foreground">Klik Ubah jadwal dan isi batas pengajuan untuk membuat jadwal kerja.</p>
+          )}
+        </>
+      )}
     </section>
   );
 }

@@ -23,15 +23,12 @@ export function MenuPengguna({ nama, email, peran }: { nama: string; email: stri
   }
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted">
-        <Avatar className="size-8 rounded-lg">
-          <AvatarFallback className="rounded-lg bg-primary/10 text-primary">{inisial(nama)}</AvatarFallback>
+      <DropdownMenuTrigger className="flex items-center gap-2 rounded-full py-1 pr-2 pl-1 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted">
+        <Avatar className="size-7">
+          <AvatarFallback className="bg-primary text-[11px] font-semibold text-primary-foreground">{inisial(nama)}</AvatarFallback>
         </Avatar>
-        <span className="hidden max-w-48 text-sm leading-tight sm:grid">
-          <span className="truncate font-medium">{nama}</span>
-          <span className="truncate text-xs text-muted-foreground">{peran}</span>
-        </span>
-        <ChevronDown className="hidden size-4 text-muted-foreground sm:block" aria-hidden />
+        <span className="hidden max-w-40 truncate font-medium sm:block">{nama}</span>
+        <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">
         <DropdownMenuLabel className="font-normal">

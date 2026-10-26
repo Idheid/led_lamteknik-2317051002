@@ -91,11 +91,8 @@ export async function ShellPj({ pengguna, proyekId, children }: { pengguna: Peng
       beranda={dasar}
       atasMenu={
         <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
-          <Link
-            href="/proyek"
-            className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
-          >
-            <ArrowLeft className="size-4" aria-hidden />Kembali ke Menu Utama
+          <Link href="/proyek" className="flex w-fit items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-primary">
+            <ArrowLeft className="size-3.5" aria-hidden />Menu Utama
           </Link>
           <PemilihLed aktif={{ id: data.proyek.id, nama: data.proyek.nama, prodi: data.proyek.prodi.nama }} pilihan={pilihan} />
         </div>
