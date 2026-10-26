@@ -14,7 +14,7 @@ import { periksaEkspor } from "@/lib/data/ekspor";
 import { kesiapanLed } from "@/lib/data/kesiapan";
 import {
   ajukanReview, balasCatatan, bandingkanCatatan, buatCatatan, daftarCatatan, daftarPemberitahuan, daftarPenugasan, hapusCatatan,
-  jumlahCatatanPerSub, ledAsesor, penilaianProyek, putuskanReview, simpanSkor, tandaiDibaca, tugaskanAsesor, ubahStatusCatatan,
+  jumlahCatatanPerSub, ledAsesor, penilaianProyek, putuskanReview, ringkasReview, simpanSkor, tandaiDibaca, tugaskanAsesor, ubahStatusCatatan,
 } from "@/lib/data/review";
 import { buatJangkar, teksPolos } from "@/lib/domain/review";
 import type { DokTiptap } from "@/lib/domain/narasi";
@@ -101,6 +101,11 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   assert.equal((await daftarPemberitahuan(pj)).belumDibaca, 0);
   assert.deepEqual(await jumlahCatatanPerSub(pj, proyekId), { [SUB]: { terbuka: 1, diperbaiki: 0 } });
   assert.equal((await kesiapanLed(proyekId)).catatanTerbuka, 1);
+  // revisi 26 Okt 2026: Beranda menautkan langsung ke sub-bagian dan catatan yang perlu ditinjau
+  const r = await ringkasReview(pj, proyekId);
+  assert.equal(r.bagianPerlu.length, 1);
+  assert.deepEqual([r.bagianPerlu[0].subBagianKode, r.bagianPerlu[0].terbuka, r.bagianPerlu[0].diperbaiki], [SUB, 1, 0]);
+  assert.equal(r.bagianPerlu[0].href, `/proyek/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
 
   // PJ mengubah kalimat lain: sorotan tetap menempel
   await simpanSuntingan(pj, proyekId, SUB, dok("Visi keilmuan dirumuskan bersama alumni dan industri. Visi ditinjau setiap lima tahun.", "Strategi pencapaian visi disusun dalam Renstra."));
@@ -128,6 +133,7 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   assert.deepEqual(lihat.catatan[0].balasan.map((b) => b.jenis), ["diperbaiki", "dibuka", "balasan", "diperbaiki", "diterima"]);
   assert.equal(lihat.catatan[0].balasan[1].peranPenulis, "ASESOR");
   assert.deepEqual(await jumlahCatatanPerSub(pj, proyekId), {});
+  assert.deepEqual((await ringkasReview(pj, proyekId)).bagianPerlu, [], "semua catatan diterima: tidak ada yang perlu ditinjau");
 });
 
 test("Penilaian akhir: skor 0-4 per butir, nilai akhir dan perkiraan status, Layak diajukan membuka ekspor final", async () => {

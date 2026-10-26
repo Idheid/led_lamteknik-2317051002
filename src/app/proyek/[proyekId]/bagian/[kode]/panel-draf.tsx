@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2, CircleAlert, CircleCheck, CircleDashed, CircleHelp, FileWarning, GitCompareArrows, History, PenLine,
@@ -297,6 +297,16 @@ export function PanelDraf({
     setCatatanAktif(id);
     document.getElementById(`catatan-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
+  // revisi 26 Okt 2026: dibuka dari Beranda (…#catatan-<id>): catatan itu disorot di panel dan di narasi
+  useEffect(() => {
+    const m = /^#catatan-(.+)$/.exec(window.location.hash);
+    if (!m) return;
+    const t = setTimeout(() => {
+      setCatatanAktif(m[1]);
+      document.getElementById(`catatan-${m[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
   const [periksa, setPeriksa] = useState<(HasilPemeriksaan & { catatanSistem?: string[] }) | null>(null);
   // label kalimat: hasil Periksa dengan AI bila ada (dan belum disunting), selain itu cek otomatis
   const ai = periksa ? null : aktif?.pemeriksaan?.kalimatAi ?? null;

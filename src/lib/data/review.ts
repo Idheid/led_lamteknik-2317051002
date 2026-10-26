@@ -421,6 +421,49 @@ export async function putuskanReview(p: Pengguna, proyekId: string, masukan: z.i
   return keputusan;
 }
 
+export interface BagianPerluReview {
+  bagianKode: string;
+  subBagianKode: string;
+  label: string;
+  judul: string;
+  terbuka: number;
+  diperbaiki: number;
+  /** tautan ke halaman sub-bagian, langsung ke catatan pertama yang perlu diperbaiki */
+  href: string;
+}
+
+/**
+ * Sub-bagian yang masih punya catatan asesor belum selesai, urut seperti di LED (revisi 26 Okt 2026): kartu Review
+ * asesor di Beranda menautkan langsung ke catatan pertama yang perlu diperbaiki.
+ */
+async function bagianPerluReview(proyek: { id: string; versiId: string }): Promise<BagianPerluReview[]> {
+  const catatan = await prisma.catatanRevisi.findMany({
+    where: { proyekId: proyek.id, status: { in: CATATAN_BELUM_SELESAI } },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, bagianKode: true, subBagianKode: true, status: true },
+  });
+  if (!catatan.length) return [];
+  const sub = await prisma.subBagian.findMany({
+    where: { kode: { in: [...new Set(catatan.map((c) => c.subBagianKode))] }, bagian: { versiId: proyek.versiId } },
+    select: { kode: true, label: true, judul: true, urutan: true, bagian: { select: { kode: true, urutan: true } } },
+  });
+  return sub
+    .sort((a, b) => a.bagian.urutan - b.bagian.urutan || a.urutan - b.urutan)
+    .map((s) => {
+      const c = catatan.filter((x) => x.subBagianKode === s.kode);
+      const pertama = c.find((x) => x.status === "terbuka") ?? c[0];
+      return {
+        bagianKode: s.bagian.kode,
+        subBagianKode: s.kode,
+        label: s.label,
+        judul: s.judul,
+        terbuka: c.filter((x) => x.status === "terbuka").length,
+        diperbaiki: c.filter((x) => x.status === "diperbaiki").length,
+        href: `${tautanSub("PJ", proyek.id, s.bagian.kode, s.kode)}#catatan-${pertama.id}`,
+      };
+    });
+}
+
 /** Ringkasan review untuk Beranda LED (PJ): asesor, status, jumlah catatan, dan nilai/keputusan terakhir. */
 export async function ringkasReview(p: Pengguna, proyekId: string) {
   const proyek = await aksesReview(p, proyekId);
@@ -431,6 +474,7 @@ export async function ringkasReview(p: Pengguna, proyekId: string) {
   ]);
   const hitung = (s: StatusCatatan) => jumlah.find((j) => j.status === s)?._count._all ?? 0;
   return {
+    bagianPerlu: await bagianPerluReview(proyek),
     asesor: asesor?.name ?? null,
     review: n.review,
     keputusan: n.keputusan,

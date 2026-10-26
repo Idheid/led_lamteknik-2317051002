@@ -110,6 +110,7 @@ export default async function Beranda({ params }: PageProps<"/proyek/[proyekId]"
           catatan={review.catatan}
           keputusan={review.keputusan}
           arsip={Boolean(proyek.diarsipkanPada)}
+          bagianPerlu={review.bagianPerlu}
         />
         <JadwalKerja
           proyekId={proyek.id}

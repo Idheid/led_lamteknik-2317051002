@@ -174,13 +174,16 @@ Langkah:
 
 1. Setelah narasi siap, buka Beranda LED → kotak **Review asesor** → **Ajukan review** (perlu asesor yang sudah
    ditugaskan admin). Status berubah dari Draf menjadi **Direview** dan asesor diberi tahu.
-2. Catatan asesor muncul langsung di halaman sub-bagian tanpa muat ulang: kalimatnya disorot biru di editor dan
+2. Di Beranda LED, kotak **Review asesor** menampilkan **Bagian yang perlu ditinjau**: klik **Buka** pada sebuah bagian
+   (atau klik angka *catatan perlu diperbaiki*) untuk langsung membuka sub-bagian itu tepat di catatannya; catatan dan
+   kalimatnya langsung disorot.
+3. Catatan asesor muncul langsung di halaman sub-bagian tanpa muat ulang: kalimatnya disorot biru di editor dan
    catatannya tampil di panel **Catatan asesor**. Klik sorotan atau catatan untuk saling melompat.
-3. Perbaiki narasinya (tersimpan otomatis), lalu klik **Sudah diperbaiki** pada catatan itu; sorotan berubah kuning.
+4. Perbaiki narasinya (tersimpan otomatis), lalu klik **Sudah diperbaiki** pada catatan itu; sorotan berubah kuning.
    Bila kalimat yang diblok sudah diubah total, catatan tetap ada dengan tanda **Teks asli sudah berubah**.
-4. Asesor membandingkan versi sebelum dan sesudah, lalu **Terima** (sorotan hijau) atau **Buka lagi** dengan balasan.
+5. Asesor membandingkan versi sebelum dan sesudah, lalu **Terima** (sorotan hijau) atau **Buka lagi** dengan balasan.
    PJ dan asesor bisa saling **Balas** di setiap catatan.
-5. Bila asesor menyatakan **Perlu revisi**, perbaiki lalu klik **Ajukan review ulang**. Bila **Layak diajukan**,
+6. Bila asesor menyatakan **Perlu revisi**, perbaiki lalu klik **Ajukan review ulang**. Bila **Layak diajukan**,
    ekspor Word final terbuka.
 
 ### 7. Tim penyusun dan ekspor Word
