@@ -110,7 +110,7 @@ export function FormProyekBaru({ prodi, tahunUsulan, awalProdiId }: { prodi: Pil
             </Field>
           )}
         />
-        <Button type="submit" disabled={sibuk || !pertama} className="w-fit">
+        <Button type="submit" size="lg" disabled={sibuk || !pertama} className="w-fit">
           <IkonSibuk sibuk={sibuk} />
           Buat LED
         </Button>

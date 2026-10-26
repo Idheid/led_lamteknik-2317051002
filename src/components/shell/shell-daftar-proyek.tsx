@@ -1,16 +1,19 @@
 import type { ReactNode } from "react";
-import { cookies } from "next/headers";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import type { Pengguna } from "@/lib/akses";
 import { ambilFakultas } from "@/lib/data/organisasi";
 import { bagianProyek, daftarProyek } from "@/lib/data/proyek";
 import type { GrupNav, StatusLencana } from "./nav-sidebar";
 import { ShellAplikasi } from "./shell-aplikasi";
-import { KUKI_LED } from "@/lib/kuki";
-import { IngatLed, PemilihLed } from "./pemilih-led";
+import { PemilihLed } from "./pemilih-led";
 
-/** Menu fakultas PJ (revisi 19 Okt 2026); revisi 23 Okt 2026: selalu tampil di bawah menu LED yang sedang dibuka. */
-export const MENU_FAKULTAS: GrupNav = {
-  label: "Pengaturan fakultas",
+/**
+ * Menu Utama PJ (revisi 26 Okt 2026; sebelumnya "Pengaturan fakultas"): halaman awal setelah login, berisi daftar LED
+ * dan data bersama yang dipakai semua LED.
+ */
+export const MENU_UTAMA: GrupNav = {
+  label: "Menu utama",
   item: [
     { judul: "Semua LED", href: "/proyek", ikon: "proyek", persis: true },
     { judul: "Program studi", href: "/proyek/prodi", ikon: "prodi" },
@@ -31,64 +34,79 @@ const NAMA_PENDEK: Record<string, string> = {
 };
 
 /**
- * Satu sidebar untuk semua halaman PJ (revisi 23 Okt 2026). Menu LED yang sedang dibuka selalu ada di atas, juga saat
- * PJ membuka menu fakultas (LED terakhir diingat di kuki), sehingga salah klik tidak membuat PJ "tersesat": cukup klik
- * menu LED lagi. Pemilih LED di atas sidebar untuk berpindah LED.
+ * Sidebar PJ dengan dua keadaan (revisi 26 Okt 2026):
+ * - di luar LED: hanya Menu Utama (tidak perlu menggulir mencari menu);
+ * - di dalam LED: tombol "Kembali ke Menu Utama", pemilih LED, lalu menu LED itu saja.
  */
 export async function ShellPj({ pengguna, proyekId, children }: { pengguna: Pengguna; proyekId?: string; children: ReactNode }) {
-  const [semua, fakultas] = await Promise.all([daftarProyek(pengguna), ambilFakultas()]);
-  // LED dari halaman, atau LED terakhir dibuka (kuki), atau LED aktif pertama (akreditasi paling dekat berakhir)
-  const idAktif = proyekId ?? (await cookies()).get(KUKI_LED)?.value ?? semua.find((l) => !l.diarsipkanPada)?.id;
-  const data = idAktif ? await bagianProyek(pengguna, idAktif).catch(() => null) : null;
-  const grup: GrupNav[] = [];
-  if (data) {
-    const dasar = `/proyek/${data.proyek.id}`;
-    const kriteria = data.bagian.filter((b) => b.jenis === "kriteria");
-    const lain = data.bagian.filter((b) => b.jenis !== "kriteria");
-    grup.push(
-      {
-        label: "LED ini",
-        item: [
-          { judul: "Beranda LED", href: dasar, ikon: "beranda", persis: true },
-          { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },
-          { judul: "Basis Pengetahuan", href: `${dasar}/dokumen`, ikon: "dokumen" },
-          { judul: "Tim penyusun", href: `${dasar}/tim`, ikon: "tim" },
-          { judul: "Ekspor Word", href: `${dasar}/ekspor`, ikon: "ekspor" },
-        ],
-      },
-      {
-        label: "Kriteria",
-        item: kriteria.map((b) => ({
-          judul: b.nama, kode: b.kode, href: `${dasar}/bagian/${b.kode}`, ikon: "kriteria" as const, status: b.status as StatusLencana,
-        })),
-      },
-      {
-        label: "Bagian lain",
-        item: lain.map((b) => ({
-          judul: NAMA_PENDEK[b.kode] ?? b.nama, href: `${dasar}/bagian/${b.kode}`, ikon: "bab" as const, status: b.status as StatusLencana,
-        })),
-      },
+  const [fakultas, data] = await Promise.all([
+    ambilFakultas(),
+    proyekId ? bagianProyek(pengguna, proyekId).catch(() => null) : Promise.resolve(null),
+  ]);
+  const subjudul = fakultas?.nama ?? "Fakultas belum diisi";
+
+  if (!data) {
+    return (
+      <ShellAplikasi pengguna={pengguna} grup={[MENU_UTAMA]} subjudul={subjudul} beranda="/proyek">
+        {children}
+      </ShellAplikasi>
     );
   }
-  grup.push(MENU_FAKULTAS);
-  const pilihan = semua
-    .filter((l) => !l.diarsipkanPada || l.id === data?.proyek.id)
+
+  const dasar = `/proyek/${data.proyek.id}`;
+  const kriteria = data.bagian.filter((b) => b.jenis === "kriteria");
+  const lain = data.bagian.filter((b) => b.jenis !== "kriteria");
+  const grup: GrupNav[] = [
+    {
+      label: "LED ini",
+      item: [
+        { judul: "Beranda LED", href: dasar, ikon: "beranda", persis: true },
+        { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },
+        { judul: "Basis Pengetahuan", href: `${dasar}/dokumen`, ikon: "dokumen" },
+        { judul: "Tim penyusun", href: `${dasar}/tim`, ikon: "tim" },
+        { judul: "Ekspor Word", href: `${dasar}/ekspor`, ikon: "ekspor" },
+      ],
+    },
+    {
+      label: "Kriteria",
+      item: kriteria.map((b) => ({
+        judul: b.nama, kode: b.kode, href: `${dasar}/bagian/${b.kode}`, ikon: "kriteria" as const, status: b.status as StatusLencana,
+      })),
+    },
+    {
+      label: "Bagian lain",
+      item: lain.map((b) => ({
+        judul: NAMA_PENDEK[b.kode] ?? b.nama, href: `${dasar}/bagian/${b.kode}`, ikon: "bab" as const, status: b.status as StatusLencana,
+      })),
+    },
+  ];
+  const pilihan = (await daftarProyek(pengguna))
+    .filter((l) => !l.diarsipkanPada || l.id === data.proyek.id)
     .map((l) => ({ id: l.id, nama: l.nama, prodi: l.prodi.nama, arsip: Boolean(l.diarsipkanPada) }));
   return (
     <ShellAplikasi
       pengguna={pengguna}
       grup={grup}
-      subjudul={fakultas?.nama ?? "Fakultas belum diisi"}
-      beranda={data ? `/proyek/${data.proyek.id}` : "/proyek"}
-      atasMenu={<PemilihLed aktif={data ? { id: data.proyek.id, nama: data.proyek.nama, prodi: data.proyek.prodi.nama } : null} pilihan={pilihan} />}
+      subjudul={subjudul}
+      beranda={dasar}
+      atasMenu={
+        <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
+          <Link
+            href="/proyek"
+            className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+          >
+            <ArrowLeft className="size-4" aria-hidden />Kembali ke Menu Utama
+          </Link>
+          <PemilihLed aktif={{ id: data.proyek.id, nama: data.proyek.nama, prodi: data.proyek.prodi.nama }} pilihan={pilihan} />
+        </div>
+      }
     >
-      {proyekId && data && <IngatLed id={proyekId} />}
       {children}
     </ShellAplikasi>
   );
 }
 
-/** Halaman PJ di luar satu LED (Semua LED, Program studi, Instrumen, Basis Pengetahuan fakultas, Kunci API). */
+/** Halaman Menu Utama PJ (Semua LED, Program studi, Instrumen, Basis Pengetahuan fakultas, Kunci API). */
 export async function ShellDaftarProyek({ pengguna, children }: { pengguna: Pengguna; children: ReactNode }) {
   return <ShellPj pengguna={pengguna}>{children}</ShellPj>;
 }

@@ -7,7 +7,7 @@ import { BannerAntrean } from "@/components/narasi/banner-antrean";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { wajibPenanggungJawab } from "@/lib/sesi";
 
-/** Satu LED: sidebar PJ bersama (menu LED ini + pengaturan fakultas), banner antrean, tanda arsip. */
+/** Satu LED: sidebar menu LED ini (dengan Kembali ke Menu Utama), banner antrean, tanda arsip. */
 export default async function LayoutProyekLED({ children, params }: LayoutProps<"/proyek/[proyekId]">) {
   const p = await wajibPenanggungJawab();
   const { proyekId } = await params;

@@ -42,7 +42,7 @@ export function FormKunci({ kembaliKe }: { kembaliKe?: string }) {
           <Input id="kunci-isi" type="password" autoComplete="off" value={kunci} onChange={(e) => setKunci(e.target.value)} placeholder="AIza…" />
           <FieldDescription>Kunci tidak bisa dilihat lagi setelah disimpan.</FieldDescription>
         </Field>
-        <Button type="submit" disabled={sibuk || kunci.trim().length < 20} className="w-fit">
+        <Button type="submit" size="lg" disabled={sibuk || kunci.trim().length < 20} className="w-fit">
           <IkonSibuk sibuk={sibuk} />
           Simpan kunci
         </Button>

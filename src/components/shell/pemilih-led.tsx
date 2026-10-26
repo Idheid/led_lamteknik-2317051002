@@ -1,20 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { Check, ChevronsUpDown, Layers, Plus } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { KUKI_LED } from "@/lib/kuki";
-
-/** Ingat LED yang terakhir dibuka (kuki 1 tahun) supaya menu LED tetap ada saat PJ membuka menu fakultas. */
-export function IngatLed({ id }: { id: string }) {
-  useEffect(() => {
-    document.cookie = `${KUKI_LED}=${encodeURIComponent(id)}; path=/; max-age=31536000; samesite=lax`;
-  }, [id]);
-  return null;
-}
 
 interface Led {
   id: string;

@@ -84,13 +84,13 @@ export function UnggahBerkas({ url, accept, label = "Pilih berkas", keterangan, 
       onDragLeave={() => setSeret(false)}
       onDrop={(e) => { e.preventDefault(); setSeret(false); void kirim(e.dataTransfer.files); }}
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center transition-colors",
+        "flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors",
         seret ? "border-primary bg-primary/5" : "border-border",
       )}
     >
       {input}
-      <Upload className="size-6 text-muted-foreground" aria-hidden />
-      <Button type="button" disabled={sibuk} onClick={() => masukan.current?.click()}>
+      <Upload className="size-8 text-muted-foreground" aria-hidden />
+      <Button type="button" size="lg" disabled={sibuk} onClick={() => masukan.current?.click()}>
         {sibuk && <Loader2 className="animate-spin" aria-hidden />}
         {sibuk ? "Mengunggah…" : label}
       </Button>

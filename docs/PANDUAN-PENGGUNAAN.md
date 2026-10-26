@@ -8,7 +8,7 @@ pilihannya diingat di browser.
 **Pemasangan pertama**: selama website belum punya admin, halaman login menampilkan formulir **Buat akun admin
 pertama** (tidak perlu mengisi berkas `.env`). Setelah itu semua akun dibuat admin; tidak ada pendaftaran mandiri. Akun baru dan akun yang kata sandinya diatur ulang **wajib
 mengganti kata sandi** saat login pertama. Setiap pengguna bisa mengganti kata sandinya sendiri lewat menu akun (pojok
-kiri bawah) → **Ganti kata sandi** (wajib mengisi kata sandi lama).
+kanan atas, di samping lonceng) → **Ganti kata sandi** (wajib mengisi kata sandi lama).
 
 Ikon **lonceng** di kanan atas (PJ dan asesor) menampilkan pemberitahuan review: catatan revisi baru, catatan yang
 sudah diperbaiki atau diterima, balasan, pengajuan review, dan keputusan asesor. Klik pemberitahuan untuk membuka
@@ -63,10 +63,10 @@ Asesor langsung diberi tahu. Asesor hanya bisa membuka LED yang ditugaskan kepad
 
 ## B. Penanggung jawab fakultas
 
-Sidebar PJ selalu sama: di atas ada kotak **LED yang dibuka** (klik untuk pindah LED atau membuat LED baru), lalu menu
-**LED ini** (Beranda LED, Data LKPS, Basis Pengetahuan, Tim penyusun, Ekspor Word), kriteria C.1–C.7, bab lain, dan di
-bawah **Pengaturan fakultas** (Semua LED, Program studi, Instrumen, Basis Pengetahuan fakultas, Kunci API fakultas).
-Membuka menu fakultas tidak menghilangkan menu LED, jadi bila salah klik cukup klik menu LED lagi.
+Setelah login PJ masuk ke **Menu Utama** (sidebar: Semua LED, Program studi, Instrumen, Basis Pengetahuan fakultas,
+Kunci API fakultas). Klik sebuah LED: sidebar berganti menjadi menu **LED ini** (Beranda LED, Data LKPS, Basis
+Pengetahuan, Tim penyusun, Ekspor Word), kriteria C.1–C.7, dan bab lain. Di atasnya ada tombol **Kembali ke Menu
+Utama** dan kotak **LED yang dibuka** untuk pindah ke LED lain.
 
 Menambah data selalu lewat tombol biru di kanan atas (**Buat LED baru**, **Tambah data LKPS**, **Tambah dokumen**,
 **Tambah kunci**) yang membuka halaman tersendiri; setelah berhasil, sistem kembali ke daftar.

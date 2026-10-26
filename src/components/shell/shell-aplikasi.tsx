@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarProvider, SidebarRail, SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -51,9 +51,6 @@ export async function ShellAplikasi({ pengguna, grup, subjudul, beranda, atasMen
         <SidebarContent>
           <NavSidebar grup={grup} />
         </SidebarContent>
-        <SidebarFooter>
-          <MenuPengguna nama={pengguna.nama} email={pengguna.email} peran={LABEL_PERAN[pengguna.peran]} />
-        </SidebarFooter>
         <SidebarRail />
       </Sidebar>
       {/* min-w-0: tabel lebar tidak boleh mendorong halaman melebar keluar layar (cukup tabelnya yang bergeser) */}
@@ -62,7 +59,10 @@ export async function ShellAplikasi({ pengguna, grup, subjudul, beranda, atasMen
           <SidebarTrigger className="-ml-1" aria-label="Ciutkan atau buka sidebar" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
           <span className="text-sm text-muted-foreground">LAM Teknik · Laporan Evaluasi Diri</span>
-          {pengguna.peran !== "SUPER_ADMIN" && <span className="ml-auto"><Lonceng /></span>}
+          <span className="ml-auto flex items-center gap-1">
+            {pengguna.peran !== "SUPER_ADMIN" && <Lonceng />}
+            <MenuPengguna nama={pengguna.nama} email={pengguna.email} peran={LABEL_PERAN[pengguna.peran]} />
+          </span>
         </header>
         <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">{children}</div>
       </SidebarInset>
