@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
+import { sumberLkps } from "@/modules/led/data/sumber-lkps";
 import { GalatPengguna, pastikanPeran, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
@@ -32,7 +33,7 @@ export interface KesiapanLed {
 export async function kesiapanLed(proyekId: string, hariIni = new Date()): Promise<KesiapanLed> {
   const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId }, include: { prodi: true } });
   const [berkas, sub, draf, status, dokumen, ekspor] = await Promise.all([
-    prisma.berkasLKPS.findFirst({ where: { proyekId, aktif: true }, include: { tabel: { select: { sheet: true, baris: true } } } }),
+    sumberLkps(proyekId),
     prisma.subBagian.findMany({
       where: { bagian: { versiId: proyek.versiId }, tipe: { in: ["iku", "narasi", "bersama"] } },
       select: { id: true, berlakuUntuk: true, jenjangOverride: true, bagian: { select: { kode: true, jenis: true } } },

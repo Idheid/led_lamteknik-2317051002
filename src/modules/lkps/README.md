@@ -37,3 +37,14 @@ Dikerjakan Ghalib. Kerangka disiapkan 31 Okt 2026 supaya modul LKPS langsung mas
 - Rencana fitur (arahan Pak Tris): isian tabel per prodi sesuai template LKPS LAM Teknik 2025, impor/ekspor Excel, PDF
   per tabel (tabel lebar mendatar, kolom tidak terpotong), ID sinkron One Data di setiap baris, isian manual sebagai
   cadangan.
+
+## Aturan cetak tabel LKPS ke PDF (Pak Tris, revisi 31 Okt 2026)
+
+Tim Prodi mencetak LKPS per tabel ke PDF lalu mengunggahnya ke LED sebagai sumber data (modul LED membaca dan
+menggabungkan PDF per tabel). Ekspor PDF modul LKPS mengikuti aturan berikut:
+
+- Satu tabel satu halaman. Bila tidak muat, tabel boleh bersambung ke halaman berikutnya dengan judul kolom (dan baris
+  nomor kolom) diulang di setiap halaman.
+- Kolom tidak boleh dipindah ke bawah atau dipecah ke halaman lain; semua kolom tetap satu baris.
+- Tabel yang lebar dicetak lanskap (mendatar) supaya kolomnya tidak terpotong.
+- Judul tabel ("Tabel 4.a ...") tetap dicetak di awal tabel supaya pembaca PDF LED bisa mengenali tabelnya.

@@ -187,6 +187,28 @@ function nilai(t: string): NilaiSel {
   return s;
 }
 
+/**
+ * Halaman awal dan akhir setiap tabel di PDF LKPS (revisi 31 Okt 2026): dipakai uji pemecahan PDF LKPS menjadi satu
+ * berkas per tabel, seperti yang dicetak Tim Prodi.
+ */
+export async function petaHalamanTabelPdf(berkas: Buffer | Uint8Array): Promise<{ sheet: string; awal: number; akhir: number }[]> {
+  const baris = await bacaBarisTeks(new Uint8Array(berkas));
+  const peta: { sheet: string; awal: number; akhir: number }[] = [];
+  for (let i = 0; i < baris.length; i++) {
+    const b = baris[i];
+    const kini = peta[peta.length - 1];
+    if (/^tabel\b/i.test(b.potongan[0]?.teks ?? "")) {
+      const sheet = cocokkanJudul(baris, i);
+      if (sheet && sheet !== kini?.sheet) {
+        peta.push({ sheet, awal: b.halaman, akhir: b.halaman });
+        continue;
+      }
+    }
+    if (kini) kini.akhir = b.halaman;
+  }
+  return peta;
+}
+
 /** Baca LKPS PDF untuk satu jenjang. */
 export async function bacaLkpsPdf(berkas: Buffer | Uint8Array, jenjang: string): Promise<HasilBacaLkps> {
   let baris: BarisTeks[];

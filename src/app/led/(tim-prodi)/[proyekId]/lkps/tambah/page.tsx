@@ -17,13 +17,14 @@ export default async function HalamanTambahLkps({ params }: PageProps<"/led/[pro
       judul="Tambah data LKPS"
       remah={[{ label: "Data LKPS", href: kembali }, { label: "Tambah" }]}
       kembali={kembali}
-      catatan={`Pakai template LKPS LAM Teknik 2025 tanpa mengubah nama sheet. Berkas terbaru yang terbaca menjadi sumber data. TS LED ini: ${formatTahunAkademik(proyek.tsTahunMulai)}.`}
+      catatan={`Excel: pakai template LKPS LAM Teknik 2025 tanpa mengubah nama sheet; Excel lengkap menggantikan sumber lama. PDF: boleh banyak berkas sekaligus (misalnya satu tabel per PDF); tabelnya digabung, tabel yang sama memakai berkas terbaru. TS LED ini: ${formatTahunAkademik(proyek.tsTahunMulai)}.`}
     >
       <UnggahBerkas
         url={`/api/led/proyek/${proyekId}/lkps`}
         accept=".xlsx,.pdf"
         label="Pilih berkas LKPS"
-        keterangan="Excel (.xlsx) atau PDF, maksimal 25 MB"
+        keterangan="Excel (.xlsx) atau satu/lebih PDF, masing-masing maksimal 25 MB"
+        multiple
         kembaliKe={kembali}
       />
     </HalamanTambah>

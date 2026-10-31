@@ -8,7 +8,9 @@ import { formatTahunAkademik } from "@/modules/bersama/domain/tahun-akademik";
 
 /**
  * F-08/F-09: baca berkas LKPS yang sudah diunggah, simpan tabelnya ke TabelLKPS, dan jadikan berkas aktif
- * (sumber metrik) bila terbaca. Dijalankan worker (antrean "baca-lkps").
+ * (sumber metrik) bila terbaca. Dijalankan worker (antrean "baca-lkps"). Revisi 31 Okt 2026: Excel LKPS lengkap
+ * menggantikan semua sumber lama; PDF (biasanya satu tabel per berkas) ditambahkan ke sumber yang sudah ada dan
+ * tabelnya menang atas tabel yang sama dari berkas yang lebih lama.
  */
 export async function prosesBerkasLkps(berkasId: string): Promise<void> {
   const berkas = await prisma.berkasLKPS.findUnique({ where: { id: berkasId }, include: { proyek: true } });
@@ -56,7 +58,9 @@ export async function prosesBerkasLkps(berkasId: string): Promise<void> {
         urutan: i,
       })),
     });
-    if (terbaca) await tx.berkasLKPS.updateMany({ where: { proyekId: berkas.proyekId, NOT: { id: berkasId } }, data: { aktif: false } });
+    if (terbaca && berkas.jenis === "xlsx") {
+      await tx.berkasLKPS.updateMany({ where: { proyekId: berkas.proyekId, NOT: { id: berkasId } }, data: { aktif: false } });
+    }
     await tx.berkasLKPS.update({
       where: { id: berkasId },
       data: {

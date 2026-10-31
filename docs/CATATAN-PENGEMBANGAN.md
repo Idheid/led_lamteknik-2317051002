@@ -983,3 +983,34 @@ di-commit sebelum tahap berikutnya.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 121/121 lulus |
 | `npm run test:integrasi` | 71/71 lulus |
+
+### Tahap 8: data LKPS berupa PDF per tabel
+
+- Sumber data LKPS bisa lebih dari satu berkas: `sumberLkps(proyekId)` (`led/data/sumber-lkps.ts`) mengambil semua berkas
+  sumber (aktif), terbaru dulu, dan menggabung tabelnya dengan `gabungTabelLkps` (`led/data-lkps/gabung.ts`, murni):
+  satu tabel per sheet, berkas terbaru menang, urut seperti template. Dipakai semua pembaca LKPS: `lkpsAktif` (kini juga
+  `sumber` dan masalah gabungan), metrik butir angka (`nilai-butir.ts`), target/capaian butir, kesiapan (persen LKPS),
+  ringkasan bahan Beranda, dan konteks generate.
+- `prosesBerkasLkps`: Excel LKPS lengkap yang terbaca tetap menggantikan semua sumber lama; PDF yang terbaca ditambahkan
+  ke sumber yang ada. "Jadikan sumber data" pada satu berkas tetap menjadikannya satu-satunya sumber.
+- Tambah data LKPS menerima banyak berkas sekaligus (`multiple`; Route Handler mengunggah sesuai urutan pilihan sehingga
+  berkas terakhir menjadi yang terbaru). Halaman Data LKPS menampilkan kartu "Tabel LKPS": jumlah tabel yang berlaku
+  untuk jenjang, yang sudah terbaca, dan yang belum ada (`ringkasTabelTerbaca`; sheet yang berbagi kode tabel, misalnya
+  2a1–2a3 = Tabel 2.a, disebut dengan nama sheetnya).
+- `petaHalamanTabelPdf` (baca-pdf.ts): halaman awal–akhir setiap tabel di PDF LKPS, dipakai uji pemecahan PDF.
+- `src/modules/lkps/README.md`: aturan cetak tabel LKPS ke PDF dari Pak Tris (satu tabel satu halaman, boleh bersambung
+  dengan judul kolom berulang, kolom tidak dipindah ke bawah, lanskap bila lebar, judul tabel tetap dicetak).
+- Uji unit baru `tests/unit/lkps-gabung.test.ts` (berkas terbaru menang, urutan template, tabel berlaku per jenjang).
+  Uji integrasi baru `tests/integrasi/lkps-pdf-tabel.test.ts`: `tests/fikstur/lkps-contoh-s1.pdf` dipecah dengan
+  `pdf-lib` menjadi satu PDF per tabel, diunggah semuanya ke satu LED; tabel gabungan sama dengan membaca PDF utuh (isi
+  sel per tabel; `nomorBaris` PDF adalah nomor urut dalam berkas sehingga tidak dibandingkan) dan skor butir angka sama
+  dengan LED yang memakai PDF utuh; PDF 4.a yang lebih baru menggantikan 4.a lama tanpa menghapus tabel lain; Excel
+  lengkap menggantikan semua PDF; PDF sesudah Excel digabung dengan Excel.
+- Diperiksa di browser: kartu Tabel LKPS pada LED pengembangan (belum ada berkas) menampilkan 43 tabel Sarjana yang belum
+  ada; unggah tidak dicoba di server pengembangan (alur unggah diuji di uji integrasi).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 123/123 lulus |
+| `npm run test:integrasi` | 73/73 lulus |

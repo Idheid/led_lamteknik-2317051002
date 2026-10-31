@@ -10,6 +10,7 @@ import type { HasilButirAngka } from "@/modules/led/domain/metrik-lkps";
 import { nilaiButirUntukProyek } from "@/modules/led/data/nilai-butir";
 import type { BarisLkps, KolomLkps, MasalahLkps } from "@/modules/led/data-lkps/jenis";
 import { periksaIsi } from "@/modules/led/data-lkps/periksa";
+import { sumberLkps } from "@/modules/led/data/sumber-lkps";
 
 /** F-08/F-09: unggah LKPS (Excel utama, PDF cadangan), tabel hasil baca, koreksi manual, dan metrik butir angka. */
 
@@ -99,15 +100,21 @@ function keTabel(t: {
   return { ...t, kolom: t.kolom as KolomLkps[], baris: t.baris as BarisLkps[] };
 }
 
-/** Berkas aktif proyek beserta tabelnya (null bila belum ada LKPS terbaca). */
+/**
+ * Sumber data LKPS proyek beserta tabel gabungannya (null bila belum ada LKPS terbaca). Revisi 31 Okt 2026: bisa lebih
+ * dari satu berkas (PDF per tabel); `berkas` = berkas sumber terbaru, `sumber` = semua berkas sumber, masalah digabung.
+ */
 export async function lkpsAktif(p: Pengguna, proyekId: string) {
   const proyek = await ambilProyek(p, proyekId);
-  const berkas = await prisma.berkasLKPS.findFirst({
-    where: { proyekId: proyek.id, aktif: true },
-    include: { tabel: { orderBy: { urutan: "asc" } } },
-  });
-  if (!berkas) return null;
-  return { proyek, berkas: { ...berkas, masalah: (berkas.masalah ?? []) as unknown as MasalahLkps[] }, tabel: berkas.tabel.map(keTabel) };
+  const s = await sumberLkps(proyek.id);
+  if (!s) return null;
+  const masalah = s.berkas.flatMap((b) => (b.masalah ?? []) as unknown as MasalahLkps[]);
+  return {
+    proyek,
+    berkas: { ...s.berkas[0], masalah },
+    sumber: s.berkas.map((b) => ({ id: b.id, namaBerkas: b.namaBerkas, jenis: b.jenis })),
+    tabel: s.tabel.map(keTabel),
+  };
 }
 
 /** Metrik butir angka dari LKPS aktif (dihitung ulang setiap kali; data kecil). */

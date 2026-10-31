@@ -298,7 +298,8 @@ export async function ringkasanBahan(p: Pengguna, proyekId: string) {
       distinct: ["dokumenDiharapkanId"],
       select: { dokumenDiharapkanId: true },
     }),
-    prisma.berkasLKPS.findFirst({ where: { proyekId: proyek.id, aktif: true }, select: { namaBerkas: true, jenis: true } }),
+    prisma.berkasLKPS.findMany({ where: { proyekId: proyek.id, aktif: true }, orderBy: { createdAt: "desc" }, select: { namaBerkas: true, jenis: true } })
+      .then((b) => (b.length ? { namaBerkas: b.length > 1 ? `${b.length} berkas (terbaru ${b[0].namaBerkas})` : b[0].namaBerkas, jenis: b[0].jenis } : null)),
     prisma.dokumen.count({ where: { proyekId: null, status: "siap" } }),
   ]);
   const jumlah = (s: string) => perStatus.find((x) => x.status === s)?._count._all ?? 0;

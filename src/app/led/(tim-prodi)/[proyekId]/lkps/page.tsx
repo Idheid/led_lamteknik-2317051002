@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AksiBerkasLkps } from "./aksi-berkas";
+import { ringkasTabelTerbaca } from "@/modules/led/data-lkps/gabung";
 
 export const metadata: Metadata = { title: "Data LKPS" };
 
@@ -35,6 +36,7 @@ export default async function HalamanLkps({ params }: PageProps<"/led/[proyekId]
   const peringatan = masalah.filter((m) => m.tingkat === "peringatan");
   const berjalan = berkas.some((b) => STATUS_BERJALAN.includes(b.status));
   const perluDicek = aktif?.tabel.filter((t) => t.perluDicek) ?? [];
+  const ringkasTabel = ringkasTabelTerbaca(aktif?.tabel.map((t) => t.sheet) ?? [], proyek.jenjang);
 
   return (
     <>
@@ -51,7 +53,7 @@ export default async function HalamanLkps({ params }: PageProps<"/led/[proyekId]
         kunci="proyek-lkps"
         fungsi="LKPS adalah sumber data angka. Sistem membaca tabel LKPS dan menghitung metrik butir angka; narasi hanya boleh memakai angka dari sini."
         langkah={[
-          "Unggah berkas LKPS (Excel dari template LAM Teknik).",
+          "Unggah berkas LKPS: Excel dari template LAM Teknik, atau PDF per tabel (boleh banyak berkas sekaligus).",
           "Periksa tabel hasil bacaan dan peringatan; koreksi sel yang salah.",
           "Periksa metrik butir angka, lalu lanjut ke halaman kriteria.",
         ]}
@@ -107,6 +109,30 @@ export default async function HalamanLkps({ params }: PageProps<"/led/[proyekId]
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tabel LKPS</CardTitle>
+          <CardDescription>
+            {ringkasTabel.terbaca.length} dari {ringkasTabel.terbaca.length + ringkasTabel.belum.length} tabel yang berlaku untuk jenjang ini sudah terbaca
+            {aktif && aktif.sumber.length > 1 ? ` dari ${aktif.sumber.length} berkas sumber (tabel yang sama memakai berkas terbaru)` : ""}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm">
+          <div>
+            <div className="mb-1 text-xs font-medium text-muted-foreground">Sudah terbaca</div>
+            <div className="flex flex-wrap gap-1.5">
+              {ringkasTabel.terbaca.length ? ringkasTabel.terbaca.map((k) => <Badge key={k} variant="secondary" className="font-mono">{k}</Badge>) : <span className="text-muted-foreground">Belum ada.</span>}
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 text-xs font-medium text-muted-foreground">Belum ada</div>
+            <div className="flex flex-wrap gap-1.5">
+              {ringkasTabel.belum.length ? ringkasTabel.belum.map((k) => <Badge key={k} variant="outline" className="font-mono">{k}</Badge>) : <span className="text-muted-foreground">Semua tabel sudah ada.</span>}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {aktif && (
         <>

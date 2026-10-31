@@ -1,4 +1,5 @@
 import { prisma } from "@/modules/bersama/db";
+import { sumberLkps } from "@/modules/led/data/sumber-lkps";
 import { Prisma } from "@/generated/prisma/client";
 import type { Pengguna } from "@/modules/bersama/akses";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
@@ -213,7 +214,8 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   if (jawabanForm) legenda.J = "Jawaban penyusun di formulir";
 
   // LKPS aktif: metrik butir angka dan tabel terkait
-  const berkas = await prisma.berkasLKPS.findFirst({ where: { proyekId, aktif: true }, include: { tabel: { orderBy: { urutan: "asc" } } } });
+  // revisi 31 Okt 2026: tabel gabungan semua berkas sumber (PDF per tabel), berkas terbaru menang
+  const berkas = await sumberLkps(proyekId);
   const tabelLkps = (berkas?.tabel ?? []).map((t) => ({ ...t, kolom: t.kolom as unknown as KolomLkps[], baris: t.baris as unknown as BarisLkps[] }));
   // revisi 19 Okt 2026: rumus lewat kodeRumus butir; tanpa rumus atau rumus gagal membaca LKPS → nilai manual PJ
   const nilai = (await nilaiButirUntukProyek(proyek)).daftar.filter((n) => butir.some((b) => b.kode === n.butir));

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
+import { sumberLkps } from "@/modules/led/data/sumber-lkps";
 import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
@@ -34,7 +35,7 @@ export async function capaianButirUntukProyek(proyek: { id: string; versiId: str
     nilaiButirUntukProyek(proyek),
     prisma.targetButir.findMany({ where: { proyekId: proyek.id } }),
     prisma.butirPenilaian.findMany({ where: { versiId: proyek.versiId, jenjang: proyek.jenjang, jenis: "angka" }, select: { kode: true, tabelLkps: true } }),
-    prisma.berkasLKPS.findFirst({ where: { proyekId: proyek.id, aktif: true }, include: { tabel: { select: { kode: true, kolom: true, baris: true } } } }),
+    sumberLkps(proyek.id),
   ]);
   const hasil = new Map<string, CapaianButir>();
   for (const n of nilai.daftar) {

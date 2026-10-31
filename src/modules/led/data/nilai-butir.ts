@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
+import { sumberLkps } from "@/modules/led/data/sumber-lkps";
 import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
@@ -21,7 +22,7 @@ export async function nilaiButirUntukProyek(proyek: { id: string; versiId: strin
       orderBy: { urutan: "asc" },
       select: { kode: true, jenis: true, kodeRumus: true },
     }),
-    prisma.berkasLKPS.findFirst({ where: { proyekId: proyek.id, aktif: true }, include: { tabel: { orderBy: { urutan: "asc" } } } }),
+    sumberLkps(proyek.id),
     prisma.nilaiManual.findMany({ where: { proyekId: proyek.id } }),
   ]);
   const tabel: TabelMetrik[] = (berkas?.tabel ?? []).map((t) => ({ sheet: t.sheet, baris: t.baris as unknown as TabelMetrik["baris"] }));
