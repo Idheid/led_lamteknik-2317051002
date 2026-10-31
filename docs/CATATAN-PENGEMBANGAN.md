@@ -1051,3 +1051,21 @@ pecahan bisa ditolak; kini memakai toleransi pembulatan dan diberi uji domain.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 123/123 lulus |
 | `npm run test:integrasi` | 75/75 lulus |
+
+### P2: formulir Tambah akun terpotong
+
+- Tambah akun pindah ke halaman sendiri `/admin/akun/tambah` (`HalamanTambah`, seperti Tambah kunci dan Tambah prodi):
+  kartu peran berjajar tiga di layar lebar, prodi (wajib untuk Tim Prodi), lalu nama, email, kata sandi awal sebaris.
+  Setelah berhasil kembali ke Kelola akun dengan pesan sukses. Tombol Tambah akun di Kelola akun kini tautan; dialog
+  lama dihapus. Ubah nama/Ubah peran (P1) juga halaman sendiri, jadi konsisten.
+- Pengaman umum: `DialogContent` (`src/components/ui/dialog.tsx`) dan `AlertDialogContent`
+  (`src/components/ui/alert-dialog.tsx`) diberi `max-h-[calc(100svh-2rem)]` dan `overflow-y-auto`.
+- Diperiksa di browser: 1366×768, halaman tanpa gulir mendatar dan tombol Buat akun terjangkau; 375×812, halaman tanpa
+  gulir mendatar, akun asesor uji dibuat sampai selesai dan kembali ke Kelola akun; dialog Atur ulang kata sandi di
+  375×812 mendapat batas tinggi 780 px dan `overflow-y: auto`.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 123/123 lulus |
+| `npm run test:integrasi` | 75/75 lulus |

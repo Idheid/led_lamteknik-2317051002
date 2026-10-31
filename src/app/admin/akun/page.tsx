@@ -9,7 +9,10 @@ import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AksiBarisAkun, DialogTambahAkun } from "./komponen";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AksiBarisAkun } from "./komponen";
 
 export const metadata: Metadata = { title: "Kelola akun" };
 
@@ -51,7 +54,7 @@ export default async function HalamanAkun() {
     <>
       <JudulHalaman
         judul="Kelola akun"
-        aksi={<DialogTambahAkun prodi={prodi} />}
+        aksi={<Button asChild size="lg"><Link href="/admin/akun/tambah"><Plus aria-hidden />Tambah akun</Link></Button>}
       />
       <Petunjuk
         kunci="admin-akun"

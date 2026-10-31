@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { ArrowRightLeft, KeyRound, MoreHorizontal, PenLine, Plus, Power, Trash2, UserCog } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRightLeft, KeyRound, MoreHorizontal, PenLine, Power, Trash2, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -34,9 +35,12 @@ export const PERAN_BARU: { kunci: Peran; judul: string; isi: string }[] = [
   { kunci: "ADMIN", judul: "Admin UPPS", isi: "Mengelola akun, program studi, instrumen, Basis Pengetahuan fakultas, kunci API, dan penugasan asesor." },
 ];
 
-/** Satu tombol Tambah akun dengan pilihan peran; akun Tim Prodi wajib memilih program studi. */
-export function DialogTambahAkun({ prodi }: { prodi: PilihanProdi[] }) {
-  const [buka, setBuka] = useState(false);
+/**
+ * Formulir Tambah akun (perbaikan 1 Nov 2026, P2: halaman sendiri `/admin/akun/tambah`, sebelumnya dialog yang
+ * terpotong di layar laptop). Pilihan peran dengan penjelasan; akun Tim Prodi wajib memilih program studi.
+ */
+export function FormTambahAkun({ prodi }: { prodi: PilihanProdi[] }) {
+  const router = useRouter();
   const [peran, setPeran] = useState<Peran>("TIM_PRODI");
   const [prodiId, setProdiId] = useState("");
   const [galatProdi, setGalatProdi] = useState(false);
@@ -52,100 +56,84 @@ export function DialogTambahAkun({ prodi }: { prodi: PilihanProdi[] }) {
     }
     return jalankan(() => (peran === "ASESOR" ? aksiBuatAsesor(nilai) : peran === "ADMIN" ? aksiBuatAdmin(nilai) : aksiBuatTimProdi({ ...nilai, prodiId })), {
       sukses: "Akun dibuat. Sampaikan email dan kata sandi awalnya; pemilik akun wajib menggantinya saat login pertama.",
-      lalu: () => {
-        setBuka(false);
-        setProdiId("");
-        form.reset({ nama: "", email: "", kataSandi: "" });
-      },
+      lalu: () => router.push("/admin/akun"),
     });
   });
   return (
-    <Dialog open={buka} onOpenChange={setBuka}>
-      <DialogTrigger asChild>
-        <Button size="lg">
-          <Plus aria-hidden />
-          Tambah akun
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Tambah akun</DialogTitle>
-          <DialogDescription>Pilih peran, lalu isi nama, email, dan kata sandi awal.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={kirim} noValidate>
-          <FieldGroup>
-            <fieldset className="flex flex-col gap-2">
-              <legend className="mb-2 text-sm font-medium">Peran</legend>
-              {PERAN_BARU.map((x) => (
-                <label
-                  key={x.kunci}
-                  className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm ${peran === x.kunci ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
-                >
-                  <input type="radio" name="peran" value={x.kunci} checked={peran === x.kunci} onChange={() => setPeran(x.kunci)} className="mt-1 accent-[var(--primary)]" />
-                  <span>
-                    <span className="block font-medium">{x.judul}</span>
-                    <span className="block text-muted-foreground">{x.isi}</span>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-            {peran === "TIM_PRODI" && (
-              <Field data-invalid={galatProdi && !prodiId}>
-                <FieldLabel htmlFor="akun-prodi">Program studi</FieldLabel>
-                <Select value={prodiId} onValueChange={(v) => { setProdiId(v); setGalatProdi(false); }}>
-                  <SelectTrigger id="akun-prodi" className="w-full" aria-invalid={galatProdi && !prodiId}><SelectValue placeholder="Pilih program studi" /></SelectTrigger>
-                  <SelectContent>
-                    {prodi.map((x) => <SelectItem key={x.id} value={x.id}>{x.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {prodi.length === 0 && <FieldDescription>Belum ada program studi. Tambahkan dulu di menu Program studi.</FieldDescription>}
-                {galatProdi && !prodiId && <FieldError>Pilih program studi.</FieldError>}
+    <form onSubmit={kirim} noValidate>
+      <FieldGroup>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-sm font-medium">Peran</legend>
+          <div className="grid gap-2 md:grid-cols-3">
+            {PERAN_BARU.map((x) => (
+              <label
+                key={x.kunci}
+                className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm ${peran === x.kunci ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
+              >
+                <input type="radio" name="peran" value={x.kunci} checked={peran === x.kunci} onChange={() => setPeran(x.kunci)} className="mt-1 accent-[var(--primary)]" />
+                <span>
+                  <span className="block font-medium">{x.judul}</span>
+                  <span className="block text-muted-foreground">{x.isi}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {peran === "TIM_PRODI" && (
+          <Field data-invalid={galatProdi && !prodiId}>
+            <FieldLabel htmlFor="akun-prodi">Program studi</FieldLabel>
+            <Select value={prodiId} onValueChange={(v) => { setProdiId(v); setGalatProdi(false); }}>
+              <SelectTrigger id="akun-prodi" className="w-full" aria-invalid={galatProdi && !prodiId}><SelectValue placeholder="Pilih program studi" /></SelectTrigger>
+              <SelectContent>
+                {prodi.map((x) => <SelectItem key={x.id} value={x.id}>{x.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {prodi.length === 0 && <FieldDescription>Belum ada program studi. Tambahkan dulu di menu Program studi.</FieldDescription>}
+            {galatProdi && !prodiId && <FieldError>Pilih program studi.</FieldError>}
+          </Field>
+        )}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Controller
+            name="nama"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="akun-nama">Nama</FieldLabel>
+                <Input {...field} id="akun-nama" aria-invalid={fieldState.invalid} />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
-            <Controller
-              name="nama"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="akun-nama">Nama</FieldLabel>
-                  <Input {...field} id="akun-nama" aria-invalid={fieldState.invalid} />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-            <Controller
-              name="email"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="akun-email">Email</FieldLabel>
-                  <Input {...field} id="akun-email" type="email" autoComplete="off" aria-invalid={fieldState.invalid} />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-            <Controller
-              name="kataSandi"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="akun-sandi">Kata sandi awal</FieldLabel>
-                  <Input {...field} id="akun-sandi" type="password" autoComplete="new-password" aria-invalid={fieldState.invalid} />
-                  <FieldDescription>Minimal 8 karakter.</FieldDescription>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-          </FieldGroup>
-          <DialogFooter className="mt-6">
-            <Button type="submit" disabled={sibuk}>
-              <IkonSibuk sibuk={sibuk} />
-              Buat akun
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          />
+          <Controller
+            name="email"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="akun-email">Email</FieldLabel>
+                <Input {...field} id="akun-email" type="email" autoComplete="off" aria-invalid={fieldState.invalid} />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+          <Controller
+            name="kataSandi"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="akun-sandi">Kata sandi awal</FieldLabel>
+                <Input {...field} id="akun-sandi" type="password" autoComplete="new-password" aria-invalid={fieldState.invalid} />
+                <FieldDescription>Minimal 8 karakter.</FieldDescription>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        </div>
+        <Button type="submit" size="lg" className="w-fit" disabled={sibuk}>
+          <IkonSibuk sibuk={sibuk} />
+          Buat akun
+        </Button>
+      </FieldGroup>
+    </form>
   );
 }
 
