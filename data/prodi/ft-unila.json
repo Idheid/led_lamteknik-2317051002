@@ -1,0 +1,22 @@
+{
+  "keterangan": "Program studi LAM Teknik Fakultas Teknik Universitas Lampung (sumber: SAKTI LAM Teknik dan unila.ac.id, diakses 3 Okt 2026). Seed idempoten menurut nama + jenjang; kode PDDikti diisi Admin UPPS.",
+  "fakultas": { "nama": "Fakultas Teknik", "perguruanTinggi": "Universitas Lampung", "kota": "Bandar Lampung" },
+  "prodi": [
+    { "jenjang": "D3", "nama": "Teknik Mesin", "akreditasiBerlakuSampai": "2027-12-20", "peringkatAkreditasi": "Baik Sekali" },
+    { "jenjang": "D3", "nama": "Teknik Sipil", "akreditasiBerlakuSampai": "2029-12-20", "peringkatAkreditasi": "Baik Sekali" },
+    { "jenjang": "D3", "nama": "Teknik Survey dan Pemetaan", "akreditasiBerlakuSampai": "2027-12-20", "peringkatAkreditasi": "Baik Sekali" },
+    { "jenjang": "STr", "nama": "Teknologi Rekayasa Otomotif", "akreditasiBerlakuSampai": "2030-08-20", "peringkatAkreditasi": "Baik" },
+    { "jenjang": "S1", "nama": "Teknik Elektro", "akreditasiBerlakuSampai": "2030-08-20", "peringkatAkreditasi": "Unggul" },
+    { "jenjang": "S1", "nama": "Teknik Geodesi", "akreditasiBerlakuSampai": "2029-04-20", "peringkatAkreditasi": "Baik Sekali" },
+    { "jenjang": "S1", "nama": "Teknik Geofisika", "akreditasiBerlakuSampai": "2027-12-20", "peringkatAkreditasi": "Unggul" },
+    { "jenjang": "S1", "nama": "Teknik Kimia", "akreditasiBerlakuSampai": "2030-08-20", "peringkatAkreditasi": "Unggul" },
+    { "jenjang": "S1", "nama": "Teknik Lingkungan", "akreditasiBerlakuSampai": "2029-12-20", "peringkatAkreditasi": "Baik" },
+    { "jenjang": "S1", "nama": "Teknik Mesin", "akreditasiBerlakuSampai": "2030-08-20", "peringkatAkreditasi": "Unggul" },
+    { "jenjang": "S1", "nama": "Teknik Sipil", "akreditasiBerlakuSampai": "2026-12-20", "peringkatAkreditasi": "A" },
+    { "jenjang": "S1", "nama": "Teknik Geologi", "akreditasiBerlakuSampai": "2030-12-20", "peringkatAkreditasi": "Terakreditasi" },
+    { "jenjang": "S2", "nama": "Teknik Elektro", "akreditasiBerlakuSampai": "2029-08-20", "peringkatAkreditasi": "Baik Sekali" },
+    { "jenjang": "S2", "nama": "Teknik Mesin", "akreditasiBerlakuSampai": "2027-12-20", "peringkatAkreditasi": "Baik Sekali" },
+    { "jenjang": "S2", "nama": "Teknik Sipil", "akreditasiBerlakuSampai": "2029-08-20", "peringkatAkreditasi": "Baik Sekali" },
+    { "jenjang": "PPI", "nama": "Program Profesi Insinyur", "akreditasiBerlakuSampai": "2031-08-20", "peringkatAkreditasi": "Terakreditasi Unggul" }
+  ]
+}

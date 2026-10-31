@@ -24,6 +24,8 @@ test("Admin pertama: hanya saat belum ada admin; instrumen bawaan ikut diimpor; 
   assert.equal(u.role, "ADMIN");
   assert.ok(await bisaLogin("admin@fakultas.test", "SandiKuat#1"));
   assert.ok((await prisma.versiInstrumen.count()) > 0, "instrumen bawaan tersedia");
+  assert.equal(await prisma.prodi.count(), 16, "16 prodi FT Unila terisi saat pemasangan pertama (revisi 31 Okt 2026)");
+  assert.equal((await prisma.fakultas.findUniqueOrThrow({ where: { id: "utama" } })).perguruanTinggi, "Universitas Lampung");
   await assert.rejects(buatAdminPertama({ nama: "Penyusup", email: "lain@fakultas.test", kataSandi: "SandiKuat#2" }), /Admin sudah ada/);
   assert.equal(await prisma.user.count({ where: { role: "ADMIN" } }), 1);
 });

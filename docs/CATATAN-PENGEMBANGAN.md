@@ -838,3 +838,24 @@ di-commit sebelum tahap berikutnya.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 112/112 lulus |
 | `npm run test:integrasi` | 59/59 lulus |
+
+### Tahap 3: program studi FT sudah terisi
+
+- `data/prodi/ft-unila.json`: 16 prodi LAM Teknik FT Unila (jenjang, nama, akreditasi berlaku sampai, peringkat terakhir
+  di `identitas.peringkatAkreditasi`) dan identitas fakultas bawaan (Fakultas Teknik, Universitas Lampung, Bandar
+  Lampung). Sumber sesuai rencana (SAKTI LAM Teknik dan unila.ac.id, diakses 3 Okt 2026).
+- `src/modules/bersama/data/prodi-bawaan.ts` (`isiProdiBawaan`): idempoten menurut nama (tanpa beda huruf besar) +
+  jenjang; prodi yang sudah ada tidak ditimpa, tidak ada yang dihapus, kode PDDikti kosong. Identitas fakultas hanya
+  mengisi kolom yang masih kosong. Dipanggil dari `prisma/seed.ts` dan `buatAdminPertama` (pemasangan pertama).
+- Uji integrasi baru `tests/integrasi/prodi-bawaan.test.ts` (16 prodi dari basis data kosong, nilai contoh, nama sama
+  jenjang beda, seed kedua/ketiga tanpa data ganda, ubahan admin dan prodi tambahan tidak tersentuh, fakultas hanya kolom
+  kosong) dan `pemasangan.test.ts` (pemasangan pertama mengisi 16 prodi).
+- Kriteria `npm run db:seed` diperiksa langsung pada basis data uji yang dikosongkan: seed pertama "16 ditambahkan",
+  jumlah prodi 16; seed kedua "0 ditambahkan, 16 sudah ada", jumlah tetap 16. Basis data pengembangan juga di-seed
+  (15 ditambahkan; S1 Teknik Elektro sudah ada dan tidak ditimpa).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 112/112 lulus |
+| `npm run test:integrasi` | 61/61 lulus |

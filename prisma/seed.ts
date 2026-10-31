@@ -1,5 +1,5 @@
 /**
- * Seed: Admin UPPS pertama (dari .env) dan instrumen LAM Teknik 2025 (idempoten).
+ * Seed: Admin UPPS pertama (dari .env), instrumen LAM Teknik 2025, dan 16 prodi FT Unila (semuanya idempoten).
  * Jalankan: npm run db:seed
  */
 import "dotenv/config";
@@ -8,6 +8,7 @@ import { resolve } from "node:path";
 import { prisma } from "@/modules/bersama/db";
 import { auth } from "@/modules/bersama/auth";
 import { imporInstrumen } from "@/modules/led/data/impor-instrumen";
+import { isiProdiBawaan } from "@/modules/bersama/data/prodi-bawaan";
 
 async function seedAdmin() {
   const email = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();
@@ -33,6 +34,9 @@ async function seedInstrumen() {
 async function main() {
   await seedAdmin();
   await seedInstrumen();
+  // revisi 31 Okt 2026: daftar prodi FT Unila sudah terisi; prodi yang ada tidak ditimpa
+  const prodi = await isiProdiBawaan();
+  console.log(`Prodi bawaan: ${prodi.dibuat} ditambahkan, ${prodi.dilewati} sudah ada.`);
 }
 
 main()

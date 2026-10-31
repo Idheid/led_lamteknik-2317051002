@@ -5,6 +5,7 @@ import { prisma } from "@/modules/bersama/db";
 import { GalatPengguna } from "@/modules/bersama/akses";
 import { imporInstrumen } from "@/modules/led/data/impor-instrumen";
 import { skemaAkun, type MasukanAkun } from "@/modules/bersama/validasi";
+import { isiProdiBawaan } from "@/modules/bersama/data/prodi-bawaan";
 
 /**
  * Pemasangan pertama tanpa .env (revisi 23 Okt 2026): selama belum ada admin, halaman login menampilkan formulir
@@ -23,4 +24,6 @@ export async function buatAdminPertama(masukan: MasukanAkun) {
   if ((await prisma.versiInstrumen.count()) === 0) {
     await imporInstrumen(prisma, JSON.parse(readFileSync(resolve(process.cwd(), "data/instrumen/lamteknik-2025-pasca.json"), "utf8")));
   }
+  // revisi 31 Okt 2026: 16 prodi FT Unila dan identitas fakultas bawaan (idempoten, tidak menimpa)
+  await isiProdiBawaan();
 }
