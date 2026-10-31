@@ -10,7 +10,8 @@ import {
   pilihModelNarasiBawaan, type ModelGoogle,
 } from "@/modules/bersama/domain/model-llm";
 import { ambilDaftarModelGoogle, ujiModelNarasi } from "@/modules/bersama/llm/narasi";
-import { penyediaGemini } from "@/modules/bersama/llm/embedding";
+import { pakaiPenyediaUji, penyediaGemini } from "@/modules/bersama/llm/embedding";
+import { pakaiNarasiUji } from "@/modules/bersama/llm/narasi-uji";
 
 /**
  * Pengaturan model LLM oleh super admin: model narasi (generateContent), urutan model cadangan, model embedding
@@ -26,6 +27,30 @@ const skema = z.object({
   pakaiCadanganAdmin: z.boolean(),
 });
 export type MasukanPengaturan = z.input<typeof skema>;
+
+export interface ModelAiAktif {
+  narasi: string;
+  cadangan: string[];
+  embedding: string;
+  /** "Google Gemini gemini-3-flash-preview", atau keterangan mode uji pengembangan */
+  labelNarasi: string;
+  labelEmbedding: string;
+}
+
+/**
+ * Model AI yang sedang dipakai (revisi 31 Okt 2026): ditampilkan di tombol/banner generate, halaman Kunci API, dan
+ * halaman awal. Nama diambil dari PengaturanLLM, tidak ditulis tetap di kode. Boleh dibaca semua peran.
+ */
+export async function modelAiAktif(): Promise<ModelAiAktif> {
+  const a = await pengaturanLlm();
+  return {
+    narasi: a.modelNarasi,
+    cadangan: a.modelCadangan,
+    embedding: a.modelEmbedding,
+    labelNarasi: pakaiNarasiUji() ? "model uji pengembangan (tanpa Gemini)" : `Google Gemini ${a.modelNarasi}`,
+    labelEmbedding: pakaiPenyediaUji() ? "embedding uji pengembangan" : a.modelEmbedding,
+  };
+}
 
 export function daftarModelTersimpan(json: unknown): ModelGoogle[] {
   return Array.isArray(json) ? (json as ModelGoogle[]) : [];

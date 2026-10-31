@@ -33,6 +33,7 @@ import { HalamanOtomatis } from "@/modules/led/komponen/halaman-otomatis";
 import { dataKosongHalamanAwal } from "@/modules/led/domain/rangkaian";
 import { rencanaSusunSeluruh, STATUS_TUGAS_AKTIF } from "@/modules/led/data/generate";
 import { ambilFakultas } from "@/modules/bersama/data/organisasi";
+import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
 import { prisma } from "@/modules/bersama/db";
 import { TombolSusunSeluruh } from "./tombol-susun-seluruh";
 import { KartuReview } from "@/modules/led/komponen/review/kartu-review";
@@ -55,11 +56,12 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
     kesiapanLed(proyekId),
     ringkasReview(p, proyekId),
   ]);
-  const [nilai, rencana, fakultas, tugasAktif] = await Promise.all([
+  const [nilai, rencana, fakultas, tugasAktif, model] = await Promise.all([
     penilaianProyek(p, proyekId, { tanpaNarasi: true }),
     rencanaSusunSeluruh(p, proyekId),
     ambilFakultas(),
     prisma.tugasGenerate.count({ where: { proyekId, status: { in: STATUS_TUGAS_AKTIF } } }),
+    modelAiAktif(),
   ]);
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
@@ -129,6 +131,7 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           bagian={rencana.bagian.map((b) => b.kode)}
           jumlahSub={rencana.jumlahSub}
           nonaktif={Boolean(proyek.diarsipkanPada) || tugasAktif > 0}
+          model={model.labelNarasi}
           alasan={proyek.diarsipkanPada ? "LED diarsipkan." : tugasAktif > 0 ? "Masih ada penyusunan berjalan." : rencana.jumlahSub === 0 ? "Semua sub-bagian sudah ditandai selesai." : null}
         />
       </div>

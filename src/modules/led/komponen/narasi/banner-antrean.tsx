@@ -15,7 +15,7 @@ import { aksiBatalkanTugas, aksiLanjutkanTugas } from "@/app/led/(tim-prodi)/aks
  * Pemberitahuan antrean generate di semua halaman proyek. Penyusunan berjalan di worker, jadi halaman boleh
  * ditinggal. Status dipantau berkala; halaman disegarkan setiap ada sub-bagian yang selesai.
  */
-export function BannerAntrean({ proyekId, awal }: { proyekId: string; awal: RingkasTugas[] }) {
+export function BannerAntrean({ proyekId, awal, model }: { proyekId: string; awal: RingkasTugas[]; model?: string }) {
   const router = useRouter();
   const [tugas, setTugas] = useState(awal);
   const [ditutup, setDitutup] = useState<string[]>([]);
@@ -87,6 +87,7 @@ export function BannerAntrean({ proyekId, awal }: { proyekId: string; awal: Ring
                   <span className="ml-2 font-normal text-muted-foreground tabular-nums">
                     {t.rangkaian ? `Bagian ${t.rangkaian.ke} dari ${t.rangkaian.total} · ` : ""}{t.indeks}/{t.total} sub-bagian
                   </span>
+                  {model && <span className="block text-xs font-normal text-muted-foreground">Disusun dengan {model}</span>}
                 </p>
                 {(t.status === "berjalan" || t.status === "antre") && (
                   <p className="text-muted-foreground">

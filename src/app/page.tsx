@@ -5,6 +5,7 @@ import { ArrowRight, BookOpenCheck, Building2, FileSpreadsheet, FileText, KeyRou
 import { wajibLogin } from "@/modules/bersama/sesi";
 import { LABEL_PERAN } from "@/modules/bersama/peran";
 import { ambilFakultas, ambilProdi, daftarProdi } from "@/modules/bersama/data/organisasi";
+import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { daftarProyek } from "@/modules/led/data/proyek";
 import { ledAsesor } from "@/modules/led/data/review";
@@ -24,7 +25,7 @@ export const metadata: Metadata = { title: "Pilih modul" };
 export default async function HalamanAwal() {
   const p = await wajibLogin();
 
-  const fakultas = await ambilFakultas();
+  const [fakultas, model] = await Promise.all([ambilFakultas(), modelAiAktif()]);
   let infoLed: string;
   let prodi: number | null = null;
   let namaProdi: string | null = null;
@@ -89,6 +90,8 @@ export default async function HalamanAwal() {
             info={<Badge variant="outline">{infoLed}</Badge>}
           />
         </div>
+        {/* revisi 31 Okt 2026: model AI disebut jelas, diambil dari PengaturanLLM */}
+        <p className="-mt-5 text-right text-xs text-muted-foreground md:pr-1">AI: {model.labelNarasi}; pencarian dokumen: {model.labelEmbedding}</p>
 
         {p.peran === "ADMIN" && (
           <section aria-labelledby="judul-bersama" className="flex flex-col gap-3">

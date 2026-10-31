@@ -963,3 +963,23 @@ di-commit sebelum tahap berikutnya.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 121/121 lulus |
 | `npm run test:integrasi` | 69/69 lulus |
+
+### Tahap 7: jadwal kerja hanya pengingat, model AI disebut jelas
+
+- Jadwal kerja: tidak ada aksi yang memeriksa jadwal (sudah begitu sejak 22 Okt); kartu Jadwal kerja kini menulis
+  "Jadwal ini hanya pengingat. Unggah dan penyusunan tetap bisa dilakukan kapan saja."
+- `modelAiAktif()` (bersama/data/pengaturan.ts): model narasi, cadangan, dan embedding dari `PengaturanLLM`, dengan label
+  "Google Gemini {model}" (atau keterangan mode uji pengembangan). Ditampilkan di bawah tombol Generate (kriteria dan
+  sub-bagian), di banner antrean, di kotak Susun seluruh LED, di judul halaman Kunci API admin (narasi, cadangan,
+  pencarian dokumen), dan di halaman awal di bawah kartu modul ("AI: Google Gemini ...; pencarian dokumen: ...").
+- Uji integrasi baru `tests/integrasi/jadwal-model.test.ts`: dengan semua tonggak dan batas pengajuan terlewat, unggah
+  LKPS dan dokumen, jawaban penyusun, generate (LLM_NARASI=uji), pemeriksaan ekspor DRAF, dan ajukan review tetap
+  berhasil; nama model mengikuti `simpanPengaturan` tanpa mengubah kode.
+- Diperiksa di browser: halaman awal, tombol Generate C.1, Beranda (Susun seluruh LED dan kartu Jadwal kerja), dan
+  halaman Kunci API admin menampilkan model sesuai pengaturan pengembangan (gemini-3-flash-preview, gemini-embedding-001).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 121/121 lulus |
+| `npm run test:integrasi` | 71/71 lulus |

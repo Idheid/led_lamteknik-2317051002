@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { wajibTimProdi } from "@/modules/bersama/sesi";
+import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { formatAngka } from "@/modules/bersama/domain/teks";
 import { gantiLabelTS } from "@/modules/bersama/domain/tahun-akademik";
@@ -26,6 +27,7 @@ export async function generateMetadata({ params }: PageProps<"/led/[proyekId]/ba
 /** Ringkasan kriteria/bagian: judul, bobot, target, daftar sub-bagian dengan status, Lanjutkan, Generate semua. */
 export default async function HalamanRingkasanKriteria({ params }: PageProps<"/led/[proyekId]/bagian/[kode]">) {
   const p = await wajibTimProdi();
+  const model = await modelAiAktif();
   const { proyekId, kode: kodeMentah } = await params;
   const [d, catatan] = await Promise.all([muatKriteria(p, proyekId, decodeURIComponent(kodeMentah)), jumlahCatatanPerSub(p, proyekId)]);
   if (!d) notFound();
@@ -68,6 +70,7 @@ export default async function HalamanRingkasanKriteria({ params }: PageProps<"/l
                 label={jumlahDraf > 0 ? "Generate ulang semua" : "Generate semua"}
                 sudahAda={jumlahDraf > 0}
                 nonaktif={d.tugasAktif.length > 0}
+                model={model.labelNarasi}
               />
             )}
           </>

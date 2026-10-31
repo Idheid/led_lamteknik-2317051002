@@ -11,6 +11,30 @@ import { aksiMulaiGenerate, aksiTandaiBagianSelesai } from "@/app/led/(tim-prodi
  * tanpa draf IKU) ditampilkan sebagai konfirmasi sebelum generate.
  */
 export function TombolGenerate({
+  proyekId, bagianKode, subBagianKode, label, sudahAda, nonaktif, ukuran = "default", peringatan, model,
+}: {
+  proyekId: string;
+  bagianKode: string;
+  subBagianKode?: string;
+  label: string;
+  sudahAda: boolean;
+  nonaktif?: boolean;
+  ukuran?: "default" | "sm";
+  peringatan?: string | null;
+  /** revisi 31 Okt 2026: "Google Gemini {model narasi}" dari PengaturanLLM, tampil di bawah tombol */
+  model?: string;
+}) {
+  const tombol = <TombolGenerateInti proyekId={proyekId} bagianKode={bagianKode} subBagianKode={subBagianKode} label={label} sudahAda={sudahAda} nonaktif={nonaktif} ukuran={ukuran} peringatan={peringatan} />;
+  if (!model) return tombol;
+  return (
+    <span className="inline-flex flex-col items-end gap-0.5">
+      {tombol}
+      <span className="text-[11px] text-muted-foreground">Disusun dengan {model}</span>
+    </span>
+  );
+}
+
+function TombolGenerateInti({
   proyekId, bagianKode, subBagianKode, label, sudahAda, nonaktif, ukuran = "default", peringatan,
 }: {
   proyekId: string;

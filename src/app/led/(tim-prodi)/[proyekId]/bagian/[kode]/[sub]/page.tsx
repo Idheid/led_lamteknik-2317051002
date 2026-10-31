@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, FileText, Loader2, Plus } from "lucide-react";
 import { wajibTimProdi } from "@/modules/bersama/sesi";
+import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
 import { daftarDokumen } from "@/modules/led/data/dokumen";
 import { nilaiButirProyek } from "@/modules/led/data/nilai-butir";
 import { bacaVarian, varianUntukJenjang } from "@/modules/led/domain/instrumen";
@@ -48,6 +49,7 @@ function JudulSeksi({ children, aksi }: { children: ReactNode; aksi?: ReactNode 
  */
 export default async function HalamanSubBagian({ params }: PageProps<"/led/[proyekId]/bagian/[kode]/[sub]">) {
   const p = await wajibTimProdi();
+  const model = await modelAiAktif();
   const { proyekId, kode: kodeMentah, sub: subMentah } = await params;
   const kodeSub = decodeURIComponent(subMentah);
   const d = await muatKriteria(p, proyekId, decodeURIComponent(kodeMentah));
@@ -97,6 +99,7 @@ export default async function HalamanSubBagian({ params }: PageProps<"/led/[proy
       sudahAda={Boolean(drafSub?.aktif)}
       nonaktif={d.tugasAktif.length > 0}
       peringatan={peringatanSebelumGenerate(s.kode, d.jumlahDrafIku)}
+      model={model.labelNarasi}
     />
   );
 

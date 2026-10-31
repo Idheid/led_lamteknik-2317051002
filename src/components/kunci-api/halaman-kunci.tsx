@@ -1,6 +1,7 @@
 import { ShieldCheck } from "lucide-react";
 import type { Pengguna } from "@/modules/bersama/akses";
 import { daftarKunci, LABEL_JENIS_KUNCI, type JenisKunci } from "@/modules/bersama/data/kunci-api";
+import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
 import { pakaiPenyediaUji } from "@/modules/bersama/llm/embedding";
 import { fmtWaktu } from "@/modules/bersama/tampil";
 import { JudulHalaman, type Remah } from "@/components/judul-halaman";
@@ -82,10 +83,14 @@ function TabelKunci({ jenis, kunci }: { jenis: JenisKunci; kunci: BarisKunci[] }
 
 /** Halaman kunci API Admin UPPS (revisi 31 Okt 2026, B3): kunci utama fakultas dan kunci cadangan di satu halaman. */
 export async function HalamanKunci({ pengguna, remah }: { pengguna: Pengguna; remah?: Remah[] }) {
-  const [utama, cadangan] = await Promise.all([daftarKunci(pengguna, "utama"), daftarKunci(pengguna, "cadangan")]);
+  const [utama, cadangan, model] = await Promise.all([daftarKunci(pengguna, "utama"), daftarKunci(pengguna, "cadangan"), modelAiAktif()]);
   return (
     <>
-      <JudulHalaman judul="Kunci API" remah={remah} />
+      <JudulHalaman
+        judul="Kunci API"
+        remah={remah}
+        deskripsi={`Narasi: ${model.labelNarasi}${model.cadangan.length ? ` (cadangan ${model.cadangan.join(", ")})` : ""} · pencarian dokumen: ${model.labelEmbedding}. Ubah di tab Model Gemini.`}
+      />
       <Petunjuk
         kunci="kunci-admin"
         fungsi="Kunci API menghubungkan sistem dengan layanan Gemini (Google). Kunci disimpan terenkripsi; setelah disimpan hanya 4 karakter terakhir yang terlihat. Tim Prodi hanya melihat status kunci dan menghubungi Admin UPPS bila kuota habis."

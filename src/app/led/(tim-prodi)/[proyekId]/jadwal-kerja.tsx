@@ -103,6 +103,7 @@ export function JadwalKerja({
           ? <Pil warna="merah"><AlertTriangle className="size-3.5" aria-hidden />{terlewat.length} jadwal terlewat</Pil>
           : <Pil warna={kuning ? "kuning" : "abu"}>{sisa}</Pil>}
       </div>
+      <p className="text-xs text-muted-foreground">Jadwal ini hanya pengingat. Unggah dan penyusunan tetap bisa dilakukan kapan saja.</p>
       {ubah ? formulir : (
         <>
           <div className="flex flex-wrap items-end justify-between gap-2">
