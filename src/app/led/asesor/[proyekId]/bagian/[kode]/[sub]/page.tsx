@@ -89,7 +89,7 @@ export default async function HalamanSubAsesor({ params }: PageProps<"/led/aseso
         <span className="text-xs text-muted-foreground">{posisi.nomor} dari {posisi.total}</span>
         {posisi.berikutnya
           ? <Link href={href(posisi.berikutnya)} className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Berikutnya<ArrowRight className="size-4" aria-hidden /></Link>
-          : <Link href={`/led/asesor/${proyekId}/penilaian`} className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Ke Penilaian akhir<ArrowRight className="size-4" aria-hidden /></Link>}
+          : <Link href={`/led/asesor/${proyekId}/penilaian`} className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Ke Penilaian<ArrowRight className="size-4" aria-hidden /></Link>}
       </nav>
     </>
   );

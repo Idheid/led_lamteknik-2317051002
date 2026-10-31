@@ -64,7 +64,7 @@ export default async function HalamanRingkasanAsesor({ params }: PageProps<"/led
           <CardContent className="text-sm">
             <div className="text-lg font-semibold">{nilai.perkiraan?.status ?? "—"}</div>
             <div className="text-muted-foreground">
-              simulasi internal, bukan keputusan LAM · <Link className="text-primary underline" href={`/led/asesor/${proyekId}/penilaian`}>Penilaian akhir</Link>
+              simulasi internal, bukan keputusan LAM · <Link className="text-primary underline" href={`/led/asesor/${proyekId}/penilaian`}>Penilaian</Link>
             </div>
           </CardContent>
         </Card>

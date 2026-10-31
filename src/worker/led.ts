@@ -6,10 +6,12 @@ import { prosesDokumen } from "@/modules/led/proses/dokumen";
 import { prosesTugasGenerate, pulihkanTugasTerputus } from "@/modules/led/proses/generate";
 import { prosesEkspor } from "@/modules/led/proses/ekspor";
 import { prosesEkstraksiInstrumen, pulihkanEkstraksiTerputus } from "@/modules/led/proses/instrumen";
+import { prosesSkorRubrik } from "@/modules/led/proses/skor-rubrik";
 
 /**
  * Pengerja antrean modul LED: membaca LKPS yang diunggah ke LED, memproses dokumen Basis Pengetahuan (ekstraksi,
- * pemotongan, embedding), menyusun narasi (tugas generate), membuat berkas Word (ekspor), dan mengekstrak instrumen.
+ * pemotongan, embedding), menyusun narasi (tugas generate), membuat berkas Word (ekspor), mengekstrak instrumen, dan
+ * menghitung usulan skor rubrik (revisi 31 Okt 2026).
  */
 export async function daftarkanPengerjaLed(bos: PgBoss): Promise<void> {
   await bos.work<{ berkasId: string }>(ANTREAN.lkps, { localConcurrency: 1 }, async ([tugas]) => {
@@ -33,6 +35,10 @@ export async function daftarkanPengerjaLed(bos: PgBoss): Promise<void> {
     console.log(`[instrumen] ${tugas.data.versiId}`);
     console.log(`[instrumen] ${tugas.data.versiId} ${await prosesEkstraksiInstrumen(tugas.data.versiId)}`);
   });
+  await bos.work<{ proyekId: string }>(ANTREAN.skorRubrik, { localConcurrency: 1 }, async ([tugas]) => {
+    console.log(`[skor-rubrik] ${tugas.data.proyekId}`);
+    console.log(`[skor-rubrik] ${tugas.data.proyekId} ${await prosesSkorRubrik(tugas.data.proyekId)}`);
+  });
 }
 
 /** Pekerjaan LED yang terputus saat worker mati dikirim ulang. */
@@ -43,6 +49,11 @@ export async function pulihkanPekerjaanLed(): Promise<void> {
   }
   const dipulihkan = await pulihkanTugasTerputus();
   if (dipulihkan) console.log(`${dipulihkan} tugas generate dikirim ulang.`);
+  // usulan skor yang terputus saat worker mati dikirim ulang
+  await prisma.proyekLED.updateMany({ where: { statusSkorRubrik: "berjalan" }, data: { statusSkorRubrik: "antre" } });
+  for (const p of await prisma.proyekLED.findMany({ where: { statusSkorRubrik: "antre" }, select: { id: true } })) {
+    await kirimTugas(ANTREAN.skorRubrik, { proyekId: p.id });
+  }
   const ekstraksi = await pulihkanEkstraksiTerputus();
   if (ekstraksi) console.log(`${ekstraksi} ekstraksi instrumen dikirim ulang.`);
 }

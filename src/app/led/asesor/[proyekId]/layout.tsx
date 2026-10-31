@@ -28,8 +28,9 @@ export default async function LayoutLedAsesor({ children, params }: LayoutProps<
     {
       label: admin ? "LED ini (hanya baca)" : "LED ini",
       item: [
+        // revisi 31 Okt 2026 (Pak Tris): Penilaian di depan
+        { judul: "Penilaian", href: `${dasar}/penilaian`, ikon: "penilaian" },
         { judul: admin ? "Ringkasan" : "Ringkasan review", href: dasar, ikon: "beranda", persis: true },
-        { judul: "Penilaian akhir", href: `${dasar}/penilaian`, ikon: "penilaian" },
       ],
     },
     {

@@ -36,6 +36,14 @@ export async function aksiAjukanReview(proyekId: string) {
 export async function aksiSimpanSkor(proyekId: string, butirKode: string, skor: number | null, alasan: string | null) {
   const r = await jalankanAksi((p) => review.simpanSkor(p, proyekId, { butirKode, skor, alasan }).then(() => null));
   revalidatePath(`/led/asesor/${proyekId}/penilaian`);
+  revalidatePath(`/led/${proyekId}`, "layout");
+  return r;
+}
+
+/** Tim Prodi menghitung usulan skor rubrik (revisi 31 Okt 2026). */
+export async function aksiMulaiSkorRubrik(proyekId: string) {
+  const r = await jalankanAksi((p) => review.mulaiSkorRubrik(p, proyekId).then(() => null));
+  revalidatePath(`/led/${proyekId}`, "layout");
   return r;
 }
 

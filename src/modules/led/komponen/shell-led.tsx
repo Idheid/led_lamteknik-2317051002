@@ -68,6 +68,7 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
       label: "LED ini",
       item: [
         { judul: "Beranda LED", href: dasar, ikon: "beranda", persis: true },
+        { judul: "Perkiraan nilai", href: `${dasar}/penilaian`, ikon: "penilaian" },
         { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },
         { judul: "Basis Pengetahuan", href: `${dasar}/dokumen`, ikon: "dokumen" },
         { judul: "Tim penyusun", href: `${dasar}/tim`, ikon: "tim" },

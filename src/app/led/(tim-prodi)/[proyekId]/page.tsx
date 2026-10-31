@@ -27,7 +27,8 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { DialogUbahTs } from "./dialog-ubah-ts";
 import { DialogUbahTahun } from "./dialog-ubah-tahun";
 import { PengaturanProyek } from "./pengaturan-proyek";
-import { ringkasReview } from "@/modules/led/data/review";
+import { penilaianProyek, ringkasReview } from "@/modules/led/data/review";
+import { KartuPerkiraanNilai } from "@/modules/led/komponen/penilaian/kartu-perkiraan";
 import { KartuReview } from "@/modules/led/komponen/review/kartu-review";
 
 export const metadata: Metadata = { title: "Beranda" };
@@ -48,6 +49,7 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
     kesiapanLed(proyekId),
     ringkasReview(p, proyekId),
   ]);
+  const nilai = await penilaianProyek(p, proyekId, { tanpaNarasi: true });
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
   const usulan = usulanHalamanKriteria(bagianAnggaran, butir, pengaturan);
@@ -96,6 +98,16 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           </AlertDescription>
         </Alert>
       )}
+
+      <KartuPerkiraanNilai
+        proyekId={proyek.id}
+        total={nilai.rekap.total}
+        maksimum={nilai.rekap.maksimum}
+        persen={nilai.rekap.persen}
+        dinilai={nilai.rekap.dinilai}
+        jumlahButir={nilai.rekap.jumlahButir}
+        status={nilai.perkiraanGabungan?.status ?? null}
+      />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <KartuReview

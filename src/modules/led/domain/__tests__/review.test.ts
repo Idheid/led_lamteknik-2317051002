@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  bacaAturanStatus, buatJangkar, cariJangkar, hitungNilaiAkhir, perkiraanStatus, perluAlasan, skorSah, statusSetelah, teksPolos,
+  bacaAturanStatus, buatJangkar, cariJangkar, hitungNilaiAkhir, nilaiButir, perkiraanStatus, perluAlasan, perluNilaiUlang, persenNilai,
+  rekapPenilaian, skorSah, skorTerpakai, statusSetelah, teksPolos,
 } from '../review.ts';
 import type { DokTiptap } from '../narasi.ts';
 
@@ -76,4 +77,40 @@ test('Skor sah 0-4 dua desimal; skor berbeda dari sistem wajib beralasan', () =>
   assert.equal(perluAlasan(3, 3.004), false);
   assert.equal(perluAlasan(3, 3.5), true);
   assert.equal(perluAlasan(3, null), false);
+});
+
+test('Revisi 31 Okt 2026: nilai butir = bobot × skor, persentase dari maksimum', () => {
+  assert.equal(nilaiButir(1.5, 3), 4.5);
+  assert.equal(nilaiButir(0.75, 3.33), 2.5);
+  assert.equal(persenNilai(4.5, 6), 75);
+  assert.equal(persenNilai(1, 3), 33.3);
+  assert.equal(persenNilai(0, 0), 0);
+});
+
+test('Revisi 31 Okt 2026: rekap per kriteria dan total; butir tanpa skor tidak menambah nilai tetapi menambah maksimum', () => {
+  const butir = [
+    { kode: '1', bagianKode: 'C.1', bobot: 2 },
+    { kode: '2', bagianKode: 'C.1', bobot: 1 },
+    { kode: '3', bagianKode: 'C.2', bobot: 1.5 },
+  ];
+  const r = rekapPenilaian(butir, new Map([['1', 4], ['3', 2]]));
+  assert.deepEqual(r.perKriteria, [
+    { bagianKode: 'C.1', nilai: 8, maksimum: 12, persen: 66.7, dinilai: 1, jumlahButir: 2 },
+    { bagianKode: 'C.2', nilai: 3, maksimum: 6, persen: 50, dinilai: 1, jumlahButir: 1 },
+  ]);
+  assert.deepEqual([r.total, r.maksimum, r.persen, r.dinilai, r.jumlahButir], [11, 18, 61.1, 2, 3]);
+  // total sama dengan hitungNilaiAkhir untuk skor yang sama
+  assert.equal(r.total, hitungNilaiAkhir(butir, new Map([['1', 4], ['3', 2]])).total);
+  assert.equal(rekapPenilaian([], new Map()).persen, 0);
+});
+
+test('Revisi 31 Okt 2026: skor asesor menggantikan skor otomatis; usulan dinilai ulang bila narasinya berubah', () => {
+  assert.equal(skorTerpakai(3, 2.5), 3);
+  assert.equal(skorTerpakai(null, 2.5), 2.5);
+  assert.equal(skorTerpakai(null, null), null);
+  assert.equal(skorTerpakai(0, 4), 0, 'skor asesor 0 tetap dipakai');
+  assert.equal(perluNilaiUlang(['a', 'b'], ['b', 'a']), false);
+  assert.equal(perluNilaiUlang(['a', 'b'], ['a', 'c']), true, 'satu sub-bagian punya versi baru');
+  assert.equal(perluNilaiUlang(['a'], ['a', 'b']), true, 'sub-bagian baru mendapat narasi');
+  assert.equal(perluNilaiUlang([], []), false);
 });

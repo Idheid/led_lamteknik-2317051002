@@ -8,11 +8,12 @@ import { AKTIF } from "@/modules/bersama/data/organisasi";
 import { beritahu } from "@/modules/bersama/data/pemberitahuan";
 import { nilaiButirUntukProyek } from "@/modules/led/data/nilai-butir";
 import { bandingkanVersi } from "@/modules/led/data/generate";
-import { bacaDokumen } from "@/modules/led/domain/narasi";
+import { bacaDokumen, type DokTiptap } from "@/modules/led/domain/narasi";
+import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { bacaStatusReview, LABEL_REVIEW, type StatusReview } from "@/modules/led/domain/kesiapan";
 import {
-  bacaAturanStatus, bacaStatusCatatan, bolehAjukanReview, cariJangkar, CATATAN_BELUM_SELESAI, hitungNilaiAkhir,
-  perkiraanStatus, perluAlasan, skorSah, statusSetelah, teksPolos, type AksiCatatan, type StatusCatatan,
+  bacaAturanStatus, bacaStatusCatatan, bolehAjukanReview, cariJangkar, CATATAN_BELUM_SELESAI, hitungNilaiAkhir, perkiraanStatus, perluAlasan,
+  perluNilaiUlang, rekapPenilaian, skorSah, skorTerpakai, statusSetelah, teksPolos, type AksiCatatan, type StatusCatatan,
 } from "@/modules/led/domain/review";
 
 /**
@@ -291,27 +292,81 @@ export async function ajukanReview(p: Pengguna, proyekId: string) {
   await catatAktivitas(p, "ajukan_review", "proyek", proyek.id);
 }
 
-// ---------------------------------------------------------------- penilaian akhir (asesor)
+// ---------------------------------------------------------------- penilaian (asesor, Tim Prodi, Admin UPPS)
 
-export async function penilaianProyek(p: Pengguna, proyekId: string) {
+/**
+ * Data halaman Penilaian (revisi 31 Okt 2026, dipakai asesor, Tim Prodi, dan Admin UPPS): skor asesor, skor otomatis
+ * (skor sistem butir angka dari LKPS, usulan AI butir narasi), narasi aktif sub-bagian terkait apa adanya, dan rekap
+ * Σ bobot × skor per kriteria. `akhir`/`perkiraan` = nilai asesor saja (dasar keputusan); `rekap`/`perkiraanGabungan`
+ * = skor asesor bila ada, selain itu skor otomatis (perkiraan, bukan nilai resmi LAM Teknik).
+ */
+export async function penilaianProyek(p: Pengguna, proyekId: string, opsi: { tanpaNarasi?: boolean } = {}) {
   const proyek = await aksesReview(p, proyekId);
-  const [butir, skor, versi, nilai, belumSelesai] = await Promise.all([
+  const [butir, skor, versi, nilai, belumSelesai, usulan, draf, bagian] = await Promise.all([
     prisma.butirPenilaian.findMany({
       where: { versiId: proyek.versiId, jenjang: proyek.jenjang },
       orderBy: { urutan: "asc" },
       select: {
-        kode: true, bagianKode: true, elemen: true, indikator: true, bobot: true, jenis: true,
+        kode: true, bagianKode: true, elemen: true, indikator: true, bobot: true, jenis: true, unsurSkor4: true,
         deskriptorSkor4: true, deskriptorSkor3: true, deskriptorSkor2: true, deskriptorSkor1: true, deskriptorSkor0: true,
+        subBagian: { select: { subBagian: { select: { id: true, kode: true, label: true, judul: true, urutan: true, bagian: { select: { kode: true, urutan: true } } } } } },
       },
     }),
     prisma.skorAsesor.findMany({ where: { proyekId: proyek.id } }),
     prisma.versiInstrumen.findUnique({ where: { id: proyek.versiId }, select: { statusAkreditasi: true } }),
     nilaiButirUntukProyek(proyek),
     prisma.catatanRevisi.count({ where: { proyekId: proyek.id, status: { in: CATATAN_BELUM_SELESAI } } }),
+    prisma.usulanSkor.findMany({ where: { proyekId: proyek.id } }),
+    prisma.bagianDraf.findMany({
+      where: { proyekId: proyek.id, versiAktifId: { not: null } },
+      select: { subBagianId: true, versiAktifId: true },
+    }),
+    prisma.bagian.findMany({ where: { versiId: proyek.versiId, jenis: "kriteria" }, orderBy: { urutan: "asc" }, select: { kode: true, nama: true } }),
   ]);
   const sistem = new Map(nilai.daftar.map((n) => [n.butir, n.hasil?.skor ?? null]));
   const peta = new Map(skor.map((s) => [s.butirKode, s]));
-  const akhir = hitungNilaiAkhir(butir.map((b) => ({ kode: b.kode, bobot: Number(b.bobot) })), new Map(skor.map((s) => [s.butirKode, s.skor])));
+  const petaUsulan = new Map(usulan.map((u) => [u.butirKode, u]));
+  const aktif = new Map(draf.map((d) => [d.subBagianId, d.versiAktifId!]));
+  // isi narasi aktif setiap sub-bagian yang terkait butir (sekali per sub-bagian)
+  const idVersi = opsi.tanpaNarasi ? [] : [...new Set(butir.flatMap((b) => b.subBagian.map((x) => aktif.get(x.subBagian.id)).filter((v): v is string => Boolean(v))))];
+  const isiVersi = new Map((idVersi.length ? await prisma.versiDraf.findMany({ where: { id: { in: idVersi } }, select: { id: true, isi: true } }) : [])
+    .map((v) => [v.id, bacaDokumen(v.isi)]));
+  const narasi: Record<string, DokTiptap> = {};
+
+  const daftar = butir.map((b) => {
+    const sub = b.subBagian.map((x) => x.subBagian)
+      .sort((x, y) => x.bagian.urutan - y.bagian.urutan || x.urutan - y.urutan)
+      .map((s) => {
+        const v = aktif.get(s.id) ?? null;
+        if (v && isiVersi.has(v)) narasi[s.kode] = isiVersi.get(v)!;
+        return { kode: s.kode, bagianKode: s.bagian.kode, label: s.label, judul: s.judul, versiId: v };
+      });
+    const u = petaUsulan.get(b.kode);
+    const versiAktif = sub.map((s) => s.versiId).filter((v): v is string => Boolean(v));
+    const skorSistem = b.jenis === "angka" ? sistem.get(b.kode) ?? null : null;
+    const skorOtomatis = b.jenis === "angka" ? skorSistem : u?.skor ?? null;
+    return {
+      kode: b.kode, bagianKode: b.bagianKode, elemen: b.elemen, indikator: b.indikator, bobot: Number(b.bobot), jenis: b.jenis,
+      unsurSkor4: b.unsurSkor4,
+      deskriptor: [b.deskriptorSkor0, b.deskriptorSkor1, b.deskriptorSkor2, b.deskriptorSkor3, b.deskriptorSkor4],
+      skorSistem,
+      skorOtomatis,
+      sumberOtomatis: b.jenis === "angka" ? (skorSistem === null ? null : "sistem" as const) : u ? "ai" as const : null,
+      usulan: u ? {
+        skor: u.skor, alasan: u.alasan, model: u.model, unsurTerpenuhi: u.unsurTerpenuhi as string[], unsurKurang: u.unsurKurang as string[],
+        perluUlang: perluNilaiUlang(u.versiDrafIds as string[], versiAktif),
+      } : null,
+      sub,
+      skor: peta.get(b.kode)?.skor ?? null,
+      alasan: peta.get(b.kode)?.alasan ?? null,
+    };
+  });
+  const akhir = hitungNilaiAkhir(daftar.map((b) => ({ kode: b.kode, bobot: b.bobot })), new Map(skor.map((s) => [s.butirKode, s.skor])));
+  const terpakai = new Map(daftar.flatMap((b) => {
+    const s = skorTerpakai(b.skor, b.skorOtomatis);
+    return s === null ? [] : [[b.kode, s] as const];
+  }));
+  const rekap = rekapPenilaian(daftar, terpakai);
   const aturan = bacaAturanStatus(versi?.statusAkreditasi);
   return {
     review: bacaStatusReview(proyek.statusReview),
@@ -319,14 +374,28 @@ export async function penilaianProyek(p: Pengguna, proyekId: string) {
     catatanBelumSelesai: belumSelesai,
     akhir,
     perkiraan: akhir.dinilai ? perkiraanStatus(akhir.total, aturan) : null,
-    butir: butir.map((b) => ({
-      kode: b.kode, bagianKode: b.bagianKode, elemen: b.elemen, indikator: b.indikator, bobot: Number(b.bobot), jenis: b.jenis,
-      deskriptor: [b.deskriptorSkor0, b.deskriptorSkor1, b.deskriptorSkor2, b.deskriptorSkor3, b.deskriptorSkor4],
-      skorSistem: b.jenis === "angka" ? sistem.get(b.kode) ?? null : null,
-      skor: peta.get(b.kode)?.skor ?? null,
-      alasan: peta.get(b.kode)?.alasan ?? null,
-    })),
+    rekap,
+    perkiraanGabungan: rekap.dinilai ? perkiraanStatus(rekap.total, aturan) : null,
+    aturan,
+    namaKriteria: Object.fromEntries(bagian.map((b) => [b.kode, b.nama])),
+    skorRubrik: { status: proyek.statusSkorRubrik, pesan: proyek.pesanSkorRubrik },
+    butir: daftar,
+    narasi,
   };
+}
+
+/**
+ * Tim Prodi menjalankan penghitungan usulan skor rubrik (antrean skor-rubrik). Butir yang usulannya masih sesuai
+ * narasi aktif dilewati, jadi tombol ini juga dipakai untuk menilai ulang setelah narasi berubah.
+ */
+export async function mulaiSkorRubrik(p: Pengguna, proyekId: string) {
+  const proyek = await ambilProyekUbah(p, proyekId);
+  if (proyek.statusSkorRubrik === "antre" || proyek.statusSkorRubrik === "berjalan") {
+    throw new GalatPengguna("Usulan skor sedang dihitung. Tunggu sampai selesai.");
+  }
+  await prisma.proyekLED.update({ where: { id: proyek.id }, data: { statusSkorRubrik: "antre", pesanSkorRubrik: null } });
+  await kirimTugas(ANTREAN.skorRubrik, { proyekId: proyek.id });
+  await catatAktivitas(p, "mulai_skor_rubrik", "proyek", proyek.id);
 }
 
 export interface KeputusanReview {

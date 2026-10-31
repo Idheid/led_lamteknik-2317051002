@@ -101,6 +101,8 @@ export interface PanggilanTerstruktur<T> extends PanggilanNarasi {
   skema: z.ZodType<T>;
   /** mode uji LLM_NARASI=uji hanya untuk narasi; panggilan lain tetap memakai Gemini */
   ujiNarasi?: boolean;
+  /** keluaran deterministik untuk LLM_NARASI=uji selain narasi (mis. usulan skor rubrik, revisi 31 Okt 2026) */
+  keluaranUji?: (pengguna: string) => T;
   maksTokenKeluaran?: number;
   /** "rendah": thinking Gemini 3 level low (narasi); bawaan: thinking normal (ekstraksi instrumen) */
   pikir?: "rendah" | "normal";
@@ -184,6 +186,11 @@ export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise
       data: { ...data, proyekId: a.proyekId, prodiId: a.prodiId, tugasId: a.tugasId ?? null, subBagianKode: a.subBagianKode },
     });
 
+  if (a.keluaranUji && pakaiNarasiUji()) {
+    const keluaran = a.skema.parse(a.keluaranUji(a.pengguna));
+    await catat({ kunciId: null, model: MODEL_NARASI_UJI, berhasil: true, tokenMasuk: 0, tokenKeluar: 0, durasiMs: 0 });
+    return { keluaran, model: MODEL_NARASI_UJI, kunciId: null, tokenMasuk: 0, tokenKeluar: 0, durasiMs: 0 };
+  }
   if (a.ujiNarasi && pakaiNarasiUji()) {
     // mode uji pengembangan: tanpa kunci dan tanpa memanggil Gemini
     const mulai = Date.now();

@@ -883,3 +883,50 @@ di-commit sebelum tahap berikutnya.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 115/115 lulus |
 | `npm run test:integrasi` | 63/63 lulus |
+
+### Tahap 5: penilaian di depan dan menonjol
+
+- Model `UsulanSkor` (`@@unique([proyekId, butirKode])`) dan kolom `ProyekLED.statusSkorRubrik`/`pesanSkorRubrik`
+  (migrasi `20261031110000_usulan_skor`; baris `DROP INDEX "Potongan_embedding_hnsw_idx"` dibuang dari diff).
+- Antrean `skor-rubrik` (`ANTREAN.skorRubrik`, tanpa ulang otomatis), pengerja di `src/worker/led.ts` (juga dipulihkan
+  saat worker mulai), proses `src/modules/led/proses/skor-rubrik.ts`: untuk setiap butir narasi, narasi aktif sub-bagian
+  terkait (`ButirSubBagian`) disamarkan (`samarkanTeks`) lalu dinilai lewat `panggilTerstruktur` (indikator, deskriptor
+  0-4, unsur skor 4, narasi) dengan keluaran Zod `{ skor 0..4, alasan, unsurTerpenuhi[], unsurKurang[] }`. Butir angka
+  tidak dinilai AI (skor sistem dari LKPS). Butir yang usulannya masih sesuai versi narasi aktif dilewati, jadi tugas
+  yang berhenti karena kunci habis (`menunggu_kunci`) lanjut dari butir berikutnya; `antreUlangTugasTertunda` (dipanggil
+  saat Admin UPPS menambah kunci) ikut mengantre ulang usulan skor. Batas per menit: dijadwalkan ulang otomatis.
+- `panggilTerstruktur` mendapat `keluaranUji`: dengan `LLM_NARASI=uji` usulan skor dibuat deterministik (unsur dianggap
+  terpenuhi bila kata kuncinya muncul di narasi), tanpa kunci dan tanpa Gemini.
+- Domain (`led/domain/review.ts`, dengan uji): `nilaiButir` (bobot × skor), `persenNilai`, `rekapPenilaian` (per
+  kriteria dan total), `skorTerpakai` (skor asesor bila ada, selain itu skor otomatis), `perluNilaiUlang` (versi narasi
+  berubah sejak usulan dibuat).
+- `penilaianProyek` (asesor, Tim Prodi, Admin UPPS) kini juga mengembalikan skor otomatis dan sumbernya, usulan AI
+  (alasan, unsur kurang, perlu dinilai ulang), sub-bagian terkait dan narasi aktifnya apa adanya, rekap gabungan, nama
+  kriteria, dan status penghitungan; `akhir`/`perkiraan` tetap nilai asesor saja (dasar keputusan). Opsi `tanpaNarasi`
+  untuk kartu Beranda. `mulaiSkorRubrik` (Tim Prodi pemilik LED).
+- Halaman bersama `src/modules/led/komponen/penilaian/halaman-penilaian.tsx`: ringkasan besar (total, persen, perkiraan
+  status, jumlah butir berskor, batang nilai per kriteria), tabel per kriteria (Butir, Bobot, Skor otomatis, Skor asesor,
+  Nilai, Persentase), baris yang dibuka menampilkan narasi sub-bagian terkait (`NarasiBaca`, hanya baca), deskriptor
+  terpilih, serta alasan dan unsur kurang dari AI. Asesor memilih skor (alasan wajib bila berbeda dari skor sistem) dan
+  total dihitung ulang langsung di peramban; keputusan Layak diajukan/Perlu revisi di bawah. `form-penilaian.tsx` lama
+  dihapus.
+- Asesor: "Penilaian" menjadi item pertama menu LED ini (sebelum Ringkasan review). Admin UPPS membaca halaman yang sama
+  tanpa alat skor. Tim Prodi: `/led/[proyekId]/penilaian` "Perkiraan nilai" (menu LED ini dan kartu paling atas Beranda
+  LED dengan total, perkiraan status, label "Perkiraan, bukan nilai resmi LAM Teknik"), tombol "Hitung usulan skor",
+  tanpa bisa mengubah skor.
+- Uji integrasi baru `tests/integrasi/skor-rubrik.test.ts` (LLM_NARASI=uji): hanya Tim Prodi pemilik LED yang bisa
+  menghitung; butir narasi berdraf mendapat usulan, butir angka tidak; skor otomatis masuk rekap tetapi tidak nilai
+  asesor; admin membaca; narasi tidak berubah = tidak ada panggilan baru; suntingan akun Tim Prodi kedua menandai perlu
+  dinilai ulang lalu dihitung ulang; tanpa kunci berhenti `menunggu_kunci` dan lanjut setelah Admin UPPS menambah kunci.
+- Uji browser (server pengembangan dimulai ulang karena klien Prisma lama masih termuat setelah migrasi; worker juga
+  dimulai ulang supaya antrean `skor-rubrik` terdaftar): akun uji asesor (sementara ditugaskan ke LED pengembangan)
+  membuka Penilaian, membuka butir 1 dan membaca narasi C.1 di baris yang sama, mengubah skor 4 → 2 dan total langsung
+  berubah 4,56 → 2,28 (1,14 × 2). Pemicu pilihan skor diperbaiki supaya hanya menampilkan "Skor N". Penugasan asesor dan
+  skor asli di basis data pengembangan dikembalikan. Halaman Perkiraan nilai Tim Prodi tampil tanpa pilihan skor; tombol
+  "Hitung usulan skor" sengaja tidak diklik di server pengembangan supaya kuota Gemini tidak terpakai.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 118/118 lulus |
+| `npm run test:integrasi` | 66/66 lulus |

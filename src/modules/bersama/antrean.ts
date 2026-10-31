@@ -15,6 +15,8 @@ export const ANTREAN = {
   generate: "generate",
   ekspor: "ekspor-word",
   instrumen: "ekstrak-instrumen",
+  // revisi 31 Okt 2026: usulan skor rubrik per butir narasi
+  skorRubrik: "skor-rubrik",
   // bersama (src/worker/bersama.ts)
   cadangan: "cadangan-harian",
   // modul LKPS (src/worker/lkps.ts): tambahkan di sini dengan awalan "lkps-", misalnya impor: "lkps-impor-excel"
@@ -36,7 +38,7 @@ export async function siapkanAntrean(bos: PgBoss): Promise<void> {
   for (const nama of Object.values(ANTREAN)) {
     // generate dan ekstraksi instrumen mengatur ulang sendiri (kunci habis, batas per menit); tidak diulang otomatis.
     // Cadangan mencatat sendiri kegagalannya; diulang sekali saja (jadwal berikutnya besok).
-    const opsi = nama === ANTREAN.generate || nama === ANTREAN.instrumen ? { retryLimit: 0 }
+    const opsi = nama === ANTREAN.generate || nama === ANTREAN.instrumen || nama === ANTREAN.skorRubrik ? { retryLimit: 0 }
       : nama === ANTREAN.cadangan ? { retryLimit: 1, retryDelay: 600 }
       : { retryLimit: 2, retryDelay: 30, retryBackoff: true };
     await bos.createQueue(nama, opsi);

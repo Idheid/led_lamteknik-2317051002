@@ -188,6 +188,10 @@ model ProyekLED {
   keputusanReview   Json? // { keputusan, catatan, total, perkiraan, waktu, olehId }
   catatanRevisi     CatatanRevisi[]
   skorAsesor        SkorAsesor[]
+  // revisi 31 Okt 2026: usulan skor AI per butir narasi; status antrean skor-rubrik (antre, berjalan, menunggu_kunci, gagal)
+  usulanSkor        UsulanSkor[]
+  statusSkorRubrik  String?
+  pesanSkorRubrik   String?
   nilaiManual NilaiManual[]
   targetButir TargetButir[]
   status      StatusKriteria[]
@@ -471,6 +475,24 @@ model BalasanCatatan {
 }
 
 /// Skor asesor 0-4 per butir. Untuk butir angka, skorSistem = hitungan LKPS saat dinilai; skor berbeda wajib beralasan.
+/// Usulan skor otomatis butir narasi (revisi 31 Okt 2026, Pak Tris): narasi aktif sub-bagian terkait dicocokkan dengan
+/// rubrik (deskriptor skor 0-4 dan unsur skor 4) oleh LLM. Butir angka tidak memakai usulan ini (skor sistem dari LKPS).
+model UsulanSkor {
+  id             String    @id @default(cuid())
+  proyekId       String
+  proyek         ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  butirKode      String
+  skor           Float
+  alasan         String
+  unsurTerpenuhi Json      // string[]
+  unsurKurang    Json      // string[]
+  model          String
+  versiDrafIds   Json      // id versi aktif narasi yang dinilai; berbeda dari versi aktif sekarang = perlu dinilai ulang
+  dibuatPada     DateTime  @default(now())
+
+  @@unique([proyekId, butirKode])
+}
+
 model SkorAsesor {
   id         String    @id @default(cuid())
   proyekId   String

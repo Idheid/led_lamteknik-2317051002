@@ -160,6 +160,77 @@ export function perkiraanStatus(total: number, aturan: AturanStatus[]): AturanSt
   return aturan.find((a) => (a.naMin === undefined || total >= a.naMin) && (a.naMaksEksklusif === undefined || total < a.naMaksEksklusif)) ?? null;
 }
 
+// ------------------------------------------------------------------ rekap penilaian (revisi 31 Okt 2026)
+
+/** Nilai satu butir = bobot × skor (dua desimal). */
+export function nilaiButir(bobot: number, skor: number): number {
+  return Math.round(bobot * skor * 100) / 100;
+}
+
+/** Persentase nilai terhadap maksimum (satu desimal); 0 bila maksimum 0. */
+export function persenNilai(nilai: number, maksimum: number): number {
+  return maksimum > 0 ? Math.round((nilai / maksimum) * 1000) / 10 : 0;
+}
+
+export interface ButirRekap extends ButirNilai {
+  bagianKode: string;
+}
+
+export interface RekapKriteria {
+  bagianKode: string;
+  nilai: number;
+  maksimum: number;
+  persen: number;
+  dinilai: number;
+  jumlahButir: number;
+}
+
+export interface RekapPenilaian {
+  total: number;
+  maksimum: number;
+  persen: number;
+  dinilai: number;
+  jumlahButir: number;
+  perKriteria: RekapKriteria[];
+}
+
+/**
+ * Rekap halaman Penilaian: Σ bobot × skor per kriteria dan total, persentase dari nilai maksimum (bobot × 4), jumlah
+ * butir yang sudah punya skor. Urutan kriteria mengikuti urutan butir pertama tiap kriteria.
+ */
+export function rekapPenilaian(butir: ButirRekap[], skor: Map<string, number>): RekapPenilaian {
+  const per = new Map<string, RekapKriteria>();
+  for (const b of butir) {
+    const r = per.get(b.bagianKode) ?? { bagianKode: b.bagianKode, nilai: 0, maksimum: 0, persen: 0, dinilai: 0, jumlahButir: 0 };
+    r.maksimum += b.bobot * 4;
+    r.jumlahButir++;
+    const s = skor.get(b.kode);
+    if (s !== undefined) {
+      r.nilai += b.bobot * s;
+      r.dinilai++;
+    }
+    per.set(b.bagianKode, r);
+  }
+  const perKriteria = [...per.values()].map((r) => ({
+    ...r, nilai: Math.round(r.nilai * 100) / 100, maksimum: Math.round(r.maksimum * 100) / 100, persen: persenNilai(r.nilai, r.maksimum),
+  }));
+  const total = Math.round(perKriteria.reduce((a, r) => a + r.nilai, 0) * 100) / 100;
+  const maksimum = Math.round(perKriteria.reduce((a, r) => a + r.maksimum, 0) * 100) / 100;
+  return { total, maksimum, persen: persenNilai(total, maksimum), dinilai: perKriteria.reduce((a, r) => a + r.dinilai, 0), jumlahButir: butir.length, perKriteria };
+}
+
+/** Skor yang dipakai perkiraan: skor asesor bila ada, selain itu skor otomatis (sistem untuk butir angka, AI untuk narasi). */
+export function skorTerpakai(asesor: number | null, otomatis: number | null): number | null {
+  return asesor ?? otomatis;
+}
+
+/** Usulan skor perlu dinilai ulang bila himpunan versi narasi aktif berubah sejak usulan dibuat. */
+export function perluNilaiUlang(versiUsulan: string[], versiAktif: string[]): boolean {
+  if (versiUsulan.length !== versiAktif.length) return true;
+  const a = new Set(versiUsulan);
+  return versiAktif.some((v) => !a.has(v));
+}
+
 /** Skor 0-4, paling banyak dua desimal (skor hitungan sistem bisa pecahan). */
 export function skorSah(s: number): boolean {
   return Number.isFinite(s) && s >= 0 && s <= 4 && Math.round(s * 100) === s * 100;
