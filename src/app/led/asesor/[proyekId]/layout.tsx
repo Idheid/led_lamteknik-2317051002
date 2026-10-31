@@ -3,12 +3,16 @@ import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
 import type { GrupNav } from "@/components/shell/nav-sidebar";
 import { GalatAkses } from "@/modules/bersama/akses";
 import { bagianProyek } from "@/modules/led/data/proyek";
-import { wajibAsesor } from "@/modules/bersama/sesi";
-import { MENU_ASESOR } from "../menu";
+import { wajibPeran } from "@/modules/bersama/sesi";
+import { MENU_ADMIN, MENU_ASESOR } from "@/components/shell/menu-peran";
 
-/** Satu LED yang ditugaskan (revisi 22 Okt 2026): hanya baca, catatan revisi, dan penilaian akhir. */
+/**
+ * Satu LED yang ditugaskan (revisi 22 Okt 2026): hanya baca, catatan revisi, dan penilaian akhir. Revisi 31 Okt 2026:
+ * tampilan yang sama dipakai Admin UPPS untuk membaca LED mana pun (dari Pantau LED), tanpa alat catatan dan skor.
+ */
 export default async function LayoutLedAsesor({ children, params }: LayoutProps<"/led/asesor/[proyekId]">) {
-  const p = await wajibAsesor();
+  const p = await wajibPeran("ASESOR", "ADMIN");
+  const admin = p.peran === "ADMIN";
   const { proyekId } = await params;
   let data;
   try {
@@ -20,11 +24,11 @@ export default async function LayoutLedAsesor({ children, params }: LayoutProps<
   const dasar = `/led/asesor/${proyekId}`;
   const isi = data.bagian.filter((b) => b.jenis === "kriteria" || b.jenis === "bab" || b.jenis === "butir");
   const grup: GrupNav[] = [
-    MENU_ASESOR,
+    ...(admin ? MENU_ADMIN : [MENU_ASESOR]),
     {
-      label: "LED ini",
+      label: admin ? "LED ini (hanya baca)" : "LED ini",
       item: [
-        { judul: "Ringkasan review", href: dasar, ikon: "beranda", persis: true },
+        { judul: admin ? "Ringkasan" : "Ringkasan review", href: dasar, ikon: "beranda", persis: true },
         { judul: "Penilaian akhir", href: `${dasar}/penilaian`, ikon: "penilaian" },
       ],
     },

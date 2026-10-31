@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Kunci API" };
 const TAB = [
   { kunci: "kunci", label: "Kunci" },
   { kunci: "model", label: "Model Gemini" },
-  { kunci: "pemakaian", label: "Pemakaian" },
+  { kunci: "pemakaian", label: "Log" },
 ] as const;
 
 /** Kunci API (revisi 31 Okt 2026: kunci utama fakultas dan kunci cadangan dikelola Admin UPPS), model Gemini, dan log pemakaian. */

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/modules/bersama/aksi";
 import * as org from "@/modules/bersama/data/organisasi";
-import type { MasukanFakultas, MasukanProdi } from "@/modules/bersama/validasi";
+import type { IdentitasProdi, MasukanFakultas, MasukanProdi } from "@/modules/bersama/validasi";
 
 export async function aksiSimpanFakultas(masukan: MasukanFakultas) {
   const r = await jalankanAksi((p) => org.simpanFakultas(p, masukan).then(() => null));
@@ -13,6 +13,13 @@ export async function aksiSimpanFakultas(masukan: MasukanFakultas) {
 
 export async function aksiSimpanProdi(masukan: MasukanProdi, id?: string) {
   const r = await jalankanAksi(async (p) => (await org.simpanProdi(p, masukan, id)).id);
+  revalidatePath("/led", "layout");
+  return r;
+}
+
+/** Tim Prodi mengubah identitas prodinya sendiri (revisi 31 Okt 2026, B4). */
+export async function aksiSimpanIdentitasProdi(prodiId: string, identitas: Partial<IdentitasProdi>) {
+  const r = await jalankanAksi((p) => org.simpanIdentitasProdi(p, prodiId, identitas).then(() => null));
   revalidatePath("/led", "layout");
   return r;
 }

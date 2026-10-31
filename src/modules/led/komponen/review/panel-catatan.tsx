@@ -219,7 +219,7 @@ export function PanelCatatan({ catatan, peran, bolehUbah, aktif, onPilih, muat }
       </div>
       {catatan.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {peran === "ASESOR" ? "Blok teks di narasi untuk menulis catatan revisi." : "Belum ada catatan. Catatan asesor muncul di sini tanpa muat ulang."}
+          {peran === "ASESOR" && bolehUbah ? "Blok teks di narasi untuk menulis catatan revisi." : !bolehUbah ? "Belum ada catatan asesor." : "Belum ada catatan. Catatan asesor muncul di sini tanpa muat ulang."}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

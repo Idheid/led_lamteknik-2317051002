@@ -6,7 +6,7 @@ import { Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { IkonSibuk } from "@/components/aksi-klien";
-import { aksiPotonganDokumen } from "@/app/led/(penyusun)/aksi";
+import { aksiPotonganDokumen } from "@/app/led/(tim-prodi)/aksi";
 
 interface Potongan {
   urutan: number;

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { wajibAsesor } from "@/modules/bersama/sesi";
+import { wajibPeran } from "@/modules/bersama/sesi";
 import { bagianProyek } from "@/modules/led/data/proyek";
 import { daftarCatatan, penilaianProyek, perbaikanMenunggu } from "@/modules/led/data/review";
 import { KotakPerbaikan } from "@/modules/led/komponen/review/kotak-perbaikan";
@@ -20,12 +20,13 @@ const PENJELASAN = {
   layak: "Anda menyatakan Layak diajukan. Tim Prodi sekarang bisa mengekspor Word final.",
 };
 
-/** Ringkasan review satu LED untuk asesor (revisi 22 Okt 2026). */
+/** Ringkasan review satu LED untuk asesor (revisi 22 Okt 2026); Admin UPPS membacanya tanpa alat review (31 Okt 2026). */
 export default async function HalamanRingkasanAsesor({ params }: PageProps<"/led/asesor/[proyekId]">) {
-  const p = await wajibAsesor();
+  const p = await wajibPeran("ASESOR", "ADMIN");
+  const admin = p.peran === "ADMIN";
   const { proyekId } = await params;
   const [{ proyek, bagian }, { catatan, review }, nilai, perbaikan] = await Promise.all([
-    bagianProyek(p, proyekId), daftarCatatan(p, proyekId), penilaianProyek(p, proyekId), perbaikanMenunggu(p, proyekId),
+    bagianProyek(p, proyekId), daftarCatatan(p, proyekId), penilaianProyek(p, proyekId), admin ? Promise.resolve([]) : perbaikanMenunggu(p, proyekId),
   ]);
   const hitung = (s: string) => catatan.filter((c) => c.status === s).length;
   const perBagian = bagian
@@ -38,7 +39,9 @@ export default async function HalamanRingkasanAsesor({ params }: PageProps<"/led
         deskripsi={proyek.nama}
         aksi={<Badge variant={review === "direview" ? "default" : "outline"}>{LABEL_REVIEW[review]}</Badge>}
       />
-      <p className="rounded-lg border-l-4 border-primary/40 bg-muted/50 p-3 text-sm">{PENJELASAN[review]}</p>
+      <p className="rounded-lg border-l-4 border-primary/40 bg-muted/50 p-3 text-sm">
+        {admin ? "Tampilan hanya baca untuk Admin UPPS: narasi, catatan asesor, dan penilaian. LED disusun Tim Prodi dan dinilai asesor." : PENJELASAN[review]}
+      </p>
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">Catatan revisi</CardTitle></CardHeader>

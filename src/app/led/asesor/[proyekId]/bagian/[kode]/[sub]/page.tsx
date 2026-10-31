@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { wajibAsesor } from "@/modules/bersama/sesi";
+import { wajibPeran } from "@/modules/bersama/sesi";
 import { halamanBagian } from "@/modules/led/data/proyek";
 import { drafBagian } from "@/modules/led/data/generate";
 import { daftarCatatan } from "@/modules/led/data/review";
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps<"/led/asesor/[proye
 
 /** Satu sub-bagian untuk asesor (revisi 22 Okt 2026): instruksi, butir dan deskriptor skor 4, narasi hanya baca, catatan. */
 export default async function HalamanSubAsesor({ params }: PageProps<"/led/asesor/[proyekId]/bagian/[kode]/[sub]">) {
-  const p = await wajibAsesor();
+  const p = await wajibPeran("ASESOR", "ADMIN");
   const { proyekId, kode: kodeMentah, sub: subMentah } = await params;
   const kode = decodeURIComponent(kodeMentah);
   const kodeSub = decodeURIComponent(subMentah);
@@ -76,6 +76,7 @@ export default async function HalamanSubAsesor({ params }: PageProps<"/led/aseso
           isi={aktif.isi}
           catatanAwal={catatan.catatan}
           bolehCatat={catatan.review === "direview"}
+          hanyaBaca={p.peran === "ADMIN"}
         />
       ) : (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Tim Prodi belum menyusun narasi sub-bagian ini.</p>

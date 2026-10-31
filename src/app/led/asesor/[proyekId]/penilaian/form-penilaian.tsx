@@ -81,10 +81,11 @@ function BarisButir({ proyekId, b, bolehUbah }: { proyekId: string; b: Butir; bo
   );
 }
 
-export function FormPenilaian({ proyekId, data }: { proyekId: string; data: Data }) {
+export function FormPenilaian({ proyekId, data, hanyaBaca = false }: { proyekId: string; data: Data; hanyaBaca?: boolean }) {
   const { sibuk, jalankan } = useAksi();
   const [catatan, setCatatan] = useState("");
-  const bolehUbah = data.review === "direview";
+  // Admin UPPS membaca penilaian tanpa bisa mengubah skor atau keputusan (revisi 31 Okt 2026)
+  const bolehUbah = data.review === "direview" && !hanyaBaca;
   const bagian = [...new Set(data.butir.map((b) => b.bagianKode))];
   const syaratLayak = [
     { ok: data.catatanBelumSelesai === 0, teks: data.catatanBelumSelesai ? `${data.catatanBelumSelesai} catatan revisi belum diterima` : "Semua catatan revisi sudah diterima" },

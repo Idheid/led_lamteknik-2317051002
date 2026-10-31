@@ -89,8 +89,9 @@ export async function ledAsesor(p: Pengguna) {
 
 // ---------------------------------------------------------------- catatan
 
+/** Membaca catatan dan penilaian: Tim Prodi pemilik LED, asesor yang ditugaskan, dan Admin UPPS (hanya baca). */
 async function aksesReview(p: Pengguna, proyekId: string) {
-  pastikanPeran(p, "TIM_PRODI", "ASESOR");
+  pastikanPeran(p, "TIM_PRODI", "ASESOR", "ADMIN");
   return ambilProyek(p, proyekId, { baca: true });
 }
 
@@ -248,6 +249,7 @@ export async function ubahStatusCatatan(p: Pengguna, catatanId: string, aksi: Ak
 }
 
 export async function balasCatatan(p: Pengguna, catatanId: string, isi: string) {
+  pastikanPeran(p, "TIM_PRODI", "ASESOR");
   const { c, proyek } = await catatanMilik(p, catatanId);
   const teks = z.string().trim().min(1, "Balasan kosong.").max(4000, "Balasan terlalu panjang (maks. 4.000 karakter).").parse(isi);
   await prisma.balasanCatatan.create({ data: { catatanId: c.id, penulisId: p.id, jenis: "balasan", isi: teks } });

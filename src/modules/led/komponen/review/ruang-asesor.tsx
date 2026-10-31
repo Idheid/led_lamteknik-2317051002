@@ -19,7 +19,7 @@ import { aksiBuatCatatan } from "@/app/led/aksi-review";
  * Layar asesor untuk satu sub-bagian (revisi 22 Okt 2026): narasi versi aktif hanya baca, blok teks untuk menulis
  * catatan revisi, dan daftar catatan yang diperbarui otomatis.
  */
-export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal, bolehCatat }: {
+export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal, bolehCatat, hanyaBaca = false }: {
   proyekId: string;
   subBagianKode: string;
   /** versi aktif yang ditampilkan */
@@ -28,6 +28,8 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
   catatanAwal: CatatanTampil[];
   /** LED berstatus Direview */
   bolehCatat: boolean;
+  /** Admin UPPS membaca LED (revisi 31 Okt 2026): tanpa alat catatan, balasan, atau terima. */
+  hanyaBaca?: boolean;
 }) {
   const router = useRouter();
   const { catatan, muat, versiAktifId } = useCatatanLangsung(proyekId, subBagianKode, catatanAwal, versiId);
@@ -80,7 +82,7 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
 
   /** Blok teks di pembaca: posisi DOM → posisi dokumen → indeks teks polos → jangkar. */
   function bacaBlok() {
-    if (!editor || !bolehCatat) return;
+    if (!editor || !bolehCatat || hanyaBaca) return;
     const sel = window.getSelection();
     const dom = editor.view.dom;
     if (!sel || sel.isCollapsed || !sel.anchorNode || !sel.focusNode || !dom.contains(sel.anchorNode) || !dom.contains(sel.focusNode)) return;
@@ -122,7 +124,7 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
         <div className="overflow-hidden rounded-lg border bg-background" onMouseUp={bacaBlok} onKeyUp={bacaBlok}>
           <EditorContent editor={editor} />
         </div>
-        {bolehCatat ? (
+        {hanyaBaca ? null : bolehCatat ? (
           blok ? (
             <div className="flex flex-col gap-2 rounded-lg border border-primary/40 bg-primary/5 p-3">
               <p className="text-xs text-muted-foreground">Teks yang diblok:</p>
@@ -140,7 +142,7 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
           <p className="text-xs text-muted-foreground">Catatan baru bisa ditulis setelah Tim Prodi mengajukan review (status Direview).</p>
         )}
       </div>
-      <PanelCatatan catatan={catatan} peran="ASESOR" bolehUbah aktif={aktif} onPilih={(id) => setAktif(id)} muat={muat} />
+      <PanelCatatan catatan={catatan} peran="ASESOR" bolehUbah={!hanyaBaca} aktif={aktif} onPilih={(id) => setAktif(id)} muat={muat} />
     </div>
   );
 }

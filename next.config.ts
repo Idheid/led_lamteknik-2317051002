@@ -10,7 +10,9 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/proyek/prodi/:jalur*", destination: "/pengaturan/prodi/:jalur*", permanent: false },
-      { source: "/proyek/kunci-api/:jalur*", destination: "/pengaturan/kunci-api/:jalur*", permanent: false },
+      // revisi 31 Okt 2026 (B3): kunci API hanya di halaman Admin UPPS
+      { source: "/proyek/kunci-api/:jalur*", destination: "/admin/kunci-api/:jalur*", permanent: false },
+      { source: "/pengaturan/kunci-api/:jalur*", destination: "/admin/kunci-api/:jalur*", permanent: false },
       { source: "/proyek/:jalur*", destination: "/led/:jalur*", permanent: false },
       { source: "/proyek", destination: "/led", permanent: false },
       { source: "/asesor/:jalur*", destination: "/led/asesor/:jalur*", permanent: false },

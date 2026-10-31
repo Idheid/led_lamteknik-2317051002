@@ -1,22 +1,22 @@
 import type { ReactNode } from "react";
 import type { Pengguna } from "@/modules/bersama/akses";
-import { ambilFakultas } from "@/modules/bersama/data/organisasi";
+import { ambilFakultas, ambilProdi } from "@/modules/bersama/data/organisasi";
 import { bagianProyek, daftarProyek } from "@/modules/led/data/proyek";
 import type { GrupNav, StatusLencana } from "@/components/shell/nav-sidebar";
 import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
-import { MENU_DATA_BERSAMA } from "@/components/shell/menu-peran";
+import { MENU_ADMIN } from "@/components/shell/menu-peran";
+import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { PemilihLed } from "./pemilih-led";
 
 /**
- * Menu LED (31 Okt 2026; sebelumnya "Menu utama" PJ): daftar LED dan bahan yang dipakai semua LED. Program studi dan
- * kunci API dipakai juga oleh modul LKPS, jadi ada di grup "Data bersama LKPS & LED" (MENU_DATA_BERSAMA).
+ * Menu LED Tim Prodi (revisi 31 Okt 2026): hanya LED prodinya. Program studi, instrumen, dan kunci API milik Admin UPPS;
+ * Basis Pengetahuan fakultas dilihat lewat tab di menu Basis Pengetahuan tiap LED.
  */
 export const MENU_LED: GrupNav = {
   label: "Menu LED",
   item: [
-    { judul: "Semua LED", href: "/led", ikon: "proyek", persis: true },
-    { judul: "Instrumen", href: "/led/instrumen", ikon: "instrumen" },
-    { judul: "Basis Pengetahuan fakultas", href: "/led/dokumen-bersama", ikon: "dokumen" },
+    { judul: "LED prodi", href: "/led", ikon: "proyek", persis: true },
+    { judul: "Identitas prodi", href: "/led/identitas-prodi", ikon: "prodi" },
   ],
 };
 
@@ -31,9 +31,9 @@ const NAMA_PENDEK: Record<string, string> = {
 };
 
 /**
- * Sidebar PJ dengan dua keadaan (revisi 26 Okt 2026):
- * - di luar LED: Menu LED dan data bersama (tidak perlu menggulir mencari menu);
- * - di dalam LED: pemilih LED, menu "Kembali ke Menu LED", lalu menu LED itu saja.
+ * Sidebar LED dengan dua keadaan (revisi 26 Okt 2026):
+ * - di luar LED: Menu LED Tim Prodi, atau menu Admin UPPS (Pantau LED, Instrumen, Basis Pengetahuan fakultas);
+ * - di dalam LED (Tim Prodi): pemilih LED, menu "Kembali ke Menu LED", lalu menu LED itu saja.
  */
 export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pengguna; proyekId?: string; children: ReactNode }) {
   const [fakultas, data] = await Promise.all([
@@ -42,9 +42,17 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
   ]);
   const subjudul = fakultas?.nama ?? "Fakultas belum diisi";
 
-  if (!data) {
+  if (pengguna.peran === "ADMIN") {
     return (
-      <ShellAplikasi pengguna={pengguna} grup={[MENU_LED, MENU_DATA_BERSAMA]} judul="LED LAM Teknik" subjudul={subjudul} beranda="/led">
+      <ShellAplikasi pengguna={pengguna} grup={MENU_ADMIN} judul="LED LAM Teknik" subjudul={`Admin UPPS · ${subjudul}`} beranda="/led/pantau">
+        {children}
+      </ShellAplikasi>
+    );
+  }
+  if (!data) {
+    const prodi = pengguna.prodiId ? await ambilProdi(pengguna, pengguna.prodiId) : null;
+    return (
+      <ShellAplikasi pengguna={pengguna} grup={[MENU_LED]} judul="LED LAM Teknik" subjudul={prodi ? `${namaJenjang(prodi.jenjang)} ${prodi.nama}` : subjudul} beranda="/led">
         {children}
       </ShellAplikasi>
     );
@@ -96,7 +104,7 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
   );
 }
 
-/** Halaman Menu LED (Semua LED, Instrumen, Basis Pengetahuan fakultas) dengan menu data bersama. */
+/** Halaman di luar satu LED: LED prodi (Tim Prodi) atau Pantau LED, Instrumen, Basis Pengetahuan fakultas (Admin UPPS). */
 export async function ShellMenuLed({ pengguna, children }: { pengguna: Pengguna; children: ReactNode }) {
   return <ShellLed pengguna={pengguna}>{children}</ShellLed>;
 }

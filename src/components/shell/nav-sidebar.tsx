@@ -71,7 +71,8 @@ export function NavSidebar({ grup }: { grup: GrupNav[] }) {
   const jalur = usePathname();
   return (
     <>
-      {grup.map((g) => (
+      {/* grup tanpa item (mis. menu LKPS admin yang belum ada) tidak ditampilkan */}
+      {grup.filter((g) => g.item.length > 0).map((g) => (
         <SidebarGroup key={g.label}>
           <SidebarGroupLabel>{g.label}</SidebarGroupLabel>
           <SidebarGroupContent>

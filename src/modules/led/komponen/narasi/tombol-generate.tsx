@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { CheckCheck, RefreshCw, Sparkles } from "lucide-react";
 import { IkonSibuk, TombolKonfirmasi, useAksi } from "@/components/aksi-klien";
 import { Button } from "@/components/ui/button";
-import { aksiMulaiGenerate, aksiTandaiBagianSelesai } from "@/app/led/(penyusun)/aksi";
+import { aksiMulaiGenerate, aksiTandaiBagianSelesai } from "@/app/led/(tim-prodi)/aksi";
 
 /**
  * Tombol "Generate semua" (semua sub-bagian kriteria) atau "Generate" satu sub-bagian. `peringatan` (mis. AF/SWOT

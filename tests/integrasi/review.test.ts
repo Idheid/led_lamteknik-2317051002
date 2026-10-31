@@ -198,3 +198,17 @@ test("Butir angka dengan LKPS: skor sistem jadi acuan; skor berbeda wajib berala
   const s = await simpanSkor(asesorLain, proyekLain, { butirKode: angka.kode, skor: lain, alasan: "Data TS-2 belum diverifikasi." });
   assert.deepEqual([s?.skor, s?.skorSistem, s?.alasan], [lain, angka.skorSistem, "Data TS-2 belum diverifikasi."]);
 });
+
+test("Revisi 31 Okt tahap 2: Admin UPPS membaca catatan dan penilaian semua LED tanpa bisa membalas, menerima, atau menilai", async () => {
+  const { catatan } = await daftarCatatan(admin, proyekId);
+  assert.ok(catatan.length > 0, "admin melihat catatan asesor");
+  assert.ok((await penilaianProyek(admin, proyekId)).butir.length > 0);
+  await jumlahCatatanPerSub(admin, proyekId);
+  await assert.rejects(balasCatatan(admin, catatan[0].id, "Balasan admin"), GalatAkses);
+  await assert.rejects(ubahStatusCatatan(admin, catatan[0].id, "diterima"), GalatAkses);
+  await assert.rejects(buatCatatan(admin, proyekId, { subBagianKode: SUB, ...jangkarDari(AWAL, "Renstra"), isi: "x" }), GalatAkses);
+  await assert.rejects(simpanSkor(admin, proyekId, { butirKode: "1", skor: 3 }), GalatAkses);
+  await assert.rejects(perbaikanMenunggu(admin, proyekId), GalatAkses);
+  // Tim Prodi prodi lain tetap ditolak
+  await assert.rejects(daftarCatatan(pjLain, proyekId), GalatAkses);
+});

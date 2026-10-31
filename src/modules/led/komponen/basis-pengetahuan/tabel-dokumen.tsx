@@ -3,7 +3,7 @@ import { fmtWaktu, formatUkuran } from "@/modules/bersama/tampil";
 import { LencanaProses } from "@/components/status-proses";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AksiDokumen } from "@/app/led/(penyusun)/[proyekId]/dokumen/aksi-dokumen";
+import { AksiDokumen } from "@/app/led/(tim-prodi)/[proyekId]/dokumen/aksi-dokumen";
 import { LihatPotongan } from "./lihat-potongan";
 
 export interface BarisDokumen {

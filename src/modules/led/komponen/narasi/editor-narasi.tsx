@@ -20,7 +20,7 @@ import type { LabelKalimat } from "@/modules/led/domain/verifikasi";
 import { SorotanKalimat, kunciSorotan } from "./sorotan-kalimat";
 import { SorotanCatatan, kunciCatatan, type SorotCatatan } from "@/modules/led/komponen/review/sorotan-catatan";
 import type { DokTiptap, HasilPemeriksaan } from "@/modules/led/domain/narasi";
-import { aksiSimpanSuntingan } from "@/app/led/(penyusun)/aksi";
+import { aksiSimpanSuntingan } from "@/app/led/(tim-prodi)/aksi";
 
 /**
  * Editor narasi (F-16): tebal, miring, daftar, tabel, gambar; simpan otomatis. Setiap paragraf menyimpan atribut

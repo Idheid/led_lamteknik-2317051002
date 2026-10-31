@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { wajibAsesor } from "@/modules/bersama/sesi";
+import { wajibPeran } from "@/modules/bersama/sesi";
 import { halamanBagian } from "@/modules/led/data/proyek";
 import { drafBagian } from "@/modules/led/data/generate";
 import { jumlahCatatanPerSub } from "@/modules/led/data/review";
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: PageProps<"/led/asesor/[proye
 
 /** Daftar sub-bagian satu kriteria/bab untuk asesor: ada draf atau belum, dan catatan yang belum selesai. */
 export default async function HalamanBagianAsesor({ params }: PageProps<"/led/asesor/[proyekId]/bagian/[kode]">) {
-  const p = await wajibAsesor();
+  const p = await wajibPeran("ASESOR", "ADMIN");
   const { proyekId, kode: kodeMentah } = await params;
   const kode = decodeURIComponent(kodeMentah);
   const [h, draf, jumlah] = await Promise.all([halamanBagian(p, proyekId, kode), drafBagian(p, proyekId, kode), jumlahCatatanPerSub(p, proyekId)]);

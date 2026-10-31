@@ -38,7 +38,7 @@ export default async function HalamanProdi() {
         langkah={[
           "Isi identitas fakultas sekali (dipakai di halaman muka dan identitas semua LED).",
           "Tambahkan program studi beserta jenjang, kode PDDikti, tanggal akreditasi berakhir, dan identitas pengusulnya.",
-          "Pastikan instrumen jenjang prodi sudah aktif di menu Instrumen, lalu buat LED di menu Semua LED.",
+          "Pastikan instrumen jenjang prodi aktif (menu Instrumen) dan buat akun Tim Prodi (Kelola akun); Tim Prodi membuat LED prodinya.",
         ]}
       />
       <Card>
@@ -95,7 +95,7 @@ export default async function HalamanProdi() {
                       </TableCell>
                       <TableCell className="text-xs">
                         {aktif
-                          ? <Link className="text-primary hover:underline" href={`/led/${aktif.id}`}>{aktif.nama} · {labelPeriode(aktif.tahunPengajuan)}</Link>
+                          ? <Link className="text-primary hover:underline" href={`/led/asesor/${aktif.id}`}>{aktif.nama} · {labelPeriode(aktif.tahunPengajuan)}</Link>
                           : <span className="text-muted-foreground">Tidak ada LED aktif{x.proyek.length ? ` (${x.proyek.length} arsip)` : ""}</span>}
                         {/* revisi 31 Okt 2026: LED dibuat Tim Prodi; admin hanya melihat berapa akun Tim Prodi prodi ini */}
                         <span className={`block ${x._count.anggota ? "text-muted-foreground" : "text-amber-700 dark:text-amber-300"}`}>

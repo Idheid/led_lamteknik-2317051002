@@ -16,7 +16,7 @@ import { aksiSimpanProdi } from "./aksi";
 
 type KunciIdentitas = keyof MasukanProdi["identitas"];
 
-const KOLOM_IDENTITAS: { name: KunciIdentitas; label: string; contoh?: string; lebar?: boolean }[] = [
+export const KOLOM_IDENTITAS: { name: KunciIdentitas; label: string; contoh?: string; lebar?: boolean }[] = [
   { name: "skPendirian", label: "Nomor SK pendirian PT" },
   { name: "tanggalSkPendirian", label: "Tanggal SK pendirian PT", contoh: "contoh: 23 September 1965" },
   { name: "pejabatSkPendirian", label: "Pejabat penandatangan SK pendirian PT", contoh: "contoh: Presiden Republik Indonesia" },

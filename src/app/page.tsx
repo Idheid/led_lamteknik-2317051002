@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, Building2, FileSpreadsheet, FileText, KeyRound, LayoutGrid, UserCheck, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, BookOpenCheck, Building2, FileSpreadsheet, FileText, KeyRound, LayoutGrid, UserCheck, Users, type LucideIcon } from "lucide-react";
 import { wajibLogin } from "@/modules/bersama/sesi";
 import { LABEL_PERAN } from "@/modules/bersama/peran";
 import { ambilFakultas, ambilProdi, daftarProdi } from "@/modules/bersama/data/organisasi";
@@ -61,7 +61,8 @@ export default async function HalamanAwal() {
 
       <main className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-10">
         <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Selamat datang, {p.nama}{namaProdi ? ` · Tim Prodi ${namaProdi}` : ""}</p>
+          <p className="text-sm text-muted-foreground">Selamat datang, {p.nama}</p>
+          {namaProdi && <p className="text-sm font-medium text-primary">Tim Prodi {namaProdi}</p>}
           <h1 className="text-2xl font-semibold tracking-tight">Pilih modul</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Satu akun untuk LKPS dan LED. Di dalam modul, pindah ke modul lain lewat tombol LKPS | LED di bagian atas halaman.
@@ -100,6 +101,7 @@ export default async function HalamanAwal() {
               <TautanBersama href="/pengaturan/prodi" ikon={Building2} judul="Program studi" keterangan={`${prodi ?? 0} program studi dan identitas fakultas`} />
               <TautanBersama href="/admin/kunci-api" ikon={KeyRound} judul="Kunci API dan model" keterangan="Kunci Gemini untuk fitur AI" />
               <TautanBersama href="/admin/penugasan" ikon={UserCheck} judul="Penugasan asesor" keterangan="Satu asesor per LED" />
+              <TautanBersama href="/led/instrumen" ikon={BookOpenCheck} judul="Instrumen" keterangan="Instrumen LAM Teknik per jenjang" />
             </div>
           </section>
         )}

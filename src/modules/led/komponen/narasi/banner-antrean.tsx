@@ -9,7 +9,7 @@ import { IkonSibuk, useAksi } from "@/components/aksi-klien";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/modules/bersama/utils";
-import { aksiBatalkanTugas, aksiLanjutkanTugas } from "@/app/led/(penyusun)/aksi";
+import { aksiBatalkanTugas, aksiLanjutkanTugas } from "@/app/led/(tim-prodi)/aksi";
 
 /**
  * Pemberitahuan antrean generate di semua halaman proyek. Penyusunan berjalan di worker, jadi halaman boleh

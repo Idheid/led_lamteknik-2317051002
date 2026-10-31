@@ -792,3 +792,49 @@ di-commit sebelum tahap berikutnya.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 112/112 lulus |
 | `npm run test:integrasi` | 58/58 lulus (run penuh: 56/58; dua asersi lama yang mengharapkan admin ditolak membaca LED dan pemeriksa instrumen = PJ disesuaikan, lalu kedua berkas diulang: lulus) |
+
+### Tahap 2: menu dan halaman per peran
+
+- Rute LED dipisah dengan grup rute: `src/app/led/(tim-prodi)/` (`/led`, `/led/baru`, `/led/identitas-prodi`,
+  `/led/[proyekId]/*`, layout `wajibTimProdi`) dan `src/app/led/(admin)/` (`/led/pantau`, `/led/instrumen`,
+  `/led/dokumen-bersama`, layout `wajibAdmin`). Grup lama `(penyusun)` dihapus. File dipindah satu per satu karena server
+  pengembangan yang sedang berjalan mengunci foldernya.
+- Tampilan baca LED untuk admin: pakai ulang `/led/asesor/[proyekId]/*` (pilihan yang paling sedikit duplikasinya).
+  Layout dan halamannya menerima `ASESOR` dan `ADMIN`; untuk admin sidebar berisi menu Admin UPPS + "LED ini (hanya
+  baca)", `RuangAsesor` dan `FormPenilaian` diberi `hanyaBaca` (tanpa blok/catatan, balasan, terima, skor, keputusan),
+  kotak perbaikan tidak dimuat. Daftar `/led/asesor` tetap khusus asesor. Data: `aksesReview` mengizinkan admin membaca
+  catatan dan penilaian; `balasCatatan` kini memeriksa peran Tim Prodi/asesor.
+- `/led/pantau`: semua prodi urut akreditasi berakhir, LED aktif, kesiapan/jadwal/status review (`RingkasKesiapan` +
+  `kesiapanSemua`), asesor, tombol Lihat.
+- Tim Prodi: `/led` berisi LED prodinya (aktif sebagai kartu, arsip di bawah) dan tombol besar "Buat LED" bila belum ada
+  LED aktif. Sidebar LED Tim Prodi: "LED prodi" dan "Identitas prodi" (halaman baru untuk keputusan B4: Tim Prodi
+  mengisi identitas pengusul prodinya; nama, jenjang, kode, tanggal akreditasi tetap admin). Basis Pengetahuan fakultas
+  tetap lewat tab di Basis Pengetahuan LED.
+- Menu (`src/components/shell/menu-peran.ts`): `MENU_PENGATURAN_UPPS` (Kelola akun, Program studi, Kunci API, Penugasan
+  asesor), `MENU_LED_ADMIN` (Pantau LED, Instrumen, Basis Pengetahuan fakultas), `MENU_LKPS_ADMIN` (kosong dulu; grup
+  tanpa item tidak ditampilkan `NavSidebar`). `berandaLed`: admin `/led/pantau`, asesor `/led/asesor`, Tim Prodi `/led`.
+  `ShellBersama`/`ShellPeran`/layout admin/`ShellLed`/`ShellLkps` memakai menu per peran. Tab Kunci API: Kunci, Model
+  Gemini, Log.
+- Halaman awal: Admin UPPS melihat kartu LKPS dan LED serta "Pengaturan UPPS" (Kelola akun, Program studi, Kunci API dan
+  model, Penugasan asesor, Instrumen); Tim Prodi melihat nama prodinya di bawah sapaan.
+- `next.config.ts`: `/pengaturan/kunci-api/*` dan `/proyek/kunci-api/*` diarahkan ke `/admin/kunci-api/*`; halaman
+  `/pengaturan/kunci-api` dihapus. `/led/[proyekId]/kunci-api` lama diarahkan ke Beranda LED.
+- Uji integrasi baru (review.test.ts): admin membaca catatan, jumlah catatan, dan penilaian semua LED, tetapi ditolak saat
+  membalas, menerima, membuat catatan, memberi skor, atau membuka kotak perbaikan; Tim Prodi prodi lain ditolak.
+- Uji browser (server pengembangan lokal, tiga akun uji `uji.admin@`, `uji.tim@`, `uji.asesor@demo.test` di basis data
+  pengembangan; sandi uji tidak dicatat di sini):
+
+| Peran | Yang diperiksa | Hasil |
+| --- | --- | --- |
+| Admin UPPS | Halaman awal: kartu LKPS/LED + Pengaturan UPPS (5 tautan); sidebar Pengaturan UPPS + LED (LKPS kosong tidak tampil) | Sesuai |
+| Admin UPPS | `/led/pantau` tabel prodi, Lihat → `/led/asesor/[id]` hanya baca (tanpa alat catatan); Kunci API dua daftar | Sesuai |
+| Admin UPPS | `/led`, `/led/[id]`, `/led/asesor` → halaman awal; `/pengaturan/kunci-api` → `/admin/kunci-api`; `/proyek` → `/led` → halaman awal | Sesuai |
+| Tim Prodi | Halaman awal dengan nama prodi; `/led` kartu LED prodi, sidebar hanya LED prodi + Identitas prodi; di dalam LED menu LED ini | Sesuai |
+| Tim Prodi | `/led/pantau`, `/led/instrumen`, `/admin/akun`, `/pengaturan/prodi`, `/led/asesor/[id]` → halaman awal | Sesuai |
+| Asesor | `/led/asesor` daftar LED ditugaskan; LED yang tidak ditugaskan → 404; `/led`, `/led/pantau`, `/admin/akun` → halaman awal; `/asesor` → `/led/asesor` | Sesuai |
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 112/112 lulus |
+| `npm run test:integrasi` | 59/59 lulus |
