@@ -9,7 +9,7 @@ import { kesiapanSemua } from "@/modules/led/data/kesiapan";
 import { RingkasKesiapan } from "@/modules/led/komponen/kesiapan";
 import { ShellMenuLed } from "@/modules/led/komponen/shell-led";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
-import { labelPeriode } from "@/modules/bersama/domain/tahun-akademik";
+import { labelTsPengajuan } from "@/modules/bersama/domain/tahun-akademik";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Button } from "@/components/ui/button";
@@ -79,7 +79,7 @@ export default async function HalamanPantauLed() {
                         ? (
                           <>
                             <div>{led.nama}</div>
-                            <div className="text-xs text-muted-foreground">{labelPeriode(led.tahunPengajuan)}</div>
+                            <div className="text-xs text-muted-foreground">{labelTsPengajuan(led.tsTahunMulai, led.tahunPengajuan)}</div>
                             <Button asChild size="sm" variant="outline" className="mt-2">
                               <Link href={`/led/asesor/${led.id}`}><Eye aria-hidden />Lihat</Link>
                             </Button>

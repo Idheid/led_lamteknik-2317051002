@@ -859,3 +859,27 @@ di-commit sebelum tahap berikutnya.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 112/112 lulus |
 | `npm run test:integrasi` | 61/61 lulus |
+
+### Tahap 4: LED baru berfokus pada TS
+
+- `pilihanTs(tahunPengajuan)` (dua pilihan: TS (P−1)/P "pakai bila data tahun akademik (P−1)/P sudah lengkap" dan TS
+  (P−2)/(P−1) "pakai bila pengajuan sebelum tahun akademik itu selesai"), `tsBawaan(tahunPengajuan, tanggal)`
+  (`tsDariTanggalPengajuan` dibatasi ke dua pilihan), dan `labelTsPengajuan` di `bersama/domain/tahun-akademik.ts`,
+  dengan uji domain.
+- `skemaProyek` menerima `tsTahunMulai`; nilai di luar dua pilihan ditolak ("Pilih salah satu TS yang ditawarkan ...");
+  kosong = (P−1)/P. `buatProyek` menyimpan TS pilihan.
+- Formulir LED baru: prodi dari akun (teks), Tahun pengajuan, TS sebagai dua radio dengan keterangan, nama otomatis
+  "LED {prodi} TS {tahun akademik}" yang mengikuti TS selama belum diubah sendiri. TS bawaan dihitung dari usulan batas
+  pengajuan (6 bulan sebelum akreditasi berakhir) atau hari ini.
+- Kartu LED, Pantau LED, daftar Program studi, dan judul Beranda LED memakai "TS 2025/2026 · pengajuan 2026". Kartu
+  Beranda "Periode akreditasi" diganti "TS (tahun data LKPS)"; label periode 5 tahun hanya tampil kecil di Pengaturan LED.
+- Uji integrasi baru `tests/integrasi/led-baru.test.ts`: LED dengan TS (P−1)/P, (P−2)/(P−1), TS kosong, dan tiga TS di
+  luar pilihan ditolak. Diperiksa juga di browser (akun uji Tim Prodi): mengubah tahun pengajuan menjadi 2027
+  menampilkan pilihan TS 2026/2027 dan 2025/2026; memilih TS 2026/2027 mengubah nama menjadi "LED Teknik Informatika TS
+  2026/2027".
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 115/115 lulus |
+| `npm run test:integrasi` | 63/63 lulus |

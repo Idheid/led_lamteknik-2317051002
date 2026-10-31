@@ -79,6 +79,41 @@ export function labelPeriode(tahunPengajuan: number): string {
   return `Periode ${tahunPengajuan}–${tahunPengajuan + 5}`;
 }
 
+export interface PilihanTs {
+  tsTahunMulai: number;
+  /** "TS 2026/2027" */
+  label: string;
+  keterangan: string;
+}
+
+/**
+ * Revisi 31 Okt 2026 (Pak Tris: "kalau saya maju tahun 2027 ... bisa pakai TS 2026 atau 2027"): dua pilihan TS untuk
+ * tahun pengajuan P, yaitu (P−1)/P dan (P−2)/(P−1).
+ */
+export function pilihanTs(tahunPengajuan: number): PilihanTs[] {
+  if (!Number.isInteger(tahunPengajuan)) throw new Error(`Tahun tidak valid: ${tahunPengajuan}`);
+  const baru = formatTahunAkademik(tahunPengajuan - 1);
+  return [
+    { tsTahunMulai: tahunPengajuan - 1, label: `TS ${baru}`, keterangan: `Pakai bila data tahun akademik ${baru} sudah lengkap.` },
+    {
+      tsTahunMulai: tahunPengajuan - 2,
+      label: `TS ${formatTahunAkademik(tahunPengajuan - 2)}`,
+      keterangan: `Pakai bila pengajuan sebelum tahun akademik ${baru} selesai.`,
+    },
+  ];
+}
+
+/** TS bawaan LED baru: tsDariTanggalPengajuan(batas pengajuan atau hari ini), dibatasi ke dua pilihan tahun pengajuan. */
+export function tsBawaan(tahunPengajuan: number, tanggal: Date, bulanMulai: number = BULAN_MULAI_TA_BAWAAN): number {
+  const ts = tsDariTanggalPengajuan(tanggal, bulanMulai);
+  return Math.min(tahunPengajuan - 1, Math.max(tahunPengajuan - 2, ts));
+}
+
+/** Label LED di kartu dan judul (revisi 31 Okt 2026): "TS 2026/2027 · pengajuan 2027". */
+export function labelTsPengajuan(tsTahunMulai: number, tahunPengajuan: number): string {
+  return `TS ${formatTahunAkademik(tsTahunMulai)} · pengajuan ${tahunPengajuan}`;
+}
+
 /** TS bawaan dari tahun pengajuan: tahun akademik sebelumnya (pengajuan 2026 → TS 2025/2026). */
 export function tsDariTahunPengajuan(tahunPengajuan: number): number {
   return tahunPengajuan - 1;

@@ -53,7 +53,7 @@ export async function daftarProdi(p: Pengguna) {
     where: p.peran === "TIM_PRODI" ? { id: p.prodiId ?? "-" } : {},
     orderBy: [{ akreditasiBerlakuSampai: { sort: "asc", nulls: "last" } }, { nama: "asc" }],
     include: {
-      proyek: { orderBy: { tahunPengajuan: "desc" }, select: { id: true, nama: true, tahunPengajuan: true, diarsipkanPada: true } },
+      proyek: { orderBy: { tahunPengajuan: "desc" }, select: { id: true, nama: true, tahunPengajuan: true, tsTahunMulai: true, diarsipkanPada: true } },
       _count: { select: { anggota: true } },
     },
   });

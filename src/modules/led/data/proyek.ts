@@ -6,7 +6,7 @@ import { hapusBerkas } from "@/modules/bersama/penyimpanan";
 import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { usulanBatasPengajuan } from "@/modules/led/domain/kesiapan";
-import { labelPeriode, tsDariTahunPengajuan } from "@/modules/bersama/domain/tahun-akademik";
+import { tsDariTahunPengajuan } from "@/modules/bersama/domain/tahun-akademik";
 import { skemaJawabanForm, skemaProyek, skemaTahunTs, type MasukanProyek } from "@/modules/led/validasi";
 
 /**
@@ -54,7 +54,7 @@ export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
   if (!prodi) throw new GalatPengguna("Program studi tidak ditemukan.");
   const aktif = await ledAktifProdi(prodi.id);
   if (aktif) {
-    throw new GalatPengguna(`${prodi.nama} masih punya LED aktif (${aktif.nama}, ${labelPeriode(aktif.tahunPengajuan)}). Arsipkan LED itu dulu sebelum membuat LED periode berikutnya.`);
+    throw new GalatPengguna(`${prodi.nama} masih punya LED aktif (${aktif.nama}, pengajuan ${aktif.tahunPengajuan}). Arsipkan LED itu dulu sebelum membuat LED periode berikutnya.`);
   }
   const versi = await instrumenAktifUntuk(prodi.jenjang);
   if (!versi) {
@@ -67,8 +67,8 @@ export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
       jenjang: prodi.jenjang,
       nama: data.nama,
       tahunPengajuan: data.tahunPengajuan,
-      // TS = tahun akademik sebelum tahun pengajuan (pengajuan Oktober 2026 → TS 2025/2026); bisa diubah di Pengaturan LED
-      tsTahunMulai: tsDariTahunPengajuan(data.tahunPengajuan),
+      // revisi 31 Okt 2026: TS dipilih Tim Prodi dari dua pilihan; kosong = (P−1)/P. Bisa diubah di Pengaturan LED
+      tsTahunMulai: data.tsTahunMulai ?? tsDariTahunPengajuan(data.tahunPengajuan),
       // salinan anggaran versi: bisa diubah per LED tanpa mengubah versi
       anggaran: versi.anggaranBawaan as Prisma.InputJsonValue,
       // revisi 22 Okt 2026: usulan awal batas pengajuan (6 bulan sebelum akreditasi berakhir), bisa diubah PJ

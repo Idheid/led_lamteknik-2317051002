@@ -4,7 +4,7 @@ import { Pencil, Plus } from "lucide-react";
 import { wajibAdmin } from "@/modules/bersama/sesi";
 import { ambilFakultas, daftarProdi } from "@/modules/bersama/data/organisasi";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
-import { labelPeriode } from "@/modules/bersama/domain/tahun-akademik";
+import { labelTsPengajuan } from "@/modules/bersama/domain/tahun-akademik";
 import { sisaBulan } from "@/modules/led/domain/kesiapan";
 import { kesiapanSemua } from "@/modules/led/data/kesiapan";
 import { RingkasKesiapan } from "@/modules/led/komponen/kesiapan";
@@ -95,7 +95,7 @@ export default async function HalamanProdi() {
                       </TableCell>
                       <TableCell className="text-xs">
                         {aktif
-                          ? <Link className="text-primary hover:underline" href={`/led/asesor/${aktif.id}`}>{aktif.nama} · {labelPeriode(aktif.tahunPengajuan)}</Link>
+                          ? <Link className="text-primary hover:underline" href={`/led/asesor/${aktif.id}`}>{aktif.nama} · {labelTsPengajuan(aktif.tsTahunMulai, aktif.tahunPengajuan)}</Link>
                           : <span className="text-muted-foreground">Tidak ada LED aktif{x.proyek.length ? ` (${x.proyek.length} arsip)` : ""}</span>}
                         {/* revisi 31 Okt 2026: LED dibuat Tim Prodi; admin hanya melihat berapa akun Tim Prodi prodi ini */}
                         <span className={`block ${x._count.anggota ? "text-muted-foreground" : "text-amber-700 dark:text-amber-300"}`}>

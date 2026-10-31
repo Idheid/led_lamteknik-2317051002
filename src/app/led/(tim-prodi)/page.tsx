@@ -7,7 +7,7 @@ import { ambilProdi } from "@/modules/bersama/data/organisasi";
 import { kesiapanSemua } from "@/modules/led/data/kesiapan";
 import { KartuLed } from "@/modules/led/komponen/kesiapan";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
-import { labelPeriode } from "@/modules/bersama/domain/tahun-akademik";
+import { labelTsPengajuan } from "@/modules/bersama/domain/tahun-akademik";
 import { ShellMenuLed } from "@/modules/led/komponen/shell-led";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
@@ -35,7 +35,7 @@ export default async function HalamanLedProdi() {
         kunci="tim-led-prodi"
         fungsi="LED program studi Anda. Satu LED = satu pengajuan akreditasi (berlaku 5 tahun). Semua akun Tim Prodi prodi ini menyusun LED yang sama."
         langkah={[
-          "Klik Buat LED: isi tahun pengajuan dan nama LED. Instrumen dipilih otomatis menurut jenjang prodi.",
+          "Klik Buat LED: isi tahun pengajuan, pilih TS (tahun data LKPS), dan periksa nama LED. Instrumen dipilih otomatis menurut jenjang prodi.",
           "Buka kartu LED, unggah LKPS dan dokumen, lalu susun narasi per kriteria.",
           "Bila kuota kunci API habis atau instrumen belum aktif, hubungi Admin UPPS.",
         ]}
@@ -53,7 +53,7 @@ export default async function HalamanLedProdi() {
               href={`/led/${x.id}`}
               nama={x.nama}
               prodi={namaProdi}
-              periode={labelPeriode(x.tahunPengajuan)}
+              periode={labelTsPengajuan(x.tsTahunMulai, x.tahunPengajuan)}
               k={kesiapan.get(x.id) ?? null}
             />
           ))}
@@ -67,7 +67,7 @@ export default async function HalamanLedProdi() {
               <li key={x.id}>
                 <Link href={`/led/${x.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-muted/60">
                   <span>{x.nama}</span>
-                  <span className="flex items-center gap-2"><Badge variant="secondary">{labelPeriode(x.tahunPengajuan)}</Badge><Badge variant="outline">Diarsipkan</Badge></span>
+                  <span className="flex items-center gap-2"><Badge variant="secondary">{labelTsPengajuan(x.tsTahunMulai, x.tahunPengajuan)}</Badge><Badge variant="outline">Diarsipkan</Badge></span>
                 </Link>
               </li>
             ))}

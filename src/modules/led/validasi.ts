@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pilihanTs } from "@/modules/bersama/domain/tahun-akademik";
 import { KODE_JENJANG } from "@/modules/bersama/domain/jenjang";
 import { teksOpsional, teksWajib } from "@/modules/bersama/validasi";
 
@@ -83,10 +84,15 @@ export type MasukanButir = z.input<typeof skemaButir>;
 // ---------------------------------------------------------------- Proyek
 
 /** LED baru (revisi 19 Okt 2026): pilih prodi, tahun pengajuan, dan nama; instrumen = instrumen aktif jenjang prodi. */
-// revisi 31 Okt 2026: prodi tidak lagi dipilih; LED selalu untuk prodi akun Tim Prodi
+// revisi 31 Okt 2026: prodi tidak lagi dipilih (LED selalu untuk prodi akun Tim Prodi); TS dipilih dari dua pilihan
+// pilihanTs(tahun pengajuan). TS kosong = (P−1)/P.
 export const skemaProyek = z.object({
   nama: teksWajib("Nama LED", 200),
   tahunPengajuan: z.coerce.number().int().min(2000, "Tahun pengajuan tidak masuk akal.").max(2100, "Tahun pengajuan tidak masuk akal."),
+  tsTahunMulai: z.coerce.number().int().optional(),
+}).refine((x) => x.tsTahunMulai === undefined || pilihanTs(x.tahunPengajuan).some((p) => p.tsTahunMulai === x.tsTahunMulai), {
+  path: ["tsTahunMulai"],
+  message: "Pilih salah satu TS yang ditawarkan untuk tahun pengajuan ini.",
 });
 export const skemaTahunTs = z.coerce.number().int().min(2000, "Tahun TS tidak masuk akal.").max(2100, "Tahun TS tidak masuk akal.");
 export type MasukanProyek = z.input<typeof skemaProyek>;

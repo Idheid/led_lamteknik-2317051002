@@ -10,7 +10,7 @@ import { bacaAnggaran } from "@/modules/led/domain/anggaran-proyek";
 import { hitungAnggaran, usulanHalamanKriteria } from "@/modules/led/domain/anggaran";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { formatAngka } from "@/modules/bersama/domain/teks";
-import { formatTahunAkademik, labelPeriode } from "@/modules/bersama/domain/tahun-akademik";
+import { formatTahunAkademik, labelPeriode, labelTsPengajuan } from "@/modules/bersama/domain/tahun-akademik";
 import type { IdentitasProdi } from "@/modules/bersama/validasi";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { kesiapanLed } from "@/modules/led/data/kesiapan";
@@ -70,7 +70,7 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
     <>
       <JudulHalaman
         judul={proyek.nama}
-        deskripsi={`${proyek.prodi.nama} · ${namaJenjang(proyek.jenjang)} · ${labelPeriode(proyek.tahunPengajuan)}`}
+        deskripsi={`${proyek.prodi.nama} · ${namaJenjang(proyek.jenjang)} · ${labelTsPengajuan(proyek.tsTahunMulai, proyek.tahunPengajuan)}`}
       />
       <Petunjuk
         kunci="beranda-proyek"
@@ -147,15 +147,15 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Periode akreditasi</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">{proyek.tahunPengajuan}–{proyek.tahunPengajuan + 5}</CardTitle>
+            <CardDescription>TS (tahun data LKPS)</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">{formatTahunAkademik(proyek.tsTahunMulai)}</CardTitle>
             <CardAction>
               <DialogUbahTahun proyekId={proyek.id} tahunPengajuan={proyek.tahunPengajuan} />
             </CardAction>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground">
-              Tahun pengajuan {proyek.tahunPengajuan}; berlaku 5 tahun. Tahun data LKPS (TS) di Pengaturan LED.
+              Pengajuan {proyek.tahunPengajuan}. TS bisa diubah di Pengaturan LED.
             </p>
           </CardContent>
         </Card>
@@ -371,6 +371,8 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
             </span>
             <DialogUbahTs proyekId={proyek.id} tsTahunMulai={proyek.tsTahunMulai} />
           </div>
+          {/* revisi 31 Okt 2026: label periode 5 tahun bukan hal utama, cukup tampil kecil di sini */}
+          <p className="text-xs text-muted-foreground">{labelPeriode(proyek.tahunPengajuan)} (akreditasi berlaku 5 tahun sejak pengajuan).</p>
           <PengaturanProyek proyekId={proyek.id} nama={proyek.nama} diarsipkan={Boolean(proyek.diarsipkanPada)} />
         </CardContent>
       </Card>
