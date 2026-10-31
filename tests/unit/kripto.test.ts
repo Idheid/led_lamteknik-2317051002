@@ -2,9 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 
-import { akhiranKunci, dekripsi, enkripsi } from "@/lib/kripto";
-import { embeddingHash, literalVektor } from "@/lib/llm/embedding";
-import { kueriKataKunci } from "@/lib/domain/rrf";
+import { akhiranKunci, dekripsi, enkripsi } from "@/modules/bersama/kripto";
+import { embeddingHash, literalVektor } from "@/modules/bersama/llm/embedding";
+import { kueriKataKunci } from "@/modules/led/domain/rrf";
 
 // kunci induk dibaca saat fungsi dipanggil, jadi cukup diisi sebelum uji berjalan
 process.env.ENCRYPTION_KEY = randomBytes(32).toString("base64");

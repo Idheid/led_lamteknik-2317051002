@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { gantiTeks, pecahBody, teksElemen, teksKotak } from "../../src/lib/ekspor/xml";
-import { isiTabel } from "../../src/lib/ekspor/isi-data";
-import { judulSingkat, siapkanDokumen } from "../../src/lib/ekspor/template";
+import { gantiTeks, pecahBody, teksElemen, teksKotak } from "../../src/modules/led/ekspor/xml";
+import { isiTabel } from "../../src/modules/led/ekspor/isi-data";
+import { judulSingkat, siapkanDokumen } from "../../src/modules/led/ekspor/template";
 
 const p = (isi: string, ppr = "") => `<w:p>${ppr ? `<w:pPr>${ppr}</w:pPr>` : ""}${isi}</w:p>`;
 const r = (t: string) => `<w:r><w:t xml:space="preserve">${t}</w:t></w:r>`;

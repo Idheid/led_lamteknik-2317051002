@@ -1,8 +1,8 @@
 import { ShieldCheck } from "lucide-react";
-import type { Pengguna } from "@/lib/akses";
-import { daftarKunci } from "@/lib/data/kunci-api";
-import { pakaiPenyediaUji } from "@/lib/llm/embedding";
-import { fmtWaktu } from "@/lib/tampil";
+import type { Pengguna } from "@/modules/bersama/akses";
+import { daftarKunci } from "@/modules/bersama/data/kunci-api";
+import { pakaiPenyediaUji } from "@/modules/bersama/llm/embedding";
+import { fmtWaktu } from "@/modules/bersama/tampil";
 import { JudulHalaman, type Remah } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

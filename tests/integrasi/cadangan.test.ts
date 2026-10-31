@@ -6,11 +6,11 @@ import { mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
-import { prisma } from "@/lib/db";
-import { GalatAkses, type Pengguna } from "@/lib/akses";
-import { statusCadangan } from "@/lib/data/cadangan";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatCadangan, folderCadangan, koneksiDb, namaFolder, pecahPerintah, pulihkanCadangan } from "@/lib/proses/cadangan";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, type Pengguna } from "@/modules/bersama/akses";
+import { statusCadangan } from "@/modules/bersama/data/cadangan";
+import { simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatCadangan, folderCadangan, koneksiDb, namaFolder, pecahPerintah, pulihkanCadangan } from "@/modules/bersama/proses/cadangan";
 import { bersihkanDb, buatSuperAdmin, siapkanPj } from "./bantu";
 
 /**

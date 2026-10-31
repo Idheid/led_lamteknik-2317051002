@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { jalankanAksi } from "@/lib/aksi";
-import * as kunciApi from "@/lib/data/kunci-api";
+import { jalankanAksi } from "@/modules/bersama/aksi";
+import * as kunciApi from "@/modules/bersama/data/kunci-api";
 
 /** Aksi kunci API (PJ: kunci fakultas; admin: kunci cadangan). Tidak terikat proyek. */
 
 function segarkan() {
-  revalidatePath("/proyek", "layout");
+  revalidatePath("/led", "layout");
   revalidatePath("/admin", "layout");
 }
 

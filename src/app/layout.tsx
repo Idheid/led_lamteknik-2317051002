@@ -8,8 +8,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "Penyusun LED LAM Teknik", template: "%s · Penyusun LED" },
-  description: "Bantu program studi menyusun draf Laporan Evaluasi Diri akreditasi LAM Teknik.",
+  title: { default: "Akreditasi LAM Teknik", template: "%s · Akreditasi LAM Teknik" },
+  description: "LKPS dan LED akreditasi LAM Teknik: data kinerja program studi dan draf Laporan Evaluasi Diri.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

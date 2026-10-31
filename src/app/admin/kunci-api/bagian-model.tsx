@@ -1,8 +1,8 @@
-import type { Pengguna } from "@/lib/akses";
-import { ambilPengaturan } from "@/lib/data/pengaturan";
-import { formatAngka } from "@/lib/domain/teks";
-import { modelUsang } from "@/lib/domain/model-llm";
-import { fmtWaktu } from "@/lib/tampil";
+import type { Pengguna } from "@/modules/bersama/akses";
+import { ambilPengaturan } from "@/modules/bersama/data/pengaturan";
+import { formatAngka } from "@/modules/bersama/domain/teks";
+import { modelUsang } from "@/modules/bersama/domain/model-llm";
+import { fmtWaktu } from "@/modules/bersama/tampil";
 import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

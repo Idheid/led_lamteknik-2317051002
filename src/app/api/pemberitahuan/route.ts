@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { jalankanRute } from "@/lib/rute";
-import { daftarPemberitahuan } from "@/lib/data/review";
+import { jalankanRute } from "@/modules/bersama/rute";
+import { daftarPemberitahuan } from "@/modules/bersama/data/pemberitahuan";
 
 /** Pemberitahuan ikon lonceng (diperbarui berkala). */
 export async function GET() {

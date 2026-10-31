@@ -1,0 +1,232 @@
+// Skema bersama (dipakai modul LKPS dan LED): pengguna dan akses, fakultas dan program studi, kunci API dan
+// pengaturan LLM, log, cadangan, pemberitahuan. Satu basis data untuk seluruh website (31 Okt 2026: skema dipecah
+// per modul; isi model tidak berubah). Ekstensi pgvector, indeks HNSW, dan kolom tsvector dibuat lewat migrasi SQL.
+// Model modul LED ada di led.prisma, model modul LKPS di lkps.prisma.
+
+// Asal: docs/rancangan/schema.prisma (iterasi 1), disesuaikan dengan Prisma 7 dan Better Auth (plugin admin).
+
+generator client {
+  provider = "prisma-client"
+  // relatif terhadap folder prisma/schema
+  output   = "../../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: url diatur di prisma.config.ts (env DATABASE_URL)
+}
+
+// ----------------------------------------------------------------- Pengguna dan akses
+
+enum Peran {
+  SUPER_ADMIN
+  PENANGGUNG_JAWAB
+  ASESOR // revisi 22 Okt 2026: reviewer internal yang ditugaskan admin ke satu LED
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  // kolom plugin admin Better Auth: role = peran, banned = akun dinonaktifkan
+  role          Peran     @default(PENANGGUNG_JAWAB)
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  // kolom tambahan (Better Auth additionalFields). Revisi 19 Okt 2026: PJ = penanggung jawab tingkat fakultas,
+  // tidak terikat ke satu prodi (satu instalasi website dipakai satu fakultas).
+  wajibGantiSandi Boolean @default(false) // akun baru atau sandi diatur ulang admin
+
+  sessions      Session[]
+  accounts      Account[]
+  kunciApi      KunciAPI[]
+  logAktivitas  LogAktivitas[]
+  versiDraf     VersiDraf[]
+  // revisi 22 Okt 2026 (asesor)
+  ledDireview   ProyekLED[]      @relation("AsesorLED")
+  catatanRevisi CatatanRevisi[]
+  balasan       BalasanCatatan[]
+  pemberitahuan Pemberitahuan[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  impersonatedBy String? // plugin admin Better Auth (tidak dipakai)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ----------------------------------------------------------------- Organisasi
+
+/// Identitas fakultas (pengganti UPPS, revisi 19 Okt 2026): satu baris untuk satu instalasi website.
+model Fakultas {
+  id              String   @id @default("utama")
+  nama            String
+  perguruanTinggi String
+  alamat          String?
+  kota            String?
+  updatedAt       DateTime @updatedAt
+}
+
+model Prodi {
+  id          String       @id @default(cuid())
+  kodePddikti String?      @unique // kunci bersama dengan sistem LKPS
+  nama        String
+  jenjang     String       // D1, D2, D3, S1, STr, S2, S2Tr, S3, S3Tr, PPI (lihat seed instrumen)
+  identitas   Json?        // SK pendirian, SK pembukaan, akreditasi terakhir, alamat, kontak (halaman Identitas Pengusul)
+  // akreditasi berlaku sampai: kolom tanggal supaya daftar prodi bisa diurutkan (prodi yang LED-nya paling dekat)
+  akreditasiBerlakuSampai DateTime?
+  proyek      ProyekLED[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// ----------------------------------------------------------------- Pengaturan LLM
+
+model PengaturanLLM {
+  id             String   @id @default("utama")
+  penyedia       String   @default("google")
+  modelNarasi    String
+  modelCadangan  String[]
+  modelEmbedding String
+  suhu           Float    @default(0.2)
+  maksTokenKeluaran Int   @default(4096)
+  pakaiCadanganAdmin Boolean @default(true)
+  daftarModel    Json?    // hasil models.list Google terakhir (nama, kode, metode, batas token)
+  daftarModelDiperbarui DateTime?
+  updatedAt      DateTime @updatedAt
+}
+
+enum PemilikKunci {
+  penanggung_jawab
+  super_admin
+}
+
+enum StatusKunci {
+  aktif
+  kuota_habis
+  tidak_valid
+  nonaktif
+}
+
+model KunciAPI {
+  id          String       @id @default(cuid())
+  label       String
+  penyedia    String       @default("google")
+  kunciTerenkripsi String  // AES-256-GCM; tidak pernah dikirim ke browser
+  akhiran     String       // 4 karakter terakhir untuk tampilan
+  pemilik     PemilikKunci
+  // akun yang menambahkan; kunci milik fakultas (pemilik penanggung_jawab) atau cadangan admin (super_admin)
+  pemilikId   String?
+  pemilikUser User?        @relation(fields: [pemilikId], references: [id], onDelete: SetNull)
+  status      StatusKunci  @default(aktif)
+  habisSampai DateTime?
+  urutan      Int          @default(0)
+  batasHarian Int?
+  log         LogPemakaian[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model LogPemakaian {
+  id          String    @id @default(cuid())
+  kunciId     String?
+  kunci       KunciAPI? @relation(fields: [kunciId], references: [id], onDelete: SetNull)
+  proyekId    String?
+  subBagianKode String?
+  model       String
+  tokenMasuk  Int       @default(0)
+  tokenKeluar Int       @default(0)
+  berhasil    Boolean
+  galat       String?
+  tugasId     String?
+  prodiId     String?
+  durasiMs    Int?
+  createdAt   DateTime  @default(now())
+}
+
+model LogAktivitas {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  aksi      String
+  objek     String
+  objekId   String?
+  detail    Json?
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------------------- Cadangan
+
+/// Revisi 22 Okt 2026: riwayat cadangan harian (basis data dan folder unggahan). Admin hanya melihat yang terakhir.
+model Cadangan {
+  id       String    @id @default(cuid())
+  mulai    DateTime  @default(now())
+  selesai  DateTime?
+  berhasil Boolean? // null = sedang berjalan
+  folder   String? // nama folder di CADANGAN_DIR
+  ukuranMb Float?
+  pesan    String?
+
+  @@index([mulai])
+}
+
+// ----------------------------------------------------------------- Pemberitahuan (lonceng, semua modul)
+
+/// Pemberitahuan di ikon lonceng (catatan baru, sudah diperbaiki, diterima, review diajukan, keputusan).
+model Pemberitahuan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proyekId  String?
+  pesan     String
+  tautan    String?
+  dibaca    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, dibaca, createdAt])
+}

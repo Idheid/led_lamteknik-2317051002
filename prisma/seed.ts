@@ -5,9 +5,9 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { prisma } from "@/lib/db";
-import { auth } from "@/lib/auth";
-import { imporInstrumen } from "@/lib/data/impor-instrumen";
+import { prisma } from "@/modules/bersama/db";
+import { auth } from "@/modules/bersama/auth";
+import { imporInstrumen } from "@/modules/led/data/impor-instrumen";
 
 async function seedSuperAdmin() {
   const email = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();

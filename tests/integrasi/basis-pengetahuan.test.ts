@@ -1,13 +1,13 @@
 import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { prisma } from "@/lib/db";
-import { GalatAkses, type Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek } from "@/lib/data/proyek";
-import { potonganDokumen, unggahDokumen } from "@/lib/data/dokumen";
-import { cariPotongan, kueriSubBagian } from "@/lib/data/pencarian";
-import { prosesDokumen } from "@/lib/proses/dokumen";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, type Pengguna } from "@/modules/bersama/akses";
+import { simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatProyek } from "@/modules/led/data/proyek";
+import { potonganDokumen, unggahDokumen } from "@/modules/led/data/dokumen";
+import { cariPotongan, kueriSubBagian } from "@/modules/led/data/pencarian";
+import { prosesDokumen } from "@/modules/led/proses/dokumen";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 /** Revisi 22 Okt 2026 tahap 8: Basis Pengetahuan (lihat potongan, uji cari dengan kueri generate). */

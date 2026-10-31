@@ -680,3 +680,74 @@ Umpan balik Adrianne setelah mencoba revisi 22 Okt (11 butir):
 Uji baru: `tests/integrasi/keluaran-rusak.test.ts`, `tests/integrasi/pemasangan.test.ts`, `src/lib/domain/__tests__/json.test.ts`.
 Catatan diagnosa: 10 panggilan Gemini sungguhan untuk mencari penyebab butir 4 menghabiskan kuota harian kunci uji.
 
+
+## Satu website dua modul: LKPS dan LED (31 Oktober 2026, Claude)
+
+Permintaan Adrianne: LKPS dan LED digabung dalam satu website; di halaman awal pengguna memilih LKPS atau LED, lalu
+menu dan halamannya terpisah; folder kode juga dipisah antara bagian LED dan LKPS. Dasarnya arahan Pak Tris (pertemuan
+6, ±27 Okt 2026): LKPS dan LED satu website, satu basis data, tampilan sama, berkoordinasi dengan Ghalib. Keputusan
+Adrianne: satu login untuk kedua modul; modul LKPS Ghalib belum dibuat (disiapkan kerangka kosong); peran mengikuti Pak
+Tris (Admin UPPS, Tim Prodi per prodi, Asesor/Reviewer) dikerjakan sebagai langkah berikutnya, bukan di perubahan ini.
+
+| Bagian | Sebelum | Sesudah |
+| --- | --- | --- |
+| Halaman awal | `/` langsung ke `/proyek` (PJ) atau `/asesor` | `/` = **Pilih modul**: kartu LKPS dan LED, plus Data bersama (PJ). Admin tetap ke `/admin/akun` |
+| Pindah modul | – | Tombol **LKPS \| LED** dan ikon halaman awal di kepala setiap halaman (`pindah-modul.tsx`) |
+| Rute LED | `/proyek/*`, `/asesor/*`, `/api/{proyek,dokumen,dokumen-bersama,ekspor,instrumen}/*` | `/led/*` (grup rute `(penyusun)`), `/led/asesor/*`, `/api/led/*` |
+| Data bersama | `/proyek/prodi`, `/proyek/kunci-api` | `/pengaturan/prodi`, `/pengaturan/kunci-api`, tampil di sidebar kedua modul |
+| Modul LKPS | – | `/lkps` (beranda sementara), `src/modules/lkps/` (README, pintu `index.ts`, sidebar) |
+| Kode | `src/lib/**` dan komponen LED di `src/components/` | `src/modules/{bersama,led,lkps}`; komponen umum tetap di `src/components/` |
+| Skema Prisma | `prisma/schema.prisma` | `prisma/schema/{bersama,led,lkps}.prisma` (isi model tidak berubah) |
+| Worker | `src/worker/index.ts` | `index.ts` + `bersama.ts`, `led.ts`, `lkps.ts` (nama antrean tidak berubah) |
+
+Cara kerja pemindahan (dapat diulang, bahan Bab 3):
+
+1. Skrip pemindah membaca peta berkas lama → baru (213 berkas), menyelesaikan setiap impor (`@/…` dan relatif) ke
+   berkas sasarannya, lalu menulis ulang 888 impor sesuai lokasi baru sebelum berkas dipindah. Impor relatif yang
+   menyeberang modul diubah menjadi alias `@/`, kecuali antar-`domain/` (tetap relatif `.ts` supaya bisa diuji `node --test`).
+2. Alamat rute di kode dan uji diganti (`/proyek` → `/led`, `/proyek/prodi` → `/pengaturan/prodi`, `/asesor` →
+   `/led/asesor`, `/api/proyek` → `/api/led/proyek`, …).
+3. Berkas yang isinya campuran dipecah per simbol: `validasi.ts` (bersama: fakultas, prodi, akun, login; LED: instrumen,
+   LED baru, jawaban, tim penyusun), `tampil.ts` (`formatMetrik` ke LED), pemberitahuan lonceng dari `data/review.ts` ke
+   `bersama/data/pemberitahuan.ts`, daftar jenjang dari `domain/instrumen.ts` ke `bersama/domain/jenjang.ts`.
+4. Alamat lama tetap berfungsi lewat `redirects()` di `next.config.ts`; tautan pemberitahuan yang tersimpan diperbarui
+   migrasi `20261031090000_rute_modul` (tanpa perubahan tabel).
+5. Batas modul diuji otomatis (`tests/unit/batas-modul.test.ts`): LKPS tidak memakai LED; bersama tidak memakai LKPS dan
+   hanya memakai LED di dua tempat yang tercatat (lanjutkan pekerjaan LED setelah kunci API baru; instrumen bawaan saat
+   pemasangan pertama).
+
+Pemeriksaan (31 Okt 2026, laptop Windows, `led-tmp/cek-modul.bat`):
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `prisma validate`, `prisma generate` dengan folder skema | Lulus |
+| `prisma migrate deploy` (migrasi `rute_modul`) | Lulus |
+| `prisma migrate diff` skema baru vs basis data | Hanya `DROP INDEX "Potongan_embedding_hnsw_idx"` (sudah dikenal), artinya skema tidak berubah |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 112/112 lulus (termasuk 3 uji batas modul) |
+| `npm run test:integrasi` | 57/57 lulus |
+| `npm run build` | Lulus (3 peringatan lama soal pelacakan berkas `penyimpanan.ts`/`ekspor.ts`, tidak terkait perubahan ini) |
+| Browser (akun PJ) | `/` Pilih modul tampil; `/proyek` → `/led`; `/proyek/prodi` → `/pengaturan/prodi`; Beranda LED, sub-bagian C.1-KEB dengan catatan asesor, Ekspor (unduh `/api/led/ekspor/...` 200), `/lkps`, Instrumen, Basis Pengetahuan fakultas, Kunci API fakultas terbuka; tautan lonceng sudah `/led/...` |
+
+Cadangan sebelum perubahan: `led-tmp/kode-sumber.tar.gz` (seluruh kode + `.git`) dan berkas lama di
+`../led-lamteknik-lama-31okt/`. Perubahan di-commit di Tahap 0 revisi 31 Okt (di bawah).
+
+## Revisi 31 Oktober 2026 (peran dan masukan Pak Tris 6)
+
+Sumber: `docs/RENCANA-REVISI-31OKT.md` (masukan Pak Tris pertemuan 6 dan keputusan Adrianne 31 Okt 2026). Dikerjakan di
+branch `revisi-31okt`, tahap demi tahap; setiap tahap diuji (`lint`, `typecheck`, `test:unit`, `test:integrasi`) dan
+di-commit sebelum tahap berikutnya.
+
+### Tahap 0: simpan struktur satu website dua modul
+
+- Branch `revisi-31okt` dibuat dari `main`; perubahan "Satu website dua modul" (bagian di atas) di-commit di sini.
+- Folder rute lama yang sudah kosong (`src/app/proyek`, `src/app/asesor`, `src/app/api/{proyek,dokumen,ekspor,instrumen}`)
+  dihapus; hanya berisi folder kosong.
+- `jalankan-website.bat` (peluncur lokal di laptop, tidak pernah di-commit) dimasukkan ke `.gitignore` supaya `git status` bersih.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 112/112 lulus (termasuk uji batas modul) |
+| `npm run test:integrasi` | 57/57 lulus |
+

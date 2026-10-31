@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { prisma } from "@/lib/db";
-import { auth } from "@/lib/auth";
-import type { Pengguna } from "@/lib/akses";
-import { imporInstrumen } from "@/lib/data/impor-instrumen";
-import { buatAkunPenanggungJawab, simpanFakultas } from "@/lib/data/organisasi";
+import { prisma } from "@/modules/bersama/db";
+import { auth } from "@/modules/bersama/auth";
+import type { Pengguna } from "@/modules/bersama/akses";
+import { imporInstrumen } from "@/modules/led/data/impor-instrumen";
+import { buatAkunPenanggungJawab, simpanFakultas } from "@/modules/bersama/data/organisasi";
 
 /** Kosongkan semua tabel aplikasi (kecuali riwayat migrasi). */
 export async function bersihkanDb(): Promise<void> {

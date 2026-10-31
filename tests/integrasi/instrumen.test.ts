@@ -1,14 +1,14 @@
 import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna } from "@/lib/akses";
-import { imporInstrumen } from "@/lib/data/impor-instrumen";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna } from "@/modules/bersama/akses";
+import { imporInstrumen } from "@/modules/led/data/impor-instrumen";
 import {
   ambilVersi, aturAktifVersi, daftarVersi, hapusButir, hapusVersi, salinVersi, simpanButir, simpanSubBagian,
-} from "@/lib/data/instrumen";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek, halamanBagian } from "@/lib/data/proyek";
+} from "@/modules/led/data/instrumen";
+import { simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatProyek, halamanBagian } from "@/modules/led/data/proyek";
 import { bacaSeed, bersihkanDb, buatSuperAdmin, imporSeed, penggunaDari, siapkanPj } from "./bantu";
 
 before(bersihkanDb);

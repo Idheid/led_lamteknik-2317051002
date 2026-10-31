@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { wajibSuperAdmin } from "@/lib/sesi";
+import { wajibSuperAdmin } from "@/modules/bersama/sesi";
 import { HalamanKunci } from "@/components/kunci-api/halaman-kunci";
 import { Button } from "@/components/ui/button";
 import { BagianLog } from "./bagian-log";

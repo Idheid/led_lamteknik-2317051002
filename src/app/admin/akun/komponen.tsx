@@ -16,7 +16,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
-import { skemaAkunPenanggungJawab, type MasukanAkun } from "@/lib/validasi";
+import { skemaAkunPenanggungJawab, type MasukanAkun } from "@/modules/bersama/validasi";
 import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAkun, aksiBuatAsesor, aksiBuatSuperAdmin, aksiHapusAkun } from "../aksi";
 
 type PeranBaru = "PJ" | "ASESOR" | "ADMIN";

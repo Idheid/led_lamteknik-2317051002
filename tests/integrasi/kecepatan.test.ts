@@ -3,15 +3,15 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
-import { prisma } from "@/lib/db";
-import type { Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek } from "@/lib/data/proyek";
-import { tambahKunci } from "@/lib/data/kunci-api";
-import { simpanPengaturan } from "@/lib/data/pengaturan";
-import { drafBagian, mulaiGenerate, tugasProyek } from "@/lib/data/generate";
-import { aturModelUji } from "@/lib/llm/narasi";
-import { kelompokGenerate, prosesTugasGenerate, teksSebagian } from "@/lib/proses/generate";
+import { prisma } from "@/modules/bersama/db";
+import type { Pengguna } from "@/modules/bersama/akses";
+import { simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatProyek } from "@/modules/led/data/proyek";
+import { tambahKunci } from "@/modules/bersama/data/kunci-api";
+import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
+import { drafBagian, mulaiGenerate, tugasProyek } from "@/modules/led/data/generate";
+import { aturModelUji } from "@/modules/bersama/llm/narasi";
+import { kelompokGenerate, prosesTugasGenerate, teksSebagian } from "@/modules/led/proses/generate";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 /**

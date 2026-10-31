@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { IkonSibuk } from "@/components/aksi-klien";
-import { cn } from "@/lib/utils";
-import { skemaGantiSandi, type MasukanGantiSandi } from "@/lib/validasi";
+import { cn } from "@/modules/bersama/utils";
+import { skemaGantiSandi, type MasukanGantiSandi } from "@/modules/bersama/validasi";
 import { aksiGantiSandi } from "../aksi";
 
 const KOLOM = [

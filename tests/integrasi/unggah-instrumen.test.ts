@@ -5,19 +5,19 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek, instrumenAktifUntuk } from "@/lib/data/proyek";
-import { tambahKunci } from "@/lib/data/kunci-api";
-import { simpanPengaturan } from "@/lib/data/pengaturan";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatProyek, instrumenAktifUntuk } from "@/modules/led/data/proyek";
+import { tambahKunci } from "@/modules/bersama/data/kunci-api";
+import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
 import {
   aktifkanVersiCek, bacaInfoEkstraksi, buatVersiJenjang, dataCekInstrumen, konfirmasiButir, mulaiEkstraksi, simpanButirCek,
   unggahBerkasInstrumen,
-} from "@/lib/data/unggah-instrumen";
-import { prosesEkstraksiInstrumen } from "@/lib/proses/instrumen";
-import { berlakuUntukJenjang } from "@/lib/domain/instrumen";
-import { aturModelUji } from "@/lib/llm/narasi";
+} from "@/modules/led/data/unggah-instrumen";
+import { prosesEkstraksiInstrumen } from "@/modules/led/proses/instrumen";
+import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
+import { aturModelUji } from "@/modules/bersama/llm/narasi";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 process.env.GENERATE_JEDA_MAKS_MS = "0";

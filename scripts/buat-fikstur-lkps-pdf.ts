@@ -7,10 +7,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PDFDocument, StandardFonts, type PDFFont, type PDFPage } from "pdf-lib";
-import { bacaLkpsXlsx } from "../src/lib/lkps/baca-xlsx";
-import type { TabelBaca } from "../src/lib/lkps/jenis";
-import KOLOM_TEMPLATE from "../src/lib/lkps/kolom-template.json";
-import { formatAngka } from "../src/lib/domain/teks";
+import { bacaLkpsXlsx } from "../src/modules/led/data-lkps/baca-xlsx";
+import type { TabelBaca } from "../src/modules/led/data-lkps/jenis";
+import KOLOM_TEMPLATE from "../src/modules/led/data-lkps/kolom-template.json";
+import { formatAngka } from "../src/modules/bersama/domain/teks";
 
 export const FIKSTUR_PDF = resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.pdf");
 const FIKSTUR_XLSX = resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx");

@@ -8,7 +8,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
-import { penjelasanModel, type ModelGoogle } from "@/lib/domain/model-llm";
+import { penjelasanModel, type ModelGoogle } from "@/modules/bersama/domain/model-llm";
 import { aksiMuatDaftarModel, aksiSimpanPengaturan, aksiUjiModel } from "../aksi";
 
 interface Awal {

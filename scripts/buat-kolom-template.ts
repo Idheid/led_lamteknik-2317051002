@@ -1,18 +1,18 @@
 /**
- * Membuat src/lib/lkps/kolom-template.json: daftar kolom (huruf, nomor, judul) setiap sheet tabel template LKPS,
+ * Membuat src/modules/led/data-lkps/kolom-template.json: daftar kolom (huruf, nomor, judul) setiap sheet tabel template LKPS,
  * per blok jenjang. Dipakai pembaca PDF untuk memetakan kolom cetakan ke huruf kolom template.
  * Jalankan bila template LKPS berganti versi:  npx tsx scripts/buat-kolom-template.ts
  */
 import "dotenv/config";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { barisNomor, bacaLembarXlsx, bacaLkpsDariLembar } from "../src/lib/lkps/baca-xlsx";
-import { KECUALI_SHEET } from "../src/lib/lkps/struktur";
-import type { DataTemplate, KolomTemplate } from "../src/lib/lkps/baca-pdf";
-import { KODE_JENJANG } from "../src/lib/domain/instrumen";
+import { barisNomor, bacaLembarXlsx, bacaLkpsDariLembar } from "../src/modules/led/data-lkps/baca-xlsx";
+import { KECUALI_SHEET } from "../src/modules/led/data-lkps/struktur";
+import type { DataTemplate, KolomTemplate } from "../src/modules/led/data-lkps/baca-pdf";
+import { KODE_JENJANG } from "../src/modules/bersama/domain/jenjang";
 import { TEMPLATE_LKPS_BAWAAN } from "./buat-fikstur-lkps";
 
-export const BERKAS_KOLOM = resolve(process.cwd(), "src/lib/lkps/kolom-template.json");
+export const BERKAS_KOLOM = resolve(process.cwd(), "src/modules/led/data-lkps/kolom-template.json");
 
 /** Judul (baris berawalan "Tabel" di kolom A sebelum baris nomor) dan kolom per blok setiap sheet tabel. */
 export async function hitungKolomTemplate(berkas: Buffer): Promise<DataTemplate> {

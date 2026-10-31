@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { wajibSuperAdmin } from "@/lib/sesi";
-import { daftarPenugasan } from "@/lib/data/review";
-import { bacaStatusReview, LABEL_REVIEW } from "@/lib/domain/kesiapan";
+import { wajibSuperAdmin } from "@/modules/bersama/sesi";
+import { daftarPenugasan } from "@/modules/led/data/review";
+import { bacaStatusReview, LABEL_REVIEW } from "@/modules/led/domain/kesiapan";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";

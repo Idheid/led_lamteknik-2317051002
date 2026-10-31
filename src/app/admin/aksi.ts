@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { jalankanAksi } from "@/lib/aksi";
-import * as org from "@/lib/data/organisasi";
-import * as pengaturan from "@/lib/data/pengaturan";
-import type { MasukanAkun, MasukanAkunSuperAdmin } from "@/lib/validasi";
+import { jalankanAksi } from "@/modules/bersama/aksi";
+import * as org from "@/modules/bersama/data/organisasi";
+import * as pengaturan from "@/modules/bersama/data/pengaturan";
+import type { MasukanAkun, MasukanAkunSuperAdmin } from "@/modules/bersama/validasi";
 
 // ---------------------------------------------------------------- Akun (admin)
 

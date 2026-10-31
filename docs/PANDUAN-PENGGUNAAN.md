@@ -1,7 +1,14 @@
 # Panduan penggunaan
 
-Panduan singkat Sistem Penyusun LED LAM Teknik (setelah revisi 22 Okt 2026) untuk tiga peran: **Admin**,
-**Penanggung jawab fakultas (PJ)**, dan **Asesor**. Satu instalasi website dipakai satu fakultas. Setiap halaman juga
+Panduan singkat website Akreditasi LAM Teknik (setelah revisi 22 Okt 2026 dan penggabungan modul 31 Okt 2026) untuk
+tiga peran: **Admin**, **Penanggung jawab fakultas (PJ)**, dan **Asesor**. Satu instalasi website dipakai satu fakultas.
+
+**Satu website, dua modul (31 Okt 2026).** Setelah login, PJ dan asesor masuk ke halaman awal **Pilih modul** dengan
+dua kartu: **LKPS** (Laporan Kinerja Program Studi; modulnya masih disiapkan) dan **LED** (Laporan Evaluasi Diri). PJ
+juga melihat **Data bersama LKPS & LED**: Program studi dan Kunci API fakultas, diisi sekali dan dipakai kedua modul.
+Di dalam modul, tombol **LKPS | LED** di bagian atas halaman memindahkan modul; ikon kotak di sebelah kirinya kembali
+ke halaman awal. Admin tetap langsung masuk ke menu admin. Alamat lama (`/proyek/...`, `/asesor/...`) otomatis
+diarahkan ke alamat baru (`/led/...`, `/led/asesor/...`). Setiap halaman juga
 punya kotak **Petunjuk halaman ini** yang menjelaskan fungsi halaman dan langkah berikutnya; kotak itu bisa ditutup dan
 pilihannya diingat di browser.
 
@@ -63,10 +70,11 @@ Asesor langsung diberi tahu. Asesor hanya bisa membuka LED yang ditugaskan kepad
 
 ## B. Penanggung jawab fakultas
 
-Setelah login PJ masuk ke **Menu Utama** (sidebar: Semua LED, Program studi, Instrumen, Basis Pengetahuan fakultas,
-Kunci API fakultas). Klik sebuah LED: sidebar berganti menjadi menu **LED ini** (Beranda LED, Data LKPS, Basis
-Pengetahuan, Tim penyusun, Ekspor Word), kriteria C.1–C.7, dan bab lain. Di paling atas ada kotak **LED yang dibuka**
-(klik untuk pindah ke LED lain), lalu menu **Menu Utama** di bawah judul *Kembali ke Menu Utama*.
+Setelah login PJ masuk ke halaman awal **Pilih modul**, lalu klik **LED**. Sidebar modul LED berisi **Menu LED**
+(Semua LED, Instrumen, Basis Pengetahuan fakultas) dan **Data bersama LKPS & LED** (Program studi, Kunci API fakultas).
+Klik sebuah LED: sidebar berganti menjadi menu **LED ini** (Beranda LED, Data LKPS, Basis Pengetahuan, Tim penyusun,
+Ekspor Word), kriteria C.1–C.7, dan bab lain. Di paling atas ada kotak **LED yang dibuka** (klik untuk pindah ke LED
+lain), lalu menu **Menu LED** di bawah judul *Kembali ke Menu LED*.
 
 Menambah data selalu lewat tombol biru di kanan atas (**Buat LED baru**, **Tambah data LKPS**, **Tambah dokumen**,
 **Tambah kunci**) yang membuka halaman tersendiri; setelah berhasil, sistem kembali ke daftar.
@@ -230,7 +238,7 @@ Berkas instrumen (template, matriks, pedoman) adalah dokumen publik LAM Teknik.
 
 ## C. Asesor
 
-Menu asesor: **LED ditugaskan**. Di dalam satu LED: **Ringkasan review**, **Penilaian akhir**, lalu daftar kriteria dan
+Setelah login asesor masuk ke halaman awal **Pilih modul**, lalu klik **LED**. Menu asesor: **LED ditugaskan**. Di dalam satu LED: **Ringkasan review**, **Penilaian akhir**, lalu daftar kriteria dan
 bab. Asesor hanya membaca: tidak bisa menyunting narasi, menjalankan generate, atau mengekspor.
 
 1. **LED ditugaskan** menampilkan LED dari admin beserta status review dan jumlah catatan. Catatan dan skor bisa

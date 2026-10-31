@@ -1,0 +1,486 @@
+// Skema modul LED: instrumen, LED (ProyekLED) dan isiannya, data LKPS yang diunggah ke LED, Basis Pengetahuan
+// (dokumen dan potongan), draf, ekspor, tugas generate, dan review asesor. Relasi ke User dan Prodi ada di bersama.prisma.
+
+// ----------------------------------------------------------------- Instrumen (diunggah dan dicek PJ per jenjang)
+
+model VersiInstrumen {
+  id          String     @id @default(cuid())
+  kode        String     @unique // contoh: LAMTEKNIK-2025-PASCA
+  nama        String
+  lembaga     String     @default("LAM Teknik")
+  peraturan   Json       // daftar peraturan acuan
+  catatan     String?
+  aktif       Boolean    @default(false)
+  disalinDariId String?
+  jenjang     Json       // [{ kode, nama }] jenjang yang dikenal versi ini
+  statusAkreditasi Json?
+  bagian      Bagian[]
+  butir       ButirPenilaian[]
+  tabelLkps   TabelLkpsAcuan[]
+  anggaranBawaan Json    // pengaturan anggaran halaman dan kata
+  // template LEDPS resmi (.docx) untuk ekspor; diunggah super admin per versi (cadangan: TEMPLATE_LEDPS_PATH)
+  templateLedLokasi String?
+  templateLedNama   String?
+  templateLedLaporan Json?  // hasil penyiapan per jenjang: placeholder, dihapus, tidak ditemukan
+  // Revisi 19 Okt 2026: satu versi untuk satu jenjang, diunggah PJ (Template LED, Matriks Penilaian, Pedoman Penilaian)
+  jenjangUtama      String?   // null = versi lama lintas jenjang
+  status            String    @default("aktif") // draf, diekstrak, dicek, aktif, nonaktif
+  matriksLokasi     String?   // Matriks Penilaian jenjang (.pdf)
+  matriksNama       String?
+  pedomanLokasi     String?   // Pedoman Penilaian (.pdf), hanya halaman tabel bobot yang dibaca
+  pedomanNama       String?
+  halamanBobot      String?   // contoh "223-227" (halaman PDF tabel bobot jenjang)
+  ekstraksi         Json?     // status dan laporan ekstraksi: { status, pesan, langkah, butir, sub, galat }
+  dicekPada         DateTime?
+  dicekOlehId       String?
+  proyek      ProyekLED[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum JenisBagian {
+  awal
+  bab
+  butir     // bagian yang seluruhnya dinilai butir (II.B, Bab III)
+  kriteria  // C.1 - C.7
+  lampiran
+}
+
+// Kriteria dan bab disimpan sebagai Bagian supaya jumlah halaman form mengikuti data (kriteria dinamis).
+model Bagian {
+  id         String         @id @default(cuid())
+  versiId    String
+  versi      VersiInstrumen @relation(fields: [versiId], references: [id], onDelete: Cascade)
+  kode       String         // AWAL, I, II.A, II.B, C.1 ... C.7, III, IV, LAMPIRAN
+  nama       String
+  jenis      JenisBagian
+  urutan     Int
+  batasHalamanResmi Int?
+  pengantar  String?
+  subBagian  SubBagian[]
+
+  @@unique([versiId, kode])
+}
+
+enum TipeSubBagian {
+  data      // diisi dari data proyek, tidak di-generate
+  narasi    // di-generate, tidak punya butir
+  bersama   // latar belakang, kebijakan, analisis faktor, SWOT di setiap kriteria
+  iku       // indikator kinerja yang punya butir penilaian
+  otomatis  // daftar isi dsb.
+}
+
+model SubBagian {
+  id          String        @id @default(cuid())
+  bagianId    String
+  bagian      Bagian        @relation(fields: [bagianId], references: [id], onDelete: Cascade)
+  kode        String        // contoh: C.2-IKU-a.i.I
+  label       String        // nomor tampilan, contoh 3.a.i.I
+  judul       String
+  grup        String?
+  tipe        TipeSubBagian
+  varian      Json          // [{ instruksi, jenjang: [..], catatanTemplate }]
+  berlakuUntuk String[]     // kode jenjang
+  jenjangOverride String[]  // bila diisi, menimpa jenjang template (lihat catatan)
+  sumberInstruksi String    @default("template")
+  catatan     String?
+  urutan      Int
+  butir       ButirSubBagian[]
+  dokumenDiharapkan DokumenDiharapkan[]
+  draf        BagianDraf[]
+
+  @@unique([bagianId, kode])
+}
+
+enum JenisButir {
+  narasi
+  angka
+}
+
+model ButirPenilaian {
+  id          String         @id @default(cuid())
+  versiId     String
+  versi       VersiInstrumen @relation(fields: [versiId], references: [id], onDelete: Cascade)
+  jenjang     String         // butir dan bobot berbeda per jenjang
+  kode        String         // contoh 4-I
+  no          Int
+  sub         String?
+  urutan      Int
+  bagianKode  String         // bagian tempat anggaran butir dihitung (C.1 ... C.7, II.B, III)
+  elemen      String
+  indikator   String
+  bobot       Decimal        @db.Decimal(5, 2)
+  jenis       JenisButir
+  tabelLkps   String[]
+  deskriptorSkor4 String
+  unsurSkor4  String[]
+  pertanyaanPemandu String? // tidak dipakai lagi (revisi 19 Okt 2026: pertanyaan = instruksi resmi template)
+  catatan     String?
+  deskriptorSkor3 String?
+  deskriptorSkor2 String?
+  deskriptorSkor1 String?
+  deskriptorSkor0 String?
+  kodeRumus   String?        // kunci rumus metrik lama (src/modules/led/domain/metrik-lkps.ts); null = nilai diisi manual
+  dikonfirmasi Boolean @default(true) // false = baris usulan AI yang belum dicek PJ
+  usulanAi    String[]       @default([]) // nama kolom yang diusulkan AI dan belum dikonfirmasi
+  subBagian   ButirSubBagian[]
+  dokumenDiharapkan DokumenDiharapkan[]
+
+  @@unique([versiId, jenjang, kode])
+}
+
+// n-m: satu sub-bagian bisa dinilai lebih dari satu butir, dan sebaliknya.
+model ButirSubBagian {
+  butirId     String
+  subBagianId String
+  butir       ButirPenilaian @relation(fields: [butirId], references: [id], onDelete: Cascade)
+  subBagian   SubBagian      @relation(fields: [subBagianId], references: [id], onDelete: Cascade)
+
+  @@id([butirId, subBagianId])
+}
+
+model DokumenDiharapkan {
+  id          String          @id @default(cuid())
+  nama        String
+  butirId     String?
+  butir       ButirPenilaian? @relation(fields: [butirId], references: [id], onDelete: Cascade)
+  subBagianId String?
+  subBagian   SubBagian?      @relation(fields: [subBagianId], references: [id], onDelete: Cascade)
+  urutan      Int             @default(0)
+  dokumen     Dokumen[]
+}
+
+model TabelLkpsAcuan {
+  id      String         @id @default(cuid())
+  versiId String
+  versi   VersiInstrumen @relation(fields: [versiId], references: [id], onDelete: Cascade)
+  kode    String         // contoh 4.a
+  sheet   String         // nama sheet di template LKPS, contoh 4a
+  judul   String
+
+  @@unique([versiId, kode])
+}
+
+// ----------------------------------------------------------------- Proyek LED
+
+model ProyekLED {
+  id          String         @id @default(cuid())
+  prodiId     String
+  prodi       Prodi          @relation(fields: [prodiId], references: [id])
+  versiId     String
+  versi       VersiInstrumen @relation(fields: [versiId], references: [id])
+  jenjang     String
+  nama        String
+  tsTahunMulai Int           // 2025 berarti TS = 2025/2026
+  anggaran    Json           // halaman per bagian dan pengaturan (salinan dari versi, bisa diubah)
+  timPenyusun Json?          // untuk Tabel 2.1, 2.2 dan halaman identitas tim
+  diarsipkanPada DateTime?   // proyek periode lama: tetap tersimpan sebagai rujukan, hanya baca
+  // revisi 19 Okt 2026: satu LED = satu pengajuan akreditasi berlaku 5 tahun (periode tahunPengajuan s.d. +5)
+  tahunPengajuan Int
+  // revisi 22 Okt 2026: batas pengajuan dan jadwal kerja mundur (tanggal tonggak yang diubah PJ), status review asesor
+  batasPengajuan DateTime?
+  jadwal         Json? // { kodeTonggak: "YYYY-MM-DD" }
+  statusReview   String    @default("draf") // draf, direview, perlu_revisi, layak
+  alasanKonsistensi Json? // { "metrik|sub|angka": alasan } untuk perbedaan angka antar kriteria yang disengaja
+  // revisi 22 Okt 2026: satu asesor per LED (ditugaskan admin) dan keputusan akhirnya
+  asesorId          String?
+  asesor            User?            @relation("AsesorLED", fields: [asesorId], references: [id], onDelete: SetNull)
+  keputusanReview   Json? // { keputusan, catatan, total, perkiraan, waktu, olehId }
+  catatanRevisi     CatatanRevisi[]
+  skorAsesor        SkorAsesor[]
+  nilaiManual NilaiManual[]
+  targetButir TargetButir[]
+  status      StatusKriteria[]
+  berkasLkps  BerkasLKPS[]
+  dokumen     Dokumen[]
+  draf        BagianDraf[]
+  ekspor      Ekspor[]
+  tugas       TugasGenerate[]
+  jawabanForm JawabanForm[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+enum StatusPengisian {
+  belum
+  draf
+  disunting
+  selesai
+}
+
+/// Nilai hasil hitung butir angka yang tidak punya rumus (atau rumusnya tak bisa membaca LKPS), diisi PJ per LED.
+model NilaiManual {
+  id         String    @id @default(cuid())
+  proyekId   String
+  proyek     ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  butirKode  String
+  nilai      String    // teks apa adanya (mis. "12,5%" atau "Rasio 1 : 18"); dipakai sebagai sumber data narasi
+  keterangan String?
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([proyekId, butirKode])
+}
+
+/// Revisi 22 Okt 2026: target per butir angka (opsional) untuk evaluasi capaian; capaian dihitung sistem.
+model TargetButir {
+  id         String    @id @default(cuid())
+  proyekId   String
+  proyek     ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  butirKode  String
+  target     String // angka target apa adanya (mis. "70" atau "1,5")
+  satuan     String?
+  sumber     String? // mis. "Renstra FT 2021–2025"
+  lebihKecil Boolean   @default(false) // true bila nilai lebih kecil lebih baik (masa studi, waktu tunggu, rasio)
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([proyekId, butirKode])
+}
+
+model StatusKriteria {
+  id        String          @id @default(cuid())
+  proyekId  String
+  proyek    ProyekLED       @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  bagianKode String         // C.1 ... atau I, III dsb.
+  status    StatusPengisian @default(belum)
+  updatedAt DateTime        @updatedAt
+
+  @@unique([proyekId, bagianKode])
+}
+
+// Jawaban penyusun di form per sub-bagian (pertanyaan pemandu). Sumber "J" di prompt.
+model JawabanForm {
+  id          String    @id @default(cuid())
+  proyekId    String
+  proyek      ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  subBagianKode String
+  isi         String
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([proyekId, subBagianKode])
+}
+
+// ----------------------------------------------------------------- Bahan unggahan
+
+model BerkasLKPS {
+  id         String     @id @default(cuid())
+  proyekId   String
+  proyek     ProyekLED  @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  namaBerkas String
+  jenis      String     // xlsx atau pdf
+  lokasi     String     // path penyimpanan
+  status     String     @default("diunggah") // diunggah, diproses, dibaca, gagal
+  pesan      String?
+  ukuran     Int        @default(0)
+  // berkas aktif = sumber metrik proyek (berkas terbaru yang berhasil dibaca)
+  aktif      Boolean    @default(false)
+  masalah    Json?      // daftar masalah validasi (sheet hilang, sel kosong)
+  identitas  Json?      // isian sheet Menu (tanggal TS, nama prodi)
+  diunggahOlehId String?
+  diprosesPada DateTime?
+  tabel      TabelLKPS[]
+  createdAt  DateTime   @default(now())
+
+  @@index([proyekId])
+}
+
+model TabelLKPS {
+  id        String     @id @default(cuid())
+  berkasId  String
+  berkas    BerkasLKPS @relation(fields: [berkasId], references: [id], onDelete: Cascade)
+  kode      String     // 4.a
+  sheet     String
+  judul     String     @default("")
+  blok      String?    // label blok jenjang untuk 6.d dan 6.f.1
+  kolom     Json       @default("[]") // [{ kunci, nomor, label }] kunci = huruf kolom template
+  kolomRumus String[]
+  baris     Json       // [{ nomorBaris, sel: { A: .., B: .. } }]; label TS dipertahankan, tahun nyata dihitung dari proyek
+  perluDicek Boolean   @default(false) // true untuk hasil ekstraksi PDF sampai dikoreksi/dicek penanggung jawab
+  dikoreksi Boolean    @default(false)
+  urutan    Int        @default(0)
+  updatedAt DateTime   @default(now()) @updatedAt
+
+  @@unique([berkasId, sheet])
+}
+
+model Dokumen {
+  id          String    @id @default(cuid())
+  // milik satu LED, atau (proyekId null) dokumen bersama fakultas yang dipakai semua LED (U-10)
+  proyekId    String?
+  proyek      ProyekLED? @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  subBagianKode String? // dokumen bisa umum (null) atau khusus satu sub-bagian
+  butirKode   String?
+  namaBerkas  String
+  mime        String
+  lokasi      String
+  ukuran      Int
+  tautanBukti String?   // tautan penyimpanan awan untuk lampiran (usulan U-02)
+  tahunTerbit Int?      // revisi 22 Okt 2026: tahun untuk rujukan di Word; kosong = "t.t."
+  jenis       String    @default("pdf") // pdf, docx, gambar
+  judul       String?   // judul gambar/dokumen untuk disisipkan ke narasi
+  hash        String?   // SHA-256 berkas asli
+  dokumenDiharapkanId String?
+  dokumenDiharapkan DokumenDiharapkan? @relation(fields: [dokumenDiharapkanId], references: [id], onDelete: SetNull)
+  status      String    @default("diunggah") // diunggah, diproses, siap, gagal, menunggu_kunci
+  pesan       String?
+  jumlahPotongan Int    @default(0)
+  diunggahOlehId String?
+  diprosesPada DateTime?
+  potongan    Potongan[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([proyekId, subBagianKode])
+}
+
+model Potongan {
+  id        String   @id @default(cuid())
+  dokumenId String
+  dokumen   Dokumen  @relation(fields: [dokumenId], references: [id], onDelete: Cascade)
+  urutan    Int
+  teks      String
+  halaman   Int?
+  modelEmbedding String
+  embedding Unsupported("vector(768)")? // Gemini embedding dengan outputDimensionality 768; indeks HNSW lewat migrasi SQL
+  // tsvector untuk pencarian kata kunci: kolom terbangkitkan (GENERATED) dibuat lewat migrasi SQL
+  teksTsv   Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(teks, ''::text))"))
+
+  @@index([dokumenId])
+  @@index([teksTsv], type: Gin, map: "Potongan_teksTsv_gin_idx")
+}
+
+// ----------------------------------------------------------------- Hasil
+
+model BagianDraf {
+  id          String     @id @default(cuid())
+  proyekId    String
+  proyek      ProyekLED  @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  subBagianId String
+  subBagian   SubBagian  @relation(fields: [subBagianId], references: [id])
+  status      StatusPengisian @default(belum)
+  versiAktifId String?
+  versi       VersiDraf[]
+  updatedAt   DateTime   @default(now()) @updatedAt
+
+  @@unique([proyekId, subBagianId])
+}
+
+model VersiDraf {
+  id          String     @id @default(cuid())
+  bagianDrafId String
+  bagianDraf  BagianDraf @relation(fields: [bagianDrafId], references: [id], onDelete: Cascade)
+  nomor       Int
+  asal        String     // generate, sunting, pulihkan
+  isi         Json       // dokumen Tiptap (JSON) atau struktur paragraf
+  sumber      Json?      // sumber per paragraf
+  unsur       Json?      // status unsur skor 4
+  dokumenKurang String[]
+  pemeriksaan Json?      // hasil cek panjang, angka, sumber
+  model       String?
+  keluaranMentah Json?
+  jumlahKata  Int        @default(0)
+  dibuatOlehId String?
+  dibuatOleh  User?      @relation(fields: [dibuatOlehId], references: [id], onDelete: SetNull)
+  tugasId     String?    // tugas generate yang membuat versi ini
+  createdAt   DateTime   @default(now())
+
+  @@unique([bagianDrafId, nomor])
+}
+
+model Ekspor {
+  id           String    @id @default(cuid())
+  proyekId     String
+  proyek       ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  lokasi       String?   // berkas .docx di UPLOAD_DIR (null selama diproses atau bila gagal)
+  namaBerkas   String?
+  ukuran       Int?
+  jumlahHalaman Int? // revisi 22 Okt 2026: halaman sebelum judul LAMPIRAN (yang dibatasi 150)
+  jumlahHalamanTotal Int? // seluruh berkas termasuk lampiran
+  jenis         String @default("final") // draf (bertanda DRAF, kapan saja) atau final
+  halamanPerkiraan Boolean @default(false) // true bila LibreOffice tidak tersedia (jumlah halaman diperkirakan)
+  status       String    @default("antre") // antre, diproses, siap, ditahan (> 150 halaman), gagal
+  pesan        String?
+  pemeriksaan  Json?     // galat dan peringatan
+  dibuatOlehId String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+
+  @@index([proyekId])
+}
+
+// ----------------------------------------------------------------- Tugas generate (antrean)
+
+// Satu tugas = satu tombol generate (satu sub-bagian, satu kriteria, atau satu bagian). Worker mengerjakan
+// sub-bagian berurutan mulai `indeks`; bila kunci habis tugas "tertunda" dan dilanjutkan dari indeks yang sama.
+model TugasGenerate {
+  id            String    @id @default(cuid())
+  proyekId      String
+  proyek        ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  bagianKode    String?   // diisi untuk generate kriteria/bagian
+  judul         String
+  subBagianKode String[]  // urutan pengerjaan
+  indeks        Int       @default(0)
+  status        String    @default("antre") // antre, berjalan, tertunda, selesai, gagal, dibatalkan
+  pesan         String?
+  dilanjutkanPada DateTime? // perkiraan waktu dicoba lagi (reset kuota)
+  pratinjau       Json? // revisi 22 Okt 2026: teks yang sedang ditulis per sub-bagian { kode: { teks, diperbarui } }
+  dibuatOlehId  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@index([proyekId, status])
+}
+
+// ----------------------------------------------------------------- Review asesor (revisi 22 Okt 2026)
+
+/// Catatan revisi asesor pada teks yang diblok. Jangkar = teks persis + teks di sekitarnya, supaya sorotan tetap
+/// menempel saat PJ mengubah kalimat lain; bila teksnya hilang, catatan tetap ada dengan tanda "teks asli berubah".
+model CatatanRevisi {
+  id               String           @id @default(cuid())
+  proyekId         String
+  proyek           ProyekLED        @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  bagianKode       String
+  subBagianKode    String
+  asesorId         String?
+  asesor           User?            @relation(fields: [asesorId], references: [id], onDelete: SetNull)
+  teks             String // teks yang diblok
+  sebelum          String           @default("") // konteks sebelum (maks. 60 karakter)
+  sesudah          String           @default("") // konteks sesudah
+  isi              String // catatan revisi
+  status           String           @default("terbuka") // terbuka, diperbaiki, diterima
+  versiAwalId      String? // versi aktif saat catatan dibuat
+  versiPerbaikanId String? // versi aktif saat PJ menandai Sudah diperbaiki
+  balasan          BalasanCatatan[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([proyekId, subBagianKode])
+}
+
+/// Balasan dan riwayat status satu catatan (jenis: balasan, diperbaiki, diterima, dibuka).
+model BalasanCatatan {
+  id        String        @id @default(cuid())
+  catatanId String
+  catatan   CatatanRevisi @relation(fields: [catatanId], references: [id], onDelete: Cascade)
+  penulisId String?
+  penulis   User?         @relation(fields: [penulisId], references: [id], onDelete: SetNull)
+  jenis     String        @default("balasan")
+  isi       String        @default("")
+  createdAt DateTime      @default(now())
+
+  @@index([catatanId])
+}
+
+/// Skor asesor 0-4 per butir. Untuk butir angka, skorSistem = hitungan LKPS saat dinilai; skor berbeda wajib beralasan.
+model SkorAsesor {
+  id         String    @id @default(cuid())
+  proyekId   String
+  proyek     ProyekLED @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  butirKode  String
+  skor       Float
+  skorSistem Float?
+  alasan     String?
+  asesorId   String?
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([proyekId, butirKode])
+}

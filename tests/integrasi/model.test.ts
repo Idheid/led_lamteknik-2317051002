@@ -2,11 +2,11 @@ import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { MockLanguageModelV4 } from "ai/test";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { tambahKunci } from "@/lib/data/kunci-api";
-import { ambilPengaturan, muatDaftarModel, simpanPengaturan, ujiModel } from "@/lib/data/pengaturan";
-import { aturModelUji } from "@/lib/llm/narasi";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { tambahKunci } from "@/modules/bersama/data/kunci-api";
+import { ambilPengaturan, muatDaftarModel, simpanPengaturan, ujiModel } from "@/modules/bersama/data/pengaturan";
+import { aturModelUji } from "@/modules/bersama/llm/narasi";
 import { bersihkanDb, buatSuperAdmin, imporSeed } from "./bantu";
 
 const DAFTAR = {

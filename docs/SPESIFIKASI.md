@@ -43,7 +43,7 @@ target dan capaian, kesiapan dan jadwal kerja mundur, ekspor DRAF, server produk
 
 - Satu panggilan LLM = satu sub-bagian. Tombol "Generate kriteria" menjalankan semua sub-bagian kriteria itu berurutan
   lewat antrean: IKU dulu, lalu latar belakang dan kebijakan, lalu analisis faktor (memakai ringkasan IKU), terakhir SWOT.
-- Konteks per panggilan (`KonteksSubBagian` di `src/lib/domain/prompt.ts`):
+- Konteks per panggilan (`KonteksSubBagian` di `src/modules/led/domain/prompt.ts`):
   - instruksi sub-bagian sesuai jenjang;
   - butir terkait: deskriptor dan unsur skor 4;
   - jawaban penyusun dari form (sumber `J`);
@@ -64,7 +64,7 @@ target dan capaian, kesiapan dan jadwal kerja mundur, ekspor DRAF, server produk
 
 ## 4. Anggaran halaman dan kata
 
-Lihat `src/lib/domain/anggaran.ts` (teruji). Bawaan: awal 8, Bab I 6, II.A 2, II.B 5, C.1 4, C.2 8, C.3 29, C.4 11,
+Lihat `src/modules/led/domain/anggaran.ts` (teruji). Bawaan: awal 8, Bab I 6, II.A 2, II.B 5, C.1 4, C.2 8, C.3 29, C.4 11,
 C.5 10, C.6 20, C.7 21, Bab III 14, Bab IV 2, cadangan 10 = 150 halaman. 425 kata per halaman untuk perencanaan.
 Semua angka disimpan sebagai pengaturan proyek (bisa diubah tanpa mengubah kode).
 
@@ -115,16 +115,23 @@ pemeriksaan hanya peringatan). Setiap paragraf diberi rujukan singkat; Daftar Ru
 Sidebar kiri (bisa diciutkan menjadi ikon; menjadi laci di layar kecil), area kerja kanan. Satu layar satu tugas,
 progres selalu terlihat. Bahasa Indonesia.
 
+Satu website dua modul (31 Okt 2026): setelah login, PJ dan asesor membuka halaman awal **Pilih modul** (`/`) dengan
+kartu LKPS (`/lkps`) dan LED (`/led`, asesor `/led/asesor`); kepala halaman berisi tombol **LKPS | LED** dan ikon kembali
+ke halaman awal. Program studi (`/pengaturan/prodi`) dan Kunci API fakultas (`/pengaturan/kunci-api`) adalah **data
+bersama LKPS & LED** dan tampil di sidebar kedua modul. Admin tidak membuka modul. Menu LKPS diisi saat modul LKPS
+digabung (masih kerangka).
+
 | Menu | Isi | Peran |
 | --- | --- | --- |
 | Akun PJ | Akun penanggung jawab, asesor, dan admin; atur ulang sandi, nonaktifkan; status cadangan terakhir | Admin |
 | Penugasan asesor | Satu asesor per LED | Admin |
 | Kunci API (tab Kunci, Model Gemini, Log pemakaian) | Kunci cadangan, model narasi/cadangan/embedding, pemakaian token | Admin |
+| Pilih modul (halaman awal) | Kartu LKPS dan LED, data bersama | PJ fakultas, Asesor |
 | Semua LED | LED dikelompokkan per prodi, label periode, LED baru | PJ fakultas |
-| Program studi | Identitas fakultas, daftar prodi (urut akreditasi berakhir) | PJ fakultas |
+| Program studi (data bersama) | Identitas fakultas, daftar prodi (urut akreditasi berakhir) | PJ fakultas |
 | Instrumen | Instrumen per jenjang: unggah berkas, ekstraksi, periksa hasil, aktifkan | PJ fakultas |
 | Basis Pengetahuan fakultas | Dokumen bersama yang dipakai semua LED (kode sumber U) | PJ fakultas |
-| Kunci API fakultas | Daftar kunci, status, tambah kunci, uji koneksi | PJ fakultas |
+| Kunci API fakultas (data bersama) | Daftar kunci, status, tambah kunci, uji koneksi | PJ fakultas |
 | Beranda LED | Progres, periode akreditasi, Pengaturan LED (TS, nama, arsip) | PJ fakultas |
 | Data LKPS | Unggah Excel/PDF, hasil baca per tabel, sumber nilai butir angka | PJ fakultas |
 | Kriteria C.1 … C.7 dan bab lain | Ringkasan kriteria + satu halaman per sub-bagian (instruksi, butir dan daftar cek skor 4, data LKPS/nilai manual, jawaban, dokumen, hasil generate dan riwayat); Sebelumnya/Berikutnya | PJ fakultas |
@@ -141,7 +148,7 @@ aksi menghapus/menimpa.
 
 ## 8. Kunci API, privasi, dan keamanan
 
-- Alur kunci dan rotasi: `src/lib/domain/kunci-api.ts`. Galat 429 per menit = tunggu lalu ulangi kunci yang sama;
+- Alur kunci dan rotasi: `src/modules/bersama/domain/kunci-api.ts`. Galat 429 per menit = tunggu lalu ulangi kunci yang sama;
   galat harian = tandai kunci habis sampai reset; kunci tidak valid = nonaktif sampai diganti.
 - Kunci dienkripsi AES-256-GCM (`ENCRYPTION_KEY`), hanya didekripsi di server/worker, tampil 4 karakter terakhir.
 - Layanan gratis Gemini: Google boleh memakai isi permintaan untuk pengembangan produk dan peninjau manusia bisa

@@ -5,26 +5,26 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import JSZip from "jszip";
 import { MockLanguageModelV4 } from "ai/test";
-import { prisma } from "@/lib/db";
-import { GalatPengguna, type Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek, simpanJawaban } from "@/lib/data/proyek";
-import { tambahKunci } from "@/lib/data/kunci-api";
-import { simpanPengaturan } from "@/lib/data/pengaturan";
-import { unggahLkps } from "@/lib/data/lkps";
-import { muatKriteria } from "@/lib/data/kriteria";
-import { nilaiButirProyek, simpanNilaiManual } from "@/lib/data/nilai-butir";
-import { drafBagian, mulaiGenerate, tandaiBagianSelesai } from "@/lib/data/generate";
-import { berkasEkspor, mulaiEkspor, periksaEkspor, simpanTimPenyusun } from "@/lib/data/ekspor";
+import { prisma } from "@/modules/bersama/db";
+import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatProyek, simpanJawaban } from "@/modules/led/data/proyek";
+import { tambahKunci } from "@/modules/bersama/data/kunci-api";
+import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
+import { unggahLkps } from "@/modules/led/data/lkps";
+import { muatKriteria } from "@/modules/led/data/kriteria";
+import { nilaiButirProyek, simpanNilaiManual } from "@/modules/led/data/nilai-butir";
+import { drafBagian, mulaiGenerate, tandaiBagianSelesai } from "@/modules/led/data/generate";
+import { berkasEkspor, mulaiEkspor, periksaEkspor, simpanTimPenyusun } from "@/modules/led/data/ekspor";
 import {
   aktifkanVersiCek, buatVersiJenjang, dataCekInstrumen, konfirmasiButir, mulaiEkstraksi, unggahBerkasInstrumen,
-} from "@/lib/data/unggah-instrumen";
-import { aturModelUji } from "@/lib/llm/narasi";
-import { prosesBerkasLkps } from "@/lib/proses/lkps";
-import { prosesEkstraksiInstrumen } from "@/lib/proses/instrumen";
-import { prosesTugasGenerate, susunKonteks, urutanSubBagian } from "@/lib/proses/generate";
-import { prosesEkspor } from "@/lib/proses/ekspor";
-import { pecahBody, teksElemen } from "@/lib/ekspor/xml";
+} from "@/modules/led/data/unggah-instrumen";
+import { aturModelUji } from "@/modules/bersama/llm/narasi";
+import { prosesBerkasLkps } from "@/modules/led/proses/lkps";
+import { prosesEkstraksiInstrumen } from "@/modules/led/proses/instrumen";
+import { prosesTugasGenerate, susunKonteks, urutanSubBagian } from "@/modules/led/proses/generate";
+import { prosesEkspor } from "@/modules/led/proses/ekspor";
+import { pecahBody, teksElemen } from "@/modules/led/ekspor/xml";
 import { bersihkanDb, buatSuperAdmin, siapkanPj } from "./bantu";
 
 /**

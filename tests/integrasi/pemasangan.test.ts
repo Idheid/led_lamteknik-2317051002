@@ -1,8 +1,8 @@
 import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { prisma } from "@/lib/db";
-import { buatAdminPertama, perluAdminPertama } from "@/lib/data/pemasangan";
+import { prisma } from "@/modules/bersama/db";
+import { buatAdminPertama, perluAdminPertama } from "@/modules/bersama/data/pemasangan";
 import { bersihkanDb, bisaLogin } from "./bantu";
 
 /** Revisi 23 Okt 2026: admin pertama dibuat dari halaman login (tanpa .env); hanya sekali. */

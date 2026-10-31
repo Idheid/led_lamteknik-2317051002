@@ -3,21 +3,19 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { prisma } from "@/lib/db";
-import { unggahLkps } from "@/lib/data/lkps";
-import { prosesBerkasLkps } from "@/lib/proses/lkps";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { buatAkunAsesor, simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek } from "@/lib/data/proyek";
-import { drafBagian, simpanSuntingan } from "@/lib/data/generate";
-import { periksaEkspor } from "@/lib/data/ekspor";
-import { kesiapanLed } from "@/lib/data/kesiapan";
-import {
-  ajukanReview, balasCatatan, bandingkanCatatan, buatCatatan, daftarCatatan, daftarPemberitahuan, daftarPenugasan, hapusCatatan,
-  jumlahCatatanPerSub, ledAsesor, penilaianProyek, perbaikanMenunggu, putuskanReview, ringkasReview, simpanSkor, tandaiDibaca, tugaskanAsesor, ubahStatusCatatan,
-} from "@/lib/data/review";
-import { buatJangkar, teksPolos } from "@/lib/domain/review";
-import type { DokTiptap } from "@/lib/domain/narasi";
+import { prisma } from "@/modules/bersama/db";
+import { unggahLkps } from "@/modules/led/data/lkps";
+import { prosesBerkasLkps } from "@/modules/led/proses/lkps";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { buatAkunAsesor, simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatProyek } from "@/modules/led/data/proyek";
+import { drafBagian, simpanSuntingan } from "@/modules/led/data/generate";
+import { periksaEkspor } from "@/modules/led/data/ekspor";
+import { kesiapanLed } from "@/modules/led/data/kesiapan";
+import { ajukanReview, balasCatatan, bandingkanCatatan, buatCatatan, daftarCatatan, daftarPenugasan, hapusCatatan, jumlahCatatanPerSub, ledAsesor, penilaianProyek, perbaikanMenunggu, putuskanReview, ringkasReview, simpanSkor, tugaskanAsesor, ubahStatusCatatan } from "@/modules/led/data/review";
+import { daftarPemberitahuan, tandaiDibaca } from "@/modules/bersama/data/pemberitahuan";
+import { buatJangkar, teksPolos } from "@/modules/led/domain/review";
+import type { DokTiptap } from "@/modules/led/domain/narasi";
 import { bersihkanDb, buatSuperAdmin, imporSeed, penggunaDari, siapkanPj } from "./bantu";
 
 /** Revisi 22 Okt 2026 tahap 7: peran asesor, catatan revisi berjangkar, alur Sudah diperbaiki/Terima, skor, keputusan. */
@@ -96,7 +94,7 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   assert.deepEqual([lihat.catatan[0].status, lihat.catatan[0].ditemukan, lihat.catatan[0].asesor], ["terbuka", true, "Asesor Satu"]);
   const lonceng = await daftarPemberitahuan(pj);
   assert.equal(lonceng.belumDibaca, 2, "catatan baru + catatan salah blok");
-  assert.match(lonceng.daftar[1].tautan!, new RegExp(`/proyek/${proyekId}/bagian/C\\.1/${SUB}#catatan-${c.id}`));
+  assert.match(lonceng.daftar[1].tautan!, new RegExp(`/led/${proyekId}/bagian/C\\.1/${SUB}#catatan-${c.id}`));
   await tandaiDibaca(pj, null);
   assert.equal((await daftarPemberitahuan(pj)).belumDibaca, 0);
   assert.deepEqual(await jumlahCatatanPerSub(pj, proyekId), { [SUB]: { terbuka: 1, diperbaiki: 0 } });
@@ -105,7 +103,7 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   const r = await ringkasReview(pj, proyekId);
   assert.equal(r.bagianPerlu.length, 1);
   assert.deepEqual([r.bagianPerlu[0].subBagianKode, r.bagianPerlu[0].terbuka, r.bagianPerlu[0].diperbaiki], [SUB, 1, 0]);
-  assert.equal(r.bagianPerlu[0].href, `/proyek/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
+  assert.equal(r.bagianPerlu[0].href, `/led/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
 
   // PJ mengubah kalimat lain: sorotan tetap menempel
   await simpanSuntingan(pj, proyekId, SUB, dok("Visi keilmuan dirumuskan bersama alumni dan industri. Visi ditinjau setiap lima tahun.", "Strategi pencapaian visi disusun dalam Renstra."));
@@ -122,7 +120,7 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   const masuk = await perbaikanMenunggu(asesor, proyekId);
   assert.equal(masuk.length, 1);
   assert.deepEqual([masuk[0].id, masuk[0].pesanPj, masuk[0].teks], [c.id, "Sudah ditambah SK peninjauan.", j.teks]);
-  assert.equal(masuk[0].href, `/asesor/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
+  assert.equal(masuk[0].href, `/led/asesor/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
   await assert.rejects(perbaikanMenunggu(pj, proyekId), GalatAkses);
   assert.match((await daftarPemberitahuan(asesor)).daftar[0].pesan, /sudah diperbaiki/);
 

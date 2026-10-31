@@ -1,17 +1,17 @@
 import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna } from "@/lib/akses";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna } from "@/modules/bersama/akses";
 import {
   ambilFakultas, aturAktifAkun, aturUlangKataSandi, buatAkunPenanggungJawab, daftarAkun, daftarProdi, hapusProdi,
   simpanFakultas, simpanProdi,
-} from "@/lib/data/organisasi";
+} from "@/modules/bersama/data/organisasi";
 import {
   ambilProyek, aturArsipProyek, bagianProyek, buatProyek, daftarProyek, halamanBagian, simpanJawaban,
-} from "@/lib/data/proyek";
-import { daftarVersi } from "@/lib/data/instrumen";
-import { daftarKunci } from "@/lib/data/kunci-api";
+} from "@/modules/led/data/proyek";
+import { daftarVersi } from "@/modules/led/data/instrumen";
+import { daftarKunci } from "@/modules/bersama/data/kunci-api";
 import { bersihkanDb, bisaLogin, buatSuperAdmin, imporSeed, penggunaDari } from "./bantu";
 
 before(async () => {

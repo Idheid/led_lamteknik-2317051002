@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { wajibSuperAdmin } from "@/lib/sesi";
+import { wajibSuperAdmin } from "@/modules/bersama/sesi";
 import { HalamanTambah } from "@/components/halaman-tambah";
 import { FormKunci } from "@/components/kunci-api/komponen";
 

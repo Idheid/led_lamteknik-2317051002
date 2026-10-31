@@ -1,8 +1,8 @@
-import type { Pengguna } from "@/lib/akses";
+import type { Pengguna } from "@/modules/bersama/akses";
 import Link from "next/link";
-import { ringkasanPemakaian } from "@/lib/data/pemakaian";
-import { formatAngka } from "@/lib/domain/teks";
-import { fmtWaktu } from "@/lib/tampil";
+import { ringkasanPemakaian } from "@/modules/bersama/data/pemakaian";
+import { formatAngka } from "@/modules/bersama/domain/teks";
+import { fmtWaktu } from "@/modules/bersama/tampil";
 import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

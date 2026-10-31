@@ -7,9 +7,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import { bacaLkpsPdf } from "@/lib/lkps/baca-pdf";
-import { bacaLkpsXlsx } from "@/lib/lkps/baca-xlsx";
-import { hitungSemua } from "@/lib/domain/metrik-lkps";
+import { bacaLkpsPdf } from "@/modules/led/data-lkps/baca-pdf";
+import { bacaLkpsXlsx } from "@/modules/led/data-lkps/baca-xlsx";
+import { hitungSemua } from "@/modules/led/domain/metrik-lkps";
 
 const PDF = resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.pdf");
 const XLSX = resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx");

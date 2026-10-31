@@ -1,3 +1,4 @@
+import type { Peran } from "@/modules/bersama/peran";
 import type { GrupNav } from "./nav-sidebar";
 
 /**
@@ -13,8 +14,37 @@ export const MENU_ADMIN: GrupNav = {
   ],
 };
 
-/** Menu sidebar asesor (revisi 22 Okt 2026). */
+/** Menu sidebar asesor di modul LED (revisi 22 Okt 2026). */
 export const MENU_ASESOR: GrupNav = {
-  label: "Asesor",
-  item: [{ judul: "LED ditugaskan", href: "/asesor", ikon: "proyek", persis: true }],
+  label: "LED · Asesor",
+  item: [{ judul: "LED ditugaskan", href: "/led/asesor", ikon: "proyek", persis: true }],
 };
+
+/**
+ * Data yang dipakai modul LKPS dan LED sekaligus (31 Okt 2026): daftar program studi dan identitas fakultas, serta kunci
+ * API Gemini fakultas. Tampil di sidebar kedua modul.
+ */
+export const MENU_DATA_BERSAMA: GrupNav = {
+  label: "Data bersama LKPS & LED",
+  item: [
+    { judul: "Program studi", href: "/pengaturan/prodi", ikon: "prodi" },
+    { judul: "Kunci API fakultas", href: "/pengaturan/kunci-api", ikon: "kunci" },
+  ],
+};
+
+/** Alamat beranda modul LED menurut peran: asesor membuka LED yang ditugaskan, penyusun membuka Semua LED. */
+export function berandaLed(peran: Peran): string {
+  return peran === "ASESOR" ? "/led/asesor" : "/led";
+}
+
+/** Grup "Modul" untuk halaman di luar modul (data bersama, ganti kata sandi). */
+export function menuModul(peran: Peran): GrupNav {
+  return {
+    label: "Modul",
+    item: [
+      { judul: "Halaman awal", href: "/", ikon: "dasbor", persis: true },
+      { judul: "LKPS", href: "/lkps", ikon: "lkps" },
+      { judul: "LED", href: berandaLed(peran), ikon: "bab" },
+    ],
+  };
+}

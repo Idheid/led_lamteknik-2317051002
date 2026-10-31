@@ -1,15 +1,15 @@
 import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { prisma } from "@/lib/db";
-import { auth } from "@/lib/auth";
-import { GalatAkses, GalatPengguna } from "@/lib/akses";
+import { prisma } from "@/modules/bersama/db";
+import { auth } from "@/modules/bersama/auth";
+import { GalatAkses, GalatPengguna } from "@/modules/bersama/akses";
 import {
   aturAktifAkun, aturUlangKataSandi, buatAkunPenanggungJawab, buatAkunSuperAdmin, gantiKataSandiSendiri, hapusAkun,
   simpanProdi,
-} from "@/lib/data/organisasi";
-import { buatProyek, daftarProyek } from "@/lib/data/proyek";
-import { daftarKunci, tambahKunci } from "@/lib/data/kunci-api";
+} from "@/modules/bersama/data/organisasi";
+import { buatProyek, daftarProyek } from "@/modules/led/data/proyek";
+import { daftarKunci, tambahKunci } from "@/modules/bersama/data/kunci-api";
 import { bersihkanDb, bisaLogin, buatSuperAdmin, imporSeed, penggunaDari, siapkanPj } from "./bantu";
 
 before(async () => {

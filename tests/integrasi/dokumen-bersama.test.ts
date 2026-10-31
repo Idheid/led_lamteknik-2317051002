@@ -2,17 +2,17 @@ import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { Document, Packer, Paragraph } from "docx";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { aturArsipProyek, buatProyek, daftarProyek, hapusProyek, simpanJawaban, ubahNamaProyek } from "@/lib/data/proyek";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { simpanProdi } from "@/modules/bersama/data/organisasi";
+import { aturArsipProyek, buatProyek, daftarProyek, hapusProyek, simpanJawaban, ubahNamaProyek } from "@/modules/led/data/proyek";
 import {
   berkasDokumen, daftarDokumen, daftarDokumenBersama, hapusDokumen, ringkasanBahan, unggahDokumen, unggahDokumenBersama,
-} from "@/lib/data/dokumen";
-import { cariPotongan } from "@/lib/data/pencarian";
-import { mulaiGenerate } from "@/lib/data/generate";
-import { prosesDokumen } from "@/lib/proses/dokumen";
-import { susunKonteks } from "@/lib/proses/generate";
+} from "@/modules/led/data/dokumen";
+import { cariPotongan } from "@/modules/led/data/pencarian";
+import { mulaiGenerate } from "@/modules/led/data/generate";
+import { prosesDokumen } from "@/modules/led/proses/dokumen";
+import { susunKonteks } from "@/modules/led/proses/generate";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 let admin: Pengguna;

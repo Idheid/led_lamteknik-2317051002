@@ -9,7 +9,7 @@ import {
 import {
   SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import { cn } from "@/modules/bersama/utils";
 
 export const IKON = {
   beranda: Home,

@@ -1,6 +1,6 @@
 import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
 import { MENU_ADMIN } from "@/components/shell/menu-peran";
-import { wajibSuperAdmin } from "@/lib/sesi";
+import { wajibSuperAdmin } from "@/modules/bersama/sesi";
 
 /** Admin: Kelola akun, Penugasan asesor, Kunci API (menu di src/components/shell/menu-peran.ts). */
 export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {

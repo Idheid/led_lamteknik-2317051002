@@ -2,11 +2,11 @@ import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { MockLanguageModelV4 } from "ai/test";
-import { prisma } from "@/lib/db";
-import { tambahKunci } from "@/lib/data/kunci-api";
-import { simpanPengaturan } from "@/lib/data/pengaturan";
-import { aturModelUji } from "@/lib/llm/narasi";
-import { panggilNarasi } from "@/lib/proses/llm-narasi";
+import { prisma } from "@/modules/bersama/db";
+import { tambahKunci } from "@/modules/bersama/data/kunci-api";
+import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
+import { aturModelUji } from "@/modules/bersama/llm/narasi";
+import { panggilNarasi } from "@/modules/led/proses/llm-narasi";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 /**

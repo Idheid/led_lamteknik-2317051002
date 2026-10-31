@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { wajibSuperAdmin } from "@/lib/sesi";
-import { daftarAkun } from "@/lib/data/organisasi";
-import { statusCadangan } from "@/lib/data/cadangan";
-import { LABEL_PERAN, type Peran } from "@/lib/peran";
+import { wajibSuperAdmin } from "@/modules/bersama/sesi";
+import { daftarAkun } from "@/modules/bersama/data/organisasi";
+import { statusCadangan } from "@/modules/bersama/data/cadangan";
+import { LABEL_PERAN, type Peran } from "@/modules/bersama/peran";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";

@@ -3,16 +3,16 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { daftarProdi, simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek } from "@/lib/data/proyek";
-import { unggahLkps } from "@/lib/data/lkps";
-import { simpanTimPenyusun } from "@/lib/data/ekspor";
-import { kesiapanLed, kesiapanSemua, simpanJadwal } from "@/lib/data/kesiapan";
-import { prosesBerkasLkps } from "@/lib/proses/lkps";
-import { susunKonteks } from "@/lib/proses/generate";
-import { tambahBulan, tanggalIso } from "@/lib/domain/kesiapan";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { daftarProdi, simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatProyek } from "@/modules/led/data/proyek";
+import { unggahLkps } from "@/modules/led/data/lkps";
+import { simpanTimPenyusun } from "@/modules/led/data/ekspor";
+import { kesiapanLed, kesiapanSemua, simpanJadwal } from "@/modules/led/data/kesiapan";
+import { prosesBerkasLkps } from "@/modules/led/proses/lkps";
+import { susunKonteks } from "@/modules/led/proses/generate";
+import { tambahBulan, tanggalIso } from "@/modules/led/domain/kesiapan";
 import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
 
 /** Revisi 22 Okt 2026 tahap 2: deadline, kesiapan, persentase LKPS, jadwal kerja mundur. */

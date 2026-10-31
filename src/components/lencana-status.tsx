@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn } from "@/modules/bersama/utils";
 
 const GAYA: Record<string, { label: string; kelas: string }> = {
   belum: { label: "Belum diisi", kelas: "bg-muted text-muted-foreground" },
