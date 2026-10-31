@@ -13,12 +13,12 @@ const fmt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", h
 export function KotakPerbaikan({ daftar }: { daftar: PerbaikanMenunggu[] }) {
   if (!daftar.length) return null;
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-primary/30 bg-card p-5 shadow-xs" aria-label="Perbaikan dari PJ">
+    <section className="flex flex-col gap-4 rounded-2xl border border-primary/30 bg-card p-5 shadow-xs" aria-label="Perbaikan dari Tim Prodi">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-3 text-base font-semibold">
           <span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary"><Wrench className="size-4.5" aria-hidden /></span>
           <span>
-            Perbaikan dari PJ
+            Perbaikan dari Tim Prodi
             <span className="block text-sm font-normal text-muted-foreground">Periksa perbaikannya, lalu Terima atau Buka lagi.</span>
           </span>
         </h2>
@@ -41,7 +41,7 @@ export function KotakPerbaikan({ daftar }: { daftar: PerbaikanMenunggu[] }) {
                 <p className="line-clamp-1 text-sm"><span className="text-muted-foreground">Catatan Anda: </span>{x.isi}</p>
                 {x.pesanPj && (
                   <p className="flex items-start gap-1.5 text-sm text-primary">
-                    <MessageCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden /><span className="line-clamp-2">PJ: {x.pesanPj}</span>
+                    <MessageCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden /><span className="line-clamp-2">Tim Prodi: {x.pesanPj}</span>
                   </p>
                 )}
               </div>

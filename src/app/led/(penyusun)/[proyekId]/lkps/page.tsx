@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, ChevronRight, CircleX, FileSpreadsheet, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { ambilProyek } from "@/modules/led/data/proyek";
 import { daftarBerkasLkps, lkpsAktif } from "@/modules/led/data/lkps";
 import { nilaiButirProyek } from "@/modules/led/data/nilai-butir";
@@ -23,7 +23,7 @@ import { AksiBerkasLkps } from "./aksi-berkas";
 export const metadata: Metadata = { title: "Data LKPS" };
 
 export default async function HalamanLkps({ params }: PageProps<"/led/[proyekId]/lkps">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId } = await params;
   const [proyek, berkas, aktif, nilai] = await Promise.all([
     ambilProyek(p, proyekId), daftarBerkasLkps(p, proyekId), lkpsAktif(p, proyekId), nilaiButirProyek(p, proyekId),

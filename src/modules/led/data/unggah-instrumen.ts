@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { periksaKodeRumus } from "@/modules/led/data/instrumen";
 import { unggahTemplateLed } from "@/modules/led/data/ekspor";
@@ -49,7 +49,7 @@ export function bacaInfoEkstraksi(v: unknown): InfoEkstraksi | null {
 }
 
 async function versiMilik(p: Pengguna, versiId: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const v = await prisma.versiInstrumen.findUnique({ where: { id: versiId }, include: { _count: { select: { proyek: true } } } });
   if (!v) throw new GalatPengguna("Versi instrumen tidak ditemukan.");
   return v;
@@ -80,7 +80,7 @@ export async function kerangkaBawaan(): Promise<{
 }
 
 export async function buatVersiJenjang(p: Pengguna, masukan: MasukanVersiJenjang) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const data = skemaVersiJenjang.parse(masukan);
   if (await prisma.versiInstrumen.findUnique({ where: { kode: data.kode } })) throw new GalatPengguna(`Kode versi ${data.kode} sudah dipakai.`);
   const rujukan = await versiRujukan("", data.jenjang);

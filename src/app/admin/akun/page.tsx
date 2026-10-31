@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { wajibSuperAdmin } from "@/modules/bersama/sesi";
-import { daftarAkun } from "@/modules/bersama/data/organisasi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
+import { daftarAkun, daftarProdi } from "@/modules/bersama/data/organisasi";
+import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { statusCadangan } from "@/modules/bersama/data/cadangan";
 import { LABEL_PERAN, type Peran } from "@/modules/bersama/peran";
 import { JudulHalaman } from "@/components/judul-halaman";
@@ -43,21 +44,22 @@ function StatusCadangan({ status }: { status: Awaited<ReturnType<typeof statusCa
 }
 
 export default async function HalamanAkun() {
-  const p = await wajibSuperAdmin();
-  const [akun, cadangan] = await Promise.all([daftarAkun(p), statusCadangan(p)]);
+  const p = await wajibAdmin();
+  const [akun, cadangan, daftar] = await Promise.all([daftarAkun(p), statusCadangan(p), daftarProdi(p)]);
+  const prodi = daftar.map((x) => ({ id: x.id, label: `${namaJenjang(x.jenjang)} ${x.nama}` }));
   return (
     <>
       <JudulHalaman
         judul="Kelola akun"
-        aksi={<DialogTambahAkun />}
+        aksi={<DialogTambahAkun prodi={prodi} />}
       />
       <Petunjuk
         kunci="admin-akun"
-        fungsi="Admin mengelola akun. PJ (penanggung jawab) menyusun semua LED fakultas; asesor mereview LED yang ditugaskan; admin mengurus akun, penugasan asesor, dan kunci API. LED dan kunci API milik fakultas, jadi tetap ada walaupun akun diganti."
+        fungsi="Admin UPPS mengelola akun. Tim Prodi menyusun LED program studinya (satu prodi boleh beberapa akun); asesor mereview LED yang ditugaskan; Admin UPPS mengurus akun, program studi, instrumen, kunci API, dan penugasan asesor. LED dan kunci API milik prodi dan fakultas, jadi tetap ada walaupun akun diganti."
         langkah={[
-          "Klik Tambah akun, pilih peran (PJ, Asesor, atau Admin), lalu isi nama, email, dan kata sandi awal.",
+          "Klik Tambah akun, pilih peran (Tim Prodi, Asesor, atau Admin UPPS), lalu isi nama, email, dan kata sandi awal. Akun Tim Prodi wajib memilih program studi.",
           "Berikan kata sandi sementara; pengguna wajib menggantinya saat login pertama.",
-          "Saat petugas berganti: buat akun PJ pengganti, lalu nonaktifkan akun lama.",
+          "Saat anggota tim berganti: buat akun Tim Prodi pengganti, lalu nonaktifkan akun lama. Akun yang pindah prodi: menu baris, Pindah program studi.",
           "Atur ulang kata sandi bila pengguna lupa. Akun sendiri tidak bisa dinonaktifkan atau dihapus.",
         ]}
       />
@@ -70,6 +72,7 @@ export default async function HalamanAkun() {
                 <TableHead className="pl-4">Nama</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Peran</TableHead>
+                <TableHead>Program studi</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Dibuat</TableHead>
                 <TableHead className="w-12 pr-4" />
@@ -81,6 +84,7 @@ export default async function HalamanAkun() {
                   <TableCell className="pl-4 font-medium">{a.name}</TableCell>
                   <TableCell>{a.email}</TableCell>
                   <TableCell>{LABEL_PERAN[a.role as Peran]}</TableCell>
+                  <TableCell className="text-muted-foreground">{a.prodi ? `${namaJenjang(a.prodi.jenjang)} ${a.prodi.nama}` : "-"}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {a.banned ? <Badge variant="destructive">Nonaktif</Badge> : <Badge variant="secondary">Aktif</Badge>}
@@ -90,7 +94,7 @@ export default async function HalamanAkun() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{fmtTanggal.format(a.createdAt)}</TableCell>
                   <TableCell className="pr-4 text-right">
-                    {a.id !== p.id && <AksiBarisAkun id={a.id} nama={a.name} email={a.email} aktif={!a.banned} />}
+                    {a.id !== p.id && <AksiBarisAkun id={a.id} nama={a.name} email={a.email} aktif={!a.banned} prodiId={a.role === "TIM_PRODI" ? a.prodi?.id ?? null : undefined} prodi={prodi} />}
                   </TableCell>
                 </TableRow>
               ))}

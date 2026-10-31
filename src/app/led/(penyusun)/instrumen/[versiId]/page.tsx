@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, Lock } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { ambilVersi } from "@/modules/led/data/instrumen";
 import { JENJANG, namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { formatAngka } from "@/modules/bersama/domain/teks";
@@ -26,7 +26,7 @@ const LABEL_JENIS: Record<string, string> = {
 };
 
 export default async function HalamanVersi({ params }: PageProps<"/led/instrumen/[versiId]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const { versiId } = await params;
   const v = await ambilVersi(p, versiId);
   if (!v) notFound();

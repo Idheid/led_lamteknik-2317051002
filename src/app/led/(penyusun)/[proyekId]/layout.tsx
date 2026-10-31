@@ -5,11 +5,11 @@ import { ambilProyek } from "@/modules/led/data/proyek";
 import { tugasProyek } from "@/modules/led/data/generate";
 import { BannerAntrean } from "@/modules/led/komponen/narasi/banner-antrean";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 
 /** Satu LED: sidebar menu LED ini (dengan Kembali ke Menu LED), banner antrean, tanda arsip. */
 export default async function LayoutProyekLED({ children, params }: LayoutProps<"/led/[proyekId]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId } = await params;
   let proyek;
   try {

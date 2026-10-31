@@ -18,7 +18,7 @@ import { prosesDokumen } from "@/modules/led/proses/dokumen";
 import { prosesTugasGenerate, urutanSubBagian } from "@/modules/led/proses/generate";
 import { prosesEkspor } from "@/modules/led/proses/ekspor";
 import { teksElemen, pecahBody } from "@/modules/led/ekspor/xml";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { bersihkanDb, buatAdmin, imporSeed, buatTimProdi, siapkanFakultas, siapkanProdi } from "./bantu";
 
 const TEMPLATE = process.env.TEMPLATE_LEDPS_PATH ? resolve(process.cwd(), process.env.TEMPLATE_LEDPS_PATH) : "";
 const lewati = !TEMPLATE || !existsSync(TEMPLATE) ? "TEMPLATE_LEDPS_PATH tidak tersedia" : false;
@@ -63,18 +63,19 @@ before(async () => {
   await bersihkanDb();
   await imporSeed();
   aturModelUji(modelTiruan);
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
   // revisi 19 Okt 2026: satu PJ fakultas; akses lintas peran diuji dengan admin
-  pjLain = admin;
-  const prodi = await simpanProdi(pj, {
+  const prodi = await simpanProdi(admin, {
     nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111",
     identitas: { kota: "Bandar Lampung", peringkatAkreditasi: "Baik Sekali", nomorSkAkreditasi: "123/SK/2021", telepon: "0721-000000" },
   });
-  await simpanProdi(pj, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "22222", identitas: {} });
-  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED 2026", tahunPengajuan: 2026 })).id;
+  pj = await buatTimProdi(admin, prodi.id);
+  // revisi 31 Okt 2026: "pengguna lain" = Tim Prodi prodi lain (Admin UPPS kini boleh membaca semua LED)
+  ({ tim: pjLain } = await siapkanProdi(admin, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "22222", identitas: {} }));
+  proyekId = (await buatProyek(pj, { nama: "LED 2026", tahunPengajuan: 2026 })).id;
   const versi = await prisma.versiInstrumen.findFirstOrThrow();
-  await tambahKunci(pj, { label: "Kunci uji", kunci: "AIzaSyKunciEksporUji00000000000000000001" });
+  await tambahKunci(admin, { label: "Kunci uji", kunci: "AIzaSyKunciEksporUji00000000000000000001" });
   // jawaban penyusun untuk semua sub-bagian supaya setiap paragraf bersumber [J]
   const kode = await prisma.subBagian.findMany({ where: { bagian: { versiId: versi.id } }, select: { kode: true } });
   await prisma.jawabanForm.createMany({ data: kode.map((k) => ({ proyekId, subBagianKode: k.kode, isi: "Fakta dari penyusun." })) });
@@ -218,15 +219,15 @@ test("F-22/F-23/F-24 berkas Word: instruksi, catatan, dan kotak isian hilang; da
   assert.ok(!/Program Profesi Insinyur \(DTPSPPI\)/.test(teks));
 });
 
-test("Template LED per versi: PJ mengunggah .docx, laporan pemetaan per jenjang; berkas lain dan admin ditolak", { skip: lewati }, async () => {
+test("Template LED per versi: Admin UPPS mengunggah .docx, laporan pemetaan per jenjang; berkas lain dan Tim Prodi ditolak", { skip: lewati }, async () => {
   const versi = await prisma.versiInstrumen.findFirstOrThrow();
-  await assert.rejects(unggahTemplateLed(pj, versi.id, { nama: "bukan.docx", isi: Buffer.from("bukan zip") }), GalatPengguna);
-  await assert.rejects(unggahTemplateLed(pj, versi.id, { nama: "template.pdf", isi: readFileSync(TEMPLATE) }), GalatPengguna);
-  await assert.rejects(unggahTemplateLed(admin, versi.id, { nama: "t.docx", isi: readFileSync(TEMPLATE) }), GalatAkses);
-  const laporan = await unggahTemplateLed(pj, versi.id, { nama: "Template LEDPS.docx", isi: readFileSync(TEMPLATE) });
+  await assert.rejects(unggahTemplateLed(admin, versi.id, { nama: "bukan.docx", isi: Buffer.from("bukan zip") }), GalatPengguna);
+  await assert.rejects(unggahTemplateLed(admin, versi.id, { nama: "template.pdf", isi: readFileSync(TEMPLATE) }), GalatPengguna);
+  await assert.rejects(unggahTemplateLed(pj, versi.id, { nama: "t.docx", isi: readFileSync(TEMPLATE) }), GalatAkses);
+  const laporan = await unggahTemplateLed(admin, versi.id, { nama: "Template LEDPS.docx", isi: readFileSync(TEMPLATE) });
   for (const [jenjang, l] of Object.entries(laporan)) assert.deepEqual(l.tidakDitemukan, [], `semua sub-bagian ${jenjang} terpetakan`);
   assert.ok(laporan.S1.placeholder >= 100);
-  const info = await infoTemplateLed(pj, versi.id);
+  const info = await infoTemplateLed(admin, versi.id);
   assert.equal(info.nama, "Template LEDPS.docx");
   // ekspor memakai template unggahan
   const e = await mulaiEkspor(pj, proyekId);

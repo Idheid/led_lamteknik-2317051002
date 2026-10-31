@@ -7,7 +7,7 @@ import { prisma } from "@/modules/bersama/db";
 import { unggahLkps } from "@/modules/led/data/lkps";
 import { prosesBerkasLkps } from "@/modules/led/proses/lkps";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
-import { buatAkunAsesor, simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatAkunAsesor } from "@/modules/bersama/data/organisasi";
 import { buatProyek } from "@/modules/led/data/proyek";
 import { drafBagian, simpanSuntingan } from "@/modules/led/data/generate";
 import { periksaEkspor } from "@/modules/led/data/ekspor";
@@ -16,12 +16,16 @@ import { ajukanReview, balasCatatan, bandingkanCatatan, buatCatatan, daftarCatat
 import { daftarPemberitahuan, tandaiDibaca } from "@/modules/bersama/data/pemberitahuan";
 import { buatJangkar, teksPolos } from "@/modules/led/domain/review";
 import type { DokTiptap } from "@/modules/led/domain/narasi";
-import { bersihkanDb, buatSuperAdmin, imporSeed, penggunaDari, siapkanPj } from "./bantu";
+import { bersihkanDb, buatAdmin, buatTimProdi, imporSeed, penggunaDari, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /** Revisi 22 Okt 2026 tahap 7: peran asesor, catatan revisi berjangkar, alur Sudah diperbaiki/Terima, skor, keputusan. */
 
 let admin: Pengguna;
 let pj: Pengguna;
+/** Akun Tim Prodi kedua di prodi yang sama (revisi 31 Okt 2026). */
+let pj2: Pengguna;
+/** Tim Prodi prodi lain. */
+let pjLain: Pengguna;
 let asesor: Pengguna;
 let asesorLain: Pengguna;
 let proyekId: string;
@@ -40,15 +44,17 @@ function jangkarDari(doc: DokTiptap, kalimat: string) {
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
   asesor = await penggunaDari((await buatAkunAsesor(admin, { nama: "Asesor Satu", email: "asesor@uji.test", kataSandi: "SandiAsesor#1" })).id);
   asesorLain = await penggunaDari((await buatAkunAsesor(admin, { nama: "Asesor Dua", email: "asesor2@uji.test", kataSandi: "SandiAsesor#2" })).id);
   assert.equal(asesor.peran, "ASESOR");
-  const prodi = await simpanProdi(pj, { nama: "Teknik Review", jenjang: "S1", kodePddikti: "33333", identitas: {} });
-  const prodi2 = await simpanProdi(pj, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "44444", identitas: {} });
-  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED Review", tahunPengajuan: 2026 })).id;
-  proyekLain = (await buatProyek(pj, { prodiId: prodi2.id, nama: "LED Lain", tahunPengajuan: 2026 })).id;
+  const { prodi, tim } = await siapkanProdi(admin, { nama: "Teknik Review", jenjang: "S1", kodePddikti: "33333", identitas: {} });
+  pj = tim;
+  pj2 = await buatTimProdi(admin, prodi.id, "tim2.review@uji.test", "Tim Prodi Kedua");
+  ({ tim: pjLain } = await siapkanProdi(admin, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "44444", identitas: {} }));
+  proyekId = (await buatProyek(pj, { nama: "LED Review", tahunPengajuan: 2026 })).id;
+  proyekLain = (await buatProyek(pjLain, { nama: "LED Lain", tahunPengajuan: 2026 })).id;
   await simpanSuntingan(pj, proyekId, SUB, AWAL);
 });
 
@@ -94,6 +100,9 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   assert.deepEqual([lihat.catatan[0].status, lihat.catatan[0].ditemukan, lihat.catatan[0].asesor], ["terbuka", true, "Asesor Satu"]);
   const lonceng = await daftarPemberitahuan(pj);
   assert.equal(lonceng.belumDibaca, 2, "catatan baru + catatan salah blok");
+  // revisi 31 Okt 2026: pemberitahuan sampai ke semua akun Tim Prodi prodi itu, bukan ke Tim Prodi prodi lain
+  assert.equal((await daftarPemberitahuan(pj2)).belumDibaca, 2, "akun Tim Prodi kedua di prodi yang sama");
+  assert.equal((await daftarPemberitahuan(pjLain)).belumDibaca, 0, "Tim Prodi prodi lain tidak diberi tahu");
   assert.match(lonceng.daftar[1].tautan!, new RegExp(`/led/${proyekId}/bagian/C\\.1/${SUB}#catatan-${c.id}`));
   await tandaiDibaca(pj, null);
   assert.equal((await daftarPemberitahuan(pj)).belumDibaca, 0);
@@ -177,9 +186,9 @@ test("Penilaian akhir: skor 0-4 per butir, nilai akhir dan perkiraan status, Lay
 });
 
 test("Butir angka dengan LKPS: skor sistem jadi acuan; skor berbeda wajib beralasan", async () => {
-  const b = await unggahLkps(pj, proyekLain, { nama: "lkps.xlsx", isi: readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx")) });
+  const b = await unggahLkps(pjLain, proyekLain, { nama: "lkps.xlsx", isi: readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx")) });
   await prosesBerkasLkps(b.id);
-  await ajukanReview(pj, proyekLain);
+  await ajukanReview(pjLain, proyekLain);
   const n = await penilaianProyek(asesorLain, proyekLain);
   const angka = n.butir.find((x) => x.jenis === "angka" && x.skorSistem !== null)!;
   assert.ok(angka, "ada butir angka yang skornya dihitung dari LKPS");

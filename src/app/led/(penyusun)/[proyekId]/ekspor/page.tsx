@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CircleAlert, CircleCheck, Download, Info, Loader2 } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { daftarEkspor, periksaEkspor } from "@/modules/led/data/ekspor";
 import { BATAS_HALAMAN } from "@/modules/led/domain/ekspor";
 import { fmtWaktu, formatUkuran } from "@/modules/bersama/tampil";
@@ -25,7 +25,7 @@ const STATUS: Record<string, { label: string; kelas: string }> = {
 };
 
 export default async function HalamanEkspor({ params }: PageProps<"/led/[proyekId]/ekspor">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId } = await params;
   const [cek, cekDraf, riwayat] = await Promise.all([periksaEkspor(p, proyekId, "final"), periksaEkspor(p, proyekId, "draf"), daftarEkspor(p, proyekId)]);
   const berjalan = riwayat.some((e) => e.status === "antre" || e.status === "diproses");

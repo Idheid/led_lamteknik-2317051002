@@ -7,7 +7,6 @@ import JSZip from "jszip";
 import { MockLanguageModelV4 } from "ai/test";
 import { prisma } from "@/modules/bersama/db";
 import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
-import { simpanProdi } from "@/modules/bersama/data/organisasi";
 import { buatProyek, simpanJawaban } from "@/modules/led/data/proyek";
 import { tambahKunci } from "@/modules/bersama/data/kunci-api";
 import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
@@ -25,7 +24,7 @@ import { prosesEkstraksiInstrumen } from "@/modules/led/proses/instrumen";
 import { prosesTugasGenerate, susunKonteks, urutanSubBagian } from "@/modules/led/proses/generate";
 import { prosesEkspor } from "@/modules/led/proses/ekspor";
 import { pecahBody, teksElemen } from "@/modules/led/ekspor/xml";
-import { bersihkanDb, buatSuperAdmin, siapkanPj } from "./bantu";
+import { bersihkanDb, buatAdmin, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /**
  * Revisi 19 Okt 2026 tahap 6: alur penuh dari basis data kosong (tanpa instrumen bawaan):
@@ -41,6 +40,7 @@ const SEED = JSON.parse(readFileSync(resolve(process.cwd(), "data/instrumen/lamt
 const RUMUS = new Set(["26", "28", "30", "41"]);
 const JAWABAN_C1 = "Visi keilmuan program studi ditinjau setiap tahun dalam lokakarya kurikulum bersama 24 pemangku kepentingan.";
 
+let admin: Pengguna;
 let pj: Pengguna;
 let proyekId: string;
 
@@ -84,8 +84,8 @@ function narasi(pengguna: string) {
 
 before(async () => {
   await bersihkanDb();
-  const admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
   aturModelUji((_k, kode) => new MockLanguageModelV4({
     modelId: kode,
     doGenerate: async (opsi) => {
@@ -100,7 +100,7 @@ before(async () => {
     },
   }));
   await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: [], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
-  await tambahKunci(pj, { label: "Kunci fakultas", kunci: "AIzaSyKunciAlurPenuh00000000000000000001" });
+  await tambahKunci(admin, { label: "Kunci fakultas", kunci: "AIzaSyKunciAlurPenuh00000000000000000001" });
 });
 
 after(async () => {
@@ -108,29 +108,29 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-test("Alur penuh: tambah prodi → unggah instrumen S1 → buat LED → isi satu kriteria → generate → ekspor Word", async () => {
-  // 1. prodi; LED belum bisa dibuat karena instrumen Sarjana belum ada
-  const prodi = await simpanProdi(pj, {
+test("Alur penuh: Admin UPPS tambah prodi dan akun Tim Prodi → unggah instrumen S1 → Tim Prodi buat LED → isi satu kriteria → generate → ekspor Word", async () => {
+  // 1. prodi dan akun Tim Prodi (Admin UPPS); LED belum bisa dibuat karena instrumen Sarjana belum ada
+  ({ tim: pj } = await siapkanProdi(admin, {
     nama: "Teknik Elektro", jenjang: "S1", kodePddikti: "20201", akreditasiBerlakuSampai: "2027-03-31",
     identitas: { kota: "Bandar Lampung", peringkatAkreditasi: "Baik Sekali" },
-  });
-  await assert.rejects(buatProyek(pj, { prodiId: prodi.id, nama: "LED Elektro 2026", tahunPengajuan: 2026 }), /Instrumen jenjang Sarjana belum aktif/);
+  }));
+  await assert.rejects(buatProyek(pj, { nama: "LED Elektro 2026", tahunPengajuan: 2026 }), /Instrumen jenjang Sarjana belum aktif/);
 
-  // 2. unggah instrumen Sarjana, ekstraksi, cek, aktifkan
-  const versi = await buatVersiJenjang(pj, { nama: "Instrumen LAM Teknik 2025 Sarjana", kode: "LAMTEKNIK-2025-S1", jenjang: "S1" });
-  await unggahBerkasInstrumen(pj, versi.id, "template", { nama: "template.docx", isi: fikstur("instrumen/template-ledps-2025.docx") });
-  await unggahBerkasInstrumen(pj, versi.id, "matriks", { nama: "matriks.pdf", isi: fikstur("instrumen/matriks-sarjana-2025.pdf") });
-  await unggahBerkasInstrumen(pj, versi.id, "pedoman", { nama: "pedoman.pdf", isi: fikstur("instrumen/pedoman-penilaian-2025.pdf") });
-  await mulaiEkstraksi(pj, versi.id);
+  // 2. Admin UPPS mengunggah instrumen Sarjana, ekstraksi, cek, aktifkan
+  const versi = await buatVersiJenjang(admin, { nama: "Instrumen LAM Teknik 2025 Sarjana", kode: "LAMTEKNIK-2025-S1", jenjang: "S1" });
+  await unggahBerkasInstrumen(admin, versi.id, "template", { nama: "template.docx", isi: fikstur("instrumen/template-ledps-2025.docx") });
+  await unggahBerkasInstrumen(admin, versi.id, "matriks", { nama: "matriks.pdf", isi: fikstur("instrumen/matriks-sarjana-2025.pdf") });
+  await unggahBerkasInstrumen(admin, versi.id, "pedoman", { nama: "pedoman.pdf", isi: fikstur("instrumen/pedoman-penilaian-2025.pdf") });
+  await mulaiEkstraksi(admin, versi.id);
   assert.equal(await prosesEkstraksiInstrumen(versi.id), "selesai");
-  const cek = await dataCekInstrumen(pj, versi.id);
+  const cek = await dataCekInstrumen(admin, versi.id);
   assert.equal(cek.butir.length, 72);
   assert.ok(await prisma.tabelLkpsAcuan.count({ where: { versiId: versi.id } }) > 20, "tabel LKPS acuan dari kerangka bawaan");
-  for (const b of cek.butir) await konfirmasiButir(pj, versi.id, b.id);
-  await aktifkanVersiCek(pj, versi.id);
+  for (const b of cek.butir) await konfirmasiButir(admin, versi.id, b.id);
+  await aktifkanVersiCek(admin, versi.id);
 
   // 3. LED baru otomatis memakai instrumen Sarjana yang baru diaktifkan; TS dari tahun pengajuan
-  const led = await buatProyek(pj, { prodiId: prodi.id, nama: "LED Elektro 2026", tahunPengajuan: 2026 });
+  const led = await buatProyek(pj, { nama: "LED Elektro 2026", tahunPengajuan: 2026 });
   proyekId = led.id;
   assert.equal(led.versiId, versi.id);
   assert.equal(led.tsTahunMulai, 2025);

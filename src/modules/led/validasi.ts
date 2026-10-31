@@ -83,8 +83,8 @@ export type MasukanButir = z.input<typeof skemaButir>;
 // ---------------------------------------------------------------- Proyek
 
 /** LED baru (revisi 19 Okt 2026): pilih prodi, tahun pengajuan, dan nama; instrumen = instrumen aktif jenjang prodi. */
+// revisi 31 Okt 2026: prodi tidak lagi dipilih; LED selalu untuk prodi akun Tim Prodi
 export const skemaProyek = z.object({
-  prodiId: teksWajib("Program studi", 40),
   nama: teksWajib("Nama LED", 200),
   tahunPengajuan: z.coerce.number().int().min(2000, "Tahun pengajuan tidak masuk akal.").max(2100, "Tahun pengajuan tidak masuk akal."),
 });

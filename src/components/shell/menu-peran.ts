@@ -22,13 +22,13 @@ export const MENU_ASESOR: GrupNav = {
 
 /**
  * Data yang dipakai modul LKPS dan LED sekaligus (31 Okt 2026): daftar program studi dan identitas fakultas, serta kunci
- * API Gemini fakultas. Tampil di sidebar kedua modul.
+ * API Gemini fakultas. Revisi 31 Okt 2026: hanya Admin UPPS.
  */
 export const MENU_DATA_BERSAMA: GrupNav = {
-  label: "Data bersama LKPS & LED",
+  label: "Pengaturan UPPS",
   item: [
     { judul: "Program studi", href: "/pengaturan/prodi", ikon: "prodi" },
-    { judul: "Kunci API fakultas", href: "/pengaturan/kunci-api", ikon: "kunci" },
+    { judul: "Kunci API", href: "/admin/kunci-api", ikon: "kunci" },
   ],
 };
 

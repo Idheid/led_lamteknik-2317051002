@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, ChevronRight } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { formatAngka } from "@/modules/bersama/domain/teks";
 import { gantiLabelTS } from "@/modules/bersama/domain/tahun-akademik";
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps<"/led/[proyekId]/ba
 
 /** Ringkasan kriteria/bagian: judul, bobot, target, daftar sub-bagian dengan status, Lanjutkan, Generate semua. */
 export default async function HalamanRingkasanKriteria({ params }: PageProps<"/led/[proyekId]/bagian/[kode]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId, kode: kodeMentah } = await params;
   const [d, catatan] = await Promise.all([muatKriteria(p, proyekId, decodeURIComponent(kodeMentah)), jumlahCatatanPerSub(p, proyekId)]);
   if (!d) notFound();

@@ -152,7 +152,7 @@ function KartuCatatan({ c, peran, bolehUbah, aktif, onPilih, muat }: {
               <CornerDownRight className="mt-0.5 size-3 shrink-0 text-muted-foreground" aria-hidden />
               <span>
                 <span className="font-medium">{b.penulis ?? "Akun dihapus"}</span>
-                <span className="text-muted-foreground"> {b.peranPenulis === "ASESOR" ? "(asesor)" : "(PJ)"} {LABEL_JENIS[b.jenis] ?? b.jenis} · {waktu(b.waktu)}</span>
+                <span className="text-muted-foreground"> {b.peranPenulis === "ASESOR" ? "(asesor)" : "(Tim Prodi)"} {LABEL_JENIS[b.jenis] ?? b.jenis} · {waktu(b.waktu)}</span>
                 {b.isi && <span className="block whitespace-pre-line">{b.isi}</span>}
               </span>
             </li>

@@ -9,7 +9,7 @@ import { MENU_ADMIN } from "./menu-peran";
  * (LKPS/LED) untuk penyusun dan asesor (31 Okt 2026).
  */
 export async function ShellPeran({ pengguna, children }: { pengguna: Pengguna; children: ReactNode }) {
-  if (pengguna.peran === "SUPER_ADMIN") {
+  if (pengguna.peran === "ADMIN") {
     return <ShellAplikasi pengguna={pengguna} grup={[MENU_ADMIN]} subjudul="Admin" beranda="/admin/akun">{children}</ShellAplikasi>;
   }
   return <ShellBersama pengguna={pengguna}>{children}</ShellBersama>;

@@ -1,12 +1,12 @@
 import { prisma } from "@/modules/bersama/db";
-import { pastikanSuperAdmin, type Pengguna } from "@/modules/bersama/akses";
+import { pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 
 /**
  * F-20: log pemakaian token per panggilan generate untuk super admin. Isi kunci tidak pernah ditampilkan;
  * hanya label dan 4 karakter terakhir.
  */
 export async function ringkasanPemakaian(p: Pengguna, opsi: { hari?: number; prodiId?: string | null } = {}) {
-  pastikanSuperAdmin(p);
+  pastikanAdmin(p);
   const hari = opsi.hari ?? 7;
   const sejak = new Date(Date.now() - hari * 24 * 60 * 60_000);
   const saring = { createdAt: { gte: sejak }, ...(opsi.prodiId ? { prodiId: opsi.prodiId } : {}) };

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
-import { GalatAkses, GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/modules/bersama/akses";
+import { GalatAkses, GalatPengguna, pastikanAdmin, pastikanPeran, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
@@ -83,9 +83,9 @@ function periksaBerkas(m: MasukanDokumen) {
   return kenaliJenis(m.nama, m.isi);
 }
 
-/** U-10: PJ mengunggah dokumen bersama fakultas (diproses sekali, dipakai semua LED). */
+/** U-10: Admin UPPS mengunggah dokumen bersama fakultas (diproses sekali, dipakai semua LED; keputusan B6). */
 export async function unggahDokumenBersama(p: Pengguna, m: MasukanDokumen) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const { jenis, mime } = periksaBerkas(m);
   await periksaKaitanBersama(m);
   const tautanBukti = skemaTautan.parse(m.tautanBukti ?? "");
@@ -112,7 +112,7 @@ export async function unggahDokumenBersama(p: Pengguna, m: MasukanDokumen) {
 
 /** Pilihan sub-bagian (versi instrumen aktif) untuk mengaitkan dokumen bersama fakultas. */
 export async function pilihanSubBagianBersama(p: Pengguna) {
-  pastikanPenanggungJawab(p);
+  pastikanPeran(p, "ADMIN", "TIM_PRODI");
   const sub = await prisma.subBagian.findMany({
     where: { bagian: { versi: { aktif: true } }, tipe: { notIn: ["data", "otomatis"] } },
     orderBy: [{ bagian: { urutan: "asc" } }, { urutan: "asc" }],
@@ -122,8 +122,9 @@ export async function pilihanSubBagianBersama(p: Pengguna) {
   return sub.map((s) => ({ kode: s.kode, label: `${s.bagian.kode} ${s.label ? `${s.label} ` : ""}${s.judul}`.slice(0, 120) }));
 }
 
+/** Basis Pengetahuan fakultas: diunggah Admin UPPS, dilihat Tim Prodi (tab Dokumen bersama fakultas). */
 export async function daftarDokumenBersama(p: Pengguna) {
-  pastikanPenanggungJawab(p);
+  pastikanPeran(p, "ADMIN", "TIM_PRODI");
   return prisma.dokumen.findMany({
     where: { proyekId: null },
     orderBy: { createdAt: "desc" },
@@ -169,17 +170,22 @@ async function dokumenUntukAsesor(p: Pengguna, id: string) {
   return d;
 }
 
-export async function dokumenMilik(p: Pengguna, id: string) {
+/**
+ * Dokumen yang boleh dipakai pengguna. Dokumen LED: Tim Prodi pemiliknya (Admin UPPS ikut bila `baca`). Dokumen
+ * bersama fakultas: hanya Admin UPPS yang mengubah; Tim Prodi ikut membaca bila `baca`.
+ */
+export async function dokumenMilik(p: Pengguna, id: string, opsi: { baca?: boolean } = {}) {
   const d = await prisma.dokumen.findUnique({ where: { id } });
   if (!d) throw new GalatPengguna("Dokumen tidak ditemukan.");
-  if (d.proyekId) await ambilProyek(p, d.proyekId);
-  else pastikanPenanggungJawab(p);
+  if (d.proyekId) await ambilProyek(p, d.proyekId, { baca: opsi.baca && p.peran === "ADMIN" });
+  else if (opsi.baca) pastikanPeran(p, "ADMIN", "TIM_PRODI");
+  else pastikanAdmin(p);
   return d;
 }
 
 /** Potongan satu dokumen untuk dilihat di Basis Pengetahuan (revisi 22 Okt 2026). */
 export async function potonganDokumen(p: Pengguna, id: string) {
-  const d = await dokumenMilik(p, id);
+  const d = await dokumenMilik(p, id, { baca: true });
   const potongan = await prisma.$queryRaw<{ urutan: number; halaman: number | null; teks: string; terindeks: boolean; modelEmbedding: string }[]>`
     SELECT "urutan", "halaman", "teks", "embedding" IS NOT NULL AS "terindeks", "modelEmbedding"
     FROM "Potongan" WHERE "dokumenId" = ${d.id} ORDER BY "urutan"`;
@@ -251,7 +257,7 @@ export async function prosesUlangDokumen(p: Pengguna, id: string) {
 /** Isi berkas asli untuk diunduh/ditampilkan (byte sama persis dengan unggahan). */
 export async function berkasDokumen(p: Pengguna, id: string) {
   // asesor membaca gambar yang disisipkan di narasi LED yang ditugaskan kepadanya (revisi 22 Okt 2026)
-  const d = p.peran === "ASESOR" ? await dokumenUntukAsesor(p, id) : await dokumenMilik(p, id);
+  const d = p.peran === "ASESOR" ? await dokumenUntukAsesor(p, id) : await dokumenMilik(p, id, { baca: true });
   return { dokumen: d, isi: await bacaBerkas(d.lokasi) };
 }
 

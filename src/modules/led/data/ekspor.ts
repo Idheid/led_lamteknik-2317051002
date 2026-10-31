@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatAkses, GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/modules/bersama/akses";
+import { GalatAkses, GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
@@ -171,7 +171,7 @@ async function laporanTemplate(versiId: string, isi: Buffer, jenjangVersi: strin
 }
 
 export async function unggahTemplateLed(p: Pengguna, versiId: string, berkas: { nama: string; isi: Buffer }) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const versi = await prisma.versiInstrumen.findUnique({ where: { id: versiId } });
   if (!versi) throw new GalatPengguna("Versi instrumen tidak ditemukan.");
   if (berkas.isi.length > UKURAN_MAKS_TEMPLATE) throw new GalatPengguna("Berkas template terlalu besar (maks. 30 MB).");
@@ -208,7 +208,7 @@ export async function perbaruiLaporanTemplate(versiId: string): Promise<void> {
 
 /** Laporan template untuk halaman versi (dihitung dari template cadangan bila belum ada unggahan). */
 export async function infoTemplateLed(p: Pengguna, versiId: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const versi = await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: versiId } });
   const laporan = versi.templateLedLaporan as Record<string, { placeholder: number; dihapus: string[]; tidakDitemukan: string[] }> | null;
   const cadangan = !versi.templateLedLokasi && Boolean(process.env.TEMPLATE_LEDPS_PATH) && Boolean(await bacaTemplateVersi(versi));

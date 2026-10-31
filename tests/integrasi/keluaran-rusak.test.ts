@@ -7,7 +7,7 @@ import { tambahKunci } from "@/modules/bersama/data/kunci-api";
 import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
 import { aturModelUji } from "@/modules/bersama/llm/narasi";
 import { panggilNarasi } from "@/modules/led/proses/llm-narasi";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas } from "./bantu";
 
 /**
  * Revisi 23 Okt 2026: "No object generated: could not parse the response". Jawaban yang dibungkus pagar kode
@@ -24,10 +24,10 @@ const panggilan: string[] = [];
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  const admin = await buatSuperAdmin();
-  const pj = await siapkanPj(admin);
+  const admin = await buatAdmin();
+  await siapkanFakultas(admin);
   await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: ["gemini-2.5-flash"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
-  await tambahKunci(pj, { label: "Kunci", kunci: "AIzaSyKunciKeluaranRusak0000000000000001" });
+  await tambahKunci(admin, { label: "Kunci", kunci: "AIzaSyKunciKeluaranRusak0000000000000001" });
   aturModelUji((_k, kode) => new MockLanguageModelV4({
     modelId: kode,
     doGenerate: async () => {

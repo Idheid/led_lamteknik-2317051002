@@ -78,7 +78,7 @@ export default async function HalamanSubAsesor({ params }: PageProps<"/led/aseso
           bolehCatat={catatan.review === "direview"}
         />
       ) : (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">PJ belum menyusun narasi sub-bagian ini.</p>
+        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Tim Prodi belum menyusun narasi sub-bagian ini.</p>
       )}
 
       <nav aria-label="Pindah sub-bagian" className="flex flex-wrap items-center justify-between gap-3 border-t pt-4 text-sm">

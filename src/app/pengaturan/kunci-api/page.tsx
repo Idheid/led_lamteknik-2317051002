@@ -1,15 +1,6 @@
-import type { Metadata } from "next";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
-import { HalamanKunci } from "@/components/kunci-api/halaman-kunci";
-import { ShellBersama } from "@/components/shell/shell-bersama";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Kunci API fakultas" };
-
-export default async function HalamanKunciProdi() {
-  const p = await wajibPenanggungJawab();
-  return (
-    <ShellBersama pengguna={p}>
-      <HalamanKunci pengguna={p} hrefTambah="/pengaturan/kunci-api/tambah" />
-    </ShellBersama>
-  );
+/** Revisi 31 Okt 2026 (B3): kunci API hanya dikelola Admin UPPS di satu halaman. */
+export default function HalamanKunciLama() {
+  redirect("/admin/kunci-api");
 }

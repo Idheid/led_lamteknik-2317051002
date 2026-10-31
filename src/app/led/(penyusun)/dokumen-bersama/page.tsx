@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { daftarDokumenBersama, pilihanSubBagianBersama } from "@/modules/led/data/dokumen";
-import { daftarKunci } from "@/modules/bersama/data/kunci-api";
+import { ringkasanKunci } from "@/modules/bersama/data/kunci-api";
 import { pakaiPenyediaUji } from "@/modules/bersama/llm/embedding";
 import { STATUS_BERJALAN } from "@/modules/bersama/tampil";
 import { JudulHalaman } from "@/components/judul-halaman";
@@ -18,8 +18,8 @@ import { TabelDokumen } from "@/modules/led/komponen/basis-pengetahuan/tabel-dok
 export const metadata: Metadata = { title: "Basis Pengetahuan fakultas" };
 
 export default async function HalamanDokumenBersama() {
-  const p = await wajibPenanggungJawab();
-  const [dokumen, pilihan, kunci] = await Promise.all([daftarDokumenBersama(p), pilihanSubBagianBersama(p), daftarKunci(p)]);
+  const p = await wajibAdmin();
+  const [dokumen, pilihan, kunci] = await Promise.all([daftarDokumenBersama(p), pilihanSubBagianBersama(p), ringkasanKunci()]);
   const namaSub = new Map(pilihan.map((s) => [s.kode, s.label]));
   return (
     <ShellMenuLed pengguna={p}>
@@ -35,14 +35,14 @@ export default async function HalamanDokumenBersama() {
         langkah={[
           "Unggah dokumen bersama: VMTS UPPS dan Renstra, SK struktur organisasi, laporan keuangan, sarana-prasarana dan K3L, dokumen SPMI dan audit mutu internal.",
           "Kaitkan ke sub-bagian bila dokumen khusus satu bagian; biarkan Umum bila dipakai banyak bagian.",
-          "Dokumen diindeks dengan kunci API fakultas; pastikan ada kunci di menu Kunci API fakultas.",
+          "Dokumen diindeks dengan kunci API fakultas; pastikan ada kunci di menu Kunci API.",
         ]}
       />
-      {kunci.length === 0 && !pakaiPenyediaUji() && (
+      {kunci.milikFakultas === 0 && !pakaiPenyediaUji() && (
         <Alert>
           <AlertTitle>Belum ada kunci API fakultas</AlertTitle>
           <AlertDescription>
-            <Link className="underline" href="/pengaturan/kunci-api">Tambahkan kunci</Link> agar dokumen bisa diindeks dan dicari.
+            <Link className="underline" href="/admin/kunci-api">Tambahkan kunci</Link> agar dokumen bisa diindeks dan dicari.
           </AlertDescription>
         </Alert>
       )}

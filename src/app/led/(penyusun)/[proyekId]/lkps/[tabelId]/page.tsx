@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { ambilTabel } from "@/modules/led/data/lkps";
 import { petaTS } from "@/modules/bersama/domain/tahun-akademik";
 import { JudulHalaman } from "@/components/judul-halaman";
@@ -12,7 +12,7 @@ import { EditorTabel } from "./editor-tabel";
 export const metadata: Metadata = { title: "Tabel LKPS" };
 
 export default async function HalamanTabelLkps({ params }: PageProps<"/led/[proyekId]/lkps/[tabelId]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId, tabelId } = await params;
   const data = await ambilTabel(p, tabelId);
   if (!data || data.proyek.id !== proyekId) notFound();

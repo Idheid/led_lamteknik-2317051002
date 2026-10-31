@@ -4,13 +4,19 @@ import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/modules/bersama/aksi";
 import * as org from "@/modules/bersama/data/organisasi";
 import * as pengaturan from "@/modules/bersama/data/pengaturan";
-import type { MasukanAkun, MasukanAkunSuperAdmin } from "@/modules/bersama/validasi";
+import type { MasukanAkun, MasukanAkunTimProdi } from "@/modules/bersama/validasi";
 
-// ---------------------------------------------------------------- Akun (admin)
+// ---------------------------------------------------------------- Akun (Admin UPPS)
 
-export async function aksiBuatAkun(masukan: MasukanAkun) {
-  const r = await jalankanAksi(async (p) => (await org.buatAkunPenanggungJawab(p, masukan)).id);
+export async function aksiBuatTimProdi(masukan: MasukanAkunTimProdi) {
+  const r = await jalankanAksi(async (p) => (await org.buatAkunTimProdi(p, masukan)).id);
   revalidatePath("/admin", "layout");
+  return r;
+}
+
+export async function aksiPindahProdi(userId: string, prodiId: string) {
+  const r = await jalankanAksi((p) => org.pindahProdiAkun(p, userId, prodiId).then(() => null));
+  revalidatePath("/admin/akun");
   return r;
 }
 
@@ -20,8 +26,8 @@ export async function aksiBuatAsesor(masukan: MasukanAkun) {
   return r;
 }
 
-export async function aksiBuatSuperAdmin(masukan: MasukanAkunSuperAdmin) {
-  const r = await jalankanAksi(async (p) => (await org.buatAkunSuperAdmin(p, masukan)).id);
+export async function aksiBuatAdmin(masukan: MasukanAkun) {
+  const r = await jalankanAksi(async (p) => (await org.buatAkunAdmin(p, masukan)).id);
   revalidatePath("/admin", "layout");
   return r;
 }

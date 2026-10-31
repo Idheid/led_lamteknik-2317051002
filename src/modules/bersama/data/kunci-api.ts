@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { GalatAkses, GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { antreUlangMenungguKunci } from "@/modules/led/data/dokumen";
 import { antreUlangTugasTertunda } from "@/modules/led/data/tugas-generate";
@@ -12,9 +12,11 @@ import {
 import { galatPenyedia, pakaiPenyediaUji, penyediaGemini, penyediaUji, type PenyediaEmbedding } from "@/modules/bersama/llm/embedding";
 
 /**
- * Kunci API Gemini (F-19). Revisi 19 Okt 2026: kunci milik fakultas, dipakai semua LED. PJ fakultas bisa menambah
- * kunci kapan saja (misalnya saat kuota kunci lama habis); admin mengisi kunci cadangan. Kunci dienkripsi AES-256-GCM dan tidak pernah dikirim ke browser. Pemilihan kunci
- * dan penandaan kuota habis memakai src/modules/led/domain/kunci-api.ts.
+ * Kunci API Gemini (F-19). Kunci milik fakultas, dipakai semua LED. Revisi 31 Okt 2026 (keputusan B3): hanya Admin UPPS
+ * yang mengelola kunci, yaitu kunci utama fakultas (dicoba lebih dulu) dan kunci cadangan, di satu halaman. Tim Prodi
+ * hanya melihat status kunci. Nilai basis data `pemilik` tetap nilai lama: `penanggung_jawab` = kunci utama,
+ * `super_admin` = kunci cadangan. Kunci dienkripsi AES-256-GCM dan tidak pernah dikirim ke browser. Pemilihan kunci dan
+ * penandaan kuota habis memakai src/modules/bersama/domain/kunci-api.ts.
  */
 
 export const MODEL_EMBEDDING_BAWAAN = "gemini-embedding-001";
@@ -37,14 +39,19 @@ const skemaKunci = z.object({
     .regex(/^[!-~]+$/, "Kunci API tidak boleh berisi spasi, baris baru, atau huruf non-ASCII. Salin ulang dari Google AI Studio."),
 });
 
-/** Kunci admin = cadangan; kunci PJ = kunci fakultas. */
-function pemilikDari(p: Pengguna) {
-  return { pemilik: p.peran === "SUPER_ADMIN" ? ("super_admin" as const) : ("penanggung_jawab" as const) };
+/** Jenis kunci di antarmuka: utama (fakultas, dicoba lebih dulu) atau cadangan. */
+export type JenisKunci = "utama" | "cadangan";
+
+export const LABEL_JENIS_KUNCI: Record<JenisKunci, string> = { utama: "Kunci utama fakultas", cadangan: "Kunci cadangan" };
+
+function pemilikDari(jenis: JenisKunci) {
+  return { pemilik: jenis === "cadangan" ? ("super_admin" as const) : ("penanggung_jawab" as const) };
 }
 
-/** Daftar kunci milik pengguna (tanpa isi kunci; hanya 4 karakter terakhir). */
-export async function daftarKunci(p: Pengguna) {
-  const { pemilik } = pemilikDari(p);
+/** Daftar kunci satu jenis (tanpa isi kunci; hanya 4 karakter terakhir). Hanya Admin UPPS. */
+export async function daftarKunci(p: Pengguna, jenis: JenisKunci = "utama") {
+  pastikanAdmin(p);
+  const { pemilik } = pemilikDari(jenis);
   const daftar = await prisma.kunciAPI.findMany({
     where: { pemilik },
     orderBy: [{ urutan: "asc" }, { createdAt: "asc" }],
@@ -54,8 +61,9 @@ export async function daftarKunci(p: Pengguna) {
   return daftar.map((k) => ({ ...k, statusEfektif: statusEfektif({ ...k, pemilik, dibuatPada: k.createdAt } as KunciDomain, sekarang) }));
 }
 
-export async function tambahKunci(p: Pengguna, masukan: { label: string; kunci: string }) {
-  const { pemilik } = pemilikDari(p);
+export async function tambahKunci(p: Pengguna, masukan: { label: string; kunci: string; jenis?: JenisKunci }) {
+  pastikanAdmin(p);
+  const { pemilik } = pemilikDari(masukan.jenis ?? "utama");
   const data = skemaKunci.parse(masukan);
   const jumlah = await prisma.kunciAPI.count({ where: { pemilik } });
   const k = await prisma.kunciAPI.create({
@@ -80,11 +88,9 @@ export async function tambahKunci(p: Pengguna, masukan: { label: string; kunci: 
 }
 
 async function kunciMilik(p: Pengguna, id: string) {
+  pastikanAdmin(p);
   const k = await prisma.kunciAPI.findUnique({ where: { id } });
-  const { pemilik } = pemilikDari(p);
-  if (!k || k.pemilik !== pemilik) {
-    throw new GalatAkses("Kunci API tidak ditemukan.");
-  }
+  if (!k) throw new GalatAkses("Kunci API tidak ditemukan.");
   return k;
 }
 

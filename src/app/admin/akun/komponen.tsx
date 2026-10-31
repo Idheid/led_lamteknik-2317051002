@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { KeyRound, MoreHorizontal, Plus, Power, Trash2 } from "lucide-react";
+import { ArrowRightLeft, KeyRound, MoreHorizontal, Plus, Power, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -11,41 +11,53 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
-import { skemaAkunPenanggungJawab, type MasukanAkun } from "@/modules/bersama/validasi";
-import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAkun, aksiBuatAsesor, aksiBuatSuperAdmin, aksiHapusAkun } from "../aksi";
+import { skemaAkun, type MasukanAkun } from "@/modules/bersama/validasi";
+import type { Peran } from "@/modules/bersama/peran";
+import { aksiAturAktifAkun, aksiAturUlangSandi, aksiBuatAdmin, aksiBuatAsesor, aksiBuatTimProdi, aksiHapusAkun, aksiPindahProdi } from "../aksi";
 
-type PeranBaru = "PJ" | "ASESOR" | "ADMIN";
+export interface PilihanProdi {
+  id: string;
+  label: string;
+}
 
-/** Tiga peran (revisi 22 Okt 2026), dijelaskan singkat supaya admin tahu akun mana yang dibuat. */
-const PERAN_BARU: { kunci: PeranBaru; judul: string; isi: string }[] = [
-  { kunci: "PJ", judul: "Penanggung jawab (PJ)", isi: "Menyusun semua LED fakultas: prodi, LKPS, dokumen, narasi, ekspor Word." },
-  { kunci: "ASESOR", judul: "Asesor", isi: "Membaca LED yang ditugaskan, memberi catatan revisi dan skor. Tugaskan di menu Penugasan asesor." },
-  { kunci: "ADMIN", judul: "Admin", isi: "Mengelola akun, penugasan asesor, kunci API cadangan, dan model AI." },
+/** Tiga peran (revisi 31 Okt 2026), dijelaskan singkat supaya admin tahu akun mana yang dibuat. */
+const PERAN_BARU: { kunci: Peran; judul: string; isi: string }[] = [
+  { kunci: "TIM_PRODI", judul: "Tim Prodi", isi: "Menyusun LED program studinya: LKPS, dokumen, narasi, ekspor Word. Satu prodi boleh beberapa akun." },
+  { kunci: "ASESOR", judul: "Asesor (reviewer)", isi: "Membaca LED yang ditugaskan, memberi catatan revisi dan skor. Tugaskan di menu Penugasan asesor." },
+  { kunci: "ADMIN", judul: "Admin UPPS", isi: "Mengelola akun, program studi, instrumen, Basis Pengetahuan fakultas, kunci API, dan penugasan asesor." },
 ];
 
-/** Satu tombol Tambah akun dengan pilihan peran (revisi 23 Okt 2026; sebelumnya tiga tombol yang mudah terlewat). */
-export function DialogTambahAkun() {
+/** Satu tombol Tambah akun dengan pilihan peran; akun Tim Prodi wajib memilih program studi. */
+export function DialogTambahAkun({ prodi }: { prodi: PilihanProdi[] }) {
   const [buka, setBuka] = useState(false);
-  const [peran, setPeran] = useState<PeranBaru>("PJ");
+  const [peran, setPeran] = useState<Peran>("TIM_PRODI");
+  const [prodiId, setProdiId] = useState("");
+  const [galatProdi, setGalatProdi] = useState(false);
   const { sibuk, jalankan } = useAksi();
   const form = useForm<MasukanAkun>({
-    resolver: zodResolver(skemaAkunPenanggungJawab),
+    resolver: zodResolver(skemaAkun),
     defaultValues: { nama: "", email: "", kataSandi: "" },
   });
-  const kirim = form.handleSubmit((nilai) =>
-    jalankan(() => (peran === "ASESOR" ? aksiBuatAsesor(nilai) : peran === "ADMIN" ? aksiBuatSuperAdmin(nilai) : aksiBuatAkun(nilai)), {
+  const kirim = form.handleSubmit((nilai) => {
+    if (peran === "TIM_PRODI" && !prodiId) {
+      setGalatProdi(true);
+      return;
+    }
+    return jalankan(() => (peran === "ASESOR" ? aksiBuatAsesor(nilai) : peran === "ADMIN" ? aksiBuatAdmin(nilai) : aksiBuatTimProdi({ ...nilai, prodiId })), {
       sukses: "Akun dibuat. Sampaikan email dan kata sandi awalnya; pemilik akun wajib menggantinya saat login pertama.",
       lalu: () => {
         setBuka(false);
+        setProdiId("");
         form.reset({ nama: "", email: "", kataSandi: "" });
       },
-    }),
-  );
+    });
+  });
   return (
     <Dialog open={buka} onOpenChange={setBuka}>
       <DialogTrigger asChild>
@@ -76,6 +88,19 @@ export function DialogTambahAkun() {
                 </label>
               ))}
             </fieldset>
+            {peran === "TIM_PRODI" && (
+              <Field data-invalid={galatProdi && !prodiId}>
+                <FieldLabel htmlFor="akun-prodi">Program studi</FieldLabel>
+                <Select value={prodiId} onValueChange={(v) => { setProdiId(v); setGalatProdi(false); }}>
+                  <SelectTrigger id="akun-prodi" className="w-full" aria-invalid={galatProdi && !prodiId}><SelectValue placeholder="Pilih program studi" /></SelectTrigger>
+                  <SelectContent>
+                    {prodi.map((x) => <SelectItem key={x.id} value={x.id}>{x.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {prodi.length === 0 && <FieldDescription>Belum ada program studi. Tambahkan dulu di menu Program studi.</FieldDescription>}
+                {galatProdi && !prodiId && <FieldError>Pilih program studi.</FieldError>}
+              </Field>
+            )}
             <Controller
               name="nama"
               control={form.control}
@@ -123,10 +148,16 @@ export function DialogTambahAkun() {
   );
 }
 
-export function AksiBarisAkun({ id, nama, email, aktif }: { id: string; nama: string; email: string; aktif: boolean }) {
+export function AksiBarisAkun({ id, nama, email, aktif, prodiId, prodi }: {
+  id: string; nama: string; email: string; aktif: boolean;
+  /** Prodi akun Tim Prodi; undefined untuk Admin UPPS dan Asesor (tidak bisa dipindah). */
+  prodiId?: string | null;
+  prodi: PilihanProdi[];
+}) {
   const { sibuk, jalankan } = useAksi();
-  const [dialog, setDialog] = useState<"sandi" | "hapus" | null>(null);
+  const [dialog, setDialog] = useState<"sandi" | "hapus" | "pindah" | null>(null);
   const [sandi, setSandi] = useState("");
+  const [prodiBaru, setProdiBaru] = useState("");
   return (
     <>
       <DropdownMenu>
@@ -140,6 +171,12 @@ export function AksiBarisAkun({ id, nama, email, aktif }: { id: string; nama: st
             <KeyRound aria-hidden />
             Atur ulang kata sandi
           </DropdownMenuItem>
+          {prodiId !== undefined && (
+            <DropdownMenuItem onSelect={() => { setProdiBaru(prodiId ?? ""); setDialog("pindah"); }}>
+              <ArrowRightLeft aria-hidden />
+              Pindah program studi
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onSelect={() =>
               jalankan(() => aksiAturAktifAkun(id, !aktif), { sukses: aktif ? `${email} dinonaktifkan.` : `${email} diaktifkan.` })
@@ -184,13 +221,40 @@ export function AksiBarisAkun({ id, nama, email, aktif }: { id: string; nama: st
         </DialogContent>
       </Dialog>
 
+      <Dialog open={dialog === "pindah"} onOpenChange={(b) => setDialog(b ? "pindah" : null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pindah program studi</DialogTitle>
+            <DialogDescription>{email} akan keluar dari semua perangkat; setelah masuk lagi, ia menyusun LED prodi yang baru.</DialogDescription>
+          </DialogHeader>
+          <Field>
+            <FieldLabel htmlFor={`pindah-${id}`}>Program studi</FieldLabel>
+            <Select value={prodiBaru} onValueChange={setProdiBaru}>
+              <SelectTrigger id={`pindah-${id}`} className="w-full"><SelectValue placeholder="Pilih program studi" /></SelectTrigger>
+              <SelectContent>
+                {prodi.map((x) => <SelectItem key={x.id} value={x.id}>{x.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <DialogFooter>
+            <Button
+              disabled={sibuk || !prodiBaru || prodiBaru === prodiId}
+              onClick={() => jalankan(() => aksiPindahProdi(id, prodiBaru), { sukses: "Program studi akun diperbarui.", lalu: () => setDialog(null) })}
+            >
+              <IkonSibuk sibuk={sibuk} />
+              Pindahkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={dialog === "hapus"} onOpenChange={(b) => setDialog(b ? "hapus" : null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus akun {email}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Akun dihapus permanen. Proyek LED, kunci API, dan riwayat versi prodi tetap ada dan bisa dipakai akun
-              penanggung jawab baru. Bila hanya ingin mencegah login, pilih Nonaktifkan.
+              Akun dihapus permanen. LED, kunci API, dan riwayat versi prodi tetap ada dan bisa dipakai akun Tim Prodi
+              lain di prodi itu. Bila hanya ingin mencegah login, pilih Nonaktifkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

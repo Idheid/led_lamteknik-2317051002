@@ -99,7 +99,7 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
   const simpan = () => blok && jalankan(
     () => aksiBuatCatatan(proyekId, { subBagianKode, ...blok, isi: isiCatatan }),
     {
-      sukses: "Catatan dikirim; PJ langsung melihatnya.",
+      sukses: "Catatan dikirim; Tim Prodi langsung melihatnya.",
       lalu: (id) => {
         setBlok(null);
         setIsiCatatan("");
@@ -115,7 +115,7 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
       <div className="flex min-w-0 flex-col gap-2">
         {versiAktifId && versiAktifId !== versiId && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-sm" role="status">
-            PJ menyimpan versi baru narasi ini.
+            Tim Prodi menyimpan versi baru narasi ini.
             <Button size="sm" variant="outline" onClick={() => router.refresh()}><RefreshCw aria-hidden />Tampilkan versi terbaru</Button>
           </div>
         )}
@@ -137,7 +137,7 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
             <p className="text-xs text-muted-foreground">Blok (sorot) kalimat di narasi untuk menulis catatan revisi.</p>
           )
         ) : (
-          <p className="text-xs text-muted-foreground">Catatan baru bisa ditulis setelah PJ mengajukan review (status Direview).</p>
+          <p className="text-xs text-muted-foreground">Catatan baru bisa ditulis setelah Tim Prodi mengajukan review (status Direview).</p>
         )}
       </div>
       <PanelCatatan catatan={catatan} peran="ASESOR" bolehUbah aktif={aktif} onPilih={(id) => setAktif(id)} muat={muat} />

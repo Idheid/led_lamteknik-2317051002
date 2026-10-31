@@ -1,28 +1,29 @@
 import { createAccessControl } from "better-auth/plugins/access";
 import { adminAc, defaultStatements, userAc } from "better-auth/plugins/admin/access";
 
-/** Peran (nilainya sama dengan enum Prisma `Peran`). Revisi 22 Okt 2026: ditambah asesor (reviewer internal). */
-export const PERAN = ["SUPER_ADMIN", "PENANGGUNG_JAWAB", "ASESOR"] as const;
+/**
+ * Peran (nilainya sama dengan enum Prisma `Peran`). Revisi 31 Okt 2026 (Pak Tris): hanya tiga peran, yaitu Admin UPPS
+ * (yang "nyetting-nyetting": akun, prodi, instrumen, kunci API), Tim Prodi (penyusun satu prodi; boleh beberapa akun
+ * per prodi), dan Asesor (reviewer internal).
+ */
+export const PERAN = ["ADMIN", "TIM_PRODI", "ASESOR"] as const;
 export type Peran = (typeof PERAN)[number];
 
 export const LABEL_PERAN: Record<Peran, string> = {
-  SUPER_ADMIN: "Admin",
-  PENANGGUNG_JAWAB: "Penanggung jawab fakultas",
-  ASESOR: "Asesor",
+  ADMIN: "Admin UPPS",
+  TIM_PRODI: "Tim Prodi",
+  ASESOR: "Asesor (reviewer)",
 };
 
 export const ac = createAccessControl(defaultStatements);
 
 export const peranAkses = {
-  SUPER_ADMIN: ac.newRole({ ...adminAc.statements }),
-  PENANGGUNG_JAWAB: ac.newRole({ ...userAc.statements }),
+  ADMIN: ac.newRole({ ...adminAc.statements }),
+  TIM_PRODI: ac.newRole({ ...userAc.statements }),
   ASESOR: ac.newRole({ ...userAc.statements }),
 };
 
-/**
- * Halaman awal setelah login, per peran. 31 Okt 2026: penyusun dan asesor ke halaman awal "/" (pilih modul LKPS atau
- * LED); admin ke Kelola akun.
- */
-export function berandaPeran(peran: string | null | undefined): string {
-  return peran === "SUPER_ADMIN" ? "/admin/akun" : "/";
+/** Halaman awal setelah login. Revisi 31 Okt 2026: semua peran masuk ke halaman awal "/" (pilih modul LKPS atau LED). */
+export function berandaPeran(_peran?: string | null): string {
+  return "/";
 }

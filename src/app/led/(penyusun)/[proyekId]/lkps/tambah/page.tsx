@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { ambilProyekUbah } from "@/modules/led/data/proyek";
 import { formatTahunAkademik } from "@/modules/bersama/domain/tahun-akademik";
 import { HalamanTambah } from "@/components/halaman-tambah";
@@ -8,7 +8,7 @@ import { UnggahBerkas } from "@/components/unggah-berkas";
 export const metadata: Metadata = { title: "Tambah data LKPS" };
 
 export default async function HalamanTambahLkps({ params }: PageProps<"/led/[proyekId]/lkps/tambah">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId } = await params;
   const proyek = await ambilProyekUbah(p, proyekId);
   const kembali = `/led/${proyekId}/lkps`;

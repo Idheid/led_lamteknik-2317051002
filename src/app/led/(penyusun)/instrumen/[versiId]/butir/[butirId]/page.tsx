@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { prisma } from "@/modules/bersama/db";
 import { ambilButir, pilihanSubBagian } from "@/modules/led/data/instrumen";
 import { JENJANG, namaJenjang, type KodeJenjang } from "@/modules/bersama/domain/jenjang";
@@ -12,7 +12,7 @@ import { FormButir } from "../form-butir";
 export const metadata: Metadata = { title: "Butir penilaian" };
 
 export default async function HalamanUbahButir({ params, searchParams }: PageProps<"/led/instrumen/[versiId]/butir/[butirId]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const { versiId, butirId } = await params;
   const q = await searchParams;
   const versi = await prisma.versiInstrumen.findUnique({

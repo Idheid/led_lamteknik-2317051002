@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { GalatPengguna } from "@/modules/bersama/akses";
 import { dataCekInstrumen } from "@/modules/led/data/unggah-instrumen";
 import { katalogRumus } from "@/modules/led/domain/metrik-lkps";
@@ -20,7 +20,7 @@ export const metadata: Metadata = { title: "Periksa hasil ekstraksi" };
  * mengonfirmasi; pemeriksaan otomatis harus lolos sebelum "Sudah dicek, aktifkan".
  */
 export default async function HalamanCekInstrumen({ params }: PageProps<"/led/instrumen/[versiId]/cek">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const { versiId } = await params;
   const data = await dataCekInstrumen(p, versiId).catch((e) => {
     if (e instanceof GalatPengguna) return null;

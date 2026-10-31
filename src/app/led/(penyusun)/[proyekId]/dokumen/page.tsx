@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { daftarDokumen, daftarDokumenBersama, pilihanSubBagianBersama } from "@/modules/led/data/dokumen";
 import { pilihanSubBagianProyek } from "@/modules/led/data/proyek";
-import { daftarKunci } from "@/modules/bersama/data/kunci-api";
+import { ringkasanKunci } from "@/modules/bersama/data/kunci-api";
 import { pakaiPenyediaUji } from "@/modules/bersama/llm/embedding";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
@@ -23,18 +23,18 @@ export const metadata: Metadata = { title: "Basis Pengetahuan" };
  * dua tab, ditambah lihat potongan, kolom tahun, dan uji cari (8 potongan yang diberikan ke AI beserta skornya).
  */
 export default async function HalamanBasisPengetahuan({ params, searchParams }: PageProps<"/led/[proyekId]/dokumen">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId } = await params;
   const tab = (await searchParams).tab === "bersama" ? "bersama" : "led";
   const [semua, bersama, pilihan, pilihanBersama, kunci] = await Promise.all([
-    daftarDokumen(p, proyekId), daftarDokumenBersama(p), pilihanSubBagianProyek(p, proyekId), pilihanSubBagianBersama(p), daftarKunci(p),
+    daftarDokumen(p, proyekId), daftarDokumenBersama(p), pilihanSubBagianProyek(p, proyekId), pilihanSubBagianBersama(p), ringkasanKunci(),
   ]);
   const milikLed = semua.filter((d) => !d.bersama);
   const namaSub = new Map(pilihan.map((s) => [s.kode, s.label]));
   const namaSubBersama = new Map(pilihanBersama.map((s) => [s.kode, s.label]));
   const berjalan = semua.some((d) => STATUS_BERJALAN.includes(d.status));
   const menungguKunci = semua.filter((d) => d.status === "menunggu_kunci").length;
-  const tanpaKunci = kunci.length === 0 && !pakaiPenyediaUji();
+  const tanpaKunci = kunci.milikFakultas === 0 && !pakaiPenyediaUji();
   const siap = semua.filter((d) => d.status === "siap" && d.jenis !== "gambar");
   const potongan = siap.reduce((a, d) => a + d.jumlahPotongan, 0);
   const dasar = `/led/${proyekId}/dokumen`;
@@ -50,13 +50,13 @@ export default async function HalamanBasisPengetahuan({ params, searchParams }: 
         remah={[{ label: "Beranda LED", href: `/led/${proyekId}` }, { label: "Basis Pengetahuan" }]}
         aksi={
           <Button asChild size="lg">
-            <Link href={`${dasar}/tambah${tab === "bersama" ? "?tab=bersama" : ""}`}><Plus aria-hidden />Tambah dokumen</Link>
+            <Link href={`${dasar}/tambah`}><Plus aria-hidden />Tambah dokumen</Link>
           </Button>
         }
       />
       <Petunjuk
         kunci="proyek-dokumen"
-        fungsi="Dokumen pendukung (PDF, DOCX, gambar) yang menjadi sumber narasi: dokumen LED ini dan dokumen bersama fakultas (dipakai semua LED)."
+        fungsi="Dokumen pendukung (PDF, DOCX, gambar) yang menjadi sumber narasi: dokumen LED ini dan dokumen bersama fakultas (diunggah Admin UPPS, dipakai semua LED)."
         langkah={[
           "Unggah dokumen lalu pilih sub-bagian terkait agar mudah ditemukan saat generate.",
           "Tunggu status Siap; klik angka potongan untuk melihat teks yang terbaca.",
@@ -68,8 +68,8 @@ export default async function HalamanBasisPengetahuan({ params, searchParams }: 
         <Alert>
           <AlertTitle>{tanpaKunci ? "Belum ada kunci API Gemini" : `${menungguKunci} dokumen menunggu kunci API`}</AlertTitle>
           <AlertDescription>
-            Dokumen teks butuh kunci API untuk dibuat embedding-nya. Tambahkan kunci di menu Kunci API; dokumen yang tertahan
-            akan diproses ulang otomatis.
+            Dokumen teks butuh kunci API untuk dibuat embedding-nya. Hubungi Admin UPPS untuk menambahkan kunci; dokumen yang
+            tertahan akan diproses ulang otomatis.
           </AlertDescription>
         </Alert>
       )}
@@ -99,7 +99,7 @@ export default async function HalamanBasisPengetahuan({ params, searchParams }: 
         <CardContent className="overflow-x-auto px-0">
           {tab === "led"
             ? <TabelDokumen dokumen={milikLed} namaSub={namaSub} proyekId={proyekId} bolehUbah />
-            : <TabelDokumen dokumen={bersama} namaSub={namaSubBersama} proyekId="" bolehUbah />}
+            : <TabelDokumen dokumen={bersama} namaSub={namaSubBersama} proyekId="" bolehUbah={false} />}
         </CardContent>
       </Card>
     </>

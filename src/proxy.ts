@@ -3,7 +3,7 @@ import { getSessionCookie } from "better-auth/cookies";
 
 /**
  * Pemeriksaan optimistis: tanpa cookie sesi, arahkan ke /login.
- * Pemeriksaan sesi dan peran yang sebenarnya dilakukan di layout (wajibSuperAdmin/wajibPenanggungJawab)
+ * Pemeriksaan sesi dan peran yang sebenarnya dilakukan di layout (wajibAdmin/wajibTimProdi/wajibAsesor)
  * dan di setiap aksi server (lapisan data menerima Pengguna dan memeriksa peran).
  */
 export function proxy(request: NextRequest) {

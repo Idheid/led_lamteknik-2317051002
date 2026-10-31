@@ -6,6 +6,8 @@ export interface Pengguna {
   nama: string;
   email: string;
   peran: Peran;
+  /** Prodi akun Tim Prodi (revisi 31 Okt 2026); null untuk Admin UPPS dan Asesor. */
+  prodiId: string | null;
   /** Akun baru atau sandi diatur ulang: wajib mengganti kata sandi sebelum memakai aplikasi. */
   wajibGantiSandi?: boolean;
 }
@@ -26,16 +28,28 @@ export class GalatPengguna extends Error {
   }
 }
 
-export function pastikanSuperAdmin(p: Pengguna): void {
-  if (p.peran !== "SUPER_ADMIN") throw new GalatAkses();
+/**
+ * Admin UPPS (revisi 31 Okt 2026): akun, program studi dan identitas fakultas, instrumen, Basis Pengetahuan fakultas,
+ * kunci API dan model, penugasan asesor; melihat semua LED hanya baca.
+ */
+export function pastikanAdmin(p: Pengguna): void {
+  if (p.peran !== "ADMIN") throw new GalatAkses();
 }
 
-/**
- * Penanggung jawab (PJ) fakultas: satu instalasi website dipakai satu fakultas, jadi PJ mengelola semua prodi, LED,
- * instrumen, dokumen bersama, dan kunci API fakultas (revisi 19 Okt 2026). Admin hanya mengurus akun dan kunci API.
- */
-export function pastikanPenanggungJawab(p: Pengguna): void {
-  if (p.peran !== "PENANGGUNG_JAWAB") throw new GalatAkses();
+/** Tim Prodi (revisi 31 Okt 2026): menyusun LED prodinya sendiri. Akun Tim Prodi selalu terikat ke satu prodi. */
+export function pastikanTimProdi(p: Pengguna): asserts p is Pengguna & { prodiId: string } {
+  if (p.peran !== "TIM_PRODI" || !p.prodiId) throw new GalatAkses();
+}
+
+/** Tim Prodi hanya boleh memakai data prodinya sendiri. */
+export function pastikanProdiSendiri(p: Pengguna, prodiId: string): void {
+  pastikanTimProdi(p);
+  if (p.prodiId !== prodiId) throw new GalatAkses("Data ini milik program studi lain.");
+}
+
+/** Salah satu peran yang disebut. */
+export function pastikanPeran(p: Pengguna, ...peran: Peran[]): void {
+  if (!peran.includes(p.peran)) throw new GalatAkses();
 }
 
 /** Asesor (revisi 22 Okt 2026): hanya membaca LED yang ditugaskan, memberi catatan revisi, dan memberi skor. */

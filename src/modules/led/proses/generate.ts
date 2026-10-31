@@ -35,9 +35,9 @@ import { GalatSementara, panggilNarasi } from "@/modules/led/proses/llm-narasi";
 
 const TARGET_CADANGAN = 250;
 
-/** Pengguna sistem untuk memakai fungsi data yang memeriksa peran (worker tidak punya sesi). */
-function penggunaSistem(): Pengguna {
-  return { id: "sistem", nama: "Sistem", email: "", peran: "PENANGGUNG_JAWAB" };
+/** Pengguna sistem untuk memakai fungsi data yang memeriksa peran (worker tidak punya sesi): Tim Prodi pemilik LED. */
+function penggunaSistem(prodiId: string): Pengguna {
+  return { id: "sistem", nama: "Sistem", email: "", peran: "TIM_PRODI", prodiId };
 }
 
 const fmtTanggalPrompt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
@@ -208,7 +208,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
 
   // potongan dokumen (RAG)
   const kueri = kueriGenerate(s.judul, instruksi, butir);
-  const cari = await cariPotongan(penggunaSistem(), proyekId, kueri, { subBagianKode, k: 8 });
+  const cari = await cariPotongan(penggunaSistem(proyek.prodiId), proyekId, kueri, { subBagianKode, k: 8 });
   catatan.push(...cari.catatan);
   // dokumen proyek D1, D2, ...; bahan bersama UPPS (U-10) U1, U2, ... supaya penyusun tahu bukti berasal dari fakultas
   let nD = 0;

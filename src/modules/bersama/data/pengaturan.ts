@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatPengguna, pastikanSuperAdmin, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { catatGalatKunci, kunciUntukAdministrasi, pengaturanLlm } from "@/modules/bersama/data/kunci-api";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
@@ -32,7 +32,7 @@ export function daftarModelTersimpan(json: unknown): ModelGoogle[] {
 }
 
 export async function ambilPengaturan(p: Pengguna) {
-  pastikanSuperAdmin(p);
+  pastikanAdmin(p);
   const [atur, perModel] = await Promise.all([
     pengaturanLlm(),
     prisma.potongan.groupBy({ by: ["modelEmbedding"], _count: { _all: true } }),
@@ -51,10 +51,10 @@ export async function ambilPengaturan(p: Pengguna) {
  * atau tidak ada di daftar, otomatis diganti model 3.x flash yang tersedia (Google membatasi 2.5 untuk pengguna baru).
  */
 export async function muatDaftarModel(p: Pengguna): Promise<{ jumlah: number; diganti: string | null }> {
-  pastikanSuperAdmin(p);
+  pastikanAdmin(p);
   const k = await kunciUntukAdministrasi();
   if (!k) {
-    throw new GalatPengguna("Belum ada kunci API aktif. Tambahkan kunci di menu Kunci API cadangan, atau minta penanggung jawab menambah kunci.");
+    throw new GalatPengguna("Belum ada kunci API aktif. Tambahkan kunci di menu Kunci API.");
   }
   let json: unknown;
   try {
@@ -88,7 +88,7 @@ export async function muatDaftarModel(p: Pengguna): Promise<{ jumlah: number; di
 
 /** Uji satu model dengan panggilan kecil. */
 export async function ujiModel(p: Pengguna, jenis: "narasi" | "embedding", kode: string): Promise<{ ok: boolean; pesan: string }> {
-  pastikanSuperAdmin(p);
+  pastikanAdmin(p);
   const m = kodeModel.parse(kode);
   const k = await kunciUntukAdministrasi();
   if (!k) return { ok: false, pesan: "Belum ada kunci API aktif untuk menguji model." };
@@ -120,7 +120,7 @@ export async function ujiModel(p: Pengguna, jenis: "narasi" | "embedding", kode:
  * sebanding dengan embedding model baru, F-11). Mengembalikan jumlah dokumen yang diantre.
  */
 export async function simpanPengaturan(p: Pengguna, masukan: MasukanPengaturan): Promise<number> {
-  pastikanSuperAdmin(p);
+  pastikanAdmin(p);
   const data = skema.parse(masukan);
   const lama = await pengaturanLlm();
   const daftar = daftarModelTersimpan(lama.daftarModel);

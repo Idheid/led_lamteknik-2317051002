@@ -97,7 +97,7 @@ export function FormPenilaian({ proyekId, data }: { proyekId: string; data: Data
       <div className="flex min-w-0 flex-col gap-4">
         {tanpaDeskriptor && (
           <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/40">
-            Instrumen LED ini hanya memuat deskriptor skor 4. Deskriptor skor 0–3 tersedia bila PJ memakai instrumen jenjang yang diekstrak dari
+            Instrumen LED ini hanya memuat deskriptor skor 4. Deskriptor skor 0–3 tersedia bila LED memakai instrumen jenjang yang diekstrak dari
             Matriks Penilaian (menu Instrumen).
           </p>
         )}
@@ -132,16 +132,16 @@ export function FormPenilaian({ proyekId, data }: { proyekId: string; data: Data
               <li key={s.teks} className={s.ok ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"}>{s.ok ? "✓" : "•"} {s.teks}</li>
             ))}
           </ul>
-          <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} rows={3} placeholder="Catatan umum untuk PJ (wajib untuk Perlu revisi bila tidak ada catatan terbuka)" disabled={!bolehUbah} aria-label="Catatan keputusan" />
+          <Textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} rows={3} placeholder="Catatan umum untuk Tim Prodi (wajib untuk Perlu revisi bila tidak ada catatan terbuka)" disabled={!bolehUbah} aria-label="Catatan keputusan" />
           <TombolKonfirmasi
             pemicu={<Button disabled={!bolehUbah || sibuk || !syaratLayak.every((s) => s.ok)}><CheckCircle2 aria-hidden />Layak diajukan</Button>}
             judul="Nyatakan Layak diajukan?"
-            deskripsi={`Nilai simulasi ${formatAngka(data.akhir.total)} (${data.perkiraan?.status ?? "—"}). PJ diberi tahu dan ekspor Word final terbuka.`}
+            deskripsi={`Nilai simulasi ${formatAngka(data.akhir.total)} (${data.perkiraan?.status ?? "—"}). Tim Prodi diberi tahu dan ekspor Word final terbuka.`}
             labelAksi="Layak diajukan"
             berbahaya={false}
-            onKonfirmasi={() => jalankan(() => aksiPutuskanReview(proyekId, "layak", catatan), { sukses: "Dinyatakan Layak diajukan; PJ diberi tahu." })}
+            onKonfirmasi={() => jalankan(() => aksiPutuskanReview(proyekId, "layak", catatan), { sukses: "Dinyatakan Layak diajukan; Tim Prodi diberi tahu." })}
           />
-          <Button variant="outline" disabled={!bolehUbah || sibuk} onClick={() => jalankan(() => aksiPutuskanReview(proyekId, "perlu_revisi", catatan), { sukses: "Dinyatakan Perlu revisi; PJ diberi tahu." })}>
+          <Button variant="outline" disabled={!bolehUbah || sibuk} onClick={() => jalankan(() => aksiPutuskanReview(proyekId, "perlu_revisi", catatan), { sukses: "Dinyatakan Perlu revisi; Tim Prodi diberi tahu." })}>
             <RotateCcw aria-hidden />Perlu revisi
           </Button>
           {!bolehUbah && <p className="text-xs text-muted-foreground">Skor dan keputusan bisa diubah saat LED berstatus Direview.</p>}

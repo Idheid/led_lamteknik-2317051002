@@ -5,14 +5,13 @@ import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { prisma } from "@/modules/bersama/db";
 import type { Pengguna } from "@/modules/bersama/akses";
-import { simpanProdi } from "@/modules/bersama/data/organisasi";
 import { buatProyek } from "@/modules/led/data/proyek";
 import { tambahKunci } from "@/modules/bersama/data/kunci-api";
 import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
 import { drafBagian, mulaiGenerate, tugasProyek } from "@/modules/led/data/generate";
 import { aturModelUji } from "@/modules/bersama/llm/narasi";
 import { kelompokGenerate, prosesTugasGenerate, teksSebagian } from "@/modules/led/proses/generate";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /**
  * Revisi 22 Okt 2026 tahap 1 (kecepatan generate): thinking rendah untuk narasi Gemini 3, batas waktu per panggilan,
@@ -67,12 +66,12 @@ function menggantung(signal: AbortSignal | undefined): Promise<never> {
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
-  const prodi = await simpanProdi(pj, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
-  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED Uji", tahunPengajuan: 2026 })).id;
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
+  ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} }));
+  proyekId = (await buatProyek(pj, { nama: "LED Uji", tahunPengajuan: 2026 })).id;
   await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: ["gemini-3.1-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: true });
-  await tambahKunci(pj, { label: "Kunci A", kunci: "AIzaSyKunciKecepatan000000000000000000001" });
+  await tambahKunci(admin, { label: "Kunci A", kunci: "AIzaSyKunciKecepatan000000000000000000001" });
   aturModelUji((_k, kode) => new MockLanguageModelV4({
     modelId: kode,
     doGenerate: async (opsi) => {

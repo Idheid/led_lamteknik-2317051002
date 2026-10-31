@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibPeran } from "@/modules/bersama/sesi";
 import { daftarProyek } from "@/modules/led/data/proyek";
 import { daftarProdi } from "@/modules/bersama/data/organisasi";
 import { kesiapanSemua } from "@/modules/led/data/kesiapan";
@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: "Semua LED" };
  * berakhir; LED dengan jadwal terlewat berwarna merah. LED baru dibuat di halaman sendiri (/led/baru).
  */
 export default async function HalamanDaftarProyek() {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibPeran("ADMIN", "TIM_PRODI");
   const [proyek, prodi] = await Promise.all([daftarProyek(p), daftarProdi(p)]);
   const kesiapan = await kesiapanSemua(p, proyek.filter((x) => !x.diarsipkanPada).map((x) => x.id));
 

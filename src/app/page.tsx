@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, Building2, FileSpreadsheet, FileText, KeyRound, LayoutGrid, type LucideIcon } from "lucide-react";
+import { ArrowRight, Building2, FileSpreadsheet, FileText, KeyRound, LayoutGrid, UserCheck, Users, type LucideIcon } from "lucide-react";
 import { wajibLogin } from "@/modules/bersama/sesi";
-import { berandaPeran, LABEL_PERAN } from "@/modules/bersama/peran";
-import { ambilFakultas, daftarProdi } from "@/modules/bersama/data/organisasi";
+import { LABEL_PERAN } from "@/modules/bersama/peran";
+import { ambilFakultas, ambilProdi, daftarProdi } from "@/modules/bersama/data/organisasi";
+import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { daftarProyek } from "@/modules/led/data/proyek";
 import { ledAsesor } from "@/modules/led/data/review";
 import { MODUL_LKPS } from "@/modules/lkps";
@@ -12,21 +13,21 @@ import { berandaLed } from "@/components/shell/menu-peran";
 import { Lonceng } from "@/components/shell/lonceng";
 import { MenuPengguna } from "@/components/shell/menu-pengguna";
 import { Badge } from "@/components/ui/badge";
-import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "Pilih modul" };
 
 /**
  * Halaman awal setelah login (31 Okt 2026): satu website, dua modul. Pengguna memilih LKPS atau LED; di dalam modul,
- * tombol LKPS | LED di kepala halaman memindahkan modul tanpa kembali ke sini. Admin langsung ke menu admin.
+ * tombol LKPS | LED di kepala halaman memindahkan modul tanpa kembali ke sini. Revisi 31 Okt 2026 (Pak Tris): halaman
+ * awal untuk semua peran; Admin UPPS juga melihat bagian Pengaturan UPPS.
  */
 export default async function HalamanAwal() {
   const p = await wajibLogin();
-  if (p.peran === "SUPER_ADMIN") redirect(berandaPeran(p.peran));
 
   const fakultas = await ambilFakultas();
   let infoLed: string;
   let prodi: number | null = null;
+  let namaProdi: string | null = null;
   if (p.peran === "ASESOR") {
     const led = await ledAsesor(p);
     infoLed = `${led.length} LED ditugaskan kepada Anda`;
@@ -34,6 +35,10 @@ export default async function HalamanAwal() {
     const [proyek, daftar] = await Promise.all([daftarProyek(p), daftarProdi(p)]);
     infoLed = `${proyek.filter((x) => !x.diarsipkanPada).length} LED aktif`;
     prodi = daftar.length;
+    if (p.peran === "TIM_PRODI" && p.prodiId) {
+      const x = await ambilProdi(p, p.prodiId);
+      namaProdi = x ? `${namaJenjang(x.jenjang)} ${x.nama}` : null;
+    }
   }
 
   return (
@@ -56,7 +61,7 @@ export default async function HalamanAwal() {
 
       <main className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-10">
         <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Selamat datang, {p.nama}</p>
+          <p className="text-sm text-muted-foreground">Selamat datang, {p.nama}{namaProdi ? ` · Tim Prodi ${namaProdi}` : ""}</p>
           <h1 className="text-2xl font-semibold tracking-tight">Pilih modul</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Satu akun untuk LKPS dan LED. Di dalam modul, pindah ke modul lain lewat tombol LKPS | LED di bagian atas halaman.
@@ -84,15 +89,17 @@ export default async function HalamanAwal() {
           />
         </div>
 
-        {p.peran === "PENANGGUNG_JAWAB" && (
+        {p.peran === "ADMIN" && (
           <section aria-labelledby="judul-bersama" className="flex flex-col gap-3">
             <div>
-              <h2 id="judul-bersama" className="text-sm font-semibold">Data bersama LKPS & LED</h2>
-              <p className="text-sm text-muted-foreground">Diisi sekali, dipakai kedua modul.</p>
+              <h2 id="judul-bersama" className="text-sm font-semibold">Pengaturan UPPS</h2>
+              <p className="text-sm text-muted-foreground">Diisi Admin UPPS, dipakai semua program studi.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
+              <TautanBersama href="/admin/akun" ikon={Users} judul="Kelola akun" keterangan="Admin UPPS, Tim Prodi, dan Asesor" />
               <TautanBersama href="/pengaturan/prodi" ikon={Building2} judul="Program studi" keterangan={`${prodi ?? 0} program studi dan identitas fakultas`} />
-              <TautanBersama href="/pengaturan/kunci-api" ikon={KeyRound} judul="Kunci API fakultas" keterangan="Kunci Gemini untuk fitur AI" />
+              <TautanBersama href="/admin/kunci-api" ikon={KeyRound} judul="Kunci API dan model" keterangan="Kunci Gemini untuk fitur AI" />
+              <TautanBersama href="/admin/penugasan" ikon={UserCheck} judul="Penugasan asesor" keterangan="Satu asesor per LED" />
             </div>
           </section>
         )}

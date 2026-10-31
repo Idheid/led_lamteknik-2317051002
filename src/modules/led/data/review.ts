@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatAkses, GalatPengguna, pastikanAsesor, pastikanPenanggungJawab, pastikanSuperAdmin, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, pastikanAdmin, pastikanAsesor, pastikanPeran, pastikanTimProdi, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { AKTIF } from "@/modules/bersama/data/organisasi";
@@ -16,15 +16,16 @@ import {
 } from "@/modules/led/domain/review";
 
 /**
- * Review asesor (revisi 22 Okt 2026). Admin menugaskan satu asesor per LED. PJ mengajukan review; asesor memblok
- * teks dan memberi catatan, PJ menandai Sudah diperbaiki, asesor menerima atau membuka lagi; terakhir asesor memberi
+ * Review asesor (revisi 22 Okt 2026). Admin UPPS menugaskan satu asesor per LED. Tim Prodi mengajukan review; asesor
+ * memblok teks dan memberi catatan, Tim Prodi menandai Sudah diperbaiki, asesor menerima atau membuka lagi; terakhir asesor memberi
  * skor 0-4 per butir dan menyatakan Layak diajukan atau Perlu revisi. Setiap langkah mengirim pemberitahuan.
  */
 
 // ---------------------------------------------------------------- penerima pemberitahuan
 
-async function idPjAktif(): Promise<string[]> {
-  return (await prisma.user.findMany({ where: { role: "PENANGGUNG_JAWAB", ...AKTIF }, select: { id: true } })).map((u) => u.id);
+/** Semua akun Tim Prodi aktif prodi pemilik LED (revisi 31 Okt 2026: bukan lagi semua PJ fakultas). */
+async function idTimProdiAktif(prodiId: string): Promise<string[]> {
+  return (await prisma.user.findMany({ where: { role: "TIM_PRODI", prodiId, ...AKTIF }, select: { id: true } })).map((u) => u.id);
 }
 
 // ---------------------------------------------------------------- tautan
@@ -37,7 +38,7 @@ function tautanSub(peran: "PJ" | "ASESOR", proyekId: string, bagianKode: string,
 // ---------------------------------------------------------------- penugasan (admin)
 
 export async function daftarPenugasan(p: Pengguna) {
-  pastikanSuperAdmin(p);
+  pastikanAdmin(p);
   const [led, asesor] = await Promise.all([
     prisma.proyekLED.findMany({
       orderBy: [{ diarsipkanPada: { sort: "asc", nulls: "first" } }, { batasPengajuan: { sort: "asc", nulls: "last" } }],
@@ -53,7 +54,7 @@ export async function daftarPenugasan(p: Pengguna) {
 
 /** Tugaskan (atau lepas, asesorId null) asesor ke satu LED. Satu LED satu asesor; satu asesor boleh beberapa LED. */
 export async function tugaskanAsesor(p: Pengguna, proyekId: string, asesorId: string | null) {
-  pastikanSuperAdmin(p);
+  pastikanAdmin(p);
   const proyek = await prisma.proyekLED.findUnique({ where: { id: proyekId }, include: { prodi: true } });
   if (!proyek) throw new GalatPengguna("LED tidak ditemukan.");
   if (asesorId) {
@@ -89,7 +90,7 @@ export async function ledAsesor(p: Pengguna) {
 // ---------------------------------------------------------------- catatan
 
 async function aksesReview(p: Pengguna, proyekId: string) {
-  if (p.peran !== "PENANGGUNG_JAWAB" && p.peran !== "ASESOR") throw new GalatAkses();
+  pastikanPeran(p, "TIM_PRODI", "ASESOR");
   return ambilProyek(p, proyekId, { baca: true });
 }
 
@@ -198,7 +199,7 @@ export async function buatCatatan(p: Pengguna, proyekId: string, masukan: z.inpu
       teks: data.teks, sebelum: data.sebelum, sesudah: data.sesudah, isi: data.isi, versiAwalId: aktif.versiId,
     },
   });
-  await beritahu(await idPjAktif(), {
+  await beritahu(await idTimProdiAktif(proyek.prodiId), {
     proyekId: proyek.id, pesan: `Catatan revisi baru di ${sub.label || sub.kode} ${sub.judul}`.trim(), tautan: `${tautanSub("PJ", proyek.id, sub.bagian.kode, sub.kode)}#catatan-${c.id}`,
   });
   await catatAktivitas(p, "buat_catatan", "proyek", proyek.id, { catatanId: c.id, sub: sub.kode });
@@ -213,7 +214,7 @@ async function catatanMilik(p: Pengguna, catatanId: string) {
 }
 
 const PESAN_AKSI: Record<AksiCatatan, string> = {
-  diperbaiki: "PJ menandai catatan sudah diperbaiki",
+  diperbaiki: "Tim Prodi menandai catatan sudah diperbaiki",
   diterima: "Asesor menerima perbaikan",
   dibuka: "Asesor membuka lagi catatan",
 };
@@ -226,7 +227,7 @@ export async function ubahStatusCatatan(p: Pengguna, catatanId: string, aksi: Ak
   const { c, proyek } = await catatanMilik(p, catatanId);
   const peran = p.peran === "ASESOR" ? "ASESOR" : "PJ";
   if (peran === "PJ") {
-    pastikanPenanggungJawab(p);
+    pastikanTimProdi(p);
     if (proyek.diarsipkanPada) throw new GalatPengguna("LED ini diarsipkan (hanya baca).");
   }
   const ke = statusSetelah(peran, bacaStatusCatatan(c.status), aksi);
@@ -241,7 +242,7 @@ export async function ubahStatusCatatan(p: Pengguna, catatanId: string, aksi: Ak
   const sub = await prisma.subBagian.findFirst({ where: { kode: c.subBagianKode, bagian: { versiId: proyek.versiId } }, select: { label: true, kode: true } });
   const pesan = `${PESAN_AKSI[aksi]} di ${sub?.label || c.subBagianKode}: "${c.teks.slice(0, 60)}${c.teks.length > 60 ? "…" : ""}"`;
   if (peran === "PJ") await beritahu([proyek.asesorId], { proyekId: proyek.id, pesan, tautan: `${tautanSub("ASESOR", proyek.id, c.bagianKode, c.subBagianKode)}#catatan-${c.id}` });
-  else await beritahu(await idPjAktif(), { proyekId: proyek.id, pesan, tautan: `${tautanSub("PJ", proyek.id, c.bagianKode, c.subBagianKode)}#catatan-${c.id}` });
+  else await beritahu(await idTimProdiAktif(proyek.prodiId), { proyekId: proyek.id, pesan, tautan: `${tautanSub("PJ", proyek.id, c.bagianKode, c.subBagianKode)}#catatan-${c.id}` });
   await catatAktivitas(p, `catatan_${aksi}`, "proyek", proyek.id, { catatanId: c.id });
   return { status: ke };
 }
@@ -251,8 +252,8 @@ export async function balasCatatan(p: Pengguna, catatanId: string, isi: string) 
   const teks = z.string().trim().min(1, "Balasan kosong.").max(4000, "Balasan terlalu panjang (maks. 4.000 karakter).").parse(isi);
   await prisma.balasanCatatan.create({ data: { catatanId: c.id, penulisId: p.id, jenis: "balasan", isi: teks } });
   await prisma.catatanRevisi.update({ where: { id: c.id }, data: { updatedAt: new Date() } });
-  const pesan = `Balasan ${p.peran === "ASESOR" ? "asesor" : "PJ"}: "${teks.slice(0, 80)}${teks.length > 80 ? "…" : ""}"`;
-  if (p.peran === "ASESOR") await beritahu(await idPjAktif(), { proyekId: proyek.id, pesan, tautan: `${tautanSub("PJ", proyek.id, c.bagianKode, c.subBagianKode)}#catatan-${c.id}` });
+  const pesan = `Balasan ${p.peran === "ASESOR" ? "asesor" : "Tim Prodi"}: "${teks.slice(0, 80)}${teks.length > 80 ? "…" : ""}"`;
+  if (p.peran === "ASESOR") await beritahu(await idTimProdiAktif(proyek.prodiId), { proyekId: proyek.id, pesan, tautan: `${tautanSub("PJ", proyek.id, c.bagianKode, c.subBagianKode)}#catatan-${c.id}` });
   else await beritahu([proyek.asesorId], { proyekId: proyek.id, pesan, tautan: `${tautanSub("ASESOR", proyek.id, c.bagianKode, c.subBagianKode)}#catatan-${c.id}` });
 }
 
@@ -394,7 +395,7 @@ export async function putuskanReview(p: Pengguna, proyekId: string, masukan: z.i
   const proyek = await prisma.proyekLED.update({
     where: { id: proyekId }, data: { statusReview: data.keputusan, keputusanReview: keputusan as unknown as Prisma.InputJsonValue }, include: { prodi: true },
   });
-  await beritahu(await idPjAktif(), {
+  await beritahu(await idTimProdiAktif(proyek.prodiId), {
     proyekId, pesan: `Asesor menyatakan ${proyek.nama}: ${LABEL_REVIEW[data.keputusan]}.`, tautan: `/led/${proyekId}`,
   });
   await catatAktivitas(p, "keputusan_review", "proyek", proyekId, { keputusan: data.keputusan, total: keputusan.total });

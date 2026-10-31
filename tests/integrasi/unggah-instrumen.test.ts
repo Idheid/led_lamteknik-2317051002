@@ -7,7 +7,6 @@ import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { prisma } from "@/modules/bersama/db";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
-import { simpanProdi } from "@/modules/bersama/data/organisasi";
 import { buatProyek, instrumenAktifUntuk } from "@/modules/led/data/proyek";
 import { tambahKunci } from "@/modules/bersama/data/kunci-api";
 import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
@@ -18,7 +17,7 @@ import {
 import { prosesEkstraksiInstrumen } from "@/modules/led/proses/instrumen";
 import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
 import { aturModelUji } from "@/modules/bersama/llm/narasi";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 process.env.GENERATE_JEDA_MAKS_MS = "0";
 
@@ -81,8 +80,8 @@ function galatKuota(): APICallError {
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
   await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: [], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
   aturModelUji((_kunci, kode) => new MockLanguageModelV4({
     modelId: kode,
@@ -100,7 +99,7 @@ before(async () => {
       };
     },
   }));
-  await tambahKunci(pj, { label: "Kunci fakultas", kunci: "AIzaSyKunciInstrumenUji00000000000000001" });
+  await tambahKunci(admin, { label: "Kunci fakultas", kunci: "AIzaSyKunciInstrumenUji00000000000000001" });
 });
 
 after(async () => {
@@ -111,24 +110,24 @@ after(async () => {
 test("Revisi 19 Okt tahap 4: unggah instrumen Sarjana (template, matriks, pedoman) → ekstraksi → cek → aktifkan", async () => {
   const lama = await instrumenAktifUntuk("S1");
   assert.ok(lama, "versi bawaan aktif untuk S1");
-  const prodi = await simpanProdi(pj, { nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "22201", identitas: {} });
-  const ledLama = await buatProyek(pj, { prodiId: prodi.id, nama: "LED Sipil", tahunPengajuan: 2026 });
+  ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "22201", identitas: {} }));
+  const ledLama = await buatProyek(pj, { nama: "LED Sipil", tahunPengajuan: 2026 });
 
-  await assert.rejects(buatVersiJenjang(admin, { nama: "x", kode: "X", jenjang: "S1" }), GalatAkses, "admin tidak mengurus instrumen");
-  const versi = await buatVersiJenjang(pj, { nama: "Instrumen LAM Teknik 2025 Sarjana", kode: "LAMTEKNIK-2025-S1", jenjang: "S1", peraturan: ["Perlem LAM Teknik 2025"] });
+  await assert.rejects(buatVersiJenjang(pj, { nama: "x", kode: "X", jenjang: "S1" }), GalatAkses, "Tim Prodi tidak mengurus instrumen");
+  const versi = await buatVersiJenjang(admin, { nama: "Instrumen LAM Teknik 2025 Sarjana", kode: "LAMTEKNIK-2025-S1", jenjang: "S1", peraturan: ["Perlem LAM Teknik 2025"] });
   assert.equal(versi.status, "draf");
   assert.equal(versi.aktif, false);
   assert.ok(await prisma.tabelLkpsAcuan.count({ where: { versiId: versi.id } }) > 0, "tabel LKPS acuan disalin dari versi rujukan");
 
-  await assert.rejects(mulaiEkstraksi(pj, versi.id), GalatPengguna, "berkas belum lengkap");
-  await assert.rejects(unggahBerkasInstrumen(pj, versi.id, "matriks", { nama: "a.pdf", isi: Buffer.from("bukan pdf") }), GalatPengguna);
-  await unggahBerkasInstrumen(pj, versi.id, "template", BERKAS.template);
-  await unggahBerkasInstrumen(pj, versi.id, "matriks", BERKAS.matriks);
-  const { usulanHalamanBobot } = await unggahBerkasInstrumen(pj, versi.id, "pedoman", BERKAS.pedoman);
+  await assert.rejects(mulaiEkstraksi(admin, versi.id), GalatPengguna, "berkas belum lengkap");
+  await assert.rejects(unggahBerkasInstrumen(admin, versi.id, "matriks", { nama: "a.pdf", isi: Buffer.from("bukan pdf") }), GalatPengguna);
+  await unggahBerkasInstrumen(admin, versi.id, "template", BERKAS.template);
+  await unggahBerkasInstrumen(admin, versi.id, "matriks", BERKAS.matriks);
+  const { usulanHalamanBobot } = await unggahBerkasInstrumen(admin, versi.id, "pedoman", BERKAS.pedoman);
   assert.equal(usulanHalamanBobot, "223-227", "letak tabel bobot Sarjana terdeteksi di Pedoman Penilaian");
   assert.equal((await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: versi.id } })).halamanBobot, "223-227");
 
-  await mulaiEkstraksi(pj, versi.id);
+  await mulaiEkstraksi(admin, versi.id);
   assert.equal(await prosesEkstraksiInstrumen(versi.id), "selesai");
   assert.equal(await prosesEkstraksiInstrumen(versi.id), "dilewati", "ekstraksi selesai tidak diproses ulang");
 
@@ -168,10 +167,10 @@ test("Revisi 19 Okt tahap 4: unggah instrumen Sarjana (template, matriks, pedoma
   assert.deepEqual(butir.find((b) => b.kode === "1")?.unsurSkor4.length, 4, "daftar cek skor 4 dari deskriptor resmi");
 
   // pemeriksaan otomatis: total bobot 100,01 diterima; aktivasi menunggu semua butir dicek
-  let cek = (await dataCekInstrumen(pj, versi.id)).cek;
+  let cek = (await dataCekInstrumen(admin, versi.id)).cek;
   assert.equal(cek.totalBobot, 100.01);
   assert.deepEqual(cek.galat, ["72 butir belum dicek dan dikonfirmasi."]);
-  await assert.rejects(aktifkanVersiCek(pj, versi.id), /belum dicek/);
+  await assert.rejects(aktifkanVersiCek(admin, versi.id), /belum dicek/);
 
   // PJ menyunting satu butir (bobot salah) → pemeriksaan bobot menolak, lalu diperbaiki
   const b1 = butir[0];
@@ -180,35 +179,35 @@ test("Revisi 19 Okt tahap 4: unggah instrumen Sarjana (template, matriks, pedoma
     indikator: b1.indikator, bobot: 2, jenis: b1.jenis, tabelLkps: ["1"], deskriptorSkor4: b1.deskriptorSkor4, unsurSkor4: [],
     subBagianIds: b1.subBagian.map((x) => x.subBagianId), catatan: "",
   };
-  await simpanButirCek(pj, versi.id, b1.id, masukan);
-  for (const b of butir.slice(1)) await konfirmasiButir(pj, versi.id, b.id);
-  cek = (await dataCekInstrumen(pj, versi.id)).cek;
+  await simpanButirCek(admin, versi.id, b1.id, masukan);
+  for (const b of butir.slice(1)) await konfirmasiButir(admin, versi.id, b.id);
+  cek = (await dataCekInstrumen(admin, versi.id)).cek;
   assert.equal(cek.belumDikonfirmasi, 0);
   assert.match(cek.galat.join(" "), /Total bobot 100,87/);
-  await assert.rejects(aktifkanVersiCek(pj, versi.id), /Total bobot/);
-  await simpanButirCek(pj, versi.id, b1.id, { ...masukan, bobot: 1.14 });
+  await assert.rejects(aktifkanVersiCek(admin, versi.id), /Total bobot/);
+  await simpanButirCek(admin, versi.id, b1.id, { ...masukan, bobot: 1.14 });
   const disunting = await prisma.butirPenilaian.findUniqueOrThrow({ where: { id: b1.id } });
   assert.equal(disunting.elemen, "Kekhasan VMTS");
   assert.deepEqual(disunting.usulanAi, []);
   assert.equal(disunting.unsurSkor4.length, 4);
 
-  await aktifkanVersiCek(pj, versi.id);
+  await aktifkanVersiCek(admin, versi.id);
   const aktif = await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: versi.id } });
   assert.equal(aktif.status, "aktif");
-  assert.equal(aktif.dicekOlehId, pj.id);
+  assert.equal(aktif.dicekOlehId, admin.id);
   assert.equal((await instrumenAktifUntuk("S1"))?.id, versi.id, "LED baru memakai instrumen yang baru diaktifkan");
   const versiLama = await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: lama.id } });
   assert.equal(versiLama.aktif, false, "versi lama jenjang yang sama dinonaktifkan");
   assert.equal((await prisma.proyekLED.findUniqueOrThrow({ where: { id: ledLama.id } })).versiId, lama.id, "LED lama tetap memakai versi lamanya");
-  await assert.rejects(unggahBerkasInstrumen(pj, versi.id, "matriks", BERKAS.matriks), GalatPengguna, "versi aktif tidak bisa diubah");
+  await assert.rejects(unggahBerkasInstrumen(admin, versi.id, "matriks", BERKAS.matriks), GalatPengguna, "versi aktif tidak bisa diubah");
 });
 
 test("Ekstraksi berhenti rapi saat kuota habis, lalu dilanjutkan dari kelompok yang sama setelah kunci baru diisi", async () => {
-  const versi = await buatVersiJenjang(pj, { nama: "Instrumen Sarjana (salinan uji)", kode: "LAMTEKNIK-2025-S1-B", jenjang: "S1" });
-  for (const jenis of ["template", "matriks", "pedoman"] as const) await unggahBerkasInstrumen(pj, versi.id, jenis, BERKAS[jenis]);
+  const versi = await buatVersiJenjang(admin, { nama: "Instrumen Sarjana (salinan uji)", kode: "LAMTEKNIK-2025-S1-B", jenjang: "S1" });
+  for (const jenis of ["template", "matriks", "pedoman"] as const) await unggahBerkasInstrumen(admin, versi.id, jenis, BERKAS[jenis]);
   tiruan.panggilan = 0;
   tiruan.gagalSetelah = 3;
-  await mulaiEkstraksi(pj, versi.id);
+  await mulaiEkstraksi(admin, versi.id);
   assert.equal(await prosesEkstraksiInstrumen(versi.id), "tertunda");
   let info = bacaInfoEkstraksi((await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: versi.id } })).ekstraksi)!;
   assert.equal(info.status, "tertunda");
@@ -218,7 +217,7 @@ test("Ekstraksi berhenti rapi saat kuota habis, lalu dilanjutkan dari kelompok y
   assert.ok(sebagian > 0 && sebagian < 72, "butir dari kelompok yang sudah selesai tetap tersimpan");
 
   tiruan.gagalSetelah = Infinity;
-  const k = await tambahKunci(pj, { label: "Kunci baru", kunci: "AIzaSyKunciInstrumenUji00000000000000002" });
+  const k = await tambahKunci(admin, { label: "Kunci baru", kunci: "AIzaSyKunciInstrumenUji00000000000000002" });
   assert.equal(k.ekstraksiDilanjutkan, 1);
   assert.equal(await prosesEkstraksiInstrumen(versi.id), "selesai");
   info = bacaInfoEkstraksi((await prisma.versiInstrumen.findUniqueOrThrow({ where: { id: versi.id } })).ekstraksi)!;
@@ -226,7 +225,7 @@ test("Ekstraksi berhenti rapi saat kuota habis, lalu dilanjutkan dari kelompok y
   assert.equal(await prisma.butirPenilaian.count({ where: { versiId: versi.id } }), 72, "tidak ada butir ganda setelah dilanjutkan");
 
   // ekstrak ulang menghapus hasil lama
-  await mulaiEkstraksi(pj, versi.id, { ulang: true });
+  await mulaiEkstraksi(admin, versi.id, { ulang: true });
   assert.equal(await prisma.butirPenilaian.count({ where: { versiId: versi.id } }), 0);
   assert.equal(await prosesEkstraksiInstrumen(versi.id), "selesai");
   assert.equal(await prisma.butirPenilaian.count({ where: { versiId: versi.id } }), 72);

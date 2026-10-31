@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { ambilProdi } from "@/modules/bersama/data/organisasi";
 import type { KodeJenjang } from "@/modules/bersama/domain/jenjang";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
@@ -12,7 +12,7 @@ import { FormProdi } from "../form-prodi";
 export const metadata: Metadata = { title: "Ubah program studi" };
 
 export default async function HalamanUbahProdi({ params }: PageProps<"/pengaturan/prodi/[id]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const { id } = await params;
   const prodi = await ambilProdi(p, id);
   if (!prodi) notFound();

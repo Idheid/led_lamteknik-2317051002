@@ -8,7 +8,6 @@ import { MockLanguageModelV4 } from "ai/test";
 import { Document, Packer, Paragraph } from "docx";
 import { prisma } from "@/modules/bersama/db";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
-import { simpanProdi } from "@/modules/bersama/data/organisasi";
 import { buatProyek, simpanJawaban } from "@/modules/led/data/proyek";
 import { unggahLkps } from "@/modules/led/data/lkps";
 import { unggahDokumen } from "@/modules/led/data/dokumen";
@@ -29,7 +28,7 @@ import { hitungCapaian, teksCapaian } from "@/modules/led/domain/capaian";
 import { susunSistem } from "@/modules/led/domain/prompt";
 import { halamanBagian } from "@/modules/led/data/proyek";
 import { peringatanSebelumGenerate, posisiSub, subLanjutkan } from "@/modules/led/domain/navigasi";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 process.env.GENERATE_JEDA_MAKS_MS = "0";
 
@@ -144,16 +143,16 @@ before(async () => {
   await bersihkanDb();
   await imporSeed();
   aturModelUji(modelTiruan);
-  const admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
-  // revisi 19 Okt 2026: satu PJ fakultas; LED kedua milik prodi lain, akses lintas peran diuji dengan admin
-  pjLain = pj;
+  const admin = await buatAdmin();
+  await siapkanFakultas(admin);
+  // revisi 31 Okt 2026: LED kedua milik prodi lain dengan Tim Prodi sendiri; Admin UPPS hanya membaca LED
   adminUji = admin;
-  const prodi = await simpanProdi(pj, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
-  const lain = await simpanProdi(pj, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "22222", identitas: {} });
+  const { prodi, tim } = await siapkanProdi(admin, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
+  ({ tim: pjLain } = await siapkanProdi(admin, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "22222", identitas: {} }));
+  pj = tim;
   prodiId = prodi.id;
-  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED Uji", tahunPengajuan: 2026 })).id;
-  proyekLainId = (await buatProyek(pj, { prodiId: lain.id, nama: "LED Lain", tahunPengajuan: 2026 })).id;
+  proyekId = (await buatProyek(pj, { nama: "LED Uji", tahunPengajuan: 2026 })).id;
+  proyekLainId = (await buatProyek(pjLain, { nama: "LED Lain", tahunPengajuan: 2026 })).id;
   await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: ["gemini-3.1-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: true });
 
   const b = await unggahLkps(pj, proyekId, { nama: "lkps.xlsx", isi: XLSX });
@@ -168,7 +167,7 @@ before(async () => {
     subBagianKode: "C.1-IKU-a",
   });
   await prosesDokumen(d.id);
-  await tambahKunci(pj, { label: "Kunci A", kunci: KUNCI_A });
+  await tambahKunci(admin, { label: "Kunci A", kunci: KUNCI_A });
 });
 
 after(async () => {
@@ -282,10 +281,11 @@ test("F-16/F-17 sunting tersimpan otomatis, generate ulang satu butir, bandingka
   assert.equal((await prisma.statusKriteria.findFirstOrThrow({ where: { proyekId, bagianKode: "C.1" } })).status, "selesai");
   await assert.rejects(tandaiBagianSelesai(pj, proyekId, "C.2"), GalatPengguna, "kriteria tanpa draf tidak bisa ditandai selesai");
 
-  // akses lintas prodi ditolak
-  // admin tidak mengurus penyusunan LED
-  await assert.rejects(drafBagian(adminUji, proyekId, "C.1"), GalatAkses);
+  // akses lintas prodi ditolak; Admin UPPS hanya membaca (revisi 31 Okt 2026)
+  await assert.rejects(drafBagian(pjLain, proyekId, "C.1"), GalatAkses);
+  await drafBagian(adminUji, proyekId, "C.1");
   await assert.rejects(pulihkanVersi(adminUji, v2.id), GalatAkses);
+  await assert.rejects(pulihkanVersi(pjLain, v2.id), GalatAkses);
   await assert.rejects(simpanSuntingan(adminUji, proyekId, "C.1-IKU-a", isi), GalatAkses);
 });
 
@@ -360,7 +360,7 @@ test("F-19 429 harian: generate berhenti rapi, meminta kunci baru, lalu lanjut d
   assert.equal(banner.indeks, 2);
   assert.ok(banner.sedang);
 
-  const tambah = await tambahKunci(pj, { label: "Kunci B", kunci: KUNCI_B });
+  const tambah = await tambahKunci(adminUji, { label: "Kunci B", kunci: KUNCI_B });
   assert.equal(tambah.tugasDilanjutkan, 1);
   t = await prisma.tugasGenerate.findUniqueOrThrow({ where: { id: tugas.id } });
   assert.equal(t.status, "antre");
@@ -402,7 +402,7 @@ test("Tanpa kunci: tugas dibuat tertunda dengan pesan, dan dimulai otomatis sete
   assert.match(t.pesan ?? "", /Belum ada kunci API Gemini/);
   assert.equal(await prosesTugasGenerate(t.id), "tertunda");
   assert.match((await prisma.tugasGenerate.findUniqueOrThrow({ where: { id: t.id } })).pesan ?? "", /Belum ada kunci/);
-  const k = await tambahKunci(pjLain, { label: "Kunci fakultas baru", kunci: "AIzaSyKunciUjiC0000000000000000000000003" });
+  const k = await tambahKunci(adminUji, { label: "Kunci fakultas baru", kunci: "AIzaSyKunciUjiC0000000000000000000000003" });
   assert.equal(k.tugasDilanjutkan, 1);
   assert.equal(await prosesTugasGenerate(t.id), "selesai");
   assert.equal((await drafBagian(pjLain, proyekLainId, "C.1"))["C.1-LB"].status, "draf");

@@ -26,9 +26,9 @@ export default async function HalamanAsesor() {
         kunci="asesor-beranda"
         fungsi="Mereview LED sebelum diajukan ke LAM Teknik."
         langkah={[
-          "Tunggu PJ menekan Ajukan review (status Direview).",
-          "Buka sub-bagian, blok kalimat, lalu tulis catatan revisi. Catatan langsung muncul di layar PJ.",
-          "Setelah PJ menandai Sudah diperbaiki, bandingkan versi lalu Terima atau Buka lagi.",
+          "Tunggu Tim Prodi menekan Ajukan review (status Direview).",
+          "Buka sub-bagian, blok kalimat, lalu tulis catatan revisi. Catatan langsung muncul di layar Tim Prodi.",
+          "Setelah Tim Prodi menandai Sudah diperbaiki, bandingkan versi lalu Terima atau Buka lagi.",
           "Bila semua catatan diterima, isi skor 0–4 per butir di Penilaian akhir dan nyatakan Layak diajukan atau Perlu revisi.",
         ]}
       />

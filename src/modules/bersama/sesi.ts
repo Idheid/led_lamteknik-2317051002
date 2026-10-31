@@ -18,6 +18,7 @@ export const ambilPengguna = cache(async (): Promise<Pengguna | null> => {
   if (!peran) return null;
   return {
     id: u.id, nama: u.name, email: u.email, peran,
+    prodiId: typeof u.prodiId === "string" ? u.prodiId : null,
     wajibGantiSandi: Boolean(u.wajibGantiSandi),
   };
 });
@@ -30,20 +31,24 @@ export async function wajibLogin(opsi: { bolehBelumGantiSandi?: boolean } = {}):
   return p;
 }
 
-export async function wajibSuperAdmin(): Promise<Pengguna> {
+/** Wajib salah satu peran; peran lain diarahkan ke halaman awal (revisi 31 Okt 2026). */
+export async function wajibPeran(...peran: Peran[]): Promise<Pengguna> {
   const p = await wajibLogin();
-  if (p.peran !== "SUPER_ADMIN") redirect(berandaPeran(p.peran));
+  if (!peran.includes(p.peran)) redirect(berandaPeran(p.peran));
   return p;
 }
 
-export async function wajibPenanggungJawab(): Promise<Pengguna> {
-  const p = await wajibLogin();
-  if (p.peran !== "PENANGGUNG_JAWAB") redirect(berandaPeran(p.peran));
-  return p;
+export async function wajibAdmin(): Promise<Pengguna> {
+  return wajibPeran("ADMIN");
+}
+
+/** Tim Prodi; akun Tim Prodi tanpa prodi (tidak semestinya terjadi) juga diarahkan ke halaman awal. */
+export async function wajibTimProdi(): Promise<Pengguna & { prodiId: string }> {
+  const p = await wajibPeran("TIM_PRODI");
+  if (!p.prodiId) redirect("/");
+  return p as Pengguna & { prodiId: string };
 }
 
 export async function wajibAsesor(): Promise<Pengguna> {
-  const p = await wajibLogin();
-  if (p.peran !== "ASESOR") redirect(berandaPeran(p.peran));
-  return p;
+  return wajibPeran("ASESOR");
 }

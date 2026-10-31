@@ -1,6 +1,6 @@
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { kodeSalinan } from "@/modules/led/domain/instrumen";
 import { BUTIR_ANGKA_SARJANA } from "@/modules/led/domain/metrik-lkps";
@@ -36,7 +36,7 @@ export function periksaKodeRumus(kode: string | null | undefined): string | null
 // ---------------------------------------------------------------- Versi
 
 export async function daftarVersi(p: Pengguna) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   return prisma.versiInstrumen.findMany({
     orderBy: { createdAt: "asc" },
     include: { _count: { select: { bagian: true, butir: true, proyek: true } } },
@@ -53,7 +53,7 @@ export async function daftarVersiAktif() {
 }
 
 export async function ambilVersi(p: Pengguna, id: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const versi = await prisma.versiInstrumen.findUnique({
     where: { id },
     include: {
@@ -75,7 +75,7 @@ export async function ambilVersi(p: Pengguna, id: string) {
 }
 
 export async function ubahVersi(p: Pengguna, id: string, masukan: unknown) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const data = skemaVersiUbah.parse(masukan);
   await pastikanVersiBisaDiubah(prisma, id);
   const bentrok = await prisma.versiInstrumen.findFirst({ where: { kode: data.kode, NOT: { id } } });
@@ -86,7 +86,7 @@ export async function ubahVersi(p: Pengguna, id: string, masukan: unknown) {
 }
 
 export async function aturAktifVersi(p: Pengguna, id: string, aktif: boolean) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const lama = await prisma.versiInstrumen.findUniqueOrThrow({ where: { id } });
   // revisi 19 Okt 2026: versi hasil unggah diaktifkan pertama kali lewat halaman cek ("Sudah dicek, aktifkan")
   if (aktif && (lama.status === "draf" || lama.status === "diekstrak")) {
@@ -103,7 +103,7 @@ export async function aturAktifVersi(p: Pengguna, id: string, aktif: boolean) {
 }
 
 export async function hapusVersi(p: Pengguna, id: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const n = await jumlahProyek(prisma, id);
   if (n > 0) throw new GalatPengguna(`Versi ini dipakai ${n} proyek LED dan tidak bisa dihapus.`);
   const v = await prisma.versiInstrumen.delete({ where: { id } });
@@ -112,7 +112,7 @@ export async function hapusVersi(p: Pengguna, id: string) {
 
 /** Salin seluruh isi versi (bagian, sub-bagian, butir, pemetaan, dokumen diharapkan, tabel LKPS) ke versi baru nonaktif. */
 export async function salinVersi(p: Pengguna, id: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const hasil = await prisma.$transaction(
     async (tx) => {
       const asal = await tx.versiInstrumen.findUniqueOrThrow({
@@ -209,7 +209,7 @@ export async function salinVersi(p: Pengguna, id: string) {
 // ---------------------------------------------------------------- Bagian dan sub-bagian
 
 export async function ambilBagian(p: Pengguna, bagianId: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   return prisma.bagian.findUnique({
     where: { id: bagianId },
     include: {
@@ -223,7 +223,7 @@ export async function ambilBagian(p: Pengguna, bagianId: string) {
 }
 
 export async function ubahBagian(p: Pengguna, bagianId: string, masukan: unknown) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const data = skemaBagianUbah.parse(masukan);
   const b = await prisma.bagian.findUniqueOrThrow({ where: { id: bagianId } });
   await pastikanVersiBisaDiubah(prisma, b.versiId);
@@ -232,7 +232,7 @@ export async function ubahBagian(p: Pengguna, bagianId: string, masukan: unknown
 }
 
 export async function simpanSubBagian(p: Pengguna, bagianId: string, masukan: MasukanSubBagian, id?: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const data = skemaSubBagian.parse(masukan);
   const bagian = await prisma.bagian.findUniqueOrThrow({ where: { id: bagianId } });
   await pastikanVersiBisaDiubah(prisma, bagian.versiId);
@@ -250,7 +250,7 @@ export async function simpanSubBagian(p: Pengguna, bagianId: string, masukan: Ma
 }
 
 export async function hapusSubBagian(p: Pengguna, id: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const s = await prisma.subBagian.findUniqueOrThrow({ where: { id }, include: { bagian: true } });
   await pastikanVersiBisaDiubah(prisma, s.bagian.versiId);
   await prisma.subBagian.delete({ where: { id } });
@@ -260,7 +260,7 @@ export async function hapusSubBagian(p: Pengguna, id: string) {
 // ---------------------------------------------------------------- Butir
 
 export async function daftarButir(p: Pengguna, versiId: string, jenjang: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   return prisma.butirPenilaian.findMany({
     where: { versiId, jenjang },
     orderBy: { urutan: "asc" },
@@ -269,7 +269,7 @@ export async function daftarButir(p: Pengguna, versiId: string, jenjang: string)
 }
 
 export async function ambilButir(p: Pengguna, id: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   return prisma.butirPenilaian.findUnique({
     where: { id },
     include: {
@@ -282,7 +282,7 @@ export async function ambilButir(p: Pengguna, id: string) {
 
 /** Pilihan sub-bagian untuk pemetaan butir (IKU dan sub-bagian bab berbutir). */
 export async function pilihanSubBagian(p: Pengguna, versiId: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   return prisma.subBagian.findMany({
     where: { bagian: { versiId }, tipe: { in: ["iku", "narasi", "bersama"] } },
     orderBy: [{ bagian: { urutan: "asc" } }, { urutan: "asc" }],
@@ -291,7 +291,7 @@ export async function pilihanSubBagian(p: Pengguna, versiId: string) {
 }
 
 export async function simpanButir(p: Pengguna, versiId: string, masukan: MasukanButir, id?: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const data = skemaButir.parse(masukan);
   await pastikanVersiBisaDiubah(prisma, versiId);
   const bagian = await prisma.bagian.findFirst({ where: { versiId, kode: data.bagianKode } });
@@ -318,7 +318,7 @@ export async function simpanButir(p: Pengguna, versiId: string, masukan: Masukan
 }
 
 export async function hapusButir(p: Pengguna, id: string) {
-  pastikanPenanggungJawab(p);
+  pastikanAdmin(p);
   const t = await prisma.butirPenilaian.findUniqueOrThrow({ where: { id } });
   await pastikanVersiBisaDiubah(prisma, t.versiId);
   await prisma.butirPenilaian.delete({ where: { id } });

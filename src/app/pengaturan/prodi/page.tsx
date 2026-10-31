@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Pencil, Plus } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { ambilFakultas, daftarProdi } from "@/modules/bersama/data/organisasi";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { labelPeriode } from "@/modules/bersama/domain/tahun-akademik";
@@ -22,7 +22,7 @@ export const metadata: Metadata = { title: "Program studi" };
 const fmtTanggal = new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" });
 
 export default async function HalamanProdi() {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const [fakultas, prodi] = await Promise.all([ambilFakultas(), daftarProdi(p)]);
   const hariIni = new Date();
   const kesiapan = await kesiapanSemua(p, prodi.flatMap((x) => x.proyek.filter((l) => !l.diarsipkanPada).map((l) => l.id)));
@@ -97,11 +97,10 @@ export default async function HalamanProdi() {
                         {aktif
                           ? <Link className="text-primary hover:underline" href={`/led/${aktif.id}`}>{aktif.nama} · {labelPeriode(aktif.tahunPengajuan)}</Link>
                           : <span className="text-muted-foreground">Tidak ada LED aktif{x.proyek.length ? ` (${x.proyek.length} arsip)` : ""}</span>}
-                        {!aktif && sisa !== null && sisa <= 12 && (
-                          <Button asChild size="sm" variant="outline" className="mt-1.5 flex w-fit">
-                            <Link href={`/led/baru?prodi=${x.id}`}><Plus aria-hidden />Buat LED</Link>
-                          </Button>
-                        )}
+                        {/* revisi 31 Okt 2026: LED dibuat Tim Prodi; admin hanya melihat berapa akun Tim Prodi prodi ini */}
+                        <span className={`block ${x._count.anggota ? "text-muted-foreground" : "text-amber-700 dark:text-amber-300"}`}>
+                          {x._count.anggota ? `${x._count.anggota} akun Tim Prodi` : "Belum ada akun Tim Prodi"}
+                        </span>
                       </TableCell>
                       <TableCell className="min-w-56 whitespace-normal">
                         {k ? <RingkasKesiapan k={k} ringkas /> : <span className="text-xs text-muted-foreground">—</span>}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { pilihanSubBagianBersama } from "@/modules/led/data/dokumen";
 import { ShellMenuLed } from "@/modules/led/komponen/shell-led";
 import { HalamanTambah } from "@/components/halaman-tambah";
@@ -8,7 +8,7 @@ import { UnggahDokumenUmum } from "@/app/led/(penyusun)/[proyekId]/dokumen/ungga
 export const metadata: Metadata = { title: "Tambah dokumen bersama" };
 
 export default async function HalamanTambahDokumenBersama() {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const pilihan = await pilihanSubBagianBersama(p);
   return (
     <ShellMenuLed pengguna={p}>

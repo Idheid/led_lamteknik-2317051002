@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { FormProdi } from "../form-prodi";
@@ -7,7 +7,7 @@ import { FormProdi } from "../form-prodi";
 export const metadata: Metadata = { title: "Tambah program studi" };
 
 export default async function HalamanProdiBaru() {
-  await wajibPenanggungJawab();
+  await wajibAdmin();
   return (
     <>
       <JudulHalaman judul="Tambah program studi" remah={[{ label: "Program studi", href: "/pengaturan/prodi" }, { label: "Tambah" }]} />

@@ -7,7 +7,7 @@ import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akse
 import { tambahKunci } from "@/modules/bersama/data/kunci-api";
 import { ambilPengaturan, muatDaftarModel, simpanPengaturan, ujiModel } from "@/modules/bersama/data/pengaturan";
 import { aturModelUji } from "@/modules/bersama/llm/narasi";
-import { bersihkanDb, buatSuperAdmin, imporSeed } from "./bantu";
+import { bersihkanDb, buatAdmin, imporSeed } from "./bantu";
 
 const DAFTAR = {
   models: [
@@ -25,7 +25,7 @@ const permintaan: { url: string; kunci: string | null }[] = [];
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
+  admin = await buatAdmin();
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (!url.includes("generativelanguage.googleapis.com/v1beta/models?")) return fetchAsli(input, init);
@@ -92,6 +92,6 @@ test("Model LLM: daftar model dimuat dari models.list; model 2.5 diganti 3.x; pi
   assert.equal(uji.ok, true);
   assert.match(uji.pesan, /siap/);
 
-  const pj = { ...admin, peran: "PENANGGUNG_JAWAB" as const };
+  const pj = { ...admin, peran: "TIM_PRODI" as const, prodiId: "prodi-uji" };
   await assert.rejects(muatDaftarModel(pj), GalatAkses);
 });

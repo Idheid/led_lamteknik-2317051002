@@ -751,3 +751,44 @@ di-commit sebelum tahap berikutnya.
 | `npm run test:unit` | 112/112 lulus (termasuk uji batas modul) |
 | `npm run test:integrasi` | 57/57 lulus |
 
+### Tahap 1: peran Admin UPPS, Tim Prodi, Asesor
+
+- Enum `Peran` = `ADMIN`, `TIM_PRODI`, `ASESOR` (migrasi `20261031100000_peran_tim_prodi`: `ALTER TYPE ... RENAME VALUE`, lalu
+  semua akun PJ lama menjadi `ADMIN` sesuai keputusan B2; bawaan peran baru `TIM_PRODI`). `User.prodiId` (Restrict) dan
+  `Prodi.anggota`. Label: "Admin UPPS", "Tim Prodi", "Asesor (reviewer)". Better Auth: `adminRoles: ["ADMIN"]`,
+  `defaultRole: "TIM_PRODI"`, `prodiId` additionalField `input: false`, appName "Akreditasi LAM Teknik".
+- Penjaga: `pastikanAdmin`, `pastikanTimProdi`, `pastikanProdiSendiri`, `pastikanPeran` (akses.ts); `wajibAdmin`,
+  `wajibTimProdi`, `wajibPeran` (sesi.ts). `Pengguna.prodiId` dibaca dari sesi.
+- LED: `ambilProyek` tanpa opsi hanya Tim Prodi pemilik LED; `baca: true` juga Admin UPPS (semua LED) dan asesor yang
+  ditugaskan. `ambilProyekUbah` karenanya hanya Tim Prodi prodinya. `daftarProyek`: Tim Prodi LED prodinya, Admin semua.
+  `buatProyek` hanya Tim Prodi; prodi diambil dari akun (`prodiId` dihapus dari `skemaProyek`, masukan prodi diabaikan).
+  Pengguna sistem worker (`penggunaSistem`) = Tim Prodi prodi LED itu.
+- Pemberitahuan review: `idTimProdiAktif(prodiId)` (semua akun Tim Prodi aktif prodi pemilik LED, bukan semua PJ).
+- Kunci API (B3): hanya Admin UPPS; `JenisKunci` "utama"/"cadangan" (nilai `pemilik` di basis data tetap nilai lama:
+  `penanggung_jawab` = kunci utama, `super_admin` = cadangan). `/admin/kunci-api` memuat dua daftar dengan tombol Tambah
+  masing-masing; `/pengaturan/kunci-api` dialihkan ke sana. Tim Prodi melihat status (`ringkasanKunci`) dan teks "Hubungi
+  Admin UPPS" di Beranda LED dan Basis Pengetahuan.
+- Organisasi: fakultas, prodi, instrumen (termasuk Template LED), dan Basis Pengetahuan fakultas (unggah) hanya Admin UPPS.
+  Tim Prodi melihat prodinya, mengubah identitas prodinya (`simpanIdentitasProdi`, bukan nama/jenjang, B4), dan membaca
+  dokumen bersama fakultas (tab Basis Pengetahuan LED hanya baca, tombol Tambah hanya untuk dokumen LED).
+- Kelola akun: Tambah akun dengan pilihan peran (Tim Prodi wajib memilih program studi), kolom Program studi, menu baris
+  "Pindah program studi" (sesi akun dicabut). Prodi yang masih punya akun Tim Prodi atau LED tidak bisa dihapus.
+- Halaman: penjaga halaman admin `wajibAdmin`; halaman LED penyusun `wajibTimProdi`; instrumen, dokumen bersama, dan
+  Program studi `wajibAdmin`; layout `/led` dan daftar LED menerima Admin UPPS dan Tim Prodi (menu per peran dirapikan di
+  Tahap 2). Halaman awal tidak lagi mengalihkan admin; admin melihat bagian "Pengaturan UPPS". Modul LKPS terbuka untuk
+  ketiga peran. Form LED baru menampilkan prodi akun (teks, bukan pilihan). Seed membuat/menjaga akun `ADMIN`.
+- Uji: helper `buatAdmin`, `siapkanFakultas`, `buatTimProdi`, `siapkanProdi` (bantu.ts) menggantikan `siapkanPj`; semua uji
+  integrasi disesuaikan (prodi, instrumen, kunci, dokumen bersama oleh admin; LED oleh Tim Prodi prodinya; "pengguna lain"
+  = Tim Prodi prodi lain karena admin kini boleh membaca). Uji baru di `akses.test.ts`: Tim Prodi A tidak bisa membaca atau
+  mengubah LED prodi B; masukan prodi lain diabaikan; Admin membaca semua LED tetapi tidak bisa mengubah atau membuat LED;
+  dua akun Tim Prodi satu prodi sama-sama menyunting dan riwayat versi mencatat penyuntingnya; pindah prodi dan hapus prodi.
+  Di `review.test.ts`: pemberitahuan sampai ke akun Tim Prodi kedua di prodi yang sama dan tidak ke Tim Prodi prodi lain.
+- Teks antarmuka "PJ"/"penanggung jawab" diganti "Tim Prodi"/"Admin UPPS" (halaman asesor, catatan revisi, penugasan,
+  login admin pertama, pesan galat). Nilai internal `"PJ"` di domain review (sisi catatan) tetap.
+- `grep -rn "PENANGGUNG_JAWAB\|SUPER_ADMIN" src tests` (di luar `src/generated`) kosong.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 112/112 lulus |
+| `npm run test:integrasi` | 58/58 lulus (run penuh: 56/58; dua asersi lama yang mengharapkan admin ditolak membaca LED dan pemeriksa instrumen = PJ disesuaikan, lalu kedua berkas diulang: lulus) |

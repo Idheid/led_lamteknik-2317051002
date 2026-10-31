@@ -18,10 +18,12 @@ datasource db {
 
 // ----------------------------------------------------------------- Pengguna dan akses
 
+// Revisi 31 Okt 2026 (Pak Tris): tiga peran. ADMIN = Admin UPPS (dulu SUPER_ADMIN dan PJ fakultas), TIM_PRODI = tim
+// penyusun satu prodi (boleh beberapa akun per prodi), ASESOR = reviewer internal yang ditugaskan admin ke satu LED.
 enum Peran {
-  SUPER_ADMIN
-  PENANGGUNG_JAWAB
-  ASESOR // revisi 22 Okt 2026: reviewer internal yang ditugaskan admin ke satu LED
+  ADMIN
+  TIM_PRODI
+  ASESOR
 }
 
 model User {
@@ -33,13 +35,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   // kolom plugin admin Better Auth: role = peran, banned = akun dinonaktifkan
-  role          Peran     @default(PENANGGUNG_JAWAB)
+  role          Peran     @default(TIM_PRODI)
   banned        Boolean?  @default(false)
   banReason     String?
   banExpires    DateTime?
-  // kolom tambahan (Better Auth additionalFields). Revisi 19 Okt 2026: PJ = penanggung jawab tingkat fakultas,
-  // tidak terikat ke satu prodi (satu instalasi website dipakai satu fakultas).
+  // kolom tambahan (Better Auth additionalFields)
   wajibGantiSandi Boolean @default(false) // akun baru atau sandi diatur ulang admin
+  // revisi 31 Okt 2026: prodi akun Tim Prodi (wajib untuk TIM_PRODI, kosong untuk peran lain)
+  prodiId       String?
+  prodi         Prodi?    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
 
   sessions      Session[]
   accounts      Account[]
@@ -121,6 +125,7 @@ model Prodi {
   // akreditasi berlaku sampai: kolom tanggal supaya daftar prodi bisa diurutkan (prodi yang LED-nya paling dekat)
   akreditasiBerlakuSampai DateTime?
   proyek      ProyekLED[]
+  anggota     User[]       // akun Tim Prodi prodi ini (revisi 31 Okt 2026)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }

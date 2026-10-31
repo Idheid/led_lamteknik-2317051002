@@ -14,10 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export const metadata: Metadata = { title: "Ringkasan review" };
 
 const PENJELASAN = {
-  draf: "PJ belum mengajukan review. Anda bisa membaca narasi; catatan dan skor bisa diberikan setelah PJ menekan Ajukan review.",
-  direview: "PJ sudah mengajukan review. Beri catatan revisi pada narasi, lalu isi Penilaian akhir.",
-  perlu_revisi: "Anda menyatakan Perlu revisi. PJ memperbaiki lalu mengajukan review lagi.",
-  layak: "Anda menyatakan Layak diajukan. PJ sekarang bisa mengekspor Word final.",
+  draf: "Tim Prodi belum mengajukan review. Anda bisa membaca narasi; catatan dan skor bisa diberikan setelah Tim Prodi menekan Ajukan review.",
+  direview: "Tim Prodi sudah mengajukan review. Beri catatan revisi pada narasi, lalu isi Penilaian akhir.",
+  perlu_revisi: "Anda menyatakan Perlu revisi. Tim Prodi memperbaiki lalu mengajukan review lagi.",
+  layak: "Anda menyatakan Layak diajukan. Tim Prodi sekarang bisa mengekspor Word final.",
 };
 
 /** Ringkasan review satu LED untuk asesor (revisi 22 Okt 2026). */

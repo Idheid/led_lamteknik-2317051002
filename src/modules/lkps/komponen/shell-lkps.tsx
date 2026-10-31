@@ -17,7 +17,7 @@ export const MENU_LKPS: GrupNav = {
 /** Tata letak modul LKPS: menu LKPS dan (untuk penyusun) data bersama LKPS & LED. */
 export async function ShellLkps({ pengguna, children }: { pengguna: Pengguna; children: ReactNode }) {
   const fakultas = await ambilFakultas();
-  const grup = pengguna.peran === "PENANGGUNG_JAWAB" ? [MENU_LKPS, MENU_DATA_BERSAMA] : [MENU_LKPS];
+  const grup = pengguna.peran === "ADMIN" ? [MENU_LKPS, MENU_DATA_BERSAMA] : [MENU_LKPS];
   return (
     <ShellAplikasi pengguna={pengguna} grup={grup} judul="LKPS LAM Teknik" subjudul={fakultas?.nama ?? "Fakultas belum diisi"} beranda="/lkps">
       {children}

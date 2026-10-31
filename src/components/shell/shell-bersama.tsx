@@ -5,12 +5,12 @@ import { ShellAplikasi } from "./shell-aplikasi";
 import { MENU_DATA_BERSAMA, menuModul } from "./menu-peran";
 
 /**
- * Tata letak halaman data bersama LKPS & LED (31 Okt 2026): Program studi dan identitas fakultas, Kunci API fakultas,
- * juga Ganti kata sandi untuk penyusun. Sidebar berisi pilihan modul dan menu data bersama.
+ * Tata letak halaman di luar modul (31 Okt 2026): Program studi dan identitas fakultas (Admin UPPS), juga Ganti kata
+ * sandi untuk Tim Prodi dan asesor. Sidebar berisi pilihan modul, ditambah menu Pengaturan UPPS untuk admin.
  */
 export async function ShellBersama({ pengguna, children }: { pengguna: Pengguna; children: ReactNode }) {
   const fakultas = await ambilFakultas();
-  const grup = pengguna.peran === "PENANGGUNG_JAWAB" ? [menuModul(pengguna.peran), MENU_DATA_BERSAMA] : [menuModul(pengguna.peran)];
+  const grup = pengguna.peran === "ADMIN" ? [menuModul(pengguna.peran), MENU_DATA_BERSAMA] : [menuModul(pengguna.peran)];
   return (
     <ShellAplikasi pengguna={pengguna} grup={grup} subjudul={fakultas?.nama ?? "Fakultas belum diisi"} beranda="/">
       {children}

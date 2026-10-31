@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Lock, Pencil, Plus } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { ambilBagian } from "@/modules/led/data/instrumen";
 import { jenjangBerlaku } from "@/modules/led/domain/instrumen";
 import { JudulHalaman } from "@/components/judul-halaman";
@@ -18,7 +18,7 @@ import { TombolHapusSubBagian } from "./tombol-hapus-sub";
 export const metadata: Metadata = { title: "Bagian instrumen" };
 
 export default async function HalamanBagian({ params }: PageProps<"/led/instrumen/[versiId]/bagian/[bagianId]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const { versiId, bagianId } = await params;
   const b = await ambilBagian(p, bagianId);
   if (!b || b.versi.id !== versiId) notFound();

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Lock } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { daftarVersi } from "@/modules/led/data/instrumen";
 import { JENJANG, namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { JudulHalaman } from "@/components/judul-halaman";
@@ -19,7 +19,7 @@ const LABEL_STATUS: Record<string, string> = {
 export const metadata: Metadata = { title: "Instrumen" };
 
 export default async function HalamanInstrumen() {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const versi = await daftarVersi(p);
   const kodeById = new Map(versi.map((v) => [v.id, v.kode]));
   return (

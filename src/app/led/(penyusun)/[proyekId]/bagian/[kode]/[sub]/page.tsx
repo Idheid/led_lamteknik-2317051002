@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, FileText, Loader2, Plus } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { daftarDokumen } from "@/modules/led/data/dokumen";
 import { nilaiButirProyek } from "@/modules/led/data/nilai-butir";
 import { bacaVarian, varianUntukJenjang } from "@/modules/led/domain/instrumen";
@@ -47,7 +47,7 @@ function JudulSeksi({ children, aksi }: { children: ReactNode; aksi?: ReactNode 
  * data LKPS, jawaban penyusun, dokumen pendukung, lalu hasil generate dan riwayat versi.
  */
 export default async function HalamanSubBagian({ params }: PageProps<"/led/[proyekId]/bagian/[kode]/[sub]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId, kode: kodeMentah, sub: subMentah } = await params;
   const kodeSub = decodeURIComponent(subMentah);
   const d = await muatKriteria(p, proyekId, decodeURIComponent(kodeMentah));

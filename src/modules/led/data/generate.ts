@@ -74,7 +74,7 @@ export async function batalkanTugas(p: Pengguna, tugasId: string) {
   const t = await tugasMilik(p, tugasId);
   const r = await prisma.tugasGenerate.updateMany({
     where: { id: t.id, status: { in: [...STATUS_TUGAS_AKTIF, "gagal"] } },
-    data: { status: "dibatalkan", pesan: "Dibatalkan penanggung jawab." },
+    data: { status: "dibatalkan", pesan: "Dibatalkan Tim Prodi." },
   });
   if (r.count === 0) throw new GalatPengguna("Tugas ini sudah selesai.");
   await catatAktivitas(p, "batal_generate", "proyek", t.proyekId, { tugasId });

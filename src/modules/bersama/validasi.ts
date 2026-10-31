@@ -62,16 +62,19 @@ export type MasukanProdi = z.input<typeof skemaProdi>;
 
 const kataSandi = z.string().min(8, "Kata sandi minimal 8 karakter.").max(128, "Kata sandi terlalu panjang.");
 
-/** Akun PJ fakultas (revisi 19 Okt 2026: tidak terikat ke satu prodi). */
-export const skemaAkunPenanggungJawab = z.object({
+/** Akun Admin UPPS atau Asesor (tidak terikat prodi). */
+export const skemaAkun = z.object({
   nama: teksWajib("Nama", 120),
   email: z.string().trim().toLowerCase().email("Format email tidak valid."),
   kataSandi,
 });
-export type MasukanAkun = z.input<typeof skemaAkunPenanggungJawab>;
+export type MasukanAkun = z.input<typeof skemaAkun>;
 
-export const skemaAkunSuperAdmin = skemaAkunPenanggungJawab;
-export type MasukanAkunSuperAdmin = z.input<typeof skemaAkunSuperAdmin>;
+/** Akun Tim Prodi (revisi 31 Okt 2026): wajib memilih program studi; satu prodi boleh beberapa akun. */
+export const skemaAkunTimProdi = skemaAkun.extend({
+  prodiId: z.string().trim().min(1, "Pilih program studi."),
+});
+export type MasukanAkunTimProdi = z.input<typeof skemaAkunTimProdi>;
 
 export const skemaGantiSandi = z
   .object({

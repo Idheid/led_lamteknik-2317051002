@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pencil, Plus } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { prisma } from "@/modules/bersama/db";
 import { daftarButir } from "@/modules/led/data/instrumen";
 import { JENJANG, namaJenjang } from "@/modules/bersama/domain/jenjang";
@@ -18,7 +18,7 @@ import { cn } from "@/modules/bersama/utils";
 export const metadata: Metadata = { title: "Butir penilaian" };
 
 export default async function HalamanButir({ params, searchParams }: PageProps<"/led/instrumen/[versiId]/butir">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibAdmin();
   const { versiId } = await params;
   const q = await searchParams;
   const jenjang = typeof q.jenjang === "string" && JENJANG.some((j) => j.kode === q.jenjang) ? q.jenjang : "S1";

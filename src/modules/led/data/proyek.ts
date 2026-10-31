@@ -1,6 +1,6 @@
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatAkses, GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/modules/bersama/akses";
+import { GalatAkses, GalatPengguna, pastikanPeran, pastikanTimProdi, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { hapusBerkas } from "@/modules/bersama/penyimpanan";
 import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
@@ -10,15 +10,17 @@ import { labelPeriode, tsDariTahunPengajuan } from "@/modules/bersama/domain/tah
 import { skemaJawabanForm, skemaProyek, skemaTahunTs, type MasukanProyek } from "@/modules/led/validasi";
 
 /**
- * F-07 LED (ProyekLED). Revisi 19 Okt 2026: satu LED = satu pengajuan akreditasi satu prodi yang berlaku 5 tahun.
- * PJ fakultas melihat dan mengelola semua LED di fakultas; satu prodi hanya boleh punya satu LED aktif (LED periode
- * sebelumnya diarsipkan dulu). Instrumen LED otomatis = instrumen aktif untuk jenjang prodi.
+ * F-07 LED (ProyekLED). Satu LED = satu pengajuan akreditasi satu prodi yang berlaku 5 tahun; satu prodi hanya boleh
+ * punya satu LED aktif (LED periode sebelumnya diarsipkan dulu). Instrumen LED otomatis = instrumen aktif untuk jenjang
+ * prodi. Revisi 31 Okt 2026: Tim Prodi membuat dan mengelola LED prodinya sendiri (prodi dari akun; semua akun Tim
+ * Prodi satu prodi berbagi LED yang sama); Admin UPPS melihat semua LED hanya baca; asesor hanya LED yang ditugaskan.
  */
 
-/** Semua LED fakultas (aktif dulu, lalu arsip), beserta prodi dan versinya. */
+/** LED (aktif dulu, lalu arsip) beserta prodi dan versinya. Tim Prodi: LED prodinya; Admin UPPS: semua LED. */
 export async function daftarProyek(p: Pengguna) {
-  pastikanPenanggungJawab(p);
+  pastikanPeran(p, "ADMIN", "TIM_PRODI");
   return prisma.proyekLED.findMany({
+    where: p.peran === "TIM_PRODI" ? { prodiId: p.prodiId ?? "-" } : {},
     orderBy: [{ diarsipkanPada: { sort: "desc", nulls: "first" } }, { tahunPengajuan: "desc" }, { createdAt: "desc" }],
     include: { versi: { select: { kode: true, nama: true } }, prodi: { select: { id: true, nama: true, jenjang: true } } },
   });
@@ -44,10 +46,11 @@ async function ledAktifProdi(prodiId: string, kecuali?: string) {
   });
 }
 
+/** Tim Prodi membuat LED untuk prodinya sendiri; prodi diambil dari akun, bukan dari masukan. */
 export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
-  pastikanPenanggungJawab(p);
+  pastikanTimProdi(p);
   const data = skemaProyek.parse(masukan);
-  const prodi = await prisma.prodi.findUnique({ where: { id: data.prodiId } });
+  const prodi = await prisma.prodi.findUnique({ where: { id: p.prodiId } });
   if (!prodi) throw new GalatPengguna("Program studi tidak ditemukan.");
   const aktif = await ledAktifProdi(prodi.id);
   if (aktif) {
@@ -76,13 +79,14 @@ export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
   return proyek;
 }
 
-/** Ambil LED (PJ fakultas boleh membuka semua LED). */
 /**
- * Proyek untuk PJ. `baca: true` (hanya fungsi baca) juga mengizinkan asesor yang ditugaskan ke LED ini
- * (revisi 22 Okt 2026); fungsi ubah memakai ambilProyekUbah sehingga asesor tidak pernah bisa mengubah.
+ * Ambil LED. Tanpa opsi: hanya Tim Prodi pemilik LED (fungsi ubah dan fungsi khusus penyusun). `baca: true` (hanya
+ * fungsi baca) juga mengizinkan Admin UPPS (semua LED, revisi 31 Okt 2026) dan asesor yang ditugaskan ke LED ini
+ * (revisi 22 Okt 2026); fungsi ubah memakai ambilProyekUbah sehingga keduanya tidak pernah bisa mengubah.
  */
 export async function ambilProyek(p: Pengguna, proyekId: string, opsi: { baca?: boolean } = {}) {
-  if (!(opsi.baca && p.peran === "ASESOR")) pastikanPenanggungJawab(p);
+  if (opsi.baca) pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
+  else pastikanTimProdi(p);
   const proyek = await prisma.proyekLED.findUnique({
     where: { id: proyekId },
     include: {
@@ -92,6 +96,7 @@ export async function ambilProyek(p: Pengguna, proyekId: string, opsi: { baca?: 
     },
   });
   if (!proyek) throw new GalatAkses("LED tidak ditemukan.");
+  if (p.peran === "TIM_PRODI" && proyek.prodiId !== p.prodiId) throw new GalatAkses("LED ini milik program studi lain.");
   if (p.peran === "ASESOR" && proyek.asesorId !== p.id) throw new GalatAkses("LED ini tidak ditugaskan kepada Anda.");
   return proyek;
 }
@@ -103,7 +108,7 @@ export function pastikanBisaDiubah(proyek: { diarsipkanPada: Date | null }) {
   }
 }
 
-/** Ambil proyek untuk diubah: milik prodi pengguna dan tidak diarsipkan. */
+/** Ambil proyek untuk diubah: Tim Prodi pemilik LED dan LED tidak diarsipkan. */
 export async function ambilProyekUbah(p: Pengguna, proyekId: string) {
   const proyek = await ambilProyek(p, proyekId);
   pastikanBisaDiubah(proyek);

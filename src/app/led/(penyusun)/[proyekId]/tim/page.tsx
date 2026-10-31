@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { timPenyusun } from "@/modules/led/data/ekspor";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
@@ -8,7 +8,7 @@ import { FormTim } from "./form-tim";
 export const metadata: Metadata = { title: "Tim penyusun" };
 
 export default async function HalamanTim({ params }: PageProps<"/led/[proyekId]/tim">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId } = await params;
   const tim = await timPenyusun(p, proyekId);
   const ke = (x: typeof tim.dosen) => x.map((a) => ({ nama: a.nama, nomorInduk: a.nomorInduk ?? "", jabatan: a.jabatan ?? "", tugas: a.tugas ?? "" }));

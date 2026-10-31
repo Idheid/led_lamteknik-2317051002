@@ -7,11 +7,11 @@ import { ac, peranAkses } from "@/modules/bersama/peran";
 
 /**
  * Better Auth: email + kata sandi, sesi di basis data.
- * - Pendaftaran mandiri dimatikan; akun dibuat super admin lewat plugin admin (createUser).
+ * - Pendaftaran mandiri dimatikan; akun dibuat Admin UPPS lewat plugin admin (createUser).
  * - "Nonaktifkan akun" = ban plugin admin: login ditolak dan sesi yang ada dicabut.
  */
 export const auth = betterAuth({
-  appName: "Penyusun LED LAM Teknik",
+  appName: "Akreditasi LAM Teknik",
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
@@ -25,15 +25,17 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       wajibGantiSandi: { type: "boolean", required: false, input: false, defaultValue: false },
+      // revisi 31 Okt 2026: prodi akun Tim Prodi; diisi lewat Kelola akun, tidak dari masukan pengguna
+      prodiId: { type: "string", required: false, input: false },
     },
   },
   plugins: [
     admin({
       ac,
       roles: peranAkses,
-      defaultRole: "PENANGGUNG_JAWAB",
-      adminRoles: ["SUPER_ADMIN"],
-      bannedUserMessage: "Akun Anda dinonaktifkan. Hubungi admin.",
+      defaultRole: "TIM_PRODI",
+      adminRoles: ["ADMIN"],
+      bannedUserMessage: "Akun Anda dinonaktifkan. Hubungi Admin UPPS.",
     }),
     nextCookies(),
   ],

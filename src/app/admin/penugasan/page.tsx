@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { wajibSuperAdmin } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { daftarPenugasan } from "@/modules/led/data/review";
 import { bacaStatusReview, LABEL_REVIEW } from "@/modules/led/domain/kesiapan";
 import { JudulHalaman } from "@/components/judul-halaman";
@@ -14,7 +14,7 @@ const fmt = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "A
 
 /** Revisi 22 Okt 2026: satu asesor per LED, ditugaskan admin. */
 export default async function HalamanPenugasan() {
-  const p = await wajibSuperAdmin();
+  const p = await wajibAdmin();
   const { led, asesor } = await daftarPenugasan(p);
   return (
     <>
@@ -38,7 +38,7 @@ export default async function HalamanPenugasan() {
             </TableHeader>
             <TableBody>
               {led.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="py-6 text-center text-muted-foreground">Belum ada LED. PJ membuat LED di menu Semua LED.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="py-6 text-center text-muted-foreground">Belum ada LED. Tim Prodi membuat LED prodinya di modul LED.</TableCell></TableRow>
               )}
               {led.map((l) => (
                 <TableRow key={l.id} className={l.diarsipkanPada ? "opacity-60" : undefined}>

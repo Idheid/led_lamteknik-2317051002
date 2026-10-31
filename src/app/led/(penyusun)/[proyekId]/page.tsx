@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, KeyRound } from "lucide-react";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { bagianProyek, butirAnggaranProyek, ringkasanBagianProyek } from "@/modules/led/data/proyek";
 import { ringkasanBahan } from "@/modules/led/data/dokumen";
-import { daftarKunci, ringkasanKunci } from "@/modules/bersama/data/kunci-api";
+import { ringkasanKunci } from "@/modules/bersama/data/kunci-api";
 import { pakaiPenyediaUji } from "@/modules/bersama/llm/embedding";
 import { bacaAnggaran } from "@/modules/led/domain/anggaran-proyek";
 import { hitungAnggaran, usulanHalamanKriteria } from "@/modules/led/domain/anggaran";
@@ -18,7 +18,6 @@ import { kalimatSisa, tanggalIso, usulanBatasPengajuan } from "@/modules/led/dom
 import { JadwalKerja } from "./jadwal-kerja";
 import { Petunjuk } from "@/components/petunjuk";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { PetaTS } from "@/modules/led/komponen/peta-ts";
 import { LencanaStatus } from "@/components/lencana-status";
 import { Badge } from "@/components/ui/badge";
@@ -38,19 +37,17 @@ const LABEL_JENIS: Record<string, string> = {
 };
 
 export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) {
-  const p = await wajibPenanggungJawab();
+  const p = await wajibTimProdi();
   const { proyekId } = await params;
-  const [{ proyek, bagian }, { butir }, ringkas, bahan, kunci, kesiapan, review] = await Promise.all([
+  const [{ proyek, bagian }, { butir }, ringkas, bahan, statusKunci, kesiapan, review] = await Promise.all([
     bagianProyek(p, proyekId),
     butirAnggaranProyek(p, proyekId),
     ringkasanBagianProyek(p, proyekId),
     ringkasanBahan(p, proyekId),
-    daftarKunci(p),
+    ringkasanKunci(),
     kesiapanLed(proyekId),
     ringkasReview(p, proyekId),
   ]);
-  const kunciAktif = kunci.filter((k) => k.statusEfektif === "aktif").length;
-  const statusKunci = await ringkasanKunci();
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
   const usulan = usulanHalamanKriteria(bagianAnggaran, butir, pengaturan);
@@ -79,7 +76,7 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
         kunci="beranda-proyek"
         fungsi="Beranda merangkum progres penyusunan LED, anggaran halaman, kunci API, dan bahan penyusunan proyek ini."
         langkah={[
-          "Pastikan kunci API Gemini sudah ditambahkan (menu Kunci API fakultas).",
+          "Pastikan status kunci API Gemini aktif; bila belum, hubungi Admin UPPS.",
           "Unggah LKPS di menu Data LKPS, lalu periksa tabel dan metrik hasil bacaan.",
           "Unggah dokumen pendukung di menu Basis Pengetahuan.",
           "Buka kriteria di tabel di bawah, isi jawaban penyusun, lalu klik Generate kriteria.",
@@ -93,11 +90,9 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
             <p>
               {statusKunci.milikFakultas === 0
                 ? "Kunci API diperlukan untuk mengindeks dokumen dan menyusun narasi. Kunci berlaku untuk semua LED fakultas."
-                : "Kuota kunci habis atau kunci ditolak Google. Tambahkan kunci dari project Google lain, atau tunggu reset kuota harian."}
+                : "Kuota kunci habis atau kunci ditolak Google. Penyusunan lanjut otomatis setelah kunci baru ditambahkan atau kuota harian direset."}
             </p>
-            <Button asChild size="sm" className="mt-2">
-              <Link href="/pengaturan/kunci-api">Buka menu Kunci API</Link>
-            </Button>
+            <p className="mt-1 font-medium">Hubungi Admin UPPS untuk menambahkan kunci API.</p>
           </AlertDescription>
         </Alert>
       )}
@@ -169,13 +164,13 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
             <CardDescription>Kunci API Gemini</CardDescription>
             <CardTitle className="flex items-center gap-2 text-base">
               <KeyRound className="size-4 text-muted-foreground" aria-hidden />
-              {kunci.length === 0 ? (pakaiPenyediaUji() ? "Mode uji" : "Belum diatur") : `${kunciAktif} dari ${kunci.length} aktif`}
+              {statusKunci.milikFakultas === 0 ? (pakaiPenyediaUji() ? "Mode uji" : "Belum diatur") : `${statusKunci.aktifFakultas} dari ${statusKunci.milikFakultas} aktif`}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Link href="/pengaturan/kunci-api" className="text-xs text-primary hover:underline">
-              {kunci.length === 0 ? "Tambahkan kunci untuk mengindeks dokumen" : "Kelola kunci API"}
-            </Link>
+            <p className="text-xs text-muted-foreground">
+              {statusKunci.adaYangBisaDipakai ? "Kunci fakultas dikelola Admin UPPS." : "Hubungi Admin UPPS untuk menambahkan kunci API."}
+            </p>
           </CardContent>
         </Card>
       </div>

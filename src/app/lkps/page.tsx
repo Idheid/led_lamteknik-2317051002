@@ -45,7 +45,7 @@ export default async function HalamanLkps() {
             </ul>
           </CardContent>
         </Card>
-        {p.peran === "PENANGGUNG_JAWAB" && (
+        {p.peran === "TIM_PRODI" && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><FileText className="size-4 text-primary" aria-hidden />Sementara ini</CardTitle>

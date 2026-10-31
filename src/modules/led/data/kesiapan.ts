@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
-import { GalatPengguna, pastikanPenanggungJawab, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, pastikanPeran, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
@@ -83,9 +83,13 @@ async function hitungCatatanTerbuka(proyekId: string): Promise<number> {
   return prisma.catatanRevisi.count({ where: { proyekId, status: { in: CATATAN_BELUM_SELESAI } } });
 }
 
+/** Kesiapan beberapa LED sekaligus (Beranda, Program studi, Pantau LED). Tim Prodi hanya LED prodinya. */
 export async function kesiapanSemua(p: Pengguna, proyekIds: string[]): Promise<Map<string, KesiapanLed>> {
-  pastikanPenanggungJawab(p);
-  const hasil = await Promise.all(proyekIds.map((id) => kesiapanLed(id)));
+  pastikanPeran(p, "ADMIN", "TIM_PRODI");
+  const boleh = p.peran === "TIM_PRODI"
+    ? (await prisma.proyekLED.findMany({ where: { id: { in: proyekIds }, prodiId: p.prodiId ?? "-" }, select: { id: true } })).map((x) => x.id)
+    : proyekIds;
+  const hasil = await Promise.all(boleh.map((id) => kesiapanLed(id)));
   return new Map(hasil.map((k) => [k.proyekId, k]));
 }
 
@@ -94,7 +98,7 @@ const skemaJadwal = z.object({
   jadwal: z.partialRecord(z.enum(TONGGAK.map((t) => t.kode) as [KodeTonggak, ...KodeTonggak[]]), z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable()).default({}),
 });
 
-/** PJ mengisi batas pengajuan dan (opsional) mengubah tanggal tonggak; tonggak kosong = dihitung mundur otomatis. */
+/** Tim Prodi mengisi batas pengajuan dan (opsional) mengubah tanggal tonggak; tonggak kosong = dihitung mundur otomatis. */
 export async function simpanJadwal(p: Pengguna, proyekId: string, masukan: z.input<typeof skemaJadwal>) {
   const data = skemaJadwal.parse(masukan);
   const proyek = await ambilProyekUbah(p, proyekId);

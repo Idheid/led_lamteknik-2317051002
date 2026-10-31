@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { wajibPenanggungJawab } from "@/modules/bersama/sesi";
+import { wajibAdmin } from "@/modules/bersama/sesi";
 import { prisma } from "@/modules/bersama/db";
 import { bacaVarian, jenjangBerlaku } from "@/modules/led/domain/instrumen";
 import { KODE_JENJANG, type KodeJenjang } from "@/modules/bersama/domain/jenjang";
@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Sub-bagian" };
 const sahJenjang = (x: string[]): KodeJenjang[] => x.filter((k): k is KodeJenjang => (KODE_JENJANG as string[]).includes(k));
 
 export default async function HalamanSubBagian({ params, searchParams }: PageProps<"/led/instrumen/[versiId]/sub-bagian/[subId]">) {
-  await wajibPenanggungJawab();
+  await wajibAdmin();
   const { versiId, subId } = await params;
   const { bagian: bagianQuery } = await searchParams;
   const baru = subId === "baru";
@@ -64,7 +64,7 @@ export default async function HalamanSubBagian({ params, searchParams }: PagePro
         kunci="admin-sub-bagian"
         fungsi="Formulir sub-bagian: kode, judul, pertanyaan pemandu, dan butir yang dibahas. Isian ini menjadi bagian prompt penyusunan narasi."
         langkah={[
-          "Isi atau perbaiki pertanyaan pemandu supaya penanggung jawab tahu apa yang perlu dijawab.",
+          "Isi atau perbaiki pertanyaan pemandu supaya Tim Prodi tahu apa yang perlu dijawab.",
           "Simpan, lalu kembali ke halaman bagian.",
         ]}
       />
