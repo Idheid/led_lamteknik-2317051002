@@ -102,6 +102,16 @@ export async function aksiCariDokumen(proyekId: string, kueri: string, subBagian
 
 // ---------------------------------------------------------------- Mesin penyusun (F-13–F-21)
 
+/** Susun seluruh LED (revisi 31 Okt 2026): satu rangkaian generate dari C.1 sampai kata pengantar dan ringkasan. */
+export async function aksiSusunSeluruh(proyekId: string) {
+  const r = await jalankanAksi(async (p) => {
+    const t = await generate.mulaiSusunSeluruh(p, proyekId);
+    return { id: t.id, status: t.status, pesan: t.pesan };
+  });
+  revalidatePath(`/led/${proyekId}`, "layout");
+  return r;
+}
+
 export async function aksiMulaiGenerate(proyekId: string, bagianKode: string, subBagianKode?: string | null) {
   const r = await jalankanAksi(async (p) => {
     const t = await generate.mulaiGenerate(p, proyekId, bagianKode, subBagianKode);

@@ -11,7 +11,7 @@ import {
 } from "@/modules/led/domain/narasi";
 import type { KeluaranSubBagian } from "@/modules/led/domain/prompt";
 import type { HasilVerifikasiAi } from "@/modules/led/data/verifikasi";
-import { perbaruiStatusBagian, subBagianProyek, urutanSubBagian } from "@/modules/led/proses/generate";
+import { perbaruiStatusBagian, rencanaSusun, subBagianProyek, urutanSubBagian } from "@/modules/led/proses/generate";
 import { pakaiNarasiUji } from "@/modules/bersama/llm/narasi-uji";
 
 /**
@@ -63,6 +63,45 @@ export async function mulaiGenerate(p: Pengguna, proyekId: string, bagianKode: s
   return tugas;
 }
 
+/** Rencana "Susun seluruh LED" untuk dialog konfirmasi: bagian dan jumlah sub-bagian yang akan disusun. */
+export async function rencanaSusunSeluruh(p: Pengguna, proyekId: string) {
+  const proyek = await ambilProyek(p, proyekId);
+  const bagian = await rencanaSusun(proyek);
+  return { bagian, jumlahSub: bagian.reduce((a, b) => a + b.sub.length, 0) };
+}
+
+/**
+ * Susun seluruh LED (revisi 31 Okt 2026): satu rangkaian tugas generate, satu tugas per bagian, berurutan C.1–C.7,
+ * II.A, II.B, III, I, IV, lalu kata pengantar dan ringkasan. Sub-bagian yang sudah ditandai selesai dilewati.
+ */
+export async function mulaiSusunSeluruh(p: Pengguna, proyekId: string) {
+  const proyek = await ambilProyekUbah(p, proyekId);
+  const aktif = await prisma.tugasGenerate.findFirst({ where: { proyekId: proyek.id, status: { in: STATUS_TUGAS_AKTIF } } });
+  if (aktif) throw new GalatPengguna(`Masih ada penyusunan "${aktif.judul}" di antrean proyek ini. Tunggu selesai atau batalkan dulu.`);
+  const rencana = await rencanaSusun(proyek);
+  const [pertama, ...sisa] = rencana;
+  if (!pertama) throw new GalatPengguna("Semua sub-bagian sudah ditandai selesai; tidak ada yang perlu disusun.");
+  const kunci = await ringkasanKunci();
+  const tanpaKunci = !kunci.adaYangBisaDipakai && !pakaiNarasiUji();
+  const tugas = await prisma.tugasGenerate.create({
+    data: {
+      proyekId: proyek.id,
+      bagianKode: pertama.kode,
+      judul: `${pertama.kode} ${pertama.nama}`.slice(0, 200),
+      subBagianKode: pertama.sub,
+      dibuatOlehId: p.id,
+      bagianBerikutnya: sisa.map((b) => b.kode),
+      rangkaianKe: 1,
+      rangkaianTotal: rencana.length,
+      status: tanpaKunci ? "tertunda" : "antre",
+      pesan: tanpaKunci ? "Belum ada kunci API yang bisa dipakai. Hubungi Admin UPPS; penyusunan dimulai otomatis setelah kunci ditambahkan." : null,
+    },
+  });
+  if (!tanpaKunci) await kirimTugas(ANTREAN.generate, { tugasId: tugas.id });
+  await catatAktivitas(p, "susun_seluruh", "proyek", proyek.id, { bagian: rencana.map((b) => b.kode), jumlah: rencana.reduce((a, b) => a + b.sub.length, 0) });
+  return tugas;
+}
+
 async function tugasMilik(p: Pengguna, tugasId: string) {
   const t = await prisma.tugasGenerate.findUnique({ where: { id: tugasId } });
   if (!t) throw new GalatAkses("Tugas tidak ditemukan.");
@@ -74,7 +113,8 @@ export async function batalkanTugas(p: Pengguna, tugasId: string) {
   const t = await tugasMilik(p, tugasId);
   const r = await prisma.tugasGenerate.updateMany({
     where: { id: t.id, status: { in: [...STATUS_TUGAS_AKTIF, "gagal"] } },
-    data: { status: "dibatalkan", pesan: "Dibatalkan Tim Prodi." },
+    // revisi 31 Okt 2026: rangkaian Susun seluruh LED ikut berhenti (bagian berikutnya tidak dibuat)
+    data: { status: "dibatalkan", pesan: t.bagianBerikutnya.length ? "Dibatalkan Tim Prodi; rangkaian Susun seluruh LED dihentikan." : "Dibatalkan Tim Prodi.", bagianBerikutnya: [] },
   });
   if (r.count === 0) throw new GalatPengguna("Tugas ini sudah selesai.");
   await catatAktivitas(p, "batal_generate", "proyek", t.proyekId, { tugasId });
@@ -105,6 +145,8 @@ export interface RingkasTugas {
   diperbarui: string;
   /** revisi 22 Okt 2026: teks yang sedang ditulis per kode sub-bagian */
   pratinjau: Record<string, string>;
+  /** revisi 31 Okt 2026: posisi dalam rangkaian Susun seluruh LED ("Bagian 3 dari 12") */
+  rangkaian: { ke: number; total: number } | null;
 }
 
 /** Tugas yang sedang berjalan/tertunda/gagal, ditambah yang baru selesai (10 menit terakhir), untuk banner antrean. */
@@ -138,6 +180,7 @@ export async function tugasProyek(p: Pengguna, proyekId: string): Promise<Ringka
     diperbarui: t.updatedAt.toISOString(),
     pratinjau: Object.fromEntries(Object.entries((t.pratinjau ?? {}) as Record<string, { teks?: string }>)
       .map(([k, v]) => [k, v?.teks ?? ""]).filter(([, v]) => v)),
+    rangkaian: t.rangkaianKe && t.rangkaianTotal ? { ke: t.rangkaianKe, total: t.rangkaianTotal } : null,
   }));
 }
 

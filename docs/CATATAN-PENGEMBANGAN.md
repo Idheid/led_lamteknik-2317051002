@@ -930,3 +930,36 @@ di-commit sebelum tahap berikutnya.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 118/118 lulus |
 | `npm run test:integrasi` | 66/66 lulus |
+
+### Tahap 6: susun otomatis dari depan sampai belakang
+
+- `TugasGenerate.bagianBerikutnya String[]`, `rangkaianKe`, `rangkaianTotal` (migrasi `20261031120000_rangkaian_generate`).
+- Domain `led/domain/rangkaian.ts` (dengan uji): `urutanBagianSusun` (C.1–C.7 menurut nomor, lalu II.A, II.B, III, I,
+  IV, terakhir AWAL), `subAwalSusun` (AWAL-PENGANTAR lalu AWAL-RINGKASAN), `subBelumSelesai`, `dataKosongHalamanAwal`.
+  Catatan: rencana menyebut II.B, III, I, IV; II.A (narasi tim dan jadwal kerja, juga di-generate) disisipkan sebelum
+  II.B karena tombolnya menyusun "semua bagian".
+- `rencanaSusun` dan `lanjutkanRangkaian` (proses/generate.ts): satu tugas per bagian, sub-bagian di dalamnya tetap
+  diurutkan IKU → LB/KEB → AF → SWOT; sub-bagian yang ditandai selesai dilewati (dihitung ulang saat bagian berikutnya
+  dibuat). Setelah tugas selesai, worker membuat tugas bagian berikutnya. Tugas yang tertunda (kunci habis) atau gagal
+  tidak memajukan rangkaian; setelah dilanjutkan dan selesai, rangkaian berjalan lagi. Batalkan mengosongkan
+  `bagianBerikutnya`, jadi seluruh rangkaian berhenti.
+- Data: `rencanaSusunSeluruh` (untuk konfirmasi) dan `mulaiSusunSeluruh` (Tim Prodi pemilik LED; satu penyusunan aktif per
+  LED). `tugasProyek` mengirim `rangkaian {ke, total}`; banner antrean menampilkan "Bagian 3 dari 12 · x/y sub-bagian".
+- Beranda LED: kotak "Susun seluruh LED" dengan konfirmasi yang menyebut jumlah sub-bagian dan urutan bagian (nonaktif
+  bila LED diarsipkan atau masih ada penyusunan berjalan); kartu "Halaman otomatis dari data" menandai halaman muka,
+  identitas pengusul, dan tim penyusun "otomatis dari data" dan menyebut data yang masih kosong beserta tautan
+  pengisiannya (Identitas prodi, Tim penyusun).
+- Mode uji: jeda model narasi uji bisa diatur `LLM_NARASI_UJI_JEDA_MS` (bawaan 1500 ms; uji memakai 0).
+- Uji integrasi baru `tests/integrasi/susun-seluruh.test.ts` (LLM_NARASI=uji): rencana melewati sub-bagian selesai dan
+  menempatkan kata pengantar dan ringkasan paling akhir; Tim Prodi prodi lain ditolak; rangkaian C.1 → II.A berjalan
+  berurutan; tanpa kunci tugas II.A tertunda dan rangkaian tidak maju, setelah dilanjutkan selesai lalu IV dibuat;
+  Batalkan pada IV menghentikan rangkaian (AWAL tidak dibuat); rangkaian baru IV → AWAL berakhir setelah ringkasan.
+- Uji browser (akun uji Tim Prodi; server pengembangan dan worker dimulai ulang karena skema berubah): tombol tampil di
+  Beranda, konfirmasi menyebut "99 sub-bagian dari 13 bagian ... C.1, ..., IV, AWAL" dan sengaja tidak dijalankan
+  (kuota Gemini), kartu halaman otomatis menyebut data identitas dan tim yang masih kosong.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 121/121 lulus |
+| `npm run test:integrasi` | 69/69 lulus |

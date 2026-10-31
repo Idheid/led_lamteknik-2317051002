@@ -427,6 +427,10 @@ model TugasGenerate {
   pesan         String?
   dilanjutkanPada DateTime? // perkiraan waktu dicoba lagi (reset kuota)
   pratinjau       Json? // revisi 22 Okt 2026: teks yang sedang ditulis per sub-bagian { kode: { teks, diperbarui } }
+  // revisi 31 Okt 2026 (Susun seluruh LED): bagian yang dikerjakan sesudah tugas ini selesai, dan posisi dalam rangkaian
+  bagianBerikutnya String[] @default([])
+  rangkaianKe      Int?
+  rangkaianTotal   Int?
   dibuatOlehId  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt

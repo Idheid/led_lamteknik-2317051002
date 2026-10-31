@@ -48,7 +48,9 @@ export function modelNarasiUji(): LanguageModel {
       const pengguna = opsi.prompt.filter((m) => m.role === "user")
         .flatMap((m) => (Array.isArray(m.content) ? m.content : []))
         .map((c) => ("text" in c ? c.text : "")).join("\n");
-      await new Promise((r) => setTimeout(r, 1500)); // meniru jeda layanan supaya progres antrean terlihat
+      // meniru jeda layanan supaya progres antrean terlihat; uji otomatis memakai LLM_NARASI_UJI_JEDA_MS=0
+      const jeda = Number(process.env.LLM_NARASI_UJI_JEDA_MS ?? 1500);
+      await new Promise((r) => setTimeout(r, Number.isFinite(jeda) && jeda >= 0 ? jeda : 1500));
       const teks = JSON.stringify(keluaran(pengguna));
       return {
         content: [{ type: "text", text: teks }],

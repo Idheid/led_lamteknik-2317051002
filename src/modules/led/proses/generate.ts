@@ -23,6 +23,7 @@ import {
   statusGabungan, tabelKeMarkdown, tahunSah, teksDokumen, urutkanUntukGenerate, type RujukanPeriksa, type StatusIsi,
   type TabelSistem,
 } from "@/modules/led/domain/narasi";
+import { subAwalSusun, subBelumSelesai, urutanBagianSusun } from "@/modules/led/domain/rangkaian";
 import { kodeSumberSah, periksaKeluaran, susunPengguna, susunSistem, type KonteksSubBagian } from "@/modules/led/domain/prompt";
 import { formatTahunAkademik, gantiLabelTS, petaTS } from "@/modules/bersama/domain/tahun-akademik";
 import { GalatSementara, panggilNarasi } from "@/modules/led/proses/llm-narasi";
@@ -109,6 +110,60 @@ export async function subBagianProyek(proyek: { versiId: string; jenjang: string
 /** Kode sub-bagian yang di-generate untuk satu bagian, dalam urutan generate. */
 export async function urutanSubBagian(proyek: { versiId: string; jenjang: string }, bagianKode: string): Promise<string[]> {
   return urutkanUntukGenerate(await subBagianProyek(proyek, bagianKode)).map((s) => s.kode);
+}
+
+export interface BagianRencana {
+  kode: string;
+  nama: string;
+  sub: string[];
+}
+
+/**
+ * Rencana "Susun seluruh LED" (revisi 31 Okt 2026): bagian menurut `urutanBagianSusun`, masing-masing berisi sub-bagian
+ * yang di-generate dan belum ditandai selesai. Bagian tanpa sisa sub-bagian dilewati. Dari bagian AWAL hanya kata
+ * pengantar dan ringkasan (sampul, identitas, tim terisi dari data).
+ */
+export async function rencanaSusun(proyek: { id: string; versiId: string; jenjang: string }, hanya?: string[]): Promise<BagianRencana[]> {
+  const bagian = await prisma.bagian.findMany({ where: { versiId: proyek.versiId }, select: { kode: true, nama: true } });
+  const nama = new Map(bagian.map((b) => [b.kode, b.nama]));
+  const selesai = new Set((await prisma.bagianDraf.findMany({
+    where: { proyekId: proyek.id, status: "selesai" }, select: { subBagian: { select: { kode: true } } },
+  })).map((d) => d.subBagian.kode));
+  const hasil: BagianRencana[] = [];
+  for (const kode of urutanBagianSusun(hanya ?? bagian.map((b) => b.kode))) {
+    let urut = await urutanSubBagian(proyek, kode);
+    if (kode === "AWAL") urut = subAwalSusun(urut);
+    const sub = subBelumSelesai(urut, selesai);
+    if (sub.length) hasil.push({ kode, nama: nama.get(kode) ?? kode, sub });
+  }
+  return hasil;
+}
+
+/**
+ * Setelah satu tugas rangkaian selesai: buat tugas bagian berikutnya (sub-bagian selesai dihitung ulang saat itu).
+ * Tugas yang dibatalkan, gagal, atau tertunda tidak melanjutkan rangkaian, jadi Batalkan menghentikan seluruhnya.
+ */
+export async function lanjutkanRangkaian(tugasId: string): Promise<string | null> {
+  const t = await prisma.tugasGenerate.findUniqueOrThrow({ where: { id: tugasId }, include: { proyek: true } });
+  if (t.status !== "selesai" || !t.bagianBerikutnya.length) return null;
+  const rencana = await rencanaSusun(t.proyek, t.bagianBerikutnya);
+  const [berikut, ...sisa] = rencana;
+  if (!berikut) return null;
+  const total = t.rangkaianTotal ?? rencana.length;
+  const baru = await prisma.tugasGenerate.create({
+    data: {
+      proyekId: t.proyekId,
+      bagianKode: berikut.kode,
+      judul: `${berikut.kode} ${berikut.nama}`.slice(0, 200),
+      subBagianKode: berikut.sub,
+      dibuatOlehId: t.dibuatOlehId,
+      bagianBerikutnya: sisa.map((b) => b.kode),
+      rangkaianKe: total - sisa.length,
+      rangkaianTotal: total,
+    },
+  });
+  await kirimTugas(ANTREAN.generate, { tugasId: baru.id });
+  return baru.id;
 }
 
 /** Status bagian (kriteria) dari status sub-bagiannya. */
@@ -503,6 +558,7 @@ async function kerjakanTugas(
     return "gagal";
   }
   await ubahTugas(tugasId, ["berjalan"], { status: "selesai", pesan: null });
+  await lanjutkanRangkaian(tugasId);
   return "selesai";
 }
 

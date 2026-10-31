@@ -84,7 +84,9 @@ export function BannerAntrean({ proyekId, awal }: { proyekId: string; awal: Ring
                       : t.status === "tertunda" ? `Penyusunan ${t.judul} tertunda`
                         : t.status === "antre" ? `Penyusunan ${t.judul} menunggu antrean`
                           : `Menyusun ${t.judul}`}
-                  <span className="ml-2 font-normal text-muted-foreground tabular-nums">{t.indeks}/{t.total} sub-bagian</span>
+                  <span className="ml-2 font-normal text-muted-foreground tabular-nums">
+                    {t.rangkaian ? `Bagian ${t.rangkaian.ke} dari ${t.rangkaian.total} · ` : ""}{t.indeks}/{t.total} sub-bagian
+                  </span>
                 </p>
                 {(t.status === "berjalan" || t.status === "antre") && (
                   <p className="text-muted-foreground">

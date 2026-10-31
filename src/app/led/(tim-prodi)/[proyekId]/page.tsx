@@ -29,6 +29,12 @@ import { DialogUbahTahun } from "./dialog-ubah-tahun";
 import { PengaturanProyek } from "./pengaturan-proyek";
 import { penilaianProyek, ringkasReview } from "@/modules/led/data/review";
 import { KartuPerkiraanNilai } from "@/modules/led/komponen/penilaian/kartu-perkiraan";
+import { HalamanOtomatis } from "@/modules/led/komponen/halaman-otomatis";
+import { dataKosongHalamanAwal } from "@/modules/led/domain/rangkaian";
+import { rencanaSusunSeluruh, STATUS_TUGAS_AKTIF } from "@/modules/led/data/generate";
+import { ambilFakultas } from "@/modules/bersama/data/organisasi";
+import { prisma } from "@/modules/bersama/db";
+import { TombolSusunSeluruh } from "./tombol-susun-seluruh";
 import { KartuReview } from "@/modules/led/komponen/review/kartu-review";
 
 export const metadata: Metadata = { title: "Beranda" };
@@ -49,7 +55,12 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
     kesiapanLed(proyekId),
     ringkasReview(p, proyekId),
   ]);
-  const nilai = await penilaianProyek(p, proyekId, { tanpaNarasi: true });
+  const [nilai, rencana, fakultas, tugasAktif] = await Promise.all([
+    penilaianProyek(p, proyekId, { tanpaNarasi: true }),
+    rencanaSusunSeluruh(p, proyekId),
+    ambilFakultas(),
+    prisma.tugasGenerate.count({ where: { proyekId, status: { in: STATUS_TUGAS_AKTIF } } }),
+  ]);
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
   const usulan = usulanHalamanKriteria(bagianAnggaran, butir, pengaturan);
@@ -67,6 +78,13 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
   const selesai = semua.filter((b) => b.status === "selesai").length;
   const kriteriaSelesai = kriteria.filter((b) => b.status === "selesai").length;
   const ident = (proyek.prodi.identitas ?? {}) as Partial<IdentitasProdi>;
+  const tim = (proyek.timPenyusun ?? {}) as { dosen?: unknown[]; tendik?: unknown[] };
+  const kosong = dataKosongHalamanAwal({
+    prodi: { nama: proyek.prodi.nama, jenjang: proyek.jenjang, kodePddikti: proyek.prodi.kodePddikti },
+    identitas: ident as Record<string, string | undefined>,
+    fakultas,
+    jumlahTim: (tim.dosen?.length ?? 0) + (tim.tendik?.length ?? 0),
+  });
 
   return (
     <>
@@ -98,6 +116,22 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           </AlertDescription>
         </Alert>
       )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4">
+        <div className="min-w-0">
+          <div className="font-medium">Susun seluruh LED</div>
+          <p className="text-sm text-muted-foreground">
+            Draf semua bagian disusun berurutan: C.1–C.7, Bab II, III, I, IV, lalu kata pengantar dan ringkasan. Anda tinggal menyunting.
+          </p>
+        </div>
+        <TombolSusunSeluruh
+          proyekId={proyek.id}
+          bagian={rencana.bagian.map((b) => b.kode)}
+          jumlahSub={rencana.jumlahSub}
+          nonaktif={Boolean(proyek.diarsipkanPada) || tugasAktif > 0}
+          alasan={proyek.diarsipkanPada ? "LED diarsipkan." : tugasAktif > 0 ? "Masih ada penyusunan berjalan." : rencana.jumlahSub === 0 ? "Semua sub-bagian sudah ditandai selesai." : null}
+        />
+      </div>
 
       <KartuPerkiraanNilai
         proyekId={proyek.id}
@@ -341,8 +375,17 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           </Card>
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Halaman otomatis dari data</CardTitle>
+              <CardDescription>Sampul, identitas, dan tim penyusun tidak disusun AI; isinya diambil dari data saat ekspor.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HalamanOtomatis proyekId={proyek.id} kosong={kosong} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Identitas pengusul</CardTitle>
-              <CardDescription>Diisi di menu Program studi; dipakai di halaman identitas LED.</CardDescription>
+              <CardDescription>Diisi di menu Identitas prodi; dipakai di halaman identitas LED.</CardDescription>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
