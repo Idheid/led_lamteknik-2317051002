@@ -76,6 +76,14 @@ export const skemaAkunTimProdi = skemaAkun.extend({
 });
 export type MasukanAkunTimProdi = z.input<typeof skemaAkunTimProdi>;
 
+/** Perbaikan 1 Nov 2026 (P1): ubah nama dan peran akun oleh Admin UPPS. Tim Prodi wajib memilih program studi. */
+export const skemaUbahNamaAkun = z.object({ nama: teksWajib("Nama", 120) });
+export const skemaUbahPeranAkun = z.object({
+  peran: z.enum(["ADMIN", "TIM_PRODI", "ASESOR"]),
+  prodiId: z.string().trim().nullish(),
+}).refine((x) => x.peran !== "TIM_PRODI" || Boolean(x.prodiId), { path: ["prodiId"], message: "Pilih program studi." });
+export type MasukanUbahPeranAkun = z.input<typeof skemaUbahPeranAkun>;
+
 export const skemaGantiSandi = z
   .object({
     sandiLama: z.string().min(1, "Kata sandi lama wajib diisi."),

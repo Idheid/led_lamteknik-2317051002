@@ -1014,3 +1014,40 @@ di-commit sebelum tahap berikutnya.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 123/123 lulus |
 | `npm run test:integrasi` | 73/73 lulus |
+
+## Perbaikan setelah uji 1 Nov 2026
+
+Dari `docs/PERBAIKAN-1NOV.md` (uji Adrianne 1 Nov 2026), dikerjakan sesudah Tahap 8 dan sebelum Tahap 9 rencana
+31 Okt, satu commit per butir. Sebelumnya juga di-commit satu perbaikan kecil yang ditemukan saat mencoba alur Tahap 9:
+`skorSah` menolak skor dua desimal yang tidak tepat di biner (2,29 × 100 = 229,00000000000003), sehingga skor sistem
+pecahan bisa ditolak; kini memakai toleransi pembulatan dan diberi uji domain.
+
+### P1: akun lama "Penanggung Jawab" dan "Super Admin"
+
+- Kelola akun, menu baris: **Ubah nama** (`/admin/akun/[id]/nama`) dan **Ubah peran** (`/admin/akun/[id]/peran`),
+  keduanya halaman sendiri dengan `HalamanTambah` (konsisten dengan Tambah akun di P2). Ubah peran memakai pilihan peran
+  yang sama dengan Tambah akun (`PERAN_BARU`); Tim Prodi wajib memilih prodi; beralih dari Tim Prodi ke peran lain
+  mengosongkan `prodiId`.
+- Data (`bersama/data/organisasi.ts`): `ambilAkun`, `ubahNamaAkun`, `ubahPeranAkun` (skema `skemaUbahNamaAkun`,
+  `skemaUbahPeranAkun`). Aturan: admin tidak bisa mengubah peran akunnya sendiri; menurunkan Admin UPPS ditolak bila
+  tidak ada Admin UPPS aktif lain; sesi akun yang diubah dicabut supaya login ulang dengan peran baru; `LogAktivitas`
+  mencatat `ubah_peran` (peranLama, peranBaru, prodiLama, prodiBaru) dan `ubah_nama` (lama, baru).
+- `.env.example`: contoh nama admin pertama "Admin UPPS" dan komentar "akun Admin UPPS pertama" (nama variabel
+  `SUPERADMIN_*` tetap). Seed sudah memakai "Admin UPPS" sebagai nama bawaan sejak Tahap 1.
+- `docs/RENCANA-REVISI-31OKT.md` keputusan B2: "akun PJ lama menjadi Admin UPPS; Admin bisa mengubahnya menjadi Tim
+  Prodi lewat Ubah peran".
+- Uji integrasi (`akun.test.ts`): ubah nama; Admin → Tim Prodi (tanpa prodi ditolak, prodi tidak dikenal ditolak),
+  sesi dicabut, akun langsung melihat LED prodinya, log tercatat; Tim Prodi → Asesor (prodi dikosongkan); menolak
+  mengubah peran sendiri; Tim Prodi tidak bisa mengubah nama/peran; menurunkan satu-satunya Admin UPPS aktif ditolak
+  (dari sesi admin lain yang akunnya sudah nonaktif), menaikkan asesor menjadi admin lalu menurunkan admin lama boleh.
+- Diperiksa di browser (server pengembangan) dan sekaligus membereskan temuan di basis data pengembangan: akun
+  `pj.ti@contoh.ac.id` "Penanggung Jawab TI" diubah lewat **Ubah peran** menjadi Tim Prodi S1 Teknik Informatika lalu
+  lewat **Ubah nama** menjadi "Tim Prodi Teknik Informatika"; akun `admin@contoh.ac.id` "Super Admin" diubah namanya
+  menjadi "Admin UPPS". Log aktivitas mencatat ketiga perubahan. Kelola akun tidak lagi memuat nama "Penanggung Jawab"
+  atau "Super Admin".
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 123/123 lulus |
+| `npm run test:integrasi` | 75/75 lulus |

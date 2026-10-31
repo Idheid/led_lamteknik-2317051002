@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRightLeft, KeyRound, MoreHorizontal, Plus, Power, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ArrowRightLeft, KeyRound, MoreHorizontal, PenLine, Plus, Power, Trash2, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -27,7 +28,7 @@ export interface PilihanProdi {
 }
 
 /** Tiga peran (revisi 31 Okt 2026), dijelaskan singkat supaya admin tahu akun mana yang dibuat. */
-const PERAN_BARU: { kunci: Peran; judul: string; isi: string }[] = [
+export const PERAN_BARU: { kunci: Peran; judul: string; isi: string }[] = [
   { kunci: "TIM_PRODI", judul: "Tim Prodi", isi: "Menyusun LED program studinya: LKPS, dokumen, narasi, ekspor Word. Satu prodi boleh beberapa akun." },
   { kunci: "ASESOR", judul: "Asesor (reviewer)", isi: "Membaca LED yang ditugaskan, memberi catatan revisi dan skor. Tugaskan di menu Penugasan asesor." },
   { kunci: "ADMIN", judul: "Admin UPPS", isi: "Mengelola akun, program studi, instrumen, Basis Pengetahuan fakultas, kunci API, dan penugasan asesor." },
@@ -167,6 +168,12 @@ export function AksiBarisAkun({ id, nama, email, aktif, prodiId, prodi }: {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/admin/akun/${id}/nama`}><PenLine aria-hidden />Ubah nama</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/admin/akun/${id}/peran`}><UserCog aria-hidden />Ubah peran</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setDialog("sandi")}>
             <KeyRound aria-hidden />
             Atur ulang kata sandi

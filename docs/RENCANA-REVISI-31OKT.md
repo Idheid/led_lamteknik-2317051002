@@ -40,7 +40,7 @@ sebelum kriteria tahap berjalan terpenuhi dan perubahannya di-commit.
 | No | Hal | Keputusan bawaan | Alasan |
 | --- | --- | --- | --- |
 | B1 | Nama peran di kode | Enum `Peran`: `SUPER_ADMIN` → `ADMIN`, `PENANGGUNG_JAWAB` → `TIM_PRODI`, `ASESOR` tetap. Label: "Admin UPPS", "Tim Prodi", "Asesor (reviewer)" | Sama dengan istilah Pak Tris dan rekan LKPS |
-| B2 | Akun PJ fakultas yang sudah ada | Dimigrasi menjadi `ADMIN`, karena tugas PJ lama (prodi, instrumen, dokumen fakultas, kunci) kini milik Admin UPPS. Akun Tim Prodi dibuat baru oleh admin | Tidak ada fungsi yang hilang |
+| B2 | Akun PJ fakultas yang sudah ada | Akun PJ lama menjadi Admin UPPS; Admin bisa mengubahnya menjadi Tim Prodi lewat Ubah peran (perbaikan 1 Nov 2026, P1). Akun Tim Prodi lain dibuat baru oleh admin | Tidak ada fungsi yang hilang |
 | B3 | Kunci API | Hanya Admin UPPS yang mengelola: kunci utama fakultas dan kunci cadangan di satu halaman. Tim Prodi melihat status kunci dan pesan "Hubungi Admin UPPS" saat kuota habis | "Admin = yang nyetting-nyetting" |
 | B4 | Identitas prodi (SK, alamat, kontak) | Admin mengelola daftar prodi. Tim Prodi boleh mengubah **identitas** prodinya sendiri, tetapi tidak nama dan jenjang | Data identitas paling dikuasai prodi |
 | B5 | Admin dan LED | Admin melihat **semua LED** (kemajuan, kesiapan, status review) dan bisa membukanya **hanya baca**. Admin tidak menyusun, generate, atau ekspor | UPPS memantau semua prodi |

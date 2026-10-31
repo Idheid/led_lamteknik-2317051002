@@ -11,11 +11,14 @@ import {
   skemaAturUlangSandi,
   skemaIdentitasProdi,
   skemaProdi,
+  skemaUbahNamaAkun,
+  skemaUbahPeranAkun,
   type MasukanAkun,
   type MasukanAkunTimProdi,
   type MasukanFakultas,
   type MasukanGantiSandi,
   type MasukanProdi,
+  type MasukanUbahPeranAkun,
 } from "@/modules/bersama/validasi";
 
 /**
@@ -184,6 +187,45 @@ export async function pindahProdiAkun(p: Pengguna, userId: string, prodiId: stri
     prisma.session.deleteMany({ where: { userId } }),
   ]);
   await catatAktivitas(p, "pindah_prodi", "akun", userId, { dari: u.prodiId, ke: prodiId, prodi: prodi.nama });
+}
+
+/** Satu akun untuk halaman Ubah nama/Ubah peran (Admin UPPS). */
+export async function ambilAkun(p: Pengguna, userId: string) {
+  pastikanAdmin(p);
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, role: true, prodiId: true, banned: true },
+  });
+}
+
+/** Perbaikan 1 Nov 2026 (P1): Admin UPPS mengganti nama akun (mis. akun lama bernama "Penanggung Jawab TI"). */
+export async function ubahNamaAkun(p: Pengguna, userId: string, nama: string) {
+  pastikanAdmin(p);
+  const data = skemaUbahNamaAkun.parse({ nama });
+  const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  await prisma.user.update({ where: { id: userId }, data: { name: data.nama } });
+  await catatAktivitas(p, "ubah_nama", "akun", userId, { lama: u.name, baru: data.nama });
+}
+
+/**
+ * Perbaikan 1 Nov 2026 (P1): Admin UPPS mengubah peran akun (mis. akun PJ lama yang dimigrasi menjadi Admin UPPS
+ * diubah menjadi Tim Prodi). Tim Prodi wajib punya prodi; peran lain prodinya dikosongkan. Admin tidak bisa mengubah
+ * perannya sendiri, minimal satu Admin UPPS aktif tetap ada, dan sesi akun dicabut supaya login ulang dengan peran baru.
+ */
+export async function ubahPeranAkun(p: Pengguna, userId: string, masukan: MasukanUbahPeranAkun) {
+  pastikanAdmin(p);
+  if (userId === p.id) throw new GalatPengguna("Anda tidak bisa mengubah peran akun sendiri.");
+  const data = skemaUbahPeranAkun.parse(masukan);
+  const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  if (u.role === "ADMIN" && data.peran !== "ADMIN" && !u.banned && (await jumlahAdminAktif(userId)) === 0) {
+    throw new GalatPengguna("Minimal harus ada satu Admin UPPS aktif.");
+  }
+  const prodiId = data.peran === "TIM_PRODI" ? (await pastikanProdiAda(data.prodiId!)).id : null;
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { role: data.peran, prodiId } }),
+    prisma.session.deleteMany({ where: { userId } }),
+  ]);
+  await catatAktivitas(p, "ubah_peran", "akun", userId, { peranLama: u.role, peranBaru: data.peran, prodiLama: u.prodiId, prodiBaru: prodiId });
 }
 
 /** Nonaktifkan atau aktifkan kembali akun. Menonaktifkan juga mencabut semua sesinya. */

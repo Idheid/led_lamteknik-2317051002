@@ -5,7 +5,8 @@ import { prisma } from "@/modules/bersama/db";
 import { auth } from "@/modules/bersama/auth";
 import { GalatAkses, GalatPengguna } from "@/modules/bersama/akses";
 import {
-  aturAktifAkun, aturUlangKataSandi, buatAkunAdmin, buatAkunTimProdi, gantiKataSandiSendiri, hapusAkun,
+  aturAktifAkun, aturUlangKataSandi, buatAkunAdmin, buatAkunAsesor, buatAkunTimProdi, gantiKataSandiSendiri, hapusAkun,
+  ubahNamaAkun, ubahPeranAkun,
 } from "@/modules/bersama/data/organisasi";
 import { buatProyek, daftarProyek } from "@/modules/led/data/proyek";
 import { daftarKunci, tambahKunci } from "@/modules/bersama/data/kunci-api";
@@ -95,4 +96,58 @@ test("Akun: ganti kata sandi sendiri wajib kata sandi lama; status wajib ganti s
   await assert.rejects(aturUlangKataSandi(pj, { userId: admin.id, kataSandi: "SandiX#12345" }), GalatAkses);
   await aturUlangKataSandi(admin, { userId: u.id, kataSandi: "SandiReset#789" });
   assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: u.id } })).wajibGantiSandi, true);
+});
+
+test("Perbaikan 1 Nov (P1): Admin UPPS mengubah nama dan peran akun; Tim Prodi wajib prodi; sesi dicabut; dicatat di log", async () => {
+  const admin = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "admin@uji.test" } })).id);
+  const prodi = await prisma.prodi.findFirstOrThrow({ where: { nama: "Teknik Elektro" } });
+  // akun PJ lama yang dimigrasi menjadi Admin UPPS (keputusan B2)
+  const pjLama = await penggunaDari((await buatAkunAdmin(admin, { nama: "Penanggung Jawab TI", email: "pj.ti@uji.test", kataSandi: "SandiPjTi#123" })).id);
+  await ubahNamaAkun(admin, pjLama.id, "Tim Prodi Teknik Elektro");
+  assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: pjLama.id } })).name, "Tim Prodi Teknik Elektro");
+
+  // Admin → Tim Prodi: wajib prodi; sesi dicabut
+  await auth.api.signInEmail({ body: { email: "pj.ti@uji.test", password: "SandiPjTi#123" } });
+  assert.ok((await prisma.session.count({ where: { userId: pjLama.id } })) > 0);
+  await assert.rejects(ubahPeranAkun(admin, pjLama.id, { peran: "TIM_PRODI" }), /Pilih program studi/);
+  await assert.rejects(ubahPeranAkun(admin, pjLama.id, { peran: "TIM_PRODI", prodiId: "tidak-ada" }), GalatPengguna);
+  await ubahPeranAkun(admin, pjLama.id, { peran: "TIM_PRODI", prodiId: prodi.id });
+  const tim = await penggunaDari(pjLama.id);
+  assert.deepEqual([tim.peran, tim.prodiId], ["TIM_PRODI", prodi.id]);
+  assert.equal(await prisma.session.count({ where: { userId: pjLama.id } }), 0, "login ulang dengan peran baru");
+  assert.deepEqual((await daftarProyek(tim)).map((x) => x.prodiId), [prodi.id], "langsung menyusun LED prodinya");
+  const log = await prisma.logAktivitas.findFirstOrThrow({ where: { objekId: pjLama.id, aksi: "ubah_peran" } });
+  assert.deepEqual(
+    [(log.detail as { peranLama: string }).peranLama, (log.detail as { peranBaru: string }).peranBaru, (log.detail as { prodiBaru: string }).prodiBaru],
+    ["ADMIN", "TIM_PRODI", prodi.id],
+  );
+
+  // Tim Prodi → Asesor: prodi dikosongkan
+  await ubahPeranAkun(admin, pjLama.id, { peran: "ASESOR", prodiId: prodi.id });
+  const asesor = await penggunaDari(pjLama.id);
+  assert.deepEqual([asesor.peran, asesor.prodiId], ["ASESOR", null]);
+
+  // tidak bisa mengubah peran sendiri; Tim Prodi tidak bisa mengubah peran
+  await assert.rejects(ubahPeranAkun(admin, admin.id, { peran: "ASESOR" }), /peran akun sendiri/);
+  await assert.rejects(ubahPeranAkun(tim, admin.id, { peran: "ASESOR" }), GalatAkses);
+  await assert.rejects(ubahNamaAkun(tim, admin.id, "X"), GalatAkses);
+});
+
+test("Perbaikan 1 Nov (P1): perubahan peran ditolak bila Admin UPPS aktif tinggal satu", async () => {
+  await prisma.user.updateMany({ where: { role: "ADMIN" }, data: { banned: true } });
+  const a = await penggunaDari((await buatAkunAsesor(
+    await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "admin@uji.test" } })).id),
+    { nama: "Calon Admin", email: "calon.admin@uji.test", kataSandi: "SandiCalon#123" },
+  )).id);
+  // satu-satunya Admin UPPS aktif
+  const satu = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "fakultas@uji.test" } })).id);
+  await prisma.user.update({ where: { id: satu.id }, data: { banned: false } });
+  // admin lain (sesi lama, akunnya sudah nonaktif) mencoba menurunkan satu-satunya admin aktif
+  const lama = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "admin@uji.test" } })).id);
+  await assert.rejects(ubahPeranAkun(lama, satu.id, { peran: "ASESOR" }), /Minimal harus ada satu Admin UPPS aktif/);
+  // menaikkan asesor menjadi Admin UPPS tetap boleh, lalu penurunan berikutnya juga boleh
+  await ubahPeranAkun(satu, a.id, { peran: "ADMIN" });
+  await ubahPeranAkun(lama, satu.id, { peran: "ASESOR" });
+  assert.equal((await penggunaDari(satu.id)).peran, "ASESOR");
+  await prisma.user.updateMany({ where: { role: "ADMIN" }, data: { banned: false } });
 });
