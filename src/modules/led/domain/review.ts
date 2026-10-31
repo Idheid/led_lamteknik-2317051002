@@ -233,7 +233,8 @@ export function perluNilaiUlang(versiUsulan: string[], versiAktif: string[]): bo
 
 /** Skor 0-4, paling banyak dua desimal (skor hitungan sistem bisa pecahan). */
 export function skorSah(s: number): boolean {
-  return Number.isFinite(s) && s >= 0 && s <= 4 && Math.round(s * 100) === s * 100;
+  // toleransi pembulatan biner: 2.29 * 100 = 229.00000000000003
+  return Number.isFinite(s) && s >= 0 && s <= 4 && Math.abs(Math.round(s * 100) - s * 100) < 1e-6;
 }
 
 /** Skor asesor berbeda dari hitungan sistem (butir angka) wajib diberi alasan. */

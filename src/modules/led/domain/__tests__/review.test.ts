@@ -74,6 +74,8 @@ test('Nilai akhir bobot × skor (maks 400) dan perkiraan status menurut ambang',
 test('Skor sah 0-4 dua desimal; skor berbeda dari sistem wajib beralasan', () => {
   assert.ok(skorSah(0) && skorSah(4) && skorSah(3.25));
   assert.ok(!skorSah(4.5) && !skorSah(-1) && !skorSah(3.333) && !skorSah(Number.NaN));
+  // revisi 31 Okt 2026: skor sistem dua desimal yang tidak tepat di biner tetap sah
+  assert.ok(skorSah(2.29) && skorSah(1.15) && skorSah(0.57));
   assert.equal(perluAlasan(3, 3.004), false);
   assert.equal(perluAlasan(3, 3.5), true);
   assert.equal(perluAlasan(3, null), false);
