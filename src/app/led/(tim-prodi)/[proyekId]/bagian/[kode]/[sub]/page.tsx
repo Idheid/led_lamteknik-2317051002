@@ -19,6 +19,7 @@ import { TombolGenerate } from "@/modules/led/komponen/narasi/tombol-generate";
 import { cn } from "@/modules/bersama/utils";
 import { hrefKriteria, hrefSub, muatKriteria } from "../muat";
 import { IsianJawaban } from "../isian-jawaban";
+import { contohBahanProdi } from "@/modules/led/domain/bahan-prodi";
 import { DaftarCek, PanelDraf } from "../panel-draf";
 import { KotakMetrik } from "../kotak-metrik";
 import { IsianNilaiManual } from "../isian-nilai-manual";
@@ -27,6 +28,8 @@ import { capaianButirProyek, type CapaianButir } from "@/modules/led/data/target
 import { teksCapaian, teksTren } from "@/modules/led/domain/capaian";
 import { LABEL_TIPE, LencanaStatusSub } from "../lencana-sub";
 import { TautanSimpan } from "../tautan-simpan";
+import { TabSubBagian } from "../tab-sub";
+import { PemilihSub } from "../pemilih-sub";
 import { daftarCatatan } from "@/modules/led/data/review";
 
 export async function generateMetadata({ params }: PageProps<"/led/[proyekId]/bagian/[kode]/[sub]">): Promise<Metadata> {
@@ -44,8 +47,10 @@ function JudulSeksi({ children, aksi }: { children: ReactNode; aksi?: ReactNode 
 }
 
 /**
- * Satu sub-bagian satu halaman (revisi 19 Okt 2026). Urutan isi: instruksi template, butir dan daftar cek skor 4,
- * data LKPS, jawaban penyusun, dokumen pendukung, lalu hasil generate dan riwayat versi.
+ * Satu sub-bagian satu halaman (revisi 19 Okt 2026). Perbaikan 1 Nov 2026 (P4): kepala halaman dengan Sebelumnya,
+ * pemilih sub-bagian ("2 dari 7"), Berikutnya; lalu dua tab: "1. Bahan untuk AI" (instruksi, butir dan daftar cek
+ * skor 4, data LKPS/nilai manual/target, Bahan dari prodi, dokumen, Generate narasi) dan "2. Narasi (masuk ke Word)"
+ * (editor selebar halaman, baris Periksa dengan panel samping, riwayat versi). Kolom daftar sub-bagian di kanan dihapus.
  */
 export default async function HalamanSubBagian({ params }: PageProps<"/led/[proyekId]/bagian/[kode]/[sub]">) {
   const p = await wajibTimProdi();
@@ -103,6 +108,200 @@ export default async function HalamanSubBagian({ params }: PageProps<"/led/[proy
     />
   );
 
+  const adaNarasi = Boolean(drafSub?.aktif);
+  const kelasTombolNav = "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium";
+  const navigasi = (bawah: boolean) => (
+    <nav aria-label={bawah ? "Pindah sub-bagian (bawah)" : "Pindah sub-bagian"} className={cn("flex flex-wrap items-center justify-between gap-2", bawah && "border-t pt-4")}>
+      <TautanSimpan href={keSebelumnya.href} className={cn(kelasTombolNav, "border hover:bg-muted")}>
+        <ArrowLeft className="size-4" aria-hidden />{keSebelumnya.label}
+      </TautanSimpan>
+      {bawah
+        ? <span className="text-xs text-muted-foreground">{posisi.nomor} dari {posisi.total}</span>
+        : (
+          <PemilihSub
+            kini={s.kode}
+            pilihan={bagian.subBagian.map((x) => ({
+              kode: x.kode,
+              label: `${x.label ? `${x.label} ` : ""}${x.judul}`,
+              href: hrefSub(proyek.id, bagian.kode, x.kode),
+              status: LABEL_STATUS_SUB[statusSub[x.kode]],
+            }))}
+          />
+        )}
+      <TautanSimpan href={keBerikutnya.href} className={cn(kelasTombolNav, "bg-primary text-primary-foreground hover:bg-primary/90")}>
+        {keBerikutnya.label}<ArrowRight className="size-4" aria-hidden />
+      </TautanSimpan>
+    </nav>
+  );
+
+  // tab 1: bahan yang dipakai AI (instruksi dan butir terbuka bila narasi belum ada)
+  const bahan = (
+    <>
+      {v && (
+        <details className="group rounded-lg border-l-4 border-primary/40 bg-muted/50 p-4 text-sm" open={!adaNarasi} aria-label="Instruksi template">
+          <summary className="cursor-pointer select-none text-xs font-medium uppercase tracking-wide text-muted-foreground">Instruksi template</summary>
+          <p className="mt-2 whitespace-pre-line">{gantiLabelTS(v.instruksi, ts)}</p>
+          {v.catatanTemplate && <p className="mt-2 text-xs italic text-muted-foreground">{v.catatanTemplate}</p>}
+        </details>
+      )}
+
+      {s.butir.length > 0 && (
+        <details className="rounded-lg border p-4" open={!adaNarasi} aria-label="Butir penilaian">
+          <summary className="cursor-pointer select-none text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Butir penilaian dan daftar cek skor 4 · {s.butir.length}
+          </summary>
+          <div className="mt-3 flex flex-col gap-3">
+            {s.butir.map((b) => (
+              <div key={b.id} className="flex flex-col gap-3 rounded-lg border p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Butir {b.kode} · {b.elemen}</div>
+                    <div className="font-medium leading-snug">{gantiLabelTS(b.indikator, ts)}</div>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-1.5">
+                    <Badge variant="secondary">bobot {formatAngka(Number(b.bobot))}</Badge>
+                    <Badge variant={b.jenis === "angka" ? "default" : "outline"}>{b.jenis}</Badge>
+                    {b.tabelLkps.map((tb) => <Badge key={tb} variant="outline" className="font-mono">LKPS {tb}</Badge>)}
+                  </div>
+                </div>
+                <details className="text-sm">
+                  <summary className="cursor-pointer select-none text-xs text-muted-foreground">Deskriptor skor 4 (resmi)</summary>
+                  <p className="mt-1 whitespace-pre-line">{gantiLabelTS(b.deskriptorSkor4, ts)}</p>
+                </details>
+                <DaftarCek
+                  butir={[{ kode: b.kode, unsur: b.unsurSkor4.map((u) => gantiLabelTS(u, ts)) }]}
+                  unsur={drafSub?.aktif?.unsur ?? []}
+                />
+                {b.jenis === "angka" && (() => {
+                  const n = nilaiButir.get(b.kode);
+                  return (
+                    <>
+                      {(n?.sumber === "rumus" || (n?.kodeRumus && !nilai.adaLkps)) && (
+                        <KotakMetrik hasil={n?.sumber === "rumus" ? n.hasil ?? undefined : undefined} perluDicek={nilai.perluDicek} proyekId={proyek.id} />
+                      )}
+                      {n?.perluManual && (
+                        <IsianNilaiManual
+                          proyekId={proyek.id}
+                          butirKode={b.kode}
+                          awal={{ nilai: n.manual?.nilai ?? "", keterangan: n.manual?.keterangan ?? "" }}
+                          alasan={n.alasan}
+                        />
+                      )}
+                      <CapaianDanTren c={capaian.get(b.kode)} />
+                      <IsianTarget
+                        key={`target-${b.kode}`}
+                        proyekId={proyek.id}
+                        butirKode={b.kode}
+                        awal={{
+                          target: capaian.get(b.kode)?.target?.target ?? "", satuan: capaian.get(b.kode)?.target?.satuan ?? "",
+                          sumber: capaian.get(b.kode)?.target?.sumber ?? "", lebihKecil: capaian.get(b.kode)?.target?.lebihKecil ?? false,
+                        }}
+                      />
+                    </>
+                  );
+                })()}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {!digenerate && (
+        <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+          {s.tipe === "data"
+            ? "Sub-bagian ini diisi otomatis dari data proyek (LKPS, identitas, tim penyusun) saat ekspor Word."
+            : "Sub-bagian ini disusun otomatis oleh sistem saat ekspor Word."}
+        </div>
+      )}
+
+      {digenerate && (
+        <section aria-label="Bahan dari prodi">
+          <IsianJawaban key={s.kode} proyekId={proyek.id} subBagianKode={s.kode} awal={d.jawaban[s.kode] ?? ""} contoh={contohBahanProdi(s.kode)} />
+        </section>
+      )}
+
+      {digenerate && (
+        <section aria-label="Dokumen pendukung" className="text-sm">
+          {/* revisi 23 Okt 2026: dokumen dikelola di Basis Pengetahuan; di sini hanya daftar dan tautan ke sana */}
+          <JudulSeksi
+            aksi={!proyek.diarsipkanPada && (
+              <TautanSimpan
+                href={`/led/${proyek.id}/dokumen/tambah?sub=${encodeURIComponent(s.kode)}&kembali=${encodeURIComponent(hrefSub(proyek.id, bagian.kode, s.kode))}`}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium hover:bg-muted"
+              >
+                <Plus className="size-3.5" aria-hidden />Tambah ke Basis Pengetahuan
+              </TautanSimpan>
+            )}
+          >
+            Dokumen dari Basis Pengetahuan{terunggah.length > 0 ? ` · ${terunggah.length}` : ""}
+          </JudulSeksi>
+          {terunggah.length > 0 ? (
+            <ul className="space-y-1 rounded-lg border p-3">
+              {terunggah.map((x) => (
+                <li key={x.id} className="flex flex-wrap items-center gap-2 text-xs">
+                  <FileText className="size-3.5 text-muted-foreground" aria-hidden />
+                  <a href={`/api/led/dokumen/${x.id}/berkas`} target="_blank" rel="noreferrer" className="hover:underline">
+                    {x.judul ?? x.namaBerkas}
+                  </a>
+                  {x.bersama && <Badge variant="outline">bersama fakultas</Badge>}
+                  <LencanaProses status={x.status} />
+                  {x.pesan && <span className="text-destructive">{x.pesan}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Belum ada dokumen yang dikaitkan ke sub-bagian ini. Saat generate, sistem tetap mencari di semua dokumen{" "}
+              <TautanSimpan href={`/led/${proyek.id}/dokumen`} className="text-primary underline">Basis Pengetahuan</TautanSimpan>.
+            </p>
+          )}
+        </section>
+      )}
+
+      {digenerate && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+            Bahan di atas dipakai AI untuk menyusun narasi. Hasilnya muncul di tab Narasi dan bisa disunting.
+          </p>
+          <TombolGenerate
+            proyekId={proyek.id}
+            bagianKode={bagian.kode}
+            subBagianKode={s.kode}
+            label={adaNarasi ? "Generate ulang narasi" : "Generate narasi"}
+            sudahAda={adaNarasi}
+            nonaktif={d.tugasAktif.length > 0}
+            peringatan={peringatanSebelumGenerate(s.kode, d.jumlahDrafIku)}
+            model={model.labelNarasi}
+          />
+        </div>
+      )}
+    </>
+  );
+
+  // tab 2: narasi yang masuk ke Word
+  const narasi = (
+    <>
+      {sedangDitulis && (
+        <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm" aria-live="polite">
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary">
+            <Loader2 className="size-3.5 animate-spin" aria-hidden />Sedang ditulis
+          </div>
+          <div className="whitespace-pre-line text-muted-foreground">{sedangDitulis}</div>
+        </div>
+      )}
+      <PanelDraf
+        key={s.kode}
+        proyekId={proyek.id}
+        subBagianKode={s.kode}
+        draf={drafSub}
+        butir={[]}
+        gambar={gambar}
+        tugasAktif={d.sedangDisusun}
+        review={review}
+      />
+    </>
+  );
+
   return (
     <>
       <PemantauProses aktif={adaProses || ditulisDiTugas} detik={ditulisDiTugas ? 2 : 3} />
@@ -134,204 +333,14 @@ export default async function HalamanSubBagian({ params }: PageProps<"/led/[proy
           </>
         }
       />
+      {navigasi(false)}
       <Progress value={persenPosisi(posisi)} aria-label={`Sub-bagian ${posisi.nomor} dari ${posisi.total}`} className="h-1.5" />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_16rem]">
-        <div className="flex min-w-0 flex-col gap-6">
-          {v && (
-            <section className="rounded-lg border-l-4 border-primary/40 bg-muted/50 p-4 text-sm" aria-label="Instruksi template">
-              <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Instruksi template</div>
-              <p className="whitespace-pre-line">{gantiLabelTS(v.instruksi, ts)}</p>
-              {v.catatanTemplate && <p className="mt-2 text-xs italic text-muted-foreground">{v.catatanTemplate}</p>}
-            </section>
-          )}
+      {digenerate
+        ? <TabSubBagian bahan={bahan} narasi={narasi} adaNarasi={adaNarasi} kunciNarasi={drafSub?.aktif?.id ?? null} />
+        : <div className="flex flex-col gap-6">{bahan}</div>}
 
-          {s.butir.length > 0 && (
-            <section aria-label="Butir penilaian">
-              <JudulSeksi>Butir penilaian</JudulSeksi>
-              <div className="flex flex-col gap-3">
-                {s.butir.map((b) => (
-                  <div key={b.id} className="flex flex-col gap-3 rounded-lg border p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <div className="text-xs text-muted-foreground">Butir {b.kode} · {b.elemen}</div>
-                        <div className="font-medium leading-snug">{gantiLabelTS(b.indikator, ts)}</div>
-                      </div>
-                      <div className="flex shrink-0 flex-wrap gap-1.5">
-                        <Badge variant="secondary">bobot {formatAngka(Number(b.bobot))}</Badge>
-                        <Badge variant={b.jenis === "angka" ? "default" : "outline"}>{b.jenis}</Badge>
-                        {b.tabelLkps.map((tb) => <Badge key={tb} variant="outline" className="font-mono">LKPS {tb}</Badge>)}
-                      </div>
-                    </div>
-                    <details className="text-sm">
-                      <summary className="cursor-pointer select-none text-xs text-muted-foreground">Deskriptor skor 4 (resmi)</summary>
-                      <p className="mt-1 whitespace-pre-line">{gantiLabelTS(b.deskriptorSkor4, ts)}</p>
-                    </details>
-                    <DaftarCek
-                      butir={[{ kode: b.kode, unsur: b.unsurSkor4.map((u) => gantiLabelTS(u, ts)) }]}
-                      unsur={drafSub?.aktif?.unsur ?? []}
-                    />
-                    {b.jenis === "angka" && (() => {
-                      const n = nilaiButir.get(b.kode);
-                      return (
-                        <>
-                          {(n?.sumber === "rumus" || (n?.kodeRumus && !nilai.adaLkps)) && (
-                            <KotakMetrik hasil={n?.sumber === "rumus" ? n.hasil ?? undefined : undefined} perluDicek={nilai.perluDicek} proyekId={proyek.id} />
-                          )}
-                          {n?.perluManual && (
-                            <IsianNilaiManual
-                              proyekId={proyek.id}
-                              butirKode={b.kode}
-                              awal={{ nilai: n.manual?.nilai ?? "", keterangan: n.manual?.keterangan ?? "" }}
-                              alasan={n.alasan}
-                            />
-                          )}
-                          <CapaianDanTren c={capaian.get(b.kode)} />
-                          <IsianTarget
-                            key={`target-${b.kode}`}
-                            proyekId={proyek.id}
-                            butirKode={b.kode}
-                            awal={{
-                              target: capaian.get(b.kode)?.target?.target ?? "", satuan: capaian.get(b.kode)?.target?.satuan ?? "",
-                              sumber: capaian.get(b.kode)?.target?.sumber ?? "", lebihKecil: capaian.get(b.kode)?.target?.lebihKecil ?? false,
-                            }}
-                          />
-                        </>
-                      );
-                    })()}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {!digenerate && (
-            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-              {s.tipe === "data"
-                ? "Sub-bagian ini diisi otomatis dari data proyek (LKPS, identitas, tim penyusun) saat ekspor Word."
-                : "Sub-bagian ini disusun otomatis oleh sistem saat ekspor Word."}
-            </div>
-          )}
-
-          {digenerate && (
-            <section aria-label="Jawaban penyusun">
-              <IsianJawaban key={s.kode} proyekId={proyek.id} subBagianKode={s.kode} awal={d.jawaban[s.kode] ?? ""} />
-            </section>
-          )}
-
-          {digenerate && (
-            <section aria-label="Dokumen pendukung" className="text-sm">
-              {/* revisi 23 Okt 2026: dokumen dikelola di Basis Pengetahuan; di sini hanya daftar dan tautan ke sana */}
-              <JudulSeksi
-                aksi={!proyek.diarsipkanPada && (
-                  <TautanSimpan
-                    href={`/led/${proyek.id}/dokumen/tambah?sub=${encodeURIComponent(s.kode)}&kembali=${encodeURIComponent(hrefSub(proyek.id, bagian.kode, s.kode))}`}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium hover:bg-muted"
-                  >
-                    <Plus className="size-3.5" aria-hidden />Tambah ke Basis Pengetahuan
-                  </TautanSimpan>
-                )}
-              >
-                Dokumen dari Basis Pengetahuan{terunggah.length > 0 ? ` · ${terunggah.length}` : ""}
-              </JudulSeksi>
-              {terunggah.length > 0 ? (
-                <ul className="space-y-1 rounded-lg border p-3">
-                  {terunggah.map((x) => (
-                    <li key={x.id} className="flex flex-wrap items-center gap-2 text-xs">
-                      <FileText className="size-3.5 text-muted-foreground" aria-hidden />
-                      <a href={`/api/led/dokumen/${x.id}/berkas`} target="_blank" rel="noreferrer" className="hover:underline">
-                        {x.judul ?? x.namaBerkas}
-                      </a>
-                      {x.bersama && <Badge variant="outline">bersama fakultas</Badge>}
-                      <LencanaProses status={x.status} />
-                      {x.pesan && <span className="text-destructive">{x.pesan}</span>}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Belum ada dokumen yang dikaitkan ke sub-bagian ini. Saat generate, sistem tetap mencari di semua dokumen{" "}
-                  <TautanSimpan href={`/led/${proyek.id}/dokumen`} className="text-primary underline">Basis Pengetahuan</TautanSimpan>.
-                </p>
-              )}
-            </section>
-          )}
-
-          {digenerate && (
-            <section aria-label="Hasil generate">
-              <JudulSeksi aksi={tombolGenerate}>Hasil generate</JudulSeksi>
-              {sedangDitulis && (
-                <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm" aria-live="polite">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary">
-                    <Loader2 className="size-3.5 animate-spin" aria-hidden />Sedang ditulis
-                  </div>
-                  <div className="whitespace-pre-line text-muted-foreground">{sedangDitulis}</div>
-                </div>
-              )}
-              <PanelDraf
-                key={s.kode}
-                proyekId={proyek.id}
-                subBagianKode={s.kode}
-                draf={drafSub}
-                butir={[]}
-                gambar={gambar}
-                tugasAktif={d.sedangDisusun}
-                review={review}
-              />
-            </section>
-          )}
-
-          <nav aria-label="Pindah sub-bagian" className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-            <TautanSimpan
-              href={keSebelumnya.href}
-              className="inline-flex h-9 items-center gap-2 rounded-md border px-4 text-sm font-medium hover:bg-muted"
-            >
-              <ArrowLeft className="size-4" aria-hidden />
-              {keSebelumnya.label}
-            </TautanSimpan>
-            <span className="text-xs text-muted-foreground">{posisi.nomor} dari {posisi.total}</span>
-            <TautanSimpan
-              href={keBerikutnya.href}
-              className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              {keBerikutnya.label}
-              <ArrowRight className="size-4" aria-hidden />
-            </TautanSimpan>
-          </nav>
-        </div>
-
-        <nav aria-label="Daftar sub-bagian" className="order-first xl:order-none">
-          <details className="rounded-lg border p-3 text-sm xl:sticky xl:top-20 xl:max-h-[calc(100svh-6rem)] xl:overflow-y-auto" open>
-            <summary className="mb-2 cursor-pointer select-none text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {bagian.kode} · {posisi.total} sub-bagian
-            </summary>
-            <ol className="space-y-0.5">
-              {bagian.subBagian.map((x, i) => {
-                const ini = x.kode === s.kode;
-                return (
-                  <li key={x.id}>
-                    <TautanSimpan
-                      href={hrefSub(proyek.id, bagian.kode, x.kode)}
-                      aria-current={ini ? "page" : undefined}
-                      className={cn(
-                        "flex items-start gap-2 rounded px-1.5 py-1 text-muted-foreground hover:bg-muted hover:text-foreground",
-                        ini && "bg-primary/10 font-medium text-foreground",
-                      )}
-                    >
-                      <span className="w-5 shrink-0 text-right font-mono text-xs leading-5">{i + 1}</span>
-                      <span className="line-clamp-2 flex-1">
-                        {x.label && <span className="mr-1 font-mono text-xs">{x.label}</span>}
-                        {x.judul}
-                      </span>
-                      <TitikStatus status={statusSub[x.kode]} />
-                    </TautanSimpan>
-                  </li>
-                );
-              })}
-            </ol>
-          </details>
-        </nav>
-      </div>
+      {navigasi(true)}
     </>
   );
 }
@@ -349,22 +358,5 @@ function CapaianDanTren({ c }: { c: CapaianButir | undefined }) {
       )}
       {c.tren.map((t) => <p key={t.judul} className="text-muted-foreground">{teksTren(t)}</p>)}
     </div>
-  );
-}
-
-const WARNA_TITIK: Record<string, string> = {
-  belum: "bg-muted-foreground/30",
-  ada_jawaban: "bg-sky-500",
-  ada_draf: "bg-amber-500",
-  selesai: "bg-emerald-600",
-  data: "border border-muted-foreground/40",
-};
-
-function TitikStatus({ status }: { status: keyof typeof LABEL_STATUS_SUB }) {
-  return (
-    <>
-      <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", WARNA_TITIK[status])} title={LABEL_STATUS_SUB[status]} aria-hidden />
-      <span className="sr-only">{LABEL_STATUS_SUB[status]}</span>
-    </>
   );
 }

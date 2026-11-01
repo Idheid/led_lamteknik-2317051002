@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
-  CheckCircle2, CircleAlert, CircleCheck, CircleDashed, CircleHelp, FileWarning, GitCompareArrows, History, PenLine,
-  RotateCcw, ShieldCheck, Sparkles,
+  CheckCircle2, CircleAlert, CircleCheck, CircleDashed, CircleHelp, FileWarning, GitCompareArrows, History, ListChecks,
+  MessageSquareText, PenLine, RotateCcw, ShieldCheck,
 } from "lucide-react";
 import type { DrafSubBagian } from "@/modules/led/data/generate";
 import type { HasilPemeriksaan, PotonganDiff } from "@/modules/led/domain/narasi";
@@ -16,13 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/modules/bersama/utils";
 import { aksiBandingkanVersi, aksiPeriksaDenganAi, aksiPulihkanVersi, aksiTandaiSubBagian } from "@/app/led/(tim-prodi)/aksi";
 import { LABEL_KALIMAT, kunciKalimat, ringkasVerifikasi, teksRingkas, type KalimatTerperiksa, type LabelKalimat } from "@/modules/led/domain/verifikasi";
 import type { HasilVerifikasiAi } from "@/modules/led/data/verifikasi";
 import type { CatatanTampil } from "@/modules/led/data/review";
 import { PanelCatatan, keSorotan, useCatatanLangsung } from "@/modules/led/komponen/review/panel-catatan";
+import { LABEL_BAHAN_PRODI } from "@/modules/led/domain/bahan-prodi";
+import { BarisPeriksa, type ItemPeriksa } from "@/modules/led/komponen/narasi/panel-samping";
 
 export interface ButirCek {
   kode: string;
@@ -119,7 +120,7 @@ function PanelPemeriksaan({ h }: { h: (HasilPemeriksaan & { catatanSistem?: stri
           {formatAngka(h.jumlahKata, 0)} kata{h.target ? `; target ${formatAngka(h.target, 0)} (rentang ${formatAngka(min!, 0)}–${formatAngka(maks!, 0)})` : ""}
         </Baris>
         <Baris ok={h.angkaTidakBerdasar.length === 0} judul={h.angkaTidakBerdasar.length === 0 ? "Semua angka berasal dari data" : "Angka tanpa dasar data"}>
-          {h.angkaTidakBerdasar.length > 0 && <>Periksa: {h.angkaTidakBerdasar.join(", ")}. Hapus atau lengkapi sumbernya di LKPS, jawaban, atau dokumen.</>}
+          {h.angkaTidakBerdasar.length > 0 && <>Periksa: {h.angkaTidakBerdasar.join(", ")}. Hapus atau lengkapi sumbernya di LKPS, Bahan dari prodi, atau dokumen.</>}
         </Baris>
         <Baris ok={sumberMasalah.length === 0} judul={sumberMasalah.length === 0 ? "Setiap paragraf punya sumber" : "Masalah sumber"}>
           {sumberMasalah.length > 0 && <ul className="list-disc pl-4">{sumberMasalah.slice(0, 5).map((m, i) => <li key={i}>{m.pesan}</li>)}</ul>}
@@ -277,6 +278,23 @@ function RiwayatVersi({ proyekId, draf }: { proyekId: string; draf: NonNullable<
 
 // ------------------------------------------------------------------ panel utama
 
+/** Jumlah hal yang perlu dicek di panel Pemeriksaan otomatis. */
+function jumlahMasalah(h: (HasilPemeriksaan & { catatanSistem?: string[] }) | null): number {
+  if (!h) return 0;
+  return [
+    h.panjang !== "pas",
+    h.angkaTidakBerdasar.length > 0,
+    h.masalahSumber.some((m) => m.jenis !== "unsur_hilang"),
+    h.belumAdaBukti.length > 0,
+    h.masalahSumber.some((m) => m.jenis === "unsur_hilang"),
+  ].filter(Boolean).length;
+}
+
+/**
+ * Tab "Narasi (masuk ke Word)" satu sub-bagian (perbaikan 1 Nov 2026, P4): editor selebar halaman, info versi dan model,
+ * baris Periksa (Catatan asesor, Pemeriksaan, Verifikasi) yang membuka panel samping, pita kuning bila ada catatan asesor
+ * terbuka, lalu keterangan kode sumber dan Riwayat versi.
+ */
 export function PanelDraf({
   proyekId, subBagianKode, draf, butir, gambar, tugasAktif, review,
 }: {
@@ -292,10 +310,12 @@ export function PanelDraf({
   const aktif = draf?.aktif ?? null;
   const { catatan, muat } = useCatatanLangsung(proyekId, subBagianKode, review?.catatan ?? []);
   const [catatanAktif, setCatatanAktif] = useState<string | null>(null);
+  const [panel, setPanel] = useState<string | null>(null);
   const sorotan = useMemo(() => keSorotan(catatan, catatanAktif), [catatan, catatanAktif]);
   const pilihCatatan = (id: string) => {
     setCatatanAktif(id);
-    document.getElementById(`catatan-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    setPanel("catatan");
+    setTimeout(() => document.getElementById(`catatan-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 250);
   };
   // revisi 26 Okt 2026: dibuka dari Beranda (…#catatan-<id>): catatan itu disorot di panel dan di narasi
   useEffect(() => {
@@ -303,7 +323,8 @@ export function PanelDraf({
     if (!m) return;
     const t = setTimeout(() => {
       setCatatanAktif(m[1]);
-      document.getElementById(`catatan-${m[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setPanel("catatan");
+      setTimeout(() => document.getElementById(`catatan-${m[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
     }, 300);
     return () => clearTimeout(t);
   }, []);
@@ -316,16 +337,57 @@ export function PanelDraf({
   const { sibuk, jalankan } = useAksi();
   // editor dimuat ulang hanya bila ada versi dasar baru (generate atau pulihkan), bukan setiap simpan otomatis
   const dasar = draf?.versi.find((v) => v.asal !== "sunting")?.id ?? "manual";
+  const hasilPeriksa = periksa ?? aktif?.pemeriksaan ?? null;
+  const catatanTerbuka = catatan.filter((c) => c.status === "terbuka").length;
+  const catatanBelumSelesai = catatan.filter((c) => c.status !== "diterima").length;
+  const kalimatBermasalah = kalimatTampil.filter((k) => k.label !== "sesuai").length;
+
+  const item: ItemPeriksa[] = [
+    ...(review ? [{
+      kunci: "catatan", label: "Catatan asesor", jumlah: catatanBelumSelesai, perhatian: catatanTerbuka > 0,
+      ikon: <MessageSquareText aria-hidden />, keterangan: "Klik catatan untuk menyorot kalimatnya di narasi.",
+      isi: <PanelCatatan catatan={catatan} peran="PJ" bolehUbah={review.bolehUbah} aktif={catatanAktif} onPilih={(id) => setCatatanAktif(id)} muat={muat} />,
+    }] : []),
+    ...(hasilPeriksa ? [{
+      kunci: "pemeriksaan", label: "Pemeriksaan", jumlah: jumlahMasalah(hasilPeriksa), perhatian: jumlahMasalah(hasilPeriksa) > 0,
+      ikon: <ListChecks aria-hidden />, keterangan: "Panjang, angka, sumber, dan penanda belum ada bukti.",
+      isi: (
+        <>
+          <PanelPemeriksaan h={hasilPeriksa} />
+          <DaftarCek butir={butir} unsur={aktif?.unsur ?? []} />
+          {aktif && aktif.dokumenKurang.length > 0 && (
+            <section className="rounded-lg border p-3 text-sm">
+              <h4 className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <FileWarning className="size-3.5" aria-hidden />Dokumen yang perlu diunggah
+              </h4>
+              <ul className="list-disc space-y-0.5 pl-4">{aktif.dokumenKurang.map((d, i) => <li key={i}>{d}</li>)}</ul>
+            </section>
+          )}
+          {aktif?.catatanPenyusun && (
+            <p className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground"><span className="font-medium text-foreground">Catatan sistem: </span>{aktif.catatanPenyusun}</p>
+          )}
+        </>
+      ),
+    }] : []),
+    ...(kalimatTampil.length > 0 ? [{
+      kunci: "verifikasi", label: "Verifikasi", jumlah: kalimatBermasalah, perhatian: kalimatBermasalah > 0,
+      ikon: <ShieldCheck aria-hidden />, keterangan: "Setiap kalimat dicocokkan dengan sumber yang dirujuk.",
+      isi: <PanelVerifikasi proyekId={proyekId} subBagianKode={subBagianKode} kalimat={kalimatTampil} ai={ai} />,
+    }] : []),
+  ];
 
   return (
-    <Tabs defaultValue="hasil" className="gap-3">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <TabsList>
-          <TabsTrigger value="hasil"><Sparkles aria-hidden />Hasil generate</TabsTrigger>
-          <TabsTrigger value="riwayat" disabled={!draf || draf.versi.length === 0}>
-            <History aria-hidden />Riwayat versi{draf && draf.versi.length > 0 ? ` (${draf.versi.length})` : ""}
-          </TabsTrigger>
-        </TabsList>
+        <p className="text-xs text-muted-foreground">
+          {aktif
+            ? <>
+              Versi {aktif.nomor} · {LABEL_ASAL[aktif.asal] ?? aktif.asal} · {waktu(aktif.dibuat)}
+              {aktif.model && ` · ${aktif.model}`}
+              {aktif.pemakaian && ` · ${formatAngka(aktif.pemakaian.tokenMasuk, 0)} token masuk, ${formatAngka(aktif.pemakaian.tokenKeluar, 0)} token keluar`}
+            </>
+            : "Narasi inilah yang masuk ke Word."}
+        </p>
         {aktif && (
           <label className="flex items-center gap-2 text-sm">
             <Switch
@@ -340,86 +402,63 @@ export function PanelDraf({
         )}
       </div>
 
-      <TabsContent value="hasil">
-        {!aktif && !manual ? (
-          <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            <p>
-              {tugasAktif
-                ? "Sub-bagian ini ada di antrean penyusunan. Draf muncul di sini setelah selesai."
-                : "Belum ada draf. Lengkapi data dan jawaban di atas, lalu klik Generate."}
-            </p>
-            <Button variant="link" size="sm" onClick={() => setManual(true)}><PenLine aria-hidden />Tulis manual</Button>
-          </div>
-        ) : (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <div className="flex min-w-0 flex-col gap-2">
-              {aktif && (
-                <p className="text-xs text-muted-foreground">
-                  Versi {aktif.nomor} · {LABEL_ASAL[aktif.asal] ?? aktif.asal} · {waktu(aktif.dibuat)}
-                  {aktif.model && ` · ${aktif.model}`}
-                  {aktif.pemakaian && ` · ${formatAngka(aktif.pemakaian.tokenMasuk, 0)} token masuk, ${formatAngka(aktif.pemakaian.tokenKeluar, 0)} token keluar`}
-                </p>
-              )}
-              <EditorNarasi
-                key={dasar}
-                proyekId={proyekId}
-                subBagianKode={subBagianKode}
-                isi={aktif?.isi ?? null}
-                gambar={gambar}
-                onTersimpan={(h) => {
-                  setPeriksa(h.pemeriksaan);
-                  // jangkar catatan diperiksa ulang terhadap versi baru (penanda "teks asli berubah")
-                  if (review) void muat();
-                }}
-                labelKalimat={labelKalimat}
-                catatan={sorotan}
-                onKlikCatatan={pilihCatatan}
-              />
-              {aktif && Object.keys(aktif.legenda).length > 0 && (
-                <details className="text-xs text-muted-foreground">
-                  <summary className="cursor-pointer select-none">Keterangan kode sumber</summary>
-                  <dl className="mt-1 grid gap-x-3 gap-y-0.5 sm:grid-cols-[auto_1fr]">
-                    {Object.entries(aktif.legenda).map(([k, v]) => (
-                      <div key={k} className="contents">
-                        <dt className="font-mono text-primary/80">{k}</dt>
-                        <dd>{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </details>
-              )}
+      {!aktif && !manual ? (
+        <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          <p>
+            {tugasAktif
+              ? "Sub-bagian ini ada di antrean penyusunan. Draf muncul di sini setelah selesai."
+              : "Belum ada draf. Lengkapi tab Bahan untuk AI, lalu klik Generate narasi."}
+          </p>
+          <Button variant="link" size="sm" onClick={() => setManual(true)}><PenLine aria-hidden />Tulis manual</Button>
+        </div>
+      ) : (
+        <>
+          {review && catatanTerbuka > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm dark:border-amber-800 dark:bg-amber-950/40" role="status">
+              <span>{catatanTerbuka} catatan asesor belum diperbaiki.</span>
+              <Button size="sm" variant="outline" onClick={() => setPanel("catatan")}><MessageSquareText aria-hidden />Lihat catatan</Button>
             </div>
-            <div className="flex flex-col gap-3">
-              {review && (
-                <PanelCatatan catatan={catatan} peran="PJ" bolehUbah={review.bolehUbah} aktif={catatanAktif} onPilih={pilihCatatan} muat={muat} />
-              )}
-              <PanelPemeriksaan h={periksa ?? aktif?.pemeriksaan ?? null} />
-              <PanelVerifikasi
-                proyekId={proyekId}
-                subBagianKode={subBagianKode}
-                kalimat={kalimatTampil}
-                ai={periksa ? null : aktif?.pemeriksaan?.kalimatAi ?? null}
-              />
-              <DaftarCek butir={butir} unsur={aktif?.unsur ?? []} />
-              {aktif && aktif.dokumenKurang.length > 0 && (
-                <section className="rounded-lg border p-3 text-sm">
-                  <h4 className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    <FileWarning className="size-3.5" aria-hidden />Dokumen yang perlu diunggah
-                  </h4>
-                  <ul className="list-disc space-y-0.5 pl-4">{aktif.dokumenKurang.map((d, i) => <li key={i}>{d}</li>)}</ul>
-                </section>
-              )}
-              {aktif?.catatanPenyusun && (
-                <p className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground"><span className="font-medium text-foreground">Catatan sistem: </span>{aktif.catatanPenyusun}</p>
-              )}
-            </div>
-          </div>
-        )}
-      </TabsContent>
+          )}
+          <BarisPeriksa item={item} buka={panel} onBuka={setPanel} />
+          <EditorNarasi
+            key={dasar}
+            proyekId={proyekId}
+            subBagianKode={subBagianKode}
+            isi={aktif?.isi ?? null}
+            gambar={gambar}
+            onTersimpan={(h) => {
+              setPeriksa(h.pemeriksaan);
+              // jangkar catatan diperiksa ulang terhadap versi baru (penanda "teks asli berubah")
+              if (review) void muat();
+            }}
+            labelKalimat={labelKalimat}
+            catatan={sorotan}
+            onKlikCatatan={pilihCatatan}
+          />
+          {aktif && Object.keys(aktif.legenda).length > 0 && (
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer select-none">Keterangan kode sumber</summary>
+              <dl className="mt-1 grid gap-x-3 gap-y-0.5 sm:grid-cols-[auto_1fr]">
+                {Object.entries(aktif.legenda).map(([k, v]) => (
+                  <div key={k} className="contents">
+                    <dt className="font-mono text-primary/80">{k}</dt>
+                    <dd>{k === "J" ? LABEL_BAHAN_PRODI : v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          )}
+        </>
+      )}
 
-      <TabsContent value="riwayat">
-        {draf && draf.versi.length > 0 && <RiwayatVersi proyekId={proyekId} draf={draf} />}
-      </TabsContent>
-    </Tabs>
+      {draf && draf.versi.length > 0 && (
+        <details className="rounded-lg border p-3 text-sm">
+          <summary className="flex cursor-pointer select-none items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <History className="size-3.5" aria-hidden />Riwayat versi ({draf.versi.length})
+          </summary>
+          <div className="mt-3"><RiwayatVersi proyekId={proyekId} draf={draf} /></div>
+        </details>
+      )}
+    </div>
   );
 }

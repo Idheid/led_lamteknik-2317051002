@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { MessageSquarePlus, RefreshCw } from "lucide-react";
+import { MessageSquarePlus, MessageSquareText, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
@@ -13,11 +13,13 @@ import type { DokTiptap } from "@/modules/led/domain/narasi";
 import type { CatatanTampil } from "@/modules/led/data/review";
 import { indeksDariPosisi, kunciCatatan, petaTeksDokumen } from "./sorotan-catatan";
 import { PanelCatatan, keSorotan, useCatatanLangsung } from "./panel-catatan";
+import { BarisPeriksa } from "@/modules/led/komponen/narasi/panel-samping";
 import { aksiBuatCatatan } from "@/app/led/aksi-review";
 
 /**
  * Layar asesor untuk satu sub-bagian (revisi 22 Okt 2026): narasi versi aktif hanya baca, blok teks untuk menulis
- * catatan revisi, dan daftar catatan yang diperbarui otomatis.
+ * catatan revisi, dan daftar catatan yang diperbarui otomatis. Perbaikan 1 Nov 2026 (P4): narasi selebar halaman,
+ * daftar catatan di panel samping (tombol Catatan asesor), sama seperti halaman Tim Prodi.
  */
 export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal, bolehCatat, hanyaBaca = false }: {
   proyekId: string;
@@ -34,6 +36,7 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
   const router = useRouter();
   const { catatan, muat, versiAktifId } = useCatatanLangsung(proyekId, subBagianKode, catatanAwal, versiId);
   const [aktif, setAktif] = useState<string | null>(null);
+  const [panel, setPanel] = useState<string | null>(null);
   const [blok, setBlok] = useState<Jangkar | null>(null);
   const [isiCatatan, setIsiCatatan] = useState("");
   const { sibuk, jalankan } = useAksi();
@@ -45,7 +48,7 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
     extensions: ekstensiNarasi(),
     content: isi,
     editorProps: {
-      attributes: { class: "editor-narasi min-h-40 px-4 py-3", "aria-label": "Narasi (hanya baca)" },
+      attributes: { class: "editor-narasi min-h-40 px-4 py-3", "aria-label": "Narasi (hanya baca)", spellcheck: "false" },
       handleDOMEvents: {
         click: (_v, ev) => {
           const id = catatanDariKlik(ev);
@@ -59,7 +62,8 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
   useEffect(() => {
     pilihCatatan.current = (id: string) => {
       setAktif(id);
-      document.getElementById(`catatan-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      setPanel("catatan");
+      setTimeout(() => document.getElementById(`catatan-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 250);
     };
   });
 
@@ -69,7 +73,8 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
     if (!m) return;
     const t = setTimeout(() => {
       setAktif(m[1]);
-      document.getElementById(`catatan-${m[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setPanel("catatan");
+      setTimeout(() => document.getElementById(`catatan-${m[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
     }, 300);
     return () => clearTimeout(t);
   }, []);
@@ -106,14 +111,32 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
         setBlok(null);
         setIsiCatatan("");
         setAktif(id);
+        setPanel("catatan");
         window.getSelection()?.removeAllRanges();
         void muat();
       },
     },
   );
 
+  const menunggu = catatan.filter((c) => c.status === "diperbaiki").length;
+  const belumSelesai = catatan.filter((c) => c.status !== "diterima").length;
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div className="flex flex-col gap-3">
+      {!hanyaBaca && menunggu > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm dark:border-amber-800 dark:bg-amber-950/40" role="status">
+          <span>{menunggu} catatan sudah diperbaiki Tim Prodi dan menunggu Anda.</span>
+          <Button size="sm" variant="outline" onClick={() => setPanel("catatan")}><MessageSquareText aria-hidden />Lihat catatan</Button>
+        </div>
+      )}
+      <BarisPeriksa
+        item={[{
+          kunci: "catatan", label: "Catatan asesor", jumlah: belumSelesai, perhatian: menunggu > 0, ikon: <MessageSquareText aria-hidden />,
+          keterangan: "Klik catatan untuk menyorot kalimatnya di narasi.",
+          isi: <PanelCatatan catatan={catatan} peran="ASESOR" bolehUbah={!hanyaBaca} aktif={aktif} onPilih={(id) => setAktif(id)} muat={muat} />,
+        }]}
+        buka={panel}
+        onBuka={setPanel}
+      />
       <div className="flex min-w-0 flex-col gap-2">
         {versiAktifId && versiAktifId !== versiId && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-sm" role="status">
@@ -142,7 +165,6 @@ export function RuangAsesor({ proyekId, subBagianKode, versiId, isi, catatanAwal
           <p className="text-xs text-muted-foreground">Catatan baru bisa ditulis setelah Tim Prodi mengajukan review (status Direview).</p>
         )}
       </div>
-      <PanelCatatan catatan={catatan} peran="ASESOR" bolehUbah={!hanyaBaca} aktif={aktif} onPilih={(id) => setAktif(id)} muat={muat} />
     </div>
   );
 }

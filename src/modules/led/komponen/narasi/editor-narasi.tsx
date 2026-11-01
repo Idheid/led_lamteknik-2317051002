@@ -21,6 +21,7 @@ import { SorotanKalimat, kunciSorotan } from "./sorotan-kalimat";
 import { SorotanCatatan, kunciCatatan, type SorotCatatan } from "@/modules/led/komponen/review/sorotan-catatan";
 import type { DokTiptap, HasilPemeriksaan } from "@/modules/led/domain/narasi";
 import { aksiSimpanSuntingan } from "@/app/led/(tim-prodi)/aksi";
+import { labelKodeSumber } from "@/modules/led/domain/bahan-prodi";
 
 /**
  * Editor narasi (F-16): tebal, miring, daftar, tabel, gambar; simpan otomatis. Setiap paragraf menyimpan atribut
@@ -33,7 +34,8 @@ const ParagrafBersumber = Paragraph.extend({
       sumber: {
         default: null,
         parseHTML: (el) => el.getAttribute("data-sumber"),
-        renderHTML: (a) => (a.sumber ? { "data-sumber": a.sumber } : {}),
+        // perbaikan 1 Nov 2026 (P3): "J" tampil sebagai "J = Bahan dari prodi" (atribut tampilan saja)
+        renderHTML: (a) => (a.sumber ? { "data-sumber": a.sumber, "data-sumber-label": labelKodeSumber(a.sumber) } : {}),
       },
       peran: {
         default: null,
@@ -200,7 +202,8 @@ export function EditorNarasi({
     extensions: ekstensiNarasi(),
     content: isi ?? { type: "doc", content: [{ type: "paragraph" }] },
     editorProps: {
-      attributes: { class: "editor-narasi min-h-40 px-4 py-3 focus:outline-none", "aria-label": "Narasi" },
+      // perbaikan 1 Nov 2026 (P4): pemeriksa ejaan browser (bahasa Inggris) dimatikan
+      attributes: { class: "editor-narasi min-h-40 px-4 py-3 focus:outline-none", "aria-label": "Narasi", spellcheck: "false" },
       handleDOMEvents: {
         click: (_v, ev) => {
           const id = catatanDariKlik(ev);

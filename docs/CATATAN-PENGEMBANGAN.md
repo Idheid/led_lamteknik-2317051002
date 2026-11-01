@@ -1094,3 +1094,38 @@ pecahan bisa ditolak; kini memakai toleransi pembulatan dan diberi uji domain.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 125/125 lulus |
 | `npm run test:integrasi` | 75/75 lulus |
+
+### P4: tata letak halaman sub-bagian
+
+- Kepala halaman: kode · n dari m · judul, status, Generate; di bawahnya Sebelumnya, pemilih sub-bagian berbentuk dropdown
+  "n dari m" (`pemilih-sub.tsx`), dan Berikutnya (navigasi yang sama diulang di bawah halaman). Kolom daftar sub-bagian
+  di kanan dihapus. Pindah lewat dropdown menyimpan isian tertunda dulu, sama seperti Sebelumnya/Berikutnya.
+- Dua tab (`tab-sub.tsx`): **"1. Bahan untuk AI"** (instruksi template dan butir penilaian + deskriptor skor 4 dapat
+  dilipat, terbuka bila belum ada narasi; LKPS/nilai manual/target; Bahan dari prodi; dokumen; tombol Generate narasi
+  di bawah) dan **"2. Narasi (masuk ke Word)"** (editor selebar halaman, info versi + model + token, sakelar Selesai,
+  keterangan kode sumber, Riwayat versi dalam lipatan). Tab awal Narasi bila sudah ada draf, selain itu Bahan. Isi
+  kedua tab tetap terpasang (hanya disembunyikan) sehingga isian yang belum tersimpan tidak hilang saat pindah tab;
+  pindah halaman menyimpan isian tertunda dulu. Saat generate selesai, tab pindah ke Narasi.
+- Baris **Periksa** (`src/modules/led/komponen/narasi/panel-samping.tsx`): tombol berlencana Catatan asesor (jumlah
+  belum diterima; kuning bila ada yang terbuka), Pemeriksaan (jumlah hal yang perlu dicek), Verifikasi (jumlah kalimat
+  tidak sesuai). Klik membuka panel samping `Sheet` ± 26rem (`modal={false}`, bisa ditutup, tidak menghalangi editor);
+  panel tidak pernah terbuka sendiri. Klik sorotan catatan di narasi atau tautan `#catatan-…` membuka panel Catatan.
+  Pita kuning "n catatan asesor belum diperbaiki" dengan tombol **Lihat catatan**.
+- Editor narasi `spellcheck="false"` (Tim Prodi dan asesor).
+- Tampilan asesor (`ruang-asesor.tsx`) memakai susunan yang sama: satu kolom, baris Periksa dengan Catatan asesor,
+  pita kuning bila ada catatan "sudah diperbaiki" yang menunggu asesor.
+- Commit ini juga memuat bagian P3 di `panel-draf.tsx`, `[sub]/page.tsx`, dan `editor-narasi.tsx`.
+- Diperiksa di browser pada 1366×768 dengan sidebar terbuka (LED uji Teknik Sipil, C.1-IKU-a): editor 1029 px
+  (sidebar 256 px), pemilih "3 dari 7", tab Narasi terbuka karena sudah ada draf, kolom kanan tidak ada; panel
+  Pemeriksaan terbuka 384 px. Alur catatan asesor: asesor memblok "Program studi menjalankan" → Kirim catatan (lencana
+  1) → klik sorotan membuka panel Catatan; Tim Prodi melihat pita kuning, menyunting narasi (tersimpan sebagai versi 4
+  Suntingan), Lihat catatan → Sudah diperbaiki (pita hilang); asesor melihat pita "1 catatan sudah diperbaiki Tim
+  Prodi", Terima → lencana 0. Karena LED uji itu sudah Layak diajukan dari uji Tahap 9, statusnya dikembalikan ke
+  Direview lewat SQL di basis data pengembangan untuk uji ini, lalu asesor menyatakan Layak diajukan lagi lewat
+  halaman Penilaian (nilai 324,45).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 125/125 lulus |
+| `npm run test:integrasi` | 75/75 lulus |
