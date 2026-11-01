@@ -33,7 +33,7 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
 
   if (pengguna.peran === "ADMIN") {
     return (
-      <ShellAplikasi pengguna={pengguna} grup={MENU_ADMIN} subjudul={`Admin UPPS · ${subjudul}`} beranda="/led/pantau">
+      <ShellAplikasi pengguna={pengguna} grup={MENU_ADMIN} subjudul={`Admin UPPS · ${subjudul}`} beranda="/dashboard">
         {children}
       </ShellAplikasi>
     );

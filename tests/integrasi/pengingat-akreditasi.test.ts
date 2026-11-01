@@ -51,7 +51,7 @@ test("L2: pengingat dikirim ke Tim Prodi dan Admin, sekali per ambang, hanya bil
   assert.equal((await lonceng(b.tim.id)).length + (await lonceng(c.tim.id)).length, 0);
   const pAdmin = await lonceng(admin.id);
   assert.equal(pAdmin.length, 2);
-  assert.ok(pAdmin.every((x) => x.tautan === "/led/pantau"));
+  assert.ok(pAdmin.every((x) => x.tautan === "/dashboard"));
 
   // hari berikutnya: tidak dikirim lagi untuk ambang yang sama
   assert.equal(await kirimPengingatAkreditasi(new Date("2026-11-26T00:00:00.000Z")), 0);

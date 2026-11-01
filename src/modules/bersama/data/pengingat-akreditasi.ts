@@ -65,7 +65,7 @@ async function kirim(s: StatusPeriode, hariIni: Date) {
   await beritahu(tim, { pesan, tautan: "/led" });
   // L3: Admin UPPS sekaligus diingatkan memeriksa akun Tim Prodi prodi itu
   const akun = LABEL_STATUS_AKUN[s.statusAkun];
-  await beritahu(admin, { pesan: akun ? `${pesan} ${akun}.` : pesan, tautan: "/led/pantau" });
+  await beritahu(admin, { pesan: akun ? `${pesan} ${akun}.` : pesan, tautan: "/dashboard" });
 }
 
 /** Pekerjaan harian: kirim pengingat untuk ambang yang baru tercapai. Mengembalikan jumlah prodi yang diingatkan. */

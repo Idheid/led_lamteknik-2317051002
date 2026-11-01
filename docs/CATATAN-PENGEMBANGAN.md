@@ -1846,3 +1846,52 @@ Dikerjakan D1 lalu D2, satu commit per butir.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 160/160 lulus |
 | `npm run test:integrasi` | 97/97 lulus |
+
+
+### D2: Dashboard akreditasi Fakultas/UPPS
+
+- Halaman `/dashboard` (Admin UPPS) menggantikan Pantau LED; `/led/pantau` dialihkan ke sana.
+  - Menu dan beranda Admin UPPS mengarah ke `/dashboard`, dan pengingat akreditasi untuk Admin bertautan ke sana.
+  - Tombol Ingatkan Tim Prodi pindah ke `src/app/dashboard/`.
+  - Gaya mengikuti aplikasi (mode terang dan gelap), bukan tema gelap contoh gambar.
+- Bentuk mengikuti contoh gambar dosen, dengan GPM diganti LPMPP:
+  - tab bertanda jumlah: **Semua Prodi**, **Prioritas Re-akreditasi**, **Sudah Unggul**, **Dalam Review LPMPP**;
+  - kolom:
+    - Program studi & jenjang (kode PDDikti, tanda Perlu LED baru dan status akun Tim Prodi);
+    - Lembaga akreditasi (dari riwayat, misalnya BAN-PT untuk SK lama);
+    - Peringkat;
+    - Masa berlaku dan hitung mundur (Kritis/Perhatian/Aktif/Berakhir);
+    - Kelengkapan LKPS dan Kelengkapan LED (batang persen);
+    - Simulasi asesor (Σ bobot × skor dan proyeksi peringkat);
+    - Status LPMPP dan nama reviewer;
+    - Aksi (Detail, Lihat LED, Catat hasil, Ingatkan).
+- Logika murni `led/domain/dashboard.ts`:
+  - `masaBerlaku`: Kritis ≤ 6 bulan, Perhatian ≤ 18 bulan (sama dengan ambang pengingat L2), lewat = Berakhir;
+    teksnya "82 hari lagi", "12 bulan lagi", atau "2,4 tahun";
+  - `statusLpmpp`: dari `statusReview` reviewer, ekspor final, dan hasil akreditasi;
+  - `persenLed`: selesai penuh, berdraf setengah;
+  - `masukTab`, `jumlahPerTab`.
+- Data `led/data/dashboard.ts` (`dataDashboard`, hanya Admin) memakai ulang fungsi yang ada: riwayat akreditasi (L1),
+  `statusPeriodeProdi` (L2/L3), `kesiapanLed`, `penilaianProyek` (rekap gabungan), dan `syaratCatatHasil`.
+- Dokumen: `CLAUDE.md` (keputusan butir 2 dan alur pengguna), `docs/PANDUAN-PENGGUNAAN.md` (pembuka, Admin UPPS,
+  Dashboard, Tim Prodi, Reviewer LPMPP), `docs/SPESIFIKASI.md` (menu per peran dan tabel menu), dan README modul.
+- Uji:
+  - domain `dashboard.test.ts` (3 uji): masa berlaku dan teks hitung mundur, delapan status LPMPP, kelengkapan LED,
+    tab dan jumlahnya;
+  - integrasi `dashboard.test.ts`: lembaga dan peringkat dari riwayat (BAN-PT, "Terakreditasi Unggul"), Kritis "96
+    hari lagi", Revisi dari LPMPP, Hasil akreditasi dicatat tanpa LED aktif, status akun, jumlah per tab, Tim Prodi
+    ditolak;
+  - `pengingat-akreditasi.test.ts` disesuaikan dengan tautan Admin yang baru (`/dashboard`).
+- Uji browser (server pengembangan, akun uji Admin):
+  - `/` langsung ke `/dashboard`, dengan sidebar Pemantauan / Penyusunan LED & LKPS / Pengaturan UPPS;
+  - tab Semua Prodi (17), Prioritas Re-akreditasi (4), Sudah Unggul (5), Dalam Review LPMPP (1);
+  - baris Sarjana Teknik Sipil: LAM Teknik, Terakreditasi Unggul, 31 Okt 2031, LED 0%, status Penyusunan, Detail dan
+    Lihat LED;
+  - prodi tanpa akun bertanda "Belum ada akun Tim Prodi".
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 163/163 lulus |
+| `npm run test:integrasi` | 98/98 lulus |
+| `npm run build` | Lulus (28 halaman statis) |

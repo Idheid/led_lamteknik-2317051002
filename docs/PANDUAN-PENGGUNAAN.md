@@ -3,12 +3,11 @@
 Panduan singkat website Akreditasi LAM Teknik (setelah revisi 31 Okt 2026) untuk tiga peran: **Admin UPPS**, **Tim
 Prodi**, dan **Asesor (reviewer)**. Satu instalasi website dipakai satu fakultas (UPPS).
 
-**Satu website, dua modul.** Setelah login, ketiga peran masuk ke halaman awal **Pilih modul** dengan dua kartu: **LKPS**
-(Laporan Kinerja Program Studi; modulnya masih disiapkan) dan **LED** (Laporan Evaluasi Diri). Di bawah kartu tertulis
-model AI yang dipakai, misalnya "AI: Google Gemini gemini-3-flash-preview; pencarian dokumen: gemini-embedding-001".
-Admin UPPS juga melihat bagian **Pengaturan UPPS**; Tim Prodi melihat nama prodinya di bawah sapaan. Di dalam modul,
-tombol **LKPS | LED** di bagian atas halaman memindahkan modul; ikon kotak di sebelah kirinya kembali ke halaman awal.
-Membuka alamat milik peran lain diarahkan ke halaman awal. Setiap halaman punya kotak **Petunjuk halaman ini** yang bisa
+**Satu aplikasi LED dan LKPS LAM Teknik** (desain form 2, 2 Nov 2026). Setelah login, setiap peran langsung masuk ke
+berandanya: Admin UPPS ke **Dashboard akreditasi**, Tim Prodi ke **LED prodi**, reviewer LPMPP ke **LED ditugaskan**.
+Satu menu di sidebar berisi semua yang dikerjakan peran itu (LED, Data LKPS, pengaturan), tanpa memilih modul. Peran
+"Asesor" di aplikasi ini adalah **Reviewer LPMPP** (reviewer internal). Membuka alamat milik peran lain diarahkan ke
+beranda peran sendiri. Setiap halaman punya kotak **Petunjuk halaman ini** yang bisa
 ditutup.
 
 **Pemasangan pertama**: selama website belum punya admin, halaman login menampilkan formulir **Buat akun admin
@@ -38,11 +37,12 @@ semua akun Tim Prodi prodi itu.
 ## A. Admin UPPS
 
 Admin UPPS menyiapkan semua yang dipakai bersama: akun, program studi, instrumen, Basis Pengetahuan fakultas, kunci API,
-dan penugasan asesor, lalu memantau LED semua prodi. Admin tidak menyusun LED. Sidebar Admin UPPS:
+dan penugasan reviewer LPMPP, lalu memantau kesiapan akreditasi semua prodi. Admin tidak menyusun LED. Sidebar Admin
+UPPS:
 
-- **Pengaturan UPPS**: Kelola akun, Program studi, Kunci API, Penugasan asesor.
-- **LED**: Pantau LED, Instrumen, Basis Pengetahuan fakultas.
-- **LKPS**: menyusul bersama modul LKPS.
+- **Pemantauan**: Dashboard akreditasi, Penugasan reviewer LPMPP.
+- **Penyusunan LED & LKPS**: Instrumen, Basis Pengetahuan fakultas.
+- **Pengaturan UPPS**: Program studi, Kelola akun, Kunci API dan model AI.
 
 ### 1. Program studi dan identitas fakultas
 
@@ -54,7 +54,7 @@ Tim Prodi. Prodi yang masih punya LED atau akun Tim Prodi tidak bisa dihapus.
 **Catat hasil akreditasi** (setelah SK akreditasi keluar). Tanggal akreditasi berakhir, peringkat, dan nomor SK prodi
 diambil dari **Riwayat akreditasi** di halaman prodi, jadi jangan diketik ulang di formulir.
 
-1. Buka prodi lalu klik **Catat hasil akreditasi**, atau klik tombol yang sama di Pantau LED pada LED yang sudah Layak
+1. Buka prodi lalu klik **Catat hasil akreditasi**, atau klik **Catat hasil** di Dashboard akreditasi pada LED yang sudah Layak
    diajukan atau diekspor final.
 2. Pilih LED yang diajukan (atau "Tanpa LED" untuk SK dari luar sistem) dan PDF SK, lalu klik **Isi dari PDF SK**.
    Tanggal berlaku, nomor SK, dan peringkat diisi dari teks SK tanpa AI dan ditandai "dari SK"; periksa semuanya.
@@ -149,17 +149,27 @@ Unggah sekali dokumen yang berlaku untuk semua prodi (VMTS dan Renstra fakultas,
 sarana-prasarana dan K3L, SPMI dan audit mutu). Semua LED memakainya saat menyusun narasi (kode sumber U1, U2, …). Tim
 Prodi melihatnya di tab **Dokumen bersama fakultas** tanpa bisa mengubah.
 
-### 6. Penugasan asesor dan Pantau LED
+### 6. Penugasan reviewer LPMPP dan Dashboard akreditasi
 
 - **Penugasan asesor**: pilih asesor di kolom **Asesor** setiap LED; satu LED satu asesor. Asesor langsung diberi tahu.
-- **Pantau LED**: semua prodi urut akreditasi berakhir, LED aktifnya (TS dan tahun pengajuan), kesiapan, jadwal, status
-  review, dan asesor. **Lihat** membuka LED hanya baca: Penilaian (skor otomatis, skor asesor, narasi tiap butir),
-  Ringkasan, dan narasi per sub-bagian beserta catatan asesor, tanpa alat menyunting, mencatat, atau menilai.
+- **Dashboard akreditasi** (`/dashboard`, menggantikan Pantau LED): matriks kinerja dan kesiapan semua prodi, urut
+  akreditasi berakhir. Tab **Semua Prodi**, **Prioritas Re-akreditasi** (berakhir ≤ 18 bulan, sudah lewat, atau perlu
+  LED baru), **Sudah Unggul**, dan **Dalam Review LPMPP**, masing-masing dengan jumlahnya. Kolom:
+  - program studi dan jenjang (kode PDDikti, tanda Perlu LED baru dan status akun);
+  - lembaga akreditasi dan peringkat (dari riwayat akreditasi);
+  - masa berlaku dengan hitung mundur (Kritis ≤ 6 bulan, Perhatian ≤ 18 bulan);
+  - kelengkapan LKPS (dari berkas LKPS LED) dan kelengkapan LED (sub-bagian berdraf, selesai dihitung penuh);
+  - simulasi asesor (Σ bobot × skor dan proyeksi peringkat; bukan nilai resmi LAM);
+  - status LPMPP (Belum ada LED, Penyusunan, Direview LPMPP, Revisi dari LPMPP, Layak diajukan, Siap diajukan ke LAM,
+    Hasil menunggu konfirmasi, Hasil akreditasi dicatat) dan nama reviewernya;
+  - aksi: **Detail** (halaman prodi dan riwayat akreditasi), **Lihat LED** (hanya baca: Penilaian, Ringkasan, narasi
+    dan catatan reviewer), **Catat hasil**, dan **Ingatkan**.
 - **Pengingat LED periode berikutnya**: setiap hari pukul 07.00 sistem mengirim pemberitahuan lonceng 18, 12, dan 6
   bulan sebelum akreditasi prodi berakhir (sekali per ambang) ke Tim Prodi prodi itu dan ke Admin UPPS, selama prodi
-  belum memulai LED periode berikutnya. Di Pantau LED prodi itu bertanda **Perlu LED baru**; tombol **Ingatkan Tim
+  belum memulai LED periode berikutnya. Di Dashboard akreditasi prodi itu bertanda **Perlu LED baru**; tombol **Ingatkan Tim
   Prodi** mengirim pengingat saat itu juga.
-- **Akun Tim Prodi sebelum periode baru**: Pantau LED menampilkan akun Tim Prodi setiap prodi beserta login terakhirnya.
+- **Akun Tim Prodi sebelum periode baru**: Dashboard akreditasi menandai jumlah akun Tim Prodi setiap prodi, dan Kelola
+  akun menampilkan login terakhir setiap akun.
   Prodi bertanda **Belum ada akun Tim Prodi** atau **Periksa akun Tim Prodi** (semua akun tidak login lebih dari 12
   bulan) perlu diurus dulu: **Tambah akun** (prodi sudah terpilih) atau **Kelola akun** (tersaring prodi itu). Pastikan
   juga instrumen terbaru jenjang itu sudah aktif.
@@ -168,7 +178,9 @@ Prodi melihatnya di tab **Dokumen bersama fakultas** tanpa bisa mengubah.
 
 ## B. Tim Prodi
 
-Setelah login Tim Prodi masuk ke **Pilih modul**, lalu klik **LED**. Sidebar berisi **LED prodi** dan **Identitas prodi**.
+Setelah login Tim Prodi langsung masuk ke **LED prodi**. Sidebar **Prodi saya** berisi **LED prodi**, **Data LKPS**, dan
+**Identitas prodi**. Data LKPS diunggah sekali (Excel template LKPS LAM Teknik 2025 atau PDF per tabel) ke LED aktif dan
+dipakai langsung untuk menyusun LED; menu Data LKPS membuka halaman yang sama dengan menu Data LKPS di dalam LED.
 Klik LED: sidebar berganti menjadi menu **LED ini** (Beranda LED, Perkiraan nilai, Data LKPS, Basis Pengetahuan, Tim
 penyusun, Ekspor Word), kriteria C.1–C.7, dan bab lain. Semua akun Tim Prodi satu prodi melihat dan menyusun LED yang
 sama; riwayat versi mencatat siapa yang menyunting.
@@ -290,7 +302,7 @@ tidak perlu.
 
 ## C. Asesor
 
-Setelah login asesor masuk ke **Pilih modul**, lalu klik **LED**. Menu asesor: **LED ditugaskan**. Di dalam satu LED:
+Peran ini tampil sebagai **Reviewer LPMPP**. Setelah login langsung masuk ke **LED ditugaskan**. Di dalam satu LED:
 **Penilaian** (paling atas), **Ringkasan review**, lalu daftar kriteria dan bab. Asesor tidak bisa menyunting narasi,
 menjalankan generate, atau mengekspor.
 

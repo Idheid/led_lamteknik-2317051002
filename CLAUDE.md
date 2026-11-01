@@ -58,7 +58,7 @@ di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revis
 2. **Tiga peran** (revisi 31 Okt 2026, Pak Tris; enum `Peran` = `ADMIN`, `TIM_PRODI`, `ASESOR`), semua lewat login:
    - **Admin UPPS**: Kelola akun (Admin UPPS, Tim Prodi beserta prodinya, Asesor), Program studi dan identitas
      fakultas, Instrumen, Basis Pengetahuan fakultas (unggah/hapus), Kunci API (kunci utama fakultas dan kunci
-     cadangan), Model Gemini, Log, status cadangan, Penugasan asesor, dan Pantau LED. Melihat semua LED **hanya baca**
+     cadangan), Model Gemini, Log, status cadangan, Penugasan reviewer LPMPP, dan Dashboard akreditasi. Melihat semua LED **hanya baca**
      (tidak membuat, menyusun, menilai, atau mengekspor LED).
    - **Tim Prodi**: akun terikat satu prodi (`User.prodiId`); satu prodi boleh beberapa akun dan semuanya menyusun LED
      yang sama. Membuat LED prodinya (prodi dari akun), mengisi identitas prodinya (bukan nama/jenjang), melihat Basis
@@ -86,7 +86,14 @@ di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revis
        wajib beralasan dan tercatat.
      - Pengingat lonceng **18, 12, dan 6 bulan** sebelum berakhir, sekali per ambang (pekerjaan harian
        `pengingat-akreditasi`), untuk Tim Prodi dan Admin UPPS, selama belum ada LED periode berikutnya.
-     - Pantau LED menandai Perlu LED baru dan akun Tim Prodi yang belum ada atau tidak login > 12 bulan.
+     - Dashboard akreditasi menandai Perlu LED baru dan akun Tim Prodi yang belum ada atau tidak login > 12 bulan.
+   - **Desain form 2** (2 Nov 2026, tugas dosen):
+     - LED dan LKPS LAM Teknik **satu aplikasi**: tanpa halaman Pilih modul dan tombol LKPS | LED; satu menu per peran;
+       pengaturan hanya di menu Admin UPPS.
+     - Selama modul LKPS Ghalib belum siap, LKPS diunggah sekali sebagai berkas ke LED aktif dan dipakai LED (menu Data
+       LKPS Tim Prodi).
+     - Peran `ASESOR` tampil sebagai **Reviewer LPMPP**.
+     - **Dashboard akreditasi** `/dashboard` menggantikan Pantau LED.
      - Tim Prodi menekan **Mulai LED periode berikutnya**: LED lama diarsipkan (atau sudah diarsipkan karena hasilnya
        dicatat) dan LED baru dibuat dalam satu transaksi.
      - Bahan dari LED lama yang disalin bila dipilih: tim penyusun (periksa ulang), bahan dari prodi (per kode atau
@@ -223,9 +230,9 @@ Satu website dua modul (permintaan Adrianne 31 Okt 2026, mengikuti arahan Pak Tr
 basis data"). Bagian "Struktur kode" yang lebih lama di bawah adalah catatan per iterasi; jalurnya sudah diperbarui ke
 lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
 
-- **Alur pengguna**: login sekali → `/` halaman awal "Pilih modul" untuk ketiga peran (kartu LKPS dan LED; Admin UPPS
-  juga melihat Pengaturan UPPS) → modul. Di kepala setiap halaman ada tombol **LKPS | LED**
-  (`src/components/shell/pindah-modul.tsx`) dan ikon kembali ke halaman awal.
+- **Alur pengguna** (desain form 2, 2 Nov 2026): login sekali → `/` mengalihkan ke beranda peran (`berandaLed` di
+  `src/components/shell/menu-peran.ts`; menu per peran juga di sana). Tidak ada lagi halaman pilih modul atau tombol
+  LKPS | LED. Dashboard akreditasi: `src/app/dashboard/`, `led/data/dashboard.ts`, `led/domain/dashboard.ts`.
 - **Rute** (`src/app`): `/` (halaman awal), `/login`, `/akun`, `/admin/*` dan `/pengaturan/prodi` (Admin UPPS); LED di
   grup rute `src/app/led/(tim-prodi)/` dan `src/app/led/(admin)/` (lihat bagian revisi 31 Okt 2026); `/led/asesor/*` di
   `src/app/led/asesor/`; `/lkps` (kerangka, ketiga peran) di `src/app/lkps/`. Route Handler LED di `src/app/api/led/*`;

@@ -9,7 +9,7 @@ import type { GrupNav } from "./nav-sidebar";
 export const MENU_PEMANTAUAN: GrupNav = {
   label: "Pemantauan",
   item: [
-    { judul: "Dashboard akreditasi", href: "/led/pantau", ikon: "dasbor" },
+    { judul: "Dashboard akreditasi", href: "/dashboard", ikon: "dasbor" },
     { judul: "Penugasan reviewer LPMPP", href: "/admin/penugasan", ikon: "review" },
   ],
 };
@@ -51,7 +51,7 @@ export const MENU_ASESOR: GrupNav = {
 
 /** Beranda menurut peran: Admin UPPS dashboard akreditasi, reviewer LED yang ditugaskan, Tim Prodi LED prodinya. */
 export function berandaLed(peran: Peran): string {
-  if (peran === "ADMIN") return "/led/pantau";
+  if (peran === "ADMIN") return "/dashboard";
   return peran === "ASESOR" ? "/led/asesor" : "/led";
 }
 

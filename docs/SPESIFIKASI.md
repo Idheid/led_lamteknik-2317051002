@@ -123,22 +123,26 @@ pemeriksaan hanya peringatan). Setiap paragraf diberi rujukan singkat; Daftar Ru
 Sidebar kiri (bisa diciutkan menjadi ikon; menjadi laci di layar kecil), area kerja kanan. Satu layar satu tugas,
 progres selalu terlihat. Bahasa Indonesia.
 
-Satu website dua modul (31 Okt 2026): setelah login, ketiga peran membuka halaman awal **Pilih modul** (`/`) dengan
-kartu LKPS (`/lkps`) dan LED (Admin UPPS `/led/pantau`, Tim Prodi `/led`, asesor `/led/asesor`) serta keterangan model
-AI yang dipakai; kepala halaman berisi tombol **LKPS | LED** dan ikon kembali ke halaman awal. Revisi 31 Okt 2026: menu
-per peran. Admin UPPS: grup **Pengaturan UPPS** (Kelola akun, Program studi, Kunci API, Penugasan asesor), grup **LED**
-(Pantau LED, Instrumen, Basis Pengetahuan fakultas), grup **LKPS** (kosong dulu). Tim Prodi: menu LED prodi dan
-Identitas prodi, lalu menu LED ini. Asesor: LED ditugaskan, lalu Penilaian dan Ringkasan review. Membuka alamat milik
-peran lain diarahkan ke halaman awal. Menu LKPS diisi saat modul LKPS digabung (masih kerangka).
+Satu aplikasi LED dan LKPS LAM Teknik (desain form 2, 2 Nov 2026; menggantikan "Pilih modul" 31 Okt 2026): `/`
+langsung mengalihkan ke beranda peran, tanpa tombol pindah modul. Menu per peran:
+- Admin UPPS:
+  - **Pemantauan**: Dashboard akreditasi `/dashboard`, Penugasan reviewer LPMPP;
+  - **Penyusunan LED & LKPS**: Instrumen, Basis Pengetahuan fakultas;
+  - **Pengaturan UPPS**: Program studi, Kelola akun, Kunci API dan model AI.
+- Tim Prodi, **Prodi saya**: LED prodi, Data LKPS (`/lkps` membuka Data LKPS LED aktif selama modul LKPS belum siap),
+  Identitas prodi; lalu menu LED ini.
+- Reviewer LPMPP (peran `ASESOR`): LED ditugaskan, lalu Penilaian dan Ringkasan review.
+
+Membuka alamat milik peran lain diarahkan ke beranda peran.
 
 | Menu | Isi | Peran |
 | --- | --- | --- |
-| Pilih modul (halaman awal) | Kartu LKPS dan LED, model AI; Admin UPPS juga Pengaturan UPPS; Tim Prodi melihat nama prodinya | Semua |
+| Halaman awal `/` | Langsung ke beranda peran (Dashboard akreditasi, LED prodi, LED ditugaskan) | Semua |
 | Kelola akun | Tambah akun di halaman sendiri `/admin/akun/tambah` (Tim Prodi wajib memilih prodi; satu prodi boleh beberapa akun), kolom program studi; menu baris: Ubah nama, Ubah peran (sesi akun dicabut, tercatat di log; admin tidak bisa mengubah peran sendiri; minimal satu Admin UPPS aktif), pindah prodi, atur ulang sandi, nonaktifkan, hapus; status cadangan terakhir | Admin UPPS |
 | Program studi | Identitas fakultas, 16 prodi FT Unila (bisa ditambah), urut akreditasi berakhir, jumlah akun Tim Prodi; per prodi: Riwayat akreditasi (Konfirmasi/Tolak catatan Tim Prodi), Catat hasil akreditasi (isi dari PDF SK tanpa AI atau Baca dengan AI), alasan koreksi wajib bila data akreditasi diubah langsung | Admin UPPS |
 | Kunci API (tab Kunci, Model Gemini, Log) | Kunci utama fakultas dan kunci cadangan dalam satu halaman, model narasi/cadangan/embedding, pemakaian token | Admin UPPS |
 | Penugasan asesor | Satu asesor per LED | Admin UPPS |
-| Pantau LED | LED aktif semua prodi: kesiapan, jadwal, status review, asesor, tombol Lihat (hanya baca); Catat hasil akreditasi pada LED Layak diajukan/ekspor final; lencana Perlu LED baru dan tombol Ingatkan Tim Prodi; akun Tim Prodi dengan login terakhir, tanda Belum ada akun / Periksa akun, tautan Tambah akun dan Kelola akun per prodi | Admin UPPS |
+| Dashboard akreditasi (`/dashboard`; `/led/pantau` dialihkan) | Tab Semua Prodi, Prioritas Re-akreditasi, Sudah Unggul, Dalam Review LPMPP; kolom program studi dan jenjang, lembaga dan peringkat (riwayat), masa berlaku dan hitung mundur, kelengkapan LKPS dan LED, simulasi asesor, status LPMPP, aksi (Detail, Lihat LED, Catat hasil, Ingatkan). Isi Pantau LED lama: LED aktif semua prodi: kesiapan, jadwal, status review, asesor, tombol Lihat (hanya baca); Catat hasil akreditasi pada LED Layak diajukan/ekspor final; lencana Perlu LED baru dan tombol Ingatkan Tim Prodi; akun Tim Prodi dengan login terakhir, tanda Belum ada akun / Periksa akun, tautan Tambah akun dan Kelola akun per prodi | Admin UPPS |
 | Instrumen | Instrumen per jenjang: unggah berkas, ekstraksi, periksa hasil, aktifkan | Admin UPPS |
 | Basis Pengetahuan fakultas | Dokumen bersama yang dipakai semua LED (kode sumber U); Tim Prodi melihatnya lewat tab di Basis Pengetahuan LED | Admin UPPS |
 | LED prodi | LED aktif (kartu) dan arsip prodi akun (dengan label "Diajukan {tahun} · {peringkat}"); kartu "Mulai LED periode berikutnya" bila syaratnya terpenuhi (≤ 18 bulan, Layak diajukan, ekspor final, atau hasil dicatat): tahun, TS, bahan yang disalin, konfirmasi; bila belum ada LED aktif, kartu "Mulai LED {prodi}": tahun pengajuan dan dua pilihan TS saja (TS bawaan dipilih ulang setiap tahun diganti), nama otomatis "LED {prodi} {tahun} (TS {tahun akademik})" yang bisa diubah di Pengaturan LED; `/led/baru` diarahkan ke `/led` | Tim Prodi |
