@@ -1731,3 +1731,63 @@ per butir.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 160/160 lulus |
 | `npm run test:integrasi` | 96/96 lulus |
+
+
+### L6: uji dan dokumen
+
+- Perbaikan yang ditemukan saat uji alur:
+  - L1 mengarsipkan LED yang diajukan begitu hasilnya berlaku. Akibatnya Tim Prodi tidak lagi punya LED aktif, dan
+    yang muncul kartu Mulai LED biasa tanpa salinan bahan, padahal alur rencana adalah "Admin mencatat hasil → Tim
+    Prodi menekan Mulai LED periode berikutnya".
+  - Perbaikannya, `ledSumber` (`led/data/periode.ts`): bila tidak ada LED aktif, LED arsip terbaru yang hasil
+    akreditasinya berlaku (dan belum diikuti LED lain) menjadi sumber. Kartu Mulai LED periode berikutnya tampil
+    menggantikan kartu Mulai LED, dengan konfirmasi "Bahan yang dipilih disalin dari {LED} (sudah diarsipkan)", dan
+    tidak ada yang diarsipkan lagi. Tetap satu LED aktif per prodi.
+  - Teks syarat menjadi "Hasil akreditasi LED terakhir sudah dicatat."
+  - Skrip `npm run pengingat` mendapat opsi `--tanggal` (hari simulasi) dan `--prodi`, supaya uji tidak mengirim
+    pengingat untuk prodi lain.
+- Uji yang diminta rencana dan letaknya:
+
+| Uji | Letak | Hasil |
+| --- | --- | --- |
+| Ambang pengingat 18/12/6 bulan, `perluLedBaru` | domain `bersama/domain/__tests__/akreditasi.test.ts` | Lulus |
+| Pencocokan bahan lintas versi instrumen | domain `led/domain/__tests__/periode.test.ts` | Lulus |
+| Pola baca SK (teks SK fiktif) | domain `akreditasi.test.ts`, integrasi PDF fiktif di `akreditasi.test.ts` | Lulus |
+| Catat hasil: Admin langsung berlaku, Tim Prodi menunggu konfirmasi | integrasi `akreditasi.test.ts` | Lulus |
+| Riwayat menurunkan tanggal, peringkat, dan nomor SK prodi | integrasi `akreditasi.test.ts` | Lulus |
+| Pengingat terkirim sekali per ambang | integrasi `pengingat-akreditasi.test.ts` | Lulus |
+| Mulai LED periode berikutnya mengarsipkan yang lama dan menyalin bahan yang dipilih | integrasi `periode-berikutnya.test.ts` (L4, L5, dan L6 dari LED yang sudah diarsipkan) | Lulus |
+| Kegagalan di tengah tidak mengarsipkan LED lama | integrasi `akreditasi.test.ts`, `periode-berikutnya.test.ts` | Lulus |
+| Tim Prodi prodi lain tidak bisa melakukan semua ini | integrasi `akreditasi.test.ts` (catat, status), `periode-berikutnya.test.ts` (riwayat, SK, konfirmasi, info periode, LED prodi lain tidak tersentuh), `pengingat-akreditasi.test.ts` (Ingatkan) | Lulus |
+
+- Uji browser. Dua akun uji baru dibuat untuk alur ini, `uji.l.admin@demo.test` (Admin UPPS) dan `uji.l.tim@demo.test`
+  (Tim Prodi Teknik Sipil), dengan sandi acak yang tidak ditulis di chat. Server pengembangan dan worker berjalan dengan
+  `LLM_NARASI=uji` dan `EMBEDDING_PENYEDIA=uji`.
+
+| Langkah | Hasil |
+| --- | --- |
+| Admin: Pantau LED → Catat hasil akreditasi pada LED uji Sipil (Layak diajukan); PDF SK fiktif → Isi dari PDF SK | 5 isian terisi bertanda "dari SK" (Terakreditasi Unggul, 0789/SK/…, 30 Okt 2026, 1 Nov 2026 – 31 Okt 2031) |
+| Simpan | "Hasil akreditasi dicatat. Data prodi diperbarui."; Riwayat akreditasi bertambah (dengan PDF SK dan tautan LED); tanggal prodi menjadi 31 Okt 2031; LED lama berlabel "Diajukan 2026 · Terakreditasi Unggul" |
+| Pekerjaan harian dijalankan manual: `npm run pengingat -- --tanggal 2030-06-01 --prodi <Sipil>`, lalu sekali lagi untuk hari berikutnya | 1 prodi diingatkan, lalu 0. Lonceng: dua akun Tim Prodi Sipil (tautan `/led`) dan akun Admin (tautan `/led/pantau`, ditambah "Periksa akun Tim Prodi." karena pada tanggal simulasi akun tidak login > 12 bulan) |
+| Tim Prodi: lonceng "Pemberitahuan, 2 belum dibaca" berisi "Akreditasi Sarjana Teknik Sipil berakhir 31 Okt 2031 (16 bulan lagi). Mulai LED periode berikutnya." | Berhasil |
+| Tim Prodi: LED prodi → kartu Mulai LED periode berikutnya (tim, bahan, dan dokumen tercentang; sumber P tidak) → konfirmasi "Bahan yang dipilih disalin dari LED Teknik Sipil TS 2025/2026 (sudah diarsipkan)…" → Mulai LED baru | LED baru "LED Teknik Sipil 2031 (TS 2029/2030)" terbuka |
+| Isi LED baru | Tim penyusun bertanda periksa ulang (halaman Tim penyusun menampilkan peringatannya); bahan C.1-IKU-a "[dari LED 2026] …"; dokumen renstra-sipil.docx disalin dan diproses ulang worker (status siap); panel Narasi LED periode lalu di C.1-IKU-a menampilkan narasi LED lama |
+
+- Dokumen:
+  - `CLAUDE.md`: keputusan butir 2 (LED per periode) dan bagian "Struktur kode (LED periode berikutnya, 2 Nov 2026)";
+  - `docs/PANDUAN-PENGGUNAAN.md`: Admin UPPS (Catat hasil akreditasi, konfirmasi, koreksi beralasan, pengingat, akun
+    sebelum periode baru) dan Tim Prodi (Identitas prodi, LED periode berikutnya, Catat hasil akreditasi);
+  - `docs/SPESIFIKASI.md`: tabel menu Program studi, Pantau LED, LED prodi, dan Beranda LED.
+- Akibat di basis data pengembangan:
+  - LED uji Sipil kini diarsipkan berlabel, dan ada LED baru "LED Teknik Sipil 2031 (TS 2029/2030)";
+  - riwayat akreditasi Sipil berisi SK fiktif (berlaku s.d. 31 Okt 2031);
+  - pemberitahuan pengingat terkirim ke akun Admin pengembangan dan PengingatTerkirim (Sipil, ambang 18) tercatat;
+  - dua akun uji baru.
+  - Akun uji tambahan sebelumnya (`uji.instrumen@demo.test`) sudah dihapus, begitu juga folder `public/_uji/`.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 160/160 lulus |
+| `npm run test:integrasi` | 97/97 lulus |
+| `npm run build` | Lulus (27 halaman statis) |

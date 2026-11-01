@@ -58,7 +58,7 @@ export default async function HalamanLedProdi({ searchParams }: PageProps<"/led"
           "Bila kuota kunci API habis atau instrumen belum aktif, hubungi Admin UPPS.",
         ]}
       />
-      {aktif.length === 0 && prodi ? (
+      {aktif.length === 0 && prodi && !berikut ? (
         <Card className="max-w-3xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg"><Rocket className="size-5 text-primary" aria-hidden />Mulai LED {namaProdi}</CardTitle>
@@ -98,7 +98,7 @@ export default async function HalamanLedProdi({ searchParams }: PageProps<"/led"
               prodi={{ nama: prodi.nama, alasan: berikut.versi ? null : `Instrumen ${namaJenjang(prodi.jenjang)} belum aktif. Hubungi Admin UPPS.` }}
               tahunUsulan={tahunBerikut}
               tanggalAcuan={tanggalAcuan.toISOString()}
-              berikutnya={{ konfirmasi: teksKonfirmasiPeriode(berikut.lama.nama, berikut.versi?.nama ?? "-"), bahan: bahanSalin! }}
+              berikutnya={{ konfirmasi: teksKonfirmasiPeriode(berikut.lama.nama, berikut.versi?.nama ?? "-", berikut.sudahDiarsipkan), bahan: bahanSalin! }}
             />
           </CardContent>
         </Card>

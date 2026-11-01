@@ -20,12 +20,28 @@ import { skemaProyek, type MasukanProyek } from "@/modules/led/validasi";
 
 const GENERATE_AKTIF = ["antre", "berjalan", "tertunda"];
 
-/** Keadaan untuk Menu LED dan Pengaturan LED: LED aktif, syarat, dan instrumen yang akan dipakai. */
+/**
+ * LED sumber periode berikutnya: LED aktif prodi; bila tidak ada, LED arsip terbaru yang diarsipkan karena hasil
+ * akreditasinya dicatat (L1 mengarsipkan LED yang diajukan), supaya bahannya tetap bisa disalin. Ditemukan saat uji
+ * alur L6.
+ */
+async function ledSumber(prodiId: string) {
+  const aktif = await prisma.proyekLED.findFirst({ where: { prodiId, diarsipkanPada: null }, orderBy: { createdAt: "desc" } });
+  if (aktif) return { led: aktif, sudahDiarsipkan: false };
+  const r = await prisma.riwayatAkreditasi.findFirst({ where: { prodiId, status: "berlaku", proyekId: { not: null } }, orderBy: { createdAt: "desc" } });
+  const led = r?.proyekId ? await prisma.proyekLED.findUnique({ where: { id: r.proyekId } }) : null;
+  // hanya bila belum ada LED yang dibuat sesudahnya (LED periode berikutnya yang sudah dimulai lalu diarsipkan tidak dihitung)
+  if (!led || !led.diarsipkanPada || (await prisma.proyekLED.count({ where: { prodiId, createdAt: { gt: led.createdAt } } }))) return null;
+  return { led, sudahDiarsipkan: true };
+}
+
+/** Keadaan untuk Menu LED dan Pengaturan LED: LED sumber, syarat, dan instrumen yang akan dipakai. */
 export async function infoPeriodeBerikutnya(p: Pengguna, hariIni = new Date()) {
   pastikanTimProdi(p);
   const prodi = await prisma.prodi.findUniqueOrThrow({ where: { id: p.prodiId } });
-  const lama = await prisma.proyekLED.findFirst({ where: { prodiId: prodi.id, diarsipkanPada: null }, orderBy: { createdAt: "desc" } });
-  if (!lama) return null;
+  const sumber = await ledSumber(prodi.id);
+  if (!sumber) return null;
+  const lama = sumber.led;
   const [hasil, final, versi] = await Promise.all([
     prisma.riwayatAkreditasi.count({ where: { proyekId: lama.id, status: { in: ["menunggu", "berlaku"] } } }),
     prisma.ekspor.count({ where: { proyekId: lama.id, jenis: "final", status: "siap" } }),
@@ -34,7 +50,7 @@ export async function infoPeriodeBerikutnya(p: Pengguna, hariIni = new Date()) {
   const syarat = syaratPeriodeBerikutnya({
     ambang: ambangPengingat(prodi.akreditasiBerlakuSampai, hariIni), hasilTercatat: hasil > 0, statusReview: lama.statusReview, eksporFinal: final > 0,
   });
-  return { prodi, lama, syarat, versi: versi ? { kode: versi.kode, nama: versi.nama } : null };
+  return { prodi, lama, sudahDiarsipkan: sumber.sudahDiarsipkan, syarat, versi: versi ? { kode: versi.kode, nama: versi.nama } : null };
 }
 
 // ---------------------------------------------------------------- L5: bahan yang disalin
@@ -54,7 +70,7 @@ export type MasukanSalin = z.input<typeof skemaSalin>;
 /** Pilihan bahan untuk kartu Mulai LED periode berikutnya: tim, jumlah bahan, dan daftar dokumen prodi LED lama. */
 export async function bahanUntukSalin(p: Pengguna, tahunPengajuanBaru: number) {
   pastikanTimProdi(p);
-  const lama = await prisma.proyekLED.findFirst({ where: { prodiId: p.prodiId, diarsipkanPada: null }, orderBy: { createdAt: "desc" } });
+  const lama = (await ledSumber(p.prodiId))?.led;
   if (!lama) return null;
   const tim = (lama.timPenyusun ?? {}) as { dosen?: unknown[]; tendik?: unknown[] };
   const [jumlahBahan, dokumen] = await Promise.all([
@@ -96,7 +112,8 @@ export async function mulaiLedPeriodeBerikutnya(p: Pengguna, masukan: MasukanPro
   const prodi = await prisma.prodi.findUniqueOrThrow({ where: { id: p.prodiId } });
   const versi = await instrumenWajibAktif(prodi.jenjang);
   // berkas dokumen disalin (bukan dipindah) sebelum transaksi; bila transaksi gagal, salinannya dihapus lagi
-  const aktifSekarang = await prisma.proyekLED.findFirst({ where: { prodiId: prodi.id, diarsipkanPada: null }, orderBy: { createdAt: "desc" } });
+  const sumber = await ledSumber(prodi.id);
+  const aktifSekarang = sumber?.led ?? null;
   const dokumenLama = aktifSekarang && salin.dokumen.length
     ? await prisma.dokumen.findMany({ where: { proyekId: aktifSekarang.id, id: { in: salin.dokumen } } })
     : [];
@@ -107,13 +124,17 @@ export async function mulaiLedPeriodeBerikutnya(p: Pengguna, masukan: MasukanPro
       salinan.push({ asal: d, lokasi: s.lokasi });
     }
     const hasil = await prisma.$transaction(async (tx) => {
-      const lama = await tx.proyekLED.findFirst({ where: { prodiId: prodi.id, diarsipkanPada: null }, orderBy: { createdAt: "desc" } });
-      if (!lama) throw new GalatPengguna("Belum ada LED aktif. Gunakan kartu Mulai LED.");
-      if (lama.id !== aktifSekarang?.id) throw new GalatPengguna("LED aktif berubah. Muat ulang halaman lalu coba lagi.");
+      if (!aktifSekarang) throw new GalatPengguna("Belum ada LED aktif. Gunakan kartu Mulai LED.");
+      const aktif = await tx.proyekLED.findFirst({ where: { prodiId: prodi.id, diarsipkanPada: null }, orderBy: { createdAt: "desc" } });
+      // LED sumber yang sudah diarsipkan (hasil akreditasi dicatat): tidak boleh ada LED aktif lain
+      if ((sumber!.sudahDiarsipkan ? aktif !== null : aktif?.id !== aktifSekarang.id)) {
+        throw new GalatPengguna("LED aktif berubah. Muat ulang halaman lalu coba lagi.");
+      }
+      const lama = aktifSekarang;
       if (await tx.tugasGenerate.count({ where: { proyekId: lama.id, status: { in: GENERATE_AKTIF } } })) {
         throw new GalatPengguna(`Masih ada penyusunan berjalan di ${lama.nama}. Tunggu selesai atau batalkan dulu; LED lama tidak diarsipkan.`);
       }
-      await tx.proyekLED.update({ where: { id: lama.id }, data: { diarsipkanPada: new Date() } });
+      if (!sumber!.sudahDiarsipkan) await tx.proyekLED.update({ where: { id: lama.id }, data: { diarsipkanPada: new Date() } });
       const timLama = (lama.timPenyusun ?? null) as Record<string, unknown> | null;
       const baru = await tx.proyekLED.create({
         data: {

@@ -69,9 +69,10 @@ async function kirim(s: StatusPeriode, hariIni: Date) {
 }
 
 /** Pekerjaan harian: kirim pengingat untuk ambang yang baru tercapai. Mengembalikan jumlah prodi yang diingatkan. */
-export async function kirimPengingatAkreditasi(hariIni = new Date()): Promise<number> {
+export async function kirimPengingatAkreditasi(hariIni = new Date(), opsi: { prodiId?: string } = {}): Promise<number> {
   let n = 0;
   for (const s of await statusPeriodeProdi(hariIni)) {
+    if (opsi.prodiId && s.prodiId !== opsi.prodiId) continue;
     if (!s.perluLedBaru || !s.ambang || !s.berlakuSampai) continue;
     const kunci = { prodiId: s.prodiId, berlakuSampai: s.berlakuSampai, ambang: s.ambang };
     if (await prisma.pengingatTerkirim.findUnique({ where: { prodiId_berlakuSampai_ambang: kunci } })) continue;

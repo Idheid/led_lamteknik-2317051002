@@ -51,6 +51,22 @@ Unila sudah terisi beserta tanggal akreditasi berakhir dan peringkat terakhir; l
 bila perlu. Daftar diurutkan dari akreditasi yang paling dekat berakhir dan menampilkan kesiapan LED serta jumlah akun
 Tim Prodi. Prodi yang masih punya LED atau akun Tim Prodi tidak bisa dihapus.
 
+**Catat hasil akreditasi** (setelah SK akreditasi keluar). Tanggal akreditasi berakhir, peringkat, dan nomor SK prodi
+diambil dari **Riwayat akreditasi** di halaman prodi, jadi jangan diketik ulang di formulir.
+
+1. Buka prodi lalu klik **Catat hasil akreditasi**, atau klik tombol yang sama di Pantau LED pada LED yang sudah Layak
+   diajukan atau diekspor final.
+2. Pilih LED yang diajukan (atau "Tanpa LED" untuk SK dari luar sistem) dan PDF SK, lalu klik **Isi dari PDF SK**.
+   Tanggal berlaku, nomor SK, dan peringkat diisi dari teks SK tanpa AI dan ditandai "dari SK"; periksa semuanya.
+3. Bila polanya tidak dikenali, isi manual atau klik **Baca dengan AI**. Perkiraan token dan modelnya tampil dulu, dan
+   angka panjang seperti NIP disamarkan.
+4. **Simpan**: langsung berlaku. Data prodi diperbarui, LED yang diajukan diarsipkan berlabel "Diajukan {tahun} ·
+   {peringkat}", dan Tim Prodi diberi tahu.
+
+Hasil yang dicatat Tim Prodi tampil di Riwayat akreditasi dengan status "Menunggu konfirmasi" dan Anda diberi tahu
+lewat lonceng; klik **Konfirmasi**, atau **Tolak** dengan alasan. Bila tanggal akreditasi perlu dikoreksi langsung di
+formulir prodi, isi **Alasan koreksi**; koreksi itu tercatat sebagai riwayat "Koreksi manual".
+
 ### 2. Kelola akun
 
 - Klik **Tambah akun** (halaman sendiri), pilih peran (**Tim Prodi**, **Asesor (reviewer)**, atau **Admin UPPS**), lalu
@@ -139,6 +155,14 @@ Prodi melihatnya di tab **Dokumen bersama fakultas** tanpa bisa mengubah.
 - **Pantau LED**: semua prodi urut akreditasi berakhir, LED aktifnya (TS dan tahun pengajuan), kesiapan, jadwal, status
   review, dan asesor. **Lihat** membuka LED hanya baca: Penilaian (skor otomatis, skor asesor, narasi tiap butir),
   Ringkasan, dan narasi per sub-bagian beserta catatan asesor, tanpa alat menyunting, mencatat, atau menilai.
+- **Pengingat LED periode berikutnya**: setiap hari pukul 07.00 sistem mengirim pemberitahuan lonceng 18, 12, dan 6
+  bulan sebelum akreditasi prodi berakhir (sekali per ambang) ke Tim Prodi prodi itu dan ke Admin UPPS, selama prodi
+  belum memulai LED periode berikutnya. Di Pantau LED prodi itu bertanda **Perlu LED baru**; tombol **Ingatkan Tim
+  Prodi** mengirim pengingat saat itu juga.
+- **Akun Tim Prodi sebelum periode baru**: Pantau LED menampilkan akun Tim Prodi setiap prodi beserta login terakhirnya.
+  Prodi bertanda **Belum ada akun Tim Prodi** atau **Periksa akun Tim Prodi** (semua akun tidak login lebih dari 12
+  bulan) perlu diurus dulu: **Tambah akun** (prodi sudah terpilih) atau **Kelola akun** (tersaring prodi itu). Pastikan
+  juga instrumen terbaru jenjang itu sudah aktif.
 
 ---
 
@@ -152,8 +176,9 @@ sama; riwayat versi mencatat siapa yang menyunting.
 ### 1. Persiapan
 
 1. Login, lalu ganti kata sandi sementara.
-2. **Identitas prodi**: lengkapi SK pendirian dan pembukaan, akreditasi terakhir, alamat, dan kontak. Nama prodi,
-   jenjang, kode PDDikti, dan tanggal akreditasi diatur Admin UPPS.
+2. **Identitas prodi**: lengkapi SK pendirian dan pembukaan, alamat, dan kontak. Nama prodi, jenjang, dan kode PDDikti
+   diatur Admin UPPS; peringkat, nomor SK, dan tanggal akreditasi diambil dari riwayat akreditasi (Catat hasil
+   akreditasi).
 
 ### 2. Membuat LED
 
@@ -167,7 +192,22 @@ sama; riwayat versi mencatat siapa yang menyunting.
 3. Klik **Mulai LED**. Nama LED dibuat otomatis, misalnya "LED Teknik Sipil 2027 (TS 2026/2027)", dan bisa diubah di
    **Pengaturan LED** (Beranda LED, paling bawah). Instrumen dipilih otomatis menurut jenjang prodi. Kartu LED menampilkan "TS 2026/2027 · pengajuan 2027"; label periode 5 tahun tampil kecil di
    Pengaturan LED.
-4. LED periode lama cukup **diarsipkan** (Pengaturan LED); LED baru bisa dibuat setelah LED lama diarsipkan.
+4. **LED periode berikutnya**: bila akreditasi berakhir 18 bulan lagi atau kurang, LED aktif sudah Layak diajukan atau
+   diekspor final, atau hasil akreditasinya sudah dicatat, kartu **Mulai LED periode berikutnya** tampil di LED prodi.
+   Di keadaan lain, kartu itu dibuka dari Pengaturan LED dengan peringatan bahwa LED aktif belum selesai.
+   1. Isi tahun pengajuan dan TS, seperti kartu Mulai LED.
+   2. Pilih bahan yang disalin: tim penyusun (ditandai periksa ulang), bahan dari prodi (diberi awalan "[dari LED
+      tahun]"), dan dokumen prodi satu per satu. Dokumen lebih tua dari 5 tahun tidak dicentang; berkasnya disalin lalu
+      diproses ulang. Narasi lama tidak disalin, dan data LKPS juga tidak; unggah LKPS baru.
+   3. Konfirmasi: LED lama diarsipkan (tetap bisa dibuka dan diekspor) dan LED baru memakai instrumen aktif jenjang
+      prodi. Bila ada penyusunan berjalan atau instrumen belum aktif, tidak ada yang berubah.
+
+   Di LED baru, narasi sub-bagian yang sama dari LED lama bisa dibaca di panel lipat **Narasi LED periode lalu** (tab
+   Bahan). Bahan yang tidak punya padanan karena instrumen berganti tampil di Beranda LED sebagai **Bahan lama yang
+   belum dipindah**.
+5. **Catat hasil akreditasi**: setelah SK keluar, klik tombolnya di Beranda LED (LED yang Layak diajukan atau sudah
+   diekspor final), pilih PDF SK, klik **Isi dari PDF SK**, periksa, lalu simpan. Catatan Anda berlaku setelah
+   dikonfirmasi Admin UPPS.
 
 ### 3. Beranda LED
 

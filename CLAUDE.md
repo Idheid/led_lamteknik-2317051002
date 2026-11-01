@@ -79,6 +79,19 @@ di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revis
      menonaktifkan, dan menghapus akun; admin tidak bisa menonaktifkan/menghapus/mengubah peran diri sendiri dan minimal
      ada satu Admin UPPS aktif. Tambah akun juga halaman sendiri (`/admin/akun/tambah`). LED dan riwayat versi milik **prodi**, kunci API milik
      **fakultas**, bukan akun. Pergantian anggota tim: buat akun Tim Prodi baru, nonaktifkan akun lama.
+   - **LED per periode** (2 Nov 2026, `docs/RENCANA-LED-PERIODE-BERIKUTNYA.md`):
+     - Tanggal akreditasi berakhir, peringkat, dan nomor SK prodi diturunkan dari **riwayat akreditasi**
+       (`RiwayatAkreditasi`). Sumbernya **Catat hasil akreditasi**: Admin UPPS langsung berlaku; Tim Prodi dari LED
+       prodinya, menunggu konfirmasi Admin. LED yang diajukan lalu diarsipkan berlabel. Koreksi langsung di Ubah prodi
+       wajib beralasan dan tercatat.
+     - Pengingat lonceng **18, 12, dan 6 bulan** sebelum berakhir, sekali per ambang (pekerjaan harian
+       `pengingat-akreditasi`), untuk Tim Prodi dan Admin UPPS, selama belum ada LED periode berikutnya.
+     - Pantau LED menandai Perlu LED baru dan akun Tim Prodi yang belum ada atau tidak login > 12 bulan.
+     - Tim Prodi menekan **Mulai LED periode berikutnya**: LED lama diarsipkan (atau sudah diarsipkan karena hasilnya
+       dicatat) dan LED baru dibuat dalam satu transaksi.
+     - Bahan dari LED lama yang disalin bila dipilih: tim penyusun (periksa ulang), bahan dari prodi (per kode atau
+       judul), dan dokumen prodi (disalin, diproses ulang).
+     - Narasi lama tidak disalin: hanya panel baca, dan sumber P opsional untuk AF/SWOT. LKPS tidak disalin.
    - **LED satu pengajuan**: satu LED aktif per prodi; LED baru dari kartu "Mulai LED {prodi}" di `/led` (perbaikan 1 Nov
      2026; `/led/baru` diarahkan ke `/led`) = tahun pengajuan + TS (dua pilihan: (P−1)/P atau (P−2)/(P−1); TS bawaan
      dipilih ulang setiap tahun diganti), tanpa isian nama: nama otomatis "LED {prodi} {tahun} (TS {tahun akademik})",
@@ -396,6 +409,19 @@ Dikerjakan dari `docs/RENCANA-REVISI-31OKT.md` (Tahap 0–9, branch `revisi-31ok
   potongan), uji cari dengan kueri generate (`kueriGenerate`).
 - Server dan cadangan: `Dockerfile`, `docker-compose.produksi.yml`, `Caddyfile`, `src/modules/bersama/proses/cadangan.ts` (antrean
   `cadangan-harian`, model `Cadangan`), `scripts/cadangan.ts`, `docs/PANDUAN-SERVER.md`.
+
+## Struktur kode (LED periode berikutnya, 2 Nov 2026)
+
+- Riwayat akreditasi: model `RiwayatAkreditasi`, `bersama/domain/akreditasi.ts` (baca pola SK, ambang pengingat,
+  `perluLedBaru`, status akun), `bersama/data/akreditasi.ts` (`terapkanRiwayatTerbaru`), `led/data/akreditasi.ts` (catat,
+  konfirmasi, tolak, baca SK pola/AI). Rute `/api/akreditasi`, `/api/akreditasi/sk`, `/api/akreditasi/[id]/sk`.
+  Halaman `/led/[proyekId]/hasil-akreditasi`, `/pengaturan/prodi/[id]/akreditasi`.
+- Pengingat: `bersama/data/pengingat-akreditasi.ts`, tabel `PengingatTerkirim`, antrean `pengingat-akreditasi`
+  (07.00 WIB, `PENGINGAT_JADWAL`), `npm run pengingat -- [--tanggal YYYY-MM-DD] [--prodi id]`.
+- Akun: `User.loginTerakhir` (hook sesi Better Auth).
+- Periode berikutnya: `led/domain/periode.ts`, `led/data/periode.ts` (`infoPeriodeBerikutnya`, `bahanUntukSalin`,
+  `mulaiLedPeriodeBerikutnya`, `narasiPeriodeLalu`), kolom `ProyekLED.labelArsip`, `asalProyekId`, `pakaiNarasiLalu`,
+  `bahanBelumDipindah`; sumber P di `led/domain/prompt.ts`.
 
 ## Struktur kode (perbaikan instrumen 2 Nov 2026)
 

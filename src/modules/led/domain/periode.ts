@@ -14,15 +14,17 @@ export interface KeadaanPeriode {
 }
 
 export function syaratPeriodeBerikutnya(k: KeadaanPeriode): { tampilDiMenu: boolean; alasan: string } {
-  if (k.hasilTercatat) return { tampilDiMenu: true, alasan: "Hasil akreditasi LED aktif sudah dicatat." };
+  if (k.hasilTercatat) return { tampilDiMenu: true, alasan: "Hasil akreditasi LED terakhir sudah dicatat." };
   if (k.statusReview === "layak") return { tampilDiMenu: true, alasan: "LED aktif sudah Layak diajukan." };
   if (k.eksporFinal) return { tampilDiMenu: true, alasan: "LED aktif sudah diekspor final." };
   if (k.ambang !== null) return { tampilDiMenu: true, alasan: `Akreditasi berakhir ${k.ambang} bulan lagi atau kurang.` };
   return { tampilDiMenu: false, alasan: "LED aktif belum selesai: belum Layak diajukan, belum diekspor final, dan akreditasi masih lebih dari 18 bulan." };
 }
 
-export function teksKonfirmasiPeriode(namaLama: string, versiBaru: string): string {
-  return `${namaLama} akan diarsipkan (tetap bisa dibuka dan diekspor). LED baru memakai instrumen ${versiBaru}.`;
+export function teksKonfirmasiPeriode(namaLama: string, versiBaru: string, sudahDiarsipkan = false): string {
+  return sudahDiarsipkan
+    ? `Bahan yang dipilih disalin dari ${namaLama} (sudah diarsipkan). LED baru memakai instrumen ${versiBaru}.`
+    : `${namaLama} akan diarsipkan (tetap bisa dibuka dan diekspor). LED baru memakai instrumen ${versiBaru}.`;
 }
 
 // ------------------------------------------------------------------ L5: salin bahan dari LED lama

@@ -6,6 +6,8 @@ import { GalatAkses, type Pengguna } from "@/modules/bersama/akses";
 import { buatProyek } from "@/modules/led/data/proyek";
 import { bahanUntukSalin, infoPeriodeBerikutnya, mulaiLedPeriodeBerikutnya, narasiPeriodeLalu } from "@/modules/led/data/periode";
 import { susunKonteks } from "@/modules/led/proses/generate";
+import { berkasSkAkreditasi, catatHasilAkreditasi, konfirmasiHasilAkreditasi } from "@/modules/led/data/akreditasi";
+import { riwayatAkreditasiProdi } from "@/modules/bersama/data/akreditasi";
 import { bacaBerkas, simpanBerkas } from "@/modules/bersama/penyimpanan";
 import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
@@ -124,4 +126,38 @@ test("L5: salin tim, bahan, dan dokumen yang dipilih; narasi lama hanya sebagai 
   await assert.rejects(mulaiLedPeriodeBerikutnya(tim, { tahunPengajuan: 2036 }, { dokumen: dk.map((d) => d.id) }), /penyusunan berjalan/);
   assert.equal(await prisma.dokumen.count(), jumlahDok);
   assert.equal((await prisma.proyekLED.findUniqueOrThrow({ where: { id: baru.id } })).diarsipkanPada, null);
+});
+
+test("L6: hasil akreditasi dicatat (LED diarsipkan) → Mulai LED periode berikutnya tetap menyalin dari LED itu; prodi lain ditolak", async () => {
+  const { prodi, tim } = await siapkanProdi(admin, { nama: "Teknik Siklus", jenjang: "S1", kodePddikti: "70004", akreditasiBerlakuSampai: "2026-12-20", identitas: {} }, "tim.70004@uji.test");
+  const { prodi: prodiLain, tim: timLain } = await siapkanProdi(admin, { nama: "Teknik Asing", jenjang: "S1", kodePddikti: "70005", identitas: {} }, "tim.70005@uji.test");
+  const lama = await buatProyek(tim, { tahunPengajuan: 2026 });
+  await prisma.proyekLED.update({ where: { id: lama.id }, data: { statusReview: "layak", timPenyusun: { dosen: [{ nama: "Ketua", nomorInduk: "", jabatan: "", tugas: "" }], tendik: [] } } });
+  const sub = await prisma.subBagian.findFirstOrThrow({ where: { bagian: { versiId: lama.versiId }, kode: { endsWith: "-LB" } } });
+  await prisma.jawabanForm.create({ data: { proyekId: lama.id, subBagianKode: sub.kode, isi: "Fakta periode lalu." } });
+
+  // Tim Prodi prodi lain tidak bisa mencatat, mengonfirmasi, membaca riwayat, atau mengunduh SK prodi ini
+  await assert.rejects(catatHasilAkreditasi(timLain, { prodiId: prodi.id, proyekId: lama.id, peringkat: "Terakreditasi", berlakuSampai: "2031-12-20" }), GalatAkses);
+  const r = await catatHasilAkreditasi(admin, { prodiId: prodi.id, proyekId: lama.id, peringkat: "Terakreditasi Unggul", berlakuSampai: "2031-12-20" });
+  await assert.rejects(riwayatAkreditasiProdi(timLain, prodi.id), GalatAkses);
+  await assert.rejects(berkasSkAkreditasi(timLain, r.id), GalatAkses);
+  await assert.rejects(konfirmasiHasilAkreditasi(timLain, r.id), GalatAkses);
+  assert.ok((await prisma.proyekLED.findUniqueOrThrow({ where: { id: lama.id } })).diarsipkanPada, "LED diajukan diarsipkan setelah hasil dicatat");
+
+  const info = await infoPeriodeBerikutnya(tim);
+  assert.equal(info?.lama.id, lama.id);
+  assert.equal(info?.sudahDiarsipkan, true);
+  assert.equal(info?.syarat.tampilDiMenu, true);
+  assert.equal(await infoPeriodeBerikutnya(timLain), null, "prodi lain tidak melihat LED ini");
+  const pilihan = await bahanUntukSalin(tim, 2031);
+  assert.deepEqual([pilihan?.jumlahTim, pilihan?.jumlahBahan], [1, 1]);
+
+  const { baru } = await mulaiLedPeriodeBerikutnya(tim, { tahunPengajuan: 2031 }, { tim: true, bahan: true });
+  assert.equal(baru.asalProyekId, lama.id);
+  assert.deepEqual((await prisma.jawabanForm.findMany({ where: { proyekId: baru.id } })).map((x) => x.isi), ["[dari LED 2026] Fakta periode lalu."]);
+  assert.equal((await prisma.proyekLED.findUniqueOrThrow({ where: { id: lama.id } })).labelArsip, "Diajukan 2026 · Terakreditasi Unggul", "label arsip tetap");
+  assert.equal(await prisma.proyekLED.count({ where: { prodiId: prodi.id, diarsipkanPada: null } }), 1);
+  assert.equal(await prisma.proyekLED.count({ where: { prodiId: prodiLain.id } }), 0);
+  // sesudah LED baru dibuat, LED arsip itu bukan lagi sumber (tidak bisa menekan dua kali)
+  assert.equal((await infoPeriodeBerikutnya(tim))?.lama.id, baru.id);
 });
