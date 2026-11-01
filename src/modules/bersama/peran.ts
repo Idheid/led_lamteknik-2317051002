@@ -12,7 +12,8 @@ export type Peran = (typeof PERAN)[number];
 export const LABEL_PERAN: Record<Peran, string> = {
   ADMIN: "Admin UPPS",
   TIM_PRODI: "Tim Prodi",
-  ASESOR: "Asesor (reviewer)",
+  // desain form 2 (2 Nov 2026): reviewer internal = LPMPP; nilai enum tetap ASESOR
+  ASESOR: "Reviewer LPMPP",
 };
 
 export const ac = createAccessControl(defaultStatements);

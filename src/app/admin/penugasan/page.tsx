@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PilihAsesor } from "./pilih-asesor";
 
-export const metadata: Metadata = { title: "Penugasan asesor" };
+export const metadata: Metadata = { title: "Penugasan reviewer LPMPP" };
 
 const fmt = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "Asia/Jakarta" });
 
@@ -19,11 +19,11 @@ export default async function HalamanPenugasan() {
   return (
     <>
       <JudulHalaman
-        judul="Penugasan asesor"
-        deskripsi="Satu LED dinilai satu asesor"
+        judul="Penugasan reviewer LPMPP"
+        deskripsi="Satu LED direview satu reviewer LPMPP (peran Reviewer LPMPP di Kelola akun)"
       />
       {asesor.length === 0 && (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Belum ada akun asesor aktif. Buat dulu di Kelola akun → Tambah akun → peran Asesor.</p>
+        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Belum ada akun reviewer LPMPP aktif. Buat dulu di Kelola akun → Tambah akun → peran Reviewer LPMPP.</p>
       )}
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">
@@ -33,7 +33,7 @@ export default async function HalamanPenugasan() {
                 <TableHead className="pl-4">LED</TableHead>
                 <TableHead>Batas pengajuan</TableHead>
                 <TableHead>Status review</TableHead>
-                <TableHead className="w-64 pr-4">Asesor</TableHead>
+                <TableHead className="w-64 pr-4">Reviewer LPMPP</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

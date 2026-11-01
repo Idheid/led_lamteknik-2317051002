@@ -2,58 +2,61 @@ import type { Peran } from "@/modules/bersama/peran";
 import type { GrupNav } from "./nav-sidebar";
 
 /**
- * Menu sidebar per peran (revisi 31 Okt 2026, Pak Tris): Admin UPPS, Tim Prodi, Asesor. Admin UPPS punya tiga grup
- * tetap di semua halamannya (Pengaturan UPPS, LED, LKPS); Tim Prodi dan asesor memakai menu modul masing-masing.
+ * Menu sidebar per peran. Desain form 2 (2 Nov 2026): LED dan LKPS LAM Teknik satu aplikasi, satu menu per peran,
+ * tanpa halaman "Pilih modul" dan tanpa pengaturan yang berulang. Admin UPPS: Pemantauan, Penyusunan, Pengaturan
+ * UPPS. Tim Prodi: Prodi saya (LED, Data LKPS, Identitas prodi). Reviewer LPMPP (peran ASESOR): LED ditugaskan.
  */
-export const MENU_PENGATURAN_UPPS: GrupNav = {
-  label: "Pengaturan UPPS",
+export const MENU_PEMANTAUAN: GrupNav = {
+  label: "Pemantauan",
   item: [
-    { judul: "Kelola akun", href: "/admin/akun", ikon: "akun" },
-    { judul: "Program studi", href: "/pengaturan/prodi", ikon: "prodi" },
-    { judul: "Kunci API", href: "/admin/kunci-api", ikon: "kunci" },
-    { judul: "Penugasan asesor", href: "/admin/penugasan", ikon: "review" },
+    { judul: "Dashboard akreditasi", href: "/led/pantau", ikon: "dasbor" },
+    { judul: "Penugasan reviewer LPMPP", href: "/admin/penugasan", ikon: "review" },
   ],
 };
 
-export const MENU_LED_ADMIN: GrupNav = {
-  label: "LED",
+export const MENU_PENYUSUNAN_ADMIN: GrupNav = {
+  label: "Penyusunan LED & LKPS",
   item: [
-    { judul: "Pantau LED", href: "/led/pantau", ikon: "proyek" },
     { judul: "Instrumen", href: "/led/instrumen", ikon: "instrumen" },
     { judul: "Basis Pengetahuan fakultas", href: "/led/dokumen-bersama", ikon: "dokumen" },
   ],
 };
 
-/** Menu LKPS admin: kosong dulu (modul LKPS dikerjakan Ghalib); grup tanpa item tidak ditampilkan. */
-export const MENU_LKPS_ADMIN: GrupNav = { label: "LKPS", item: [] };
+export const MENU_PENGATURAN_UPPS: GrupNav = {
+  label: "Pengaturan UPPS",
+  item: [
+    { judul: "Program studi", href: "/pengaturan/prodi", ikon: "prodi" },
+    { judul: "Kelola akun", href: "/admin/akun", ikon: "akun" },
+    { judul: "Kunci API dan model AI", href: "/admin/kunci-api", ikon: "kunci" },
+  ],
+};
 
-export const MENU_ADMIN: GrupNav[] = [MENU_PENGATURAN_UPPS, MENU_LED_ADMIN, MENU_LKPS_ADMIN];
+export const MENU_ADMIN: GrupNav[] = [MENU_PEMANTAUAN, MENU_PENYUSUNAN_ADMIN, MENU_PENGATURAN_UPPS];
 
-/** Menu sidebar asesor di modul LED (revisi 22 Okt 2026). */
+/** Menu Tim Prodi: semua yang dikerjakan untuk prodinya di satu tempat. */
+export const MENU_TIM_PRODI: GrupNav = {
+  label: "Prodi saya",
+  item: [
+    { judul: "LED prodi", href: "/led", ikon: "proyek", persis: true },
+    { judul: "Data LKPS", href: "/lkps", ikon: "lkps" },
+    { judul: "Identitas prodi", href: "/led/identitas-prodi", ikon: "prodi" },
+  ],
+};
+
+/** Menu reviewer LPMPP (peran ASESOR) di modul LED. */
 export const MENU_ASESOR: GrupNav = {
-  label: "LED · Asesor",
+  label: "Review LPMPP",
   item: [{ judul: "LED ditugaskan", href: "/led/asesor", ikon: "proyek", persis: true }],
 };
 
-/** Alamat beranda modul LED menurut peran: admin memantau semua LED, asesor LED yang ditugaskan, Tim Prodi LED prodinya. */
+/** Beranda menurut peran: Admin UPPS dashboard akreditasi, reviewer LED yang ditugaskan, Tim Prodi LED prodinya. */
 export function berandaLed(peran: Peran): string {
   if (peran === "ADMIN") return "/led/pantau";
   return peran === "ASESOR" ? "/led/asesor" : "/led";
 }
 
-/** Grup "Modul" untuk Tim Prodi dan asesor di halaman di luar modul (mis. Ganti kata sandi). */
-export function menuModul(peran: Peran): GrupNav {
-  return {
-    label: "Modul",
-    item: [
-      { judul: "Halaman awal", href: "/", ikon: "dasbor", persis: true },
-      { judul: "LKPS", href: "/lkps", ikon: "lkps" },
-      { judul: "LED", href: berandaLed(peran), ikon: "bab" },
-    ],
-  };
-}
-
-/** Sidebar halaman di luar modul menurut peran. */
+/** Sidebar halaman di luar LED (Ganti kata sandi, Data LKPS) menurut peran. */
 export function menuLuarModul(peran: Peran): GrupNav[] {
-  return peran === "ADMIN" ? MENU_ADMIN : [menuModul(peran)];
+  if (peran === "ADMIN") return MENU_ADMIN;
+  return peran === "ASESOR" ? [MENU_ASESOR] : [MENU_TIM_PRODI];
 }

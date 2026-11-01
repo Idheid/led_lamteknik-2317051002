@@ -41,7 +41,7 @@ export default async function LayoutLedAsesor({ children, params }: LayoutProps<
     },
   ];
   return (
-    <ShellAplikasi pengguna={p} grup={grup} judul="LED LAM Teknik" subjudul={data.proyek.prodi.nama} beranda={dasar}>
+    <ShellAplikasi pengguna={p} grup={grup} subjudul={data.proyek.prodi.nama} beranda={dasar}>
       {children}
     </ShellAplikasi>
   );

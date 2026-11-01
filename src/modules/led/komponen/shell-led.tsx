@@ -4,21 +4,10 @@ import { ambilFakultas, ambilProdi } from "@/modules/bersama/data/organisasi";
 import { bagianProyek, daftarProyek } from "@/modules/led/data/proyek";
 import type { GrupNav, StatusLencana } from "@/components/shell/nav-sidebar";
 import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
-import { MENU_ADMIN } from "@/components/shell/menu-peran";
+import { MENU_ADMIN, MENU_TIM_PRODI } from "@/components/shell/menu-peran";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { PemilihLed } from "./pemilih-led";
 
-/**
- * Menu LED Tim Prodi (revisi 31 Okt 2026): hanya LED prodinya. Program studi, instrumen, dan kunci API milik Admin UPPS;
- * Basis Pengetahuan fakultas dilihat lewat tab di menu Basis Pengetahuan tiap LED.
- */
-export const MENU_LED: GrupNav = {
-  label: "Menu LED",
-  item: [
-    { judul: "LED prodi", href: "/led", ikon: "proyek", persis: true },
-    { judul: "Identitas prodi", href: "/led/identitas-prodi", ikon: "prodi" },
-  ],
-};
 
 const NAMA_PENDEK: Record<string, string> = {
   AWAL: "Halaman awal",
@@ -44,7 +33,7 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
 
   if (pengguna.peran === "ADMIN") {
     return (
-      <ShellAplikasi pengguna={pengguna} grup={MENU_ADMIN} judul="LED LAM Teknik" subjudul={`Admin UPPS · ${subjudul}`} beranda="/led/pantau">
+      <ShellAplikasi pengguna={pengguna} grup={MENU_ADMIN} subjudul={`Admin UPPS · ${subjudul}`} beranda="/led/pantau">
         {children}
       </ShellAplikasi>
     );
@@ -52,7 +41,7 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
   if (!data) {
     const prodi = pengguna.prodiId ? await ambilProdi(pengguna, pengguna.prodiId) : null;
     return (
-      <ShellAplikasi pengguna={pengguna} grup={[MENU_LED]} judul="LED LAM Teknik" subjudul={prodi ? `${namaJenjang(prodi.jenjang)} ${prodi.nama}` : subjudul} beranda="/led">
+      <ShellAplikasi pengguna={pengguna} grup={[MENU_TIM_PRODI]} subjudul={prodi ? `${namaJenjang(prodi.jenjang)} ${prodi.nama}` : subjudul} beranda="/led">
         {children}
       </ShellAplikasi>
     );
@@ -95,7 +84,6 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
     <ShellAplikasi
       pengguna={pengguna}
       grup={grup}
-      judul="LED LAM Teknik"
       subjudul={subjudul}
       beranda={dasar}
       atasMenu={<PemilihLed aktif={{ id: data.proyek.id, nama: data.proyek.nama, prodi: data.proyek.prodi.nama }} pilihan={pilihan} />}

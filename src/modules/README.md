@@ -1,7 +1,9 @@
 # Modul website akreditasi
 
-Satu website (satu login, satu basis data) berisi dua modul: **LKPS** dan **LED**. Setelah login, penyusun dan asesor
-memilih modul di halaman awal (`/`); di dalam modul, tombol **LKPS | LED** di kepala halaman memindahkan modul.
+Satu website (satu login, satu basis data) berisi dua modul kode: **LKPS** dan **LED**. Desain form 2 (2 Nov 2026):
+bagi pengguna keduanya satu aplikasi, satu menu per peran (tanpa halaman pilih modul). Setelah login, `/` langsung
+mengalihkan ke beranda peran (Admin UPPS: Dashboard akreditasi; Tim Prodi: LED prodi dengan Data LKPS dan Identitas
+prodi; reviewer LPMPP: LED ditugaskan). Selama modul LKPS belum siap, `/lkps` membuka Data LKPS LED aktif prodi.
 
 | Folder | Isi | Rute | Skema Prisma | Worker |
 | --- | --- | --- | --- | --- |

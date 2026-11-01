@@ -10,15 +10,13 @@ import { Separator } from "@/components/ui/separator";
 import type { Pengguna } from "@/modules/bersama/akses";
 import { LABEL_PERAN } from "@/modules/bersama/peran";
 import { MenuPengguna } from "./menu-pengguna";
-import { berandaLed } from "./menu-peran";
-import { PindahModul } from "./pindah-modul";
 import { NavSidebar, type GrupNav } from "./nav-sidebar";
 import { Lonceng } from "./lonceng";
 
 interface Props {
   pengguna: Pengguna;
   grup: GrupNav[];
-  /** Nama di kotak atas sidebar; bawaan "Akreditasi LAM Teknik" (modul memakai "LED LAM Teknik"/"LKPS LAM Teknik"). */
+  /** Nama di kotak atas sidebar: selalu "Akreditasi LAM Teknik" (desain form 2: satu aplikasi LED dan LKPS). */
   judul?: string;
   /** Baris kecil di bawah nama aplikasi (misalnya nama prodi). */
   subjudul: string;
@@ -29,8 +27,9 @@ interface Props {
 }
 
 /**
- * Tata letak dengan sidebar (bisa diciutkan menjadi ikon; menjadi laci di layar kecil). Kepala halaman berisi tombol
- * pindah modul LKPS/LED (selain admin), lonceng, dan menu pengguna.
+ * Tata letak dengan sidebar (bisa diciutkan menjadi ikon; menjadi laci di layar kecil). Kepala halaman berisi nama
+ * aplikasi, lonceng (semua peran, termasuk pengingat akreditasi untuk Admin UPPS), dan menu pengguna. Desain form 2
+ * (2 Nov 2026): LED dan LKPS satu aplikasi, jadi tidak ada lagi tombol pindah modul LKPS | LED.
  */
 export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Teknik", subjudul, beranda, atasMenu, children }: Props) {
   const simpan = (await cookies()).get("sidebar_state")?.value;
@@ -65,10 +64,9 @@ export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Te
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
           <SidebarTrigger className="-ml-1" aria-label="Ciutkan atau buka sidebar" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
-          {/* 31 Okt 2026: satu website untuk modul LKPS dan LED, untuk ketiga peran */}
-          <PindahModul hrefLed={berandaLed(pengguna.peran)} />
+          <span className="truncate text-sm text-muted-foreground">LED dan LKPS LAM Teknik</span>
           <span className="ml-auto flex items-center gap-1">
-            {pengguna.peran !== "ADMIN" && <Lonceng />}
+            <Lonceng />
             <MenuPengguna nama={pengguna.nama} email={pengguna.email} peran={LABEL_PERAN[pengguna.peran]} />
           </span>
         </header>

@@ -32,7 +32,7 @@ export interface PilihanProdi {
 /** Tiga peran (revisi 31 Okt 2026), dijelaskan singkat supaya admin tahu akun mana yang dibuat. */
 export const PERAN_BARU: { kunci: Peran; judul: string; isi: string }[] = [
   { kunci: "TIM_PRODI", judul: "Tim Prodi", isi: "Menyusun LED program studinya: LKPS, dokumen, narasi, ekspor Word. Satu prodi boleh beberapa akun." },
-  { kunci: "ASESOR", judul: "Asesor (reviewer)", isi: "Membaca LED yang ditugaskan, memberi catatan revisi dan skor. Tugaskan di menu Penugasan asesor." },
+  { kunci: "ASESOR", judul: "Reviewer LPMPP", isi: "Reviewer internal LPMPP: membaca LED yang ditugaskan, memberi catatan revisi dan skor. Tugaskan di menu Penugasan reviewer LPMPP." },
   { kunci: "ADMIN", judul: "Admin UPPS", isi: "Mengelola akun, program studi, instrumen, Basis Pengetahuan fakultas, kunci API, dan penugasan asesor." },
 ];
 

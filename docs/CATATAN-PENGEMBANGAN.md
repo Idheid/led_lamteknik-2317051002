@@ -1791,3 +1791,58 @@ per butir.
 | `npm run test:unit` | 160/160 lulus |
 | `npm run test:integrasi` | 97/97 lulus |
 | `npm run build` | Lulus (27 halaman statis) |
+
+
+## Desain form 2 (2 Nov 2026)
+
+Tugas dari dosen:
+1. Gabungkan web app LED dan LKPS dari lembaga akreditasi yang sejenis (LAM Teknik) dalam satu web app, tanpa
+   pengaturan yang berulang.
+2. Buat Dashboard Fakultas/UPPS untuk memantau kesiapan akreditasi seluruh prodi (contoh gambar: daftar prodi,
+   lembaga, peringkat, masa berlaku dan hitung mundur, kelengkapan LKPS dan LED, simulasi asesor, status GPM yang
+   diganti LPMPP).
+
+Keputusan Adrianne:
+- Status LPMPP = peran Asesor (reviewer internal) yang diberi label LPMPP; tetap tiga peran.
+- LKPS tetap diunggah sebagai berkas di LED, karena modul LKPS Ghalib belum selesai. Detail penggabungan diserahkan,
+  dan rencana D1/D2 disetujui.
+- Kolom Lembaga dari riwayat akreditasi; instrumen tetap LAM Teknik saja.
+- Gaya mengikuti aplikasi sekarang.
+
+Dikerjakan D1 lalu D2, satu commit per butir.
+
+### D1: LED dan LKPS satu aplikasi, menu terpadu per peran
+
+- Halaman "Pilih modul" dan tombol pindah modul LKPS | LED dihapus (`pindah-modul.tsx`). Ini mengganti keputusan 31
+  Okt 2026 (halaman awal pilih modul).
+  - `/` langsung mengalihkan ke beranda peran: Admin UPPS ke Dashboard akreditasi, Tim Prodi ke LED prodi, reviewer
+    LPMPP ke LED ditugaskan. Akun Tim Prodi tanpa prodi mendapat pesan, supaya tidak berputar-putar.
+  - Nama di sidebar selalu "Akreditasi LAM Teknik", dan kepala halaman bertuliskan "LED dan LKPS LAM Teknik". Lonceng
+    tampil untuk semua peran, karena Admin juga menerima pengingat akreditasi (L2).
+- Menu per peran (`components/shell/menu-peran.ts`):
+  - Admin UPPS:
+    - **Pemantauan**: Dashboard akreditasi, Penugasan reviewer LPMPP;
+    - **Penyusunan LED & LKPS**: Instrumen, Basis Pengetahuan fakultas;
+    - **Pengaturan UPPS**: Program studi, Kelola akun, Kunci API dan model AI.
+  - Tim Prodi, **Prodi saya**: LED prodi, **Data LKPS**, Identitas prodi;
+  - reviewer LPMPP, **Review LPMPP**: LED ditugaskan.
+  - Modul LED dan modul LKPS memakai menu yang sama (`menuLuarModul`).
+- Tidak ada pengaturan berulang:
+  - akun, prodi dan identitas fakultas, kunci API dan model, serta instrumen hanya di menu Admin UPPS;
+  - identitas prodi Tim Prodi satu halaman, dan data akreditasinya dari riwayat (L1);
+  - LKPS diunggah sekali ke LED aktif prodi dan dipakai LED. Menu **Data LKPS** (`/lkps`) Tim Prodi langsung membuka Data
+    LKPS LED aktif; tanpa LED aktif, ada pesan untuk memulai LED dulu supaya TS diketahui. Admin dan reviewer
+    dialihkan ke berandanya. Saat modul LKPS Ghalib siap (`MODUL_LKPS.siap`), `/lkps` diganti berandanya, dan LED
+    tetap membaca dari tempat yang sama.
+- Label peran `ASESOR` menjadi **Reviewer LPMPP** (Kelola akun, Tambah akun, menu Penugasan reviewer LPMPP). Nilai
+  enum tetap `ASESOR`. Teks "asesor" di dalam halaman review LED (± 200 tempat) belum diganti.
+- `src/modules/README.md` diperbarui.
+- Uji browser (server pengembangan Anda, akun uji Tim Prodi Sipil): `/` langsung ke LED prodi; sidebar "Akreditasi LAM
+  Teknik · Sarjana Teknik Sipil" dengan Prodi saya (LED prodi, Data LKPS, Identitas prodi); kepala halaman tanpa tombol
+  LKPS | LED; `/lkps` mengalihkan ke Data LKPS LED aktif.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 160/160 lulus |
+| `npm run test:integrasi` | 97/97 lulus |

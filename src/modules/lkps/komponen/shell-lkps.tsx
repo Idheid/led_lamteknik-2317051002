@@ -3,7 +3,7 @@ import type { Pengguna } from "@/modules/bersama/akses";
 import { ambilFakultas } from "@/modules/bersama/data/organisasi";
 import type { GrupNav } from "@/components/shell/nav-sidebar";
 import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
-import { MENU_PENGATURAN_UPPS } from "@/components/shell/menu-peran";
+import { menuLuarModul } from "@/components/shell/menu-peran";
 
 /**
  * Menu LKPS (kerangka 31 Okt 2026). Ghalib menambah menu modul LKPS di sini, misalnya "Semua LKPS", "Impor Excel",
@@ -14,12 +14,14 @@ export const MENU_LKPS: GrupNav = {
   item: [{ judul: "Beranda LKPS", href: "/lkps", ikon: "lkps", persis: true }],
 };
 
-/** Tata letak modul LKPS: menu LKPS untuk ketiga peran; Admin UPPS juga melihat Pengaturan UPPS. */
+/**
+ * Tata letak modul LKPS. Desain form 2 (2 Nov 2026): menu yang sama dengan LED (satu aplikasi); menu modul LKPS Ghalib
+ * ditambahkan di depan saat modulnya siap.
+ */
 export async function ShellLkps({ pengguna, children }: { pengguna: Pengguna; children: ReactNode }) {
   const fakultas = await ambilFakultas();
-  const grup = pengguna.peran === "ADMIN" ? [MENU_LKPS, MENU_PENGATURAN_UPPS] : [MENU_LKPS];
   return (
-    <ShellAplikasi pengguna={pengguna} grup={grup} judul="LKPS LAM Teknik" subjudul={fakultas?.nama ?? "Fakultas belum diisi"} beranda="/lkps">
+    <ShellAplikasi pengguna={pengguna} grup={menuLuarModul(pengguna.peran)} subjudul={fakultas?.nama ?? "Fakultas belum diisi"} beranda="/lkps">
       {children}
     </ShellAplikasi>
   );

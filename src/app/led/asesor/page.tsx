@@ -20,7 +20,7 @@ export default async function HalamanAsesor() {
   const p = await wajibAsesor();
   const led = await ledAsesor(p);
   return (
-    <ShellAplikasi pengguna={p} grup={[MENU_ASESOR]} judul="LED LAM Teknik" subjudul="Asesor" beranda="/led/asesor">
+    <ShellAplikasi pengguna={p} grup={[MENU_ASESOR]} subjudul="Reviewer LPMPP" beranda="/led/asesor">
       <JudulHalaman judul="LED ditugaskan" />
       <Petunjuk
         kunci="asesor-beranda"

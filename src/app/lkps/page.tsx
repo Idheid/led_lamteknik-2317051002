@@ -1,64 +1,42 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Construction, FileSpreadsheet, FileText } from "lucide-react";
+import { redirect } from "next/navigation";
+import { FileSpreadsheet } from "lucide-react";
 import { wajibLogin } from "@/modules/bersama/sesi";
-import { MODUL_LKPS } from "@/modules/lkps";
+import { berandaLed } from "@/components/shell/menu-peran";
+import { daftarProyek } from "@/modules/led/data/proyek";
 import { JudulHalaman } from "@/components/judul-halaman";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const metadata: Metadata = { title: "LKPS" };
+export const metadata: Metadata = { title: "Data LKPS" };
 
-const RENCANA = [
-  "Isian tabel LKPS per program studi sesuai template LKPS LAM Teknik 2025.",
-  "Impor dari Excel template LKPS dan ekspor kembali ke Excel.",
-  "Ekspor PDF per tabel: tabel lebar dicetak mendatar (landscape) dan kolom tidak terpotong.",
-  "ID sinkron One Data Unila di setiap baris yang ditarik; isian manual tetap ada bila data One Data belum lengkap.",
-  "Tabel LKPS dibaca langsung oleh modul LED sebagai sumber narasi, tanpa unggah ulang.",
-];
-
-/** Beranda LKPS (kerangka 31 Okt 2026). Modul LKPS dikerjakan Ghalib; halaman ini diganti saat modulnya siap. */
+/**
+ * Data LKPS. Desain form 2 (2 Nov 2026): LED dan LKPS satu aplikasi. Selama modul LKPS (Ghalib) belum siap, LKPS
+ * diunggah satu kali sebagai berkas (Excel template LKPS LAM Teknik 2025 atau PDF) ke LED aktif prodi, dan data yang
+ * sama dipakai LED; jadi menu Data LKPS Tim Prodi langsung membuka Data LKPS LED aktif. Admin UPPS melihat kelengkapan
+ * LKPS semua prodi di Dashboard akreditasi. Saat modul LKPS siap (MODUL_LKPS.siap), halaman ini diganti berandanya.
+ */
 export default async function HalamanLkps() {
   const p = await wajibLogin();
+  if (p.peran !== "TIM_PRODI") redirect(berandaLed(p.peran));
+  const aktif = (await daftarProyek(p)).find((x) => !x.diarsipkanPada);
+  if (aktif) redirect(`/led/${aktif.id}/lkps`);
   return (
     <>
-      <JudulHalaman judul="LKPS" deskripsi="Laporan Kinerja Program Studi: data kinerja prodi dalam tabel-tabel yang menjadi dasar penilaian akreditasi LAM Teknik." />
-      {!MODUL_LKPS.siap && (
-        <Alert>
-          <Construction aria-hidden />
-          <AlertTitle>Modul LKPS sedang disiapkan</AlertTitle>
-          <AlertDescription>
-            Modul ini dibangun terpisah lalu digabung ke website ini (satu login, satu basis data). Data program studi dan
-            kunci API di menu Data bersama sudah dipakai bersama LKPS dan LED.
-          </AlertDescription>
-        </Alert>
-      )}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><FileSpreadsheet className="size-4 text-primary" aria-hidden />Yang akan ada di modul LKPS</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc space-y-1.5 pl-5 text-sm">
-              {RENCANA.map((r) => <li key={r}>{r}</li>)}
-            </ul>
-          </CardContent>
-        </Card>
-        {p.peran === "TIM_PRODI" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><FileText className="size-4 text-primary" aria-hidden />Sementara ini</CardTitle>
-              <CardDescription>
-                Data LKPS untuk menyusun LED diunggah di modul LED: buka LED, lalu menu Data LKPS (Excel template LKPS atau PDF).
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="outline"><Link href="/led">Buka modul LED</Link></Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      <JudulHalaman judul="Data LKPS" deskripsi="Laporan Kinerja Program Studi untuk LED prodi Anda." />
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><FileSpreadsheet className="size-4 text-primary" aria-hidden />Belum ada LED aktif</CardTitle>
+          <CardDescription>
+            Data LKPS diunggah sekali (Excel template LKPS LAM Teknik 2025 atau PDF per tabel) dan langsung dipakai LED. Mulai LED
+            prodi dulu supaya TS (tahun data LKPS) diketahui.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild><Link href="/led">Buka LED prodi</Link></Button>
+        </CardContent>
+      </Card>
     </>
   );
 }
