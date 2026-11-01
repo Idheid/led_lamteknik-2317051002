@@ -2098,3 +2098,22 @@ Logo hanya dipakai halaman muka LED (LKPS berupa tabel Excel tanpa sampul), jadi
 | `npm run lint`, `npm run typecheck`, `npm run build` | Lulus |
 | `npm run test:unit` | 174/174 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
+
+### Perbaikan: server dev memakai Prisma client baru tanpa dijalankan ulang
+
+Laporan Adrianne: membuka Logo sampul LED galat "Cannot read properties of undefined (reading 'findUnique')" di
+`ambilLogo`. Penyebab: server dev (port 3000) berjalan sejak sebelum migrasi D7/D8 dan `src/modules/bersama/db.ts`
+memakai ulang klien Prisma yang tersimpan di `globalThis`, yang dibuat dari kelas lama tanpa model `LogoSampul`.
+
+- `db.ts` kini menyimpan juga kelas `PrismaClient` pembuatnya; klien tersimpan hanya dipakai ulang bila kelasnya sama.
+  Setelah `prisma generate`, modul klien dimuat ulang dengan kelas baru sehingga klien baru dibuat otomatis. Klien lama
+  tidak diputus (bisa masih dipakai lapisan bundel lain; hanya di dev). Produksi tidak terpengaruh.
+- Uji browser di server dev pengguna (tanpa dijalankan ulang): Logo sampul LED (Admin) dan Halaman muka & identitas
+  (Tim Prodi) terbuka normal.
+- Worker (`npm run worker`) tetap perlu dijalankan ulang setelah migrasi karena tidak memakai muat ulang modul.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 174/174 lulus |
+| `npm run test:integrasi` | 98/98 lulus |
