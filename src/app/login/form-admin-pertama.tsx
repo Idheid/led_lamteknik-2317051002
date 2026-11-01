@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputSandi } from "@/components/input-sandi";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { aksiBuatAdminPertama } from "./aksi";
 
@@ -79,7 +80,7 @@ export function FormAdminPertama() {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="admin-sandi">Kata sandi</FieldLabel>
-                  <Input {...field} id="admin-sandi" type="password" autoComplete="new-password" aria-invalid={fieldState.invalid} />
+                  <InputSandi {...field} id="admin-sandi" autoComplete="new-password" aria-invalid={fieldState.invalid} />
                   <FieldDescription>Minimal 8 karakter. Simpan baik-baik.</FieldDescription>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>

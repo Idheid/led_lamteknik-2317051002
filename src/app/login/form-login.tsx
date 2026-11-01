@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputSandi } from "@/components/input-sandi";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { z } from "zod";
 
@@ -76,7 +77,7 @@ export function FormLogin({ tujuan }: { tujuan?: string }) {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="kataSandi">Kata sandi</FieldLabel>
-                  <Input {...field} id="kataSandi" type="password" autoComplete="current-password" aria-invalid={fieldState.invalid} />
+                  <InputSandi {...field} id="kataSandi" autoComplete="current-password" aria-invalid={fieldState.invalid} />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}

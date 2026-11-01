@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputSandi } from "@/components/input-sandi";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -121,7 +122,7 @@ export function FormTambahAkun({ prodi }: { prodi: PilihanProdi[] }) {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor="akun-sandi">Kata sandi awal</FieldLabel>
-                <Input {...field} id="akun-sandi" type="password" autoComplete="new-password" aria-invalid={fieldState.invalid} />
+                <InputSandi {...field} id="akun-sandi" autoComplete="new-password" aria-invalid={fieldState.invalid} />
                 <FieldDescription>Minimal 8 karakter.</FieldDescription>
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
@@ -196,7 +197,7 @@ export function AksiBarisAkun({ id, nama, email, aktif, prodiId, prodi }: {
           </DialogHeader>
           <Field>
             <FieldLabel htmlFor={`sandi-${id}`}>Kata sandi baru</FieldLabel>
-            <Input id={`sandi-${id}`} type="password" autoComplete="new-password" value={sandi} onChange={(e) => setSandi(e.target.value)} />
+            <InputSandi id={`sandi-${id}`} autoComplete="new-password" value={sandi} onChange={(e) => setSandi(e.target.value)} />
             <FieldDescription>Minimal 8 karakter.</FieldDescription>
           </Field>
           <DialogFooter>

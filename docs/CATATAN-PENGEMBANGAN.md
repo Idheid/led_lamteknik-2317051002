@@ -1506,3 +1506,19 @@ Semua keputusan diambil dari **isi berkas**; metadata Word/PDF dan nama berkas t
 | `npm run test:unit` | 153/153 lulus |
 | `npm run test:integrasi` | 87/87 lulus |
 | `npm run build` | Lulus |
+
+
+### Perbaikan kecil: tombol mata di isian kata sandi (2 Nov 2026)
+
+- Komponen baru `src/components/input-sandi.tsx` (`InputSandi`): isian kata sandi dengan tombol mata untuk menampilkan
+  atau menyembunyikan isinya (`aria-label` dan `aria-pressed`).
+- Dipakai di halaman login, formulir admin pertama, Tambah akun (kata sandi awal), dan Atur ulang sandi. Halaman Ganti
+  sandi sudah punya tombol serupa sejak sebelumnya.
+- Diperiksa di browser: di Tambah akun, isian berubah dari `password` ke `text` setelah tombol diklik, dan labelnya
+  menjadi "Sembunyikan kata sandi".
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 153/153 lulus |
+| `npm run test:integrasi` | 87/87 lulus |
