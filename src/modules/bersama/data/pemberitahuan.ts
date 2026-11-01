@@ -6,7 +6,7 @@ import type { Pengguna } from "@/modules/bersama/akses";
  * alamat halaman modul itu (misalnya /led/...). Dipisah dari data review LED (31 Okt 2026).
  */
 
-export async function beritahu(userIds: (string | null | undefined)[], data: { proyekId: string; pesan: string; tautan: string }) {
+export async function beritahu(userIds: (string | null | undefined)[], data: { proyekId?: string | null; pesan: string; tautan: string }) {
   const id = [...new Set(userIds.filter((x): x is string => Boolean(x)))];
   if (id.length) await prisma.pemberitahuan.createMany({ data: id.map((userId) => ({ userId, ...data })) });
 }

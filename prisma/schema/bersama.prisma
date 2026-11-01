@@ -126,8 +126,36 @@ model Prodi {
   akreditasiBerlakuSampai DateTime?
   proyek      ProyekLED[]
   anggota     User[]       // akun Tim Prodi prodi ini (revisi 31 Okt 2026)
+  riwayatAkreditasi RiwayatAkreditasi[] // L1 (2 Nov 2026): sumber tanggal berakhir, peringkat, dan nomor SK
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+// L1 (2 Nov 2026): riwayat akreditasi prodi. Prodi.akreditasiBerlakuSampai serta identitas.peringkatAkreditasi dan
+// identitas.nomorSkAkreditasi diturunkan dari riwayat berlaku terbaru. proyekId = LED yang diajukan (tanpa relasi:
+// modul bersama tidak bergantung pada skema LED).
+model RiwayatAkreditasi {
+  id            String    @id @default(cuid())
+  prodiId       String
+  prodi         Prodi     @relation(fields: [prodiId], references: [id], onDelete: Cascade)
+  lembaga       String    @default("LAM Teknik")
+  peringkat     String
+  nomorSk       String?
+  tanggalSk     DateTime?
+  berlakuMulai  DateTime?
+  berlakuSampai DateTime?
+  proyekId      String?
+  berkasSkLokasi String?
+  berkasSkNama  String?
+  jenis         String    @default("hasil") // hasil (dicatat dari SK), koreksi (koreksi manual di Ubah prodi), awal (data prodi sebelumnya)
+  alasan        String?   // wajib untuk koreksi manual; alasan penolakan untuk usulan yang ditolak
+  status        String    @default("berlaku") // menunggu (dicatat Tim Prodi), berlaku, ditolak
+  dicatatOlehId String?
+  dikonfirmasiOlehId String?
+  dikonfirmasiPada DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([prodiId, status, createdAt])
 }
 
 // ----------------------------------------------------------------- Pengaturan LLM

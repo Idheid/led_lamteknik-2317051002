@@ -2,6 +2,7 @@ import { auth } from "@/modules/bersama/auth";
 import { prisma } from "@/modules/bersama/db";
 import { GalatAkses, GalatPengguna, pastikanAdmin, pastikanProdiSendiri, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
+import { terapkanRiwayatTerbaru } from "@/modules/bersama/data/akreditasi";
 import type { Peran } from "@/modules/bersama/peran";
 import {
   skemaAkun,
@@ -86,8 +87,41 @@ export async function simpanProdi(p: Pengguna, masukan: MasukanProdi, id?: strin
     identitas: data.identitas,
     akreditasiBerlakuSampai: keTanggal(data.akreditasiBerlakuSampai),
   };
-  const prodi = id ? await prisma.prodi.update({ where: { id }, data: isi }) : await prisma.prodi.create({ data: isi });
-  await catatAktivitas(p, id ? "ubah" : "buat", "prodi", prodi.id, { nama: prodi.nama, jenjang: prodi.jenjang });
+  // L1 (2 Nov 2026): data akreditasi diturunkan dari riwayat; perubahan langsung = riwayat "koreksi manual" beralasan
+  const akre = {
+    berlakuSampai: isi.akreditasiBerlakuSampai,
+    peringkat: data.identitas.peringkatAkreditasi ?? "",
+    nomorSk: data.identitas.nomorSkAkreditasi ?? null,
+    lembaga: data.identitas.lembagaAkreditasi || "LAM Teknik",
+  };
+  let jenisRiwayat: "awal" | "koreksi" | null = null;
+  if (id) {
+    const lama = await prisma.prodi.findUniqueOrThrow({ where: { id } });
+    const li = (lama.identitas ?? {}) as Record<string, string | undefined>;
+    const berubah = (lama.akreditasiBerlakuSampai?.getTime() ?? null) !== (akre.berlakuSampai?.getTime() ?? null)
+      || (li.peringkatAkreditasi ?? "") !== akre.peringkat || (li.nomorSkAkreditasi ?? null) !== akre.nomorSk;
+    if (berubah) {
+      if (!data.alasanKoreksi) {
+        throw new GalatPengguna("Data akreditasi diubah langsung. Isi alasan koreksi; perubahan dicatat di Riwayat akreditasi. Untuk SK baru, pakai Catat hasil akreditasi.");
+      }
+      jenisRiwayat = "koreksi";
+    }
+  } else if (akre.berlakuSampai || akre.peringkat || akre.nomorSk) {
+    jenisRiwayat = "awal";
+  }
+  const prodi = await prisma.$transaction(async (tx) => {
+    const x = id ? await tx.prodi.update({ where: { id }, data: isi }) : await tx.prodi.create({ data: isi });
+    if (jenisRiwayat) {
+      await tx.riwayatAkreditasi.create({
+        data: { prodiId: x.id, ...akre, jenis: jenisRiwayat, alasan: jenisRiwayat === "koreksi" ? data.alasanKoreksi : null, dicatatOlehId: p.id },
+      });
+      await terapkanRiwayatTerbaru(tx, x.id);
+    }
+    return x;
+  });
+  await catatAktivitas(p, id ? "ubah" : "buat", "prodi", prodi.id, {
+    nama: prodi.nama, jenjang: prodi.jenjang, ...(jenisRiwayat === "koreksi" ? { koreksiAkreditasi: data.alasanKoreksi } : {}),
+  });
   return prodi;
 }
 
@@ -95,7 +129,10 @@ export async function simpanProdi(p: Pengguna, masukan: MasukanProdi, id?: strin
 export async function simpanIdentitasProdi(p: Pengguna, prodiId: string, identitas: unknown) {
   pastikanProdiSendiri(p, prodiId);
   const data = skemaIdentitasProdi.parse(identitas);
-  const prodi = await prisma.prodi.update({ where: { id: prodiId }, data: { identitas: data } });
+  // L1: peringkat, nomor SK, dan lembaga akreditasi diturunkan dari riwayat akreditasi, tidak diubah di sini
+  const lama = (await prisma.prodi.findUniqueOrThrow({ where: { id: prodiId } })).identitas as Record<string, unknown> | null;
+  const tetap = { peringkatAkreditasi: lama?.peringkatAkreditasi, nomorSkAkreditasi: lama?.nomorSkAkreditasi, lembagaAkreditasi: lama?.lembagaAkreditasi };
+  const prodi = await prisma.prodi.update({ where: { id: prodiId }, data: { identitas: JSON.parse(JSON.stringify({ ...data, ...tetap })) } });
   await catatAktivitas(p, "ubah_identitas", "prodi", prodi.id, { nama: prodi.nama });
   return prodi;
 }

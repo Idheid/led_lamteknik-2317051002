@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/modules/bersama/aksi";
 import * as org from "@/modules/bersama/data/organisasi";
+import * as akreditasi from "@/modules/led/data/akreditasi";
 import type { IdentitasProdi, MasukanFakultas, MasukanProdi } from "@/modules/bersama/validasi";
 
 export async function aksiSimpanFakultas(masukan: MasukanFakultas) {
@@ -27,5 +28,19 @@ export async function aksiSimpanIdentitasProdi(prodiId: string, identitas: Parti
 export async function aksiHapusProdi(id: string) {
   const r = await jalankanAksi((p) => org.hapusProdi(p, id).then(() => null));
   revalidatePath("/led", "layout");
+  return r;
+}
+
+/** L1: konfirmasi atau tolak hasil akreditasi yang dicatat Tim Prodi. */
+export async function aksiKonfirmasiHasilAkreditasi(riwayatId: string) {
+  const r = await jalankanAksi((p) => akreditasi.konfirmasiHasilAkreditasi(p, riwayatId).then(() => null));
+  revalidatePath("/pengaturan/prodi", "layout");
+  revalidatePath("/led", "layout");
+  return r;
+}
+
+export async function aksiTolakHasilAkreditasi(riwayatId: string, alasan: string) {
+  const r = await jalankanAksi((p) => akreditasi.tolakHasilAkreditasi(p, riwayatId, alasan).then(() => null));
+  revalidatePath("/pengaturan/prodi", "layout");
   return r;
 }

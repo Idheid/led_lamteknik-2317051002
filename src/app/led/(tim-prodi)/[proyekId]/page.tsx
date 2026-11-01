@@ -37,6 +37,9 @@ import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
 import { prisma } from "@/modules/bersama/db";
 import { TombolSusunSeluruh } from "./tombol-susun-seluruh";
 import { KartuReview } from "@/modules/led/komponen/review/kartu-review";
+import { statusHasilAkreditasi } from "@/modules/led/data/akreditasi";
+import { Button } from "@/components/ui/button";
+import { Award } from "lucide-react";
 
 export const metadata: Metadata = { title: "Beranda" };
 
@@ -63,6 +66,8 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
     prisma.tugasGenerate.count({ where: { proyekId, status: { in: STATUS_TUGAS_AKTIF } } }),
     modelAiAktif(),
   ]);
+  // L1 (2 Nov 2026): catat hasil akreditasi setelah LED Layak diajukan atau diekspor final
+  const hasil = await statusHasilAkreditasi(p, proyek);
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
   const usulan = usulanHalamanKriteria(bagianAnggaran, butir, pengaturan);
@@ -104,6 +109,23 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           "Buka kriteria di tabel di bawah, isi Bahan dari prodi (fakta untuk AI), lalu klik Generate kriteria.",
         ]}
       />
+      {(hasil.boleh || hasil.catatan) && (
+        <Alert>
+          <Award aria-hidden />
+          <AlertTitle>Hasil akreditasi</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            {hasil.catatan?.status === "menunggu" && <p>Hasil akreditasi ({hasil.catatan.peringkat}) sudah dicatat dan menunggu konfirmasi Admin UPPS.</p>}
+            {hasil.catatan?.status === "berlaku" && <p>Hasil akreditasi tercatat: {hasil.catatan.peringkat}. LED ini diarsipkan; mulai LED periode berikutnya dari Menu LED.</p>}
+            {hasil.catatan?.status === "ditolak" && <p>Catatan sebelumnya ditolak Admin UPPS: {hasil.catatan.alasan}</p>}
+            {hasil.boleh && (
+              <>
+                <p>Setelah SK akreditasi keluar, catat hasilnya di sini. Tanggal berakhir akreditasi prodi diambil dari catatan ini.</p>
+                <Button asChild size="sm" className="w-fit"><Link href={`/led/${proyek.id}/hasil-akreditasi`}><Award aria-hidden />Catat hasil akreditasi</Link></Button>
+              </>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
       {!statusKunci.adaYangBisaDipakai && !pakaiPenyediaUji() && (
         <Alert variant="destructive">
           <KeyRound aria-hidden />

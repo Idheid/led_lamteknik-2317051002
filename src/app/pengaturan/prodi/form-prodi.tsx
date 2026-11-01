@@ -105,11 +105,24 @@ export function FormProdi({ id, awal }: { id?: string; awal: MasukanProdi }) {
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="akreditasiBerlakuSampai">Akreditasi berlaku sampai</FieldLabel>
                   <Input {...field} value={field.value ?? ""} id="akreditasiBerlakuSampai" type="date" className="w-fit" aria-invalid={fieldState.invalid} />
-                  <FieldDescription>Daftar prodi diurutkan menurut tanggal ini, sehingga prodi yang harus menyusun LED berikutnya tampil paling atas.</FieldDescription>
+                  <FieldDescription>Diambil dari Riwayat akreditasi. Mengubahnya di sini dicatat sebagai koreksi manual (isi alasannya).</FieldDescription>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
+            {id && (
+              <Controller
+                name="alasanKoreksi"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="alasanKoreksi">Alasan koreksi data akreditasi</FieldLabel>
+                    <Input {...field} value={field.value ?? ""} id="alasanKoreksi" placeholder="Wajib bila tanggal, peringkat, atau nomor SK akreditasi diubah" />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+            )}
             <Controller
               name="identitas.alamat"
               control={form.control}

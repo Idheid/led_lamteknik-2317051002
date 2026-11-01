@@ -57,6 +57,8 @@ export const skemaProdi = z.object({
   jenjang: z.enum(KODE_JENJANG, { message: "Pilih jenjang." }),
   kodePddikti: teksOpsional(20),
   identitas: skemaIdentitasProdi,
+  /** L1: wajib bila tanggal berakhir, peringkat, atau nomor SK akreditasi diubah langsung (koreksi manual) */
+  alasanKoreksi: teksOpsional(500),
 });
 export type MasukanProdi = z.input<typeof skemaProdi>;
 
@@ -105,3 +107,18 @@ export const skemaLogin = z.object({
 export function pesanGalatZod(e: z.ZodError): string {
   return e.issues.map((i) => i.message).filter((m, idx, arr) => arr.indexOf(m) === idx).join(" ");
 }
+
+/** L1 (2 Nov 2026): hasil akreditasi dari SK. Tanggal YYYY-MM-DD. */
+const tanggalWajib = (label: string) => z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, `Isi ${label}.`);
+export const skemaHasilAkreditasi = z.object({
+  prodiId: z.string().min(1),
+  proyekId: z.string().trim().nullish().transform((v) => v || null),
+  lembaga: z.string().trim().max(120).default("LAM Teknik"),
+  peringkat: teksWajib("Peringkat", 80),
+  nomorSk: teksOpsional(),
+  tanggalSk: tanggalOpsional,
+  berlakuMulai: tanggalOpsional,
+  berlakuSampai: tanggalWajib("tanggal berlaku sampai"),
+}).refine((x) => !x.berlakuMulai || x.berlakuMulai < x.berlakuSampai, { message: "Tanggal berlaku sampai harus sesudah tanggal mulai.", path: ["berlakuSampai"] });
+export type MasukanHasilAkreditasi = z.input<typeof skemaHasilAkreditasi>;
+

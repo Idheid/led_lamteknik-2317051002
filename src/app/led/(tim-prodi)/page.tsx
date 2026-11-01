@@ -83,7 +83,7 @@ export default async function HalamanLedProdi() {
               <li key={x.id}>
                 <Link href={`/led/${x.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-muted/60">
                   <span>{x.nama}</span>
-                  <span className="flex items-center gap-2"><Badge variant="secondary">{labelTsPengajuan(x.tsTahunMulai, x.tahunPengajuan)}</Badge><Badge variant="outline">Diarsipkan</Badge></span>
+                  <span className="flex items-center gap-2"><Badge variant="secondary">{labelTsPengajuan(x.tsTahunMulai, x.tahunPengajuan)}</Badge><Badge variant="outline">{x.labelArsip ?? "Diarsipkan"}</Badge></span>
                 </Link>
               </li>
             ))}

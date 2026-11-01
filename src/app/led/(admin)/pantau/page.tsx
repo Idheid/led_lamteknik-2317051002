@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Award, Eye } from "lucide-react";
 import { wajibAdmin } from "@/modules/bersama/sesi";
 import { daftarProdi } from "@/modules/bersama/data/organisasi";
 import { daftarProyek } from "@/modules/led/data/proyek";
 import { daftarPenugasan } from "@/modules/led/data/review";
 import { kesiapanSemua } from "@/modules/led/data/kesiapan";
+import { syaratCatatHasil } from "@/modules/led/data/akreditasi";
 import { RingkasKesiapan } from "@/modules/led/komponen/kesiapan";
 import { ShellMenuLed } from "@/modules/led/komponen/shell-led";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
@@ -29,6 +30,9 @@ export default async function HalamanPantauLed() {
   const [prodi, proyek, { asesor }] = await Promise.all([daftarProdi(p), daftarProyek(p), daftarPenugasan(p)]);
   const aktif = proyek.filter((x) => !x.diarsipkanPada);
   const kesiapan = await kesiapanSemua(p, aktif.map((x) => x.id));
+  // L1: LED Layak diajukan atau sudah diekspor final bisa dicatat hasil akreditasinya
+  const bolehCatat = new Set<string>();
+  for (const l of aktif) if ((await syaratCatatHasil(l)).boleh) bolehCatat.add(l.id);
   const namaAsesor = new Map(asesor.map((a) => [a.id, a.name]));
   const baris = prodi.map((x) => ({ prodi: x, led: aktif.find((l) => l.prodiId === x.id) ?? null }));
   const jumlahLed = baris.filter((b) => b.led).length;
@@ -80,9 +84,16 @@ export default async function HalamanPantauLed() {
                           <>
                             <div>{led.nama}</div>
                             <div className="text-xs text-muted-foreground">{labelTsPengajuan(led.tsTahunMulai, led.tahunPengajuan)}</div>
-                            <Button asChild size="sm" variant="outline" className="mt-2">
-                              <Link href={`/led/asesor/${led.id}`}><Eye aria-hidden />Lihat</Link>
-                            </Button>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <Button asChild size="sm" variant="outline">
+                                <Link href={`/led/asesor/${led.id}`}><Eye aria-hidden />Lihat</Link>
+                              </Button>
+                              {bolehCatat.has(led.id) && (
+                                <Button asChild size="sm" variant="outline">
+                                  <Link href={`/pengaturan/prodi/${x.id}/akreditasi?led=${led.id}`}><Award aria-hidden />Catat hasil akreditasi</Link>
+                                </Button>
+                              )}
+                            </div>
                           </>
                         )
                         : <span className="text-muted-foreground">{x._count.anggota ? "Belum ada LED aktif" : "Belum ada akun Tim Prodi"}</span>}

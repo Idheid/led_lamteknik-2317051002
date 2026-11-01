@@ -11,6 +11,9 @@ import { skemaIdentitasProdi, type IdentitasProdi } from "@/modules/bersama/vali
 import { KOLOM_IDENTITAS } from "./form-prodi";
 import { aksiSimpanIdentitasProdi } from "./aksi";
 
+// L1 (2 Nov 2026): data akreditasi diturunkan dari riwayat akreditasi, tidak diketik di sini
+const DARI_RIWAYAT = new Set<string>(["peringkatAkreditasi", "nomorSkAkreditasi", "lembagaAkreditasi"]);
+
 /** Identitas pengusul diisi Tim Prodi untuk prodinya sendiri (revisi 31 Okt 2026, B4); nama dan jenjang milik Admin UPPS. */
 export function FormIdentitasProdi({ prodiId, awal }: { prodiId: string; awal: Partial<IdentitasProdi> }) {
   const { sibuk, jalankan } = useAksi();
@@ -27,7 +30,8 @@ export function FormIdentitasProdi({ prodiId, awal }: { prodiId: string; awal: P
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid} className={k.lebar ? "sm:col-span-2" : undefined}>
                 <FieldLabel htmlFor={k.name}>{k.label}</FieldLabel>
-                <Input {...field} value={field.value ?? ""} id={k.name} placeholder={k.contoh} aria-invalid={fieldState.invalid} />
+                <Input {...field} value={field.value ?? ""} id={k.name} placeholder={k.contoh} aria-invalid={fieldState.invalid} disabled={DARI_RIWAYAT.has(k.name)} />
+                {DARI_RIWAYAT.has(k.name) && <p className="text-xs text-muted-foreground">Diambil dari Riwayat akreditasi (dicatat lewat Catat hasil akreditasi).</p>}
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}

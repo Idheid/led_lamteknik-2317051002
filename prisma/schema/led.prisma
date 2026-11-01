@@ -181,6 +181,7 @@ model ProyekLED {
   anggaran    Json           // halaman per bagian dan pengaturan (salinan dari versi, bisa diubah)
   timPenyusun Json?          // untuk Tabel 2.1, 2.2 dan halaman identitas tim
   diarsipkanPada DateTime?   // proyek periode lama: tetap tersimpan sebagai rujukan, hanya baca
+  labelArsip     String?     // L1: "Diajukan 2026 · Terakreditasi Unggul" setelah hasil akreditasi dicatat
   // revisi 19 Okt 2026: satu LED = satu pengajuan akreditasi berlaku 5 tahun (periode tahunPengajuan s.d. +5)
   tahunPengajuan Int
   // revisi 22 Okt 2026: batas pengajuan dan jadwal kerja mundur (tanggal tonggak yang diubah PJ), status review asesor

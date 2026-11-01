@@ -1522,3 +1522,65 @@ Semua keputusan diambil dari **isi berkas**; metadata Word/PDF dan nama berkas t
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 153/153 lulus |
 | `npm run test:integrasi` | 87/87 lulus |
+
+## LED periode berikutnya (2 Nov 2026)
+
+Dari `docs/RENCANA-LED-PERIODE-BERIKUTNYA.md`, dikerjakan berurutan L1 sampai L6 di branch `revisi-31okt`, satu commit
+per butir.
+
+### L1: catat hasil akreditasi dan riwayat akreditasi prodi
+
+- Data:
+  - model `RiwayatAkreditasi` di `bersama.prisma` (lembaga, peringkat, nomor dan tanggal SK, berlaku mulai/sampai,
+    `proyekId`, berkas SK, jenis `hasil`/`koreksi`/`awal`, alasan, status `menunggu`/`berlaku`/`ditolak`, dicatat dan
+    dikonfirmasi oleh). `proyekId` sengaja tanpa relasi supaya skema bersama tidak bergantung pada LED;
+  - `ProyekLED.labelArsip`;
+  - migrasi `20261102120000_riwayat_akreditasi` membuat satu riwayat "awal" dari data prodi yang ada (16 prodi di
+    basis data pengembangan). Prodi bawaan baru juga langsung mendapat riwayat awal.
+- `terapkanRiwayatTerbaru` (`bersama/data/akreditasi.ts`) menurunkan `Prodi.akreditasiBerlakuSampai` dan
+  `identitas.peringkatAkreditasi`, `nomorSkAkreditasi`, `lembagaAkreditasi` dari riwayat berlaku terbaru.
+  - Ubah prodi (Admin): mengubah tanggal, peringkat, atau nomor SK dicatat sebagai riwayat "koreksi manual", dan alasan
+    wajib diisi (isian baru "Alasan koreksi data akreditasi").
+  - Tim Prodi tidak lagi bisa mengetik tiga isian itu di Identitas prodi; isiannya dinonaktifkan dengan keterangan.
+- Catat hasil akreditasi (`led/data/akreditasi.ts`):
+  - syarat: LED belum diarsipkan, Layak diajukan atau sudah diekspor final, dan belum ada catatan yang menunggu atau
+    berlaku;
+  - Admin UPPS mencatat langsung berlaku (boleh tanpa LED untuk SK dari luar sistem). Tim Prodi hanya dari LED
+    prodinya, dengan status menunggu, dan Admin diberi tahu lewat lonceng;
+  - Konfirmasi atau Tolak (alasan wajib) di halaman prodi, dan pencatat diberi tahu;
+  - setelah berlaku: data prodi diturunkan, LED yang diajukan diarsipkan berlabel "Diajukan {tahun} · {peringkat}",
+    dan Tim Prodi diberi tahu;
+  - semuanya dalam satu transaksi. Bila gagal di tengah (misalnya penyusunan masih berjalan), tidak ada riwayat yang
+    tercatat, LED tidak diarsipkan, dan PDF SK yang sempat disimpan dihapus.
+- Bantuan isi dari PDF SK:
+  - tanpa AI: `bacaSk` (`bersama/domain/akreditasi.ts`) mencari "berlaku sejak … sampai dengan …", "pada tanggal",
+    "Nomor:", dan peringkat. Tanggal Indonesia dan angka diubah ke YYYY-MM-DD; pola yang tidak dikenali tidak ditebak;
+  - "Baca dengan AI": perkiraan token dan model tampil dulu di dialog, angka ≥ 15 digit (misalnya NIP) disamarkan, dan
+    panggilan lewat `panggilTerstruktur` dicatat di LogPemakaian. Mode uji memakai pola yang sama;
+  - hasil keduanya hanya mengisi formulir dan ditandai "dari SK". Berkas tidak disimpan sebelum Simpan.
+- Halaman dan tombol:
+  - Beranda LED (Tim Prodi): kotak "Hasil akreditasi" dengan tombol Catat hasil akreditasi
+    (`/led/[proyekId]/hasil-akreditasi`) dan status catatan;
+  - Pantau LED (Admin): tombol Catat hasil akreditasi di LED yang memenuhi syarat;
+  - Program studi → prodi: kartu **Riwayat akreditasi** (periode, peringkat, SK dengan tautan PDF dan LED, jenis,
+    status, Konfirmasi/Tolak) dan tombol ke `/pengaturan/prodi/[id]/akreditasi`;
+  - daftar LED arsip menampilkan label arsip;
+  - rute `/api/akreditasi` (catat, multipart), `/api/akreditasi/sk` (pola, perkiraan, AI), dan
+    `/api/akreditasi/[id]/sk` (unduh SK).
+- `beritahu` kini menerima `proyekId` opsional (pemberitahuan tingkat prodi).
+- Uji:
+  - domain `bersama/domain/__tests__/akreditasi.test.ts` (2 uji, teks SK fiktif);
+  - integrasi `akreditasi.test.ts` (4 uji): riwayat awal dan koreksi beralasan; Tim Prodi menunggu lalu Admin
+    mengonfirmasi (data prodi, arsip berlabel, pemberitahuan, prodi lain ditolak); tolak; kegagalan di tengah tidak
+    mengarsipkan LED; Admin tanpa LED; baca SK pola dan AI uji tanpa menyimpan apa pun.
+- Uji browser (akun uji Admin UPPS):
+  - di Catat hasil akreditasi prodi Teknik Sipil, PDF SK fiktif dipilih lalu "Isi dari PDF SK" mengisi 5 isian
+    bertanda "dari SK" dan memilih LED uji Sipil;
+  - "Baca dengan AI" menampilkan "Perkiraan 566 token. Model: model uji pengembangan";
+  - halaman prodi menampilkan Riwayat akreditasi. Penyimpanan diuji di alur L6.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 155/155 lulus |
+| `npm run test:integrasi` | 91/91 lulus |

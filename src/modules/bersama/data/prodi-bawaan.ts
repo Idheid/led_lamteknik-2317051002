@@ -45,13 +45,16 @@ export async function isiProdiBawaan(berkas = BERKAS_PRODI_BAWAAN): Promise<{ di
   for (const x of data.prodi) {
     const ada = await prisma.prodi.findFirst({ where: { nama: { equals: x.nama, mode: "insensitive" }, jenjang: x.jenjang } });
     if (ada) continue;
+    const berlakuSampai = new Date(`${x.akreditasiBerlakuSampai}T00:00:00.000Z`);
     await prisma.prodi.create({
       data: {
         nama: x.nama,
         jenjang: x.jenjang,
         kodePddikti: null,
-        akreditasiBerlakuSampai: new Date(`${x.akreditasiBerlakuSampai}T00:00:00.000Z`),
+        akreditasiBerlakuSampai: berlakuSampai,
         identitas: { peringkatAkreditasi: x.peringkatAkreditasi },
+        // L1: riwayat akreditasi awal (sumber data akreditasi prodi)
+        riwayatAkreditasi: { create: { peringkat: x.peringkatAkreditasi, berlakuSampai, jenis: "awal" } },
       },
     });
     dibuat++;
