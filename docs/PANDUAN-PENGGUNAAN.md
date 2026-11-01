@@ -46,14 +46,19 @@ Admin UPPS menyiapkan semua yang dipakai bersama: akun, program studi, instrumen
 dan penugasan reviewer LPMPP, lalu memantau kesiapan akreditasi semua prodi. Admin tidak menyusun LED. Sidebar Admin
 UPPS:
 
-- **Bersama (LED & LKPS)**: Dashboard akreditasi, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
+- **Bersama (LED & LKPS)**: Dashboard akreditasi, Identitas institusi, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
   akun, Kunci API dan model AI.
 - **LED** (tombol LED): **Pantau LED prodi** (beranda LED: satu kartu per prodi berisi progres narasi, jadwal, status
   review, dan reviewer LPMPP; klik kartu untuk membaca LED prodi hanya baca, atau Penilaian, Tugaskan reviewer, Catat
   hasil), Basis Pengetahuan fakultas.
 - **LKPS** (tombol LKPS): Kelengkapan LKPS prodi.
 
-### 1. Program studi dan identitas fakultas
+### 1. Identitas institusi dan program studi
+
+Menu **Identitas institusi** (grup Bersama): nama perguruan tinggi, UPPS, status perguruan tinggi, alamat, kota, kode
+pos, telepon, dan SK pendirian perguruan tinggi. Diisi sekali oleh Admin UPPS dan dipakai LED (halaman muka, identitas
+pengusul) maupun LKPS (sheet Menu). SK pendirian PT tidak lagi diisi Tim Prodi di Identitas prodi.
+
 
 Menu **Program studi**. Identitas UPPS untuk sampul dan tabel identitas LED (Fakultas Teknik · Universitas Lampung ·
 Bandar Lampung) sudah terisi dan tampil sebagai satu baris; klik **Ubah** hanya bila nama atau alamat berubah. 16 prodi FT

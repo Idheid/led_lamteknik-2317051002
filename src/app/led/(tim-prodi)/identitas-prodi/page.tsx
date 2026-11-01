@@ -27,8 +27,8 @@ export default async function HalamanIdentitasProdi() {
       />
       <Petunjuk
         kunci="tim-identitas-prodi"
-        fungsi="Identitas pengusul dipakai di halaman identitas LED dan prompt penyusunan narasi. Nama prodi, jenjang, kode PDDikti, dan tanggal akreditasi diatur Admin UPPS."
-        langkah={["Lengkapi SK pendirian, SK pembukaan, akreditasi terakhir, alamat, dan kontak prodi, lalu simpan."]}
+        fungsi="Identitas pengusul dipakai di halaman identitas LED dan prompt penyusunan narasi. Nama prodi, jenjang, kode PDDikti, dan tanggal akreditasi diatur Admin UPPS; perguruan tinggi, UPPS, kota, dan SK pendirian PT diatur Admin di Identitas institusi."
+        langkah={["Lengkapi SK pembukaan, tahun pertama menerima mahasiswa, alamat, dan kontak prodi, lalu simpan. Akreditasi terakhir diambil dari riwayat akreditasi."]}
       />
       <Card>
         <CardContent>

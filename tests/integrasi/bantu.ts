@@ -48,7 +48,11 @@ export async function bisaLogin(email: string, password: string): Promise<boolea
   }
 }
 
-export const FAKULTAS_UJI = { nama: "Fakultas Teknik", perguruanTinggi: "Universitas Contoh", alamat: "Jl. Contoh No. 1", kota: "" };
+export const FAKULTAS_UJI = {
+  nama: "Fakultas Teknik", perguruanTinggi: "Universitas Contoh", alamat: "Jl. Contoh No. 1", kota: "",
+  // D7: SK pendirian PT milik identitas institusi
+  skPendirian: "SK Pendirian Uji 1", statusPt: "Perguruan Tinggi Negeri - Badan Layanan Umum" as const,
+};
 
 /** Identitas fakultas diisi Admin UPPS. */
 export async function siapkanFakultas(admin: Pengguna, fakultas = FAKULTAS_UJI): Promise<void> {

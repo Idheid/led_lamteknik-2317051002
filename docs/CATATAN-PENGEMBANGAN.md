@@ -2017,3 +2017,31 @@ Yang diperbaiki tampilannya:
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 166/166 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
+
+### D7: Identitas institusi (fitur bersama)
+
+Diskusi dengan Adrianne: siapa mengisi data sampul dan identitas. Pembagian disepakati: institusi (Admin, sekali,
+LED dan LKPS), prodi (Tim Prodi, LED dan LKPS), logo sampul (Admin, khusus LED, D8), halaman muka per LED (Tim Prodi,
+D9). Template LKPS LAM Teknik (sheet "Menu") ternyata memuat perguruan tinggi, UPPS, status PT, alamat, kota, kode pos,
+dan telepon, jadi teks identitas tetap fitur bersama.
+
+- Migrasi `20261102160000_identitas_institusi`: kolom `statusPt`, `kodePos`, `telepon`, `skPendirian`,
+  `tanggalSkPendirian`, `pejabatSkPendirian` di `Fakultas`; SK pendirian yang sudah diisi di identitas salah satu prodi
+  (terbaru diubah) disalin ke institusi. Dev DB: belum ada yang terisi.
+- `skemaFakultas`: kolom baru; `statusPt` memakai pilihan `STATUS_PT` (empat pilihan sheet Menu LKPS).
+- Halaman **Identitas institusi** `/pengaturan/institusi` (Admin, `ShellBersama`, menu Bersama, ikon `institusi`):
+  tiga kartu (Perguruan tinggi dan UPPS + status PT; Alamat dan kontak; SK pendirian PT).
+- Program studi: baris ringkas D6 kini tautan ke Identitas institusi (dialog D6 dan `form-fakultas.tsx` dihapus).
+- Identitas prodi: kolom SK pendirian PT dan kota kedudukan PT dihapus dari form (kuncinya tetap diterima skema untuk
+  data lama). Ekspor dan `dataKosongHalamanAwal`: SK pendirian dan kota dari institusi, identitas prodi lama sebagai
+  cadangan; telepon institusi menjadi cadangan telepon prodi.
+- Uji integrasi ekspor: `FAKULTAS_UJI` berisi SK pendirian dan status PT; Word memuat "SK Pendirian Uji 1".
+- Catatan lingkungan: setelah migrasi, server dev pengguna (port 3000) masih memegang Prisma client lama di
+  `globalThis` sehingga Simpan di halaman ini galat sampai server dev dan worker dijalankan ulang. Menghentikan proses
+  pengguna ditolak izin, jadi uji simpan di browser menunggu restart oleh pengguna.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 166/166 lulus |
+| `npm run test:integrasi` | 98/98 lulus |

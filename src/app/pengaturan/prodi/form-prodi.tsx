@@ -17,9 +17,7 @@ import { aksiSimpanProdi } from "./aksi";
 type KunciIdentitas = keyof MasukanProdi["identitas"];
 
 export const KOLOM_IDENTITAS: { name: KunciIdentitas; label: string; contoh?: string; lebar?: boolean }[] = [
-  { name: "skPendirian", label: "Nomor SK pendirian PT" },
-  { name: "tanggalSkPendirian", label: "Tanggal SK pendirian PT", contoh: "contoh: 23 September 1965" },
-  { name: "pejabatSkPendirian", label: "Pejabat penandatangan SK pendirian PT", contoh: "contoh: Presiden Republik Indonesia" },
+  // D7: SK pendirian PT dan kota kedudukan PT diisi sekali di Identitas institusi (Admin UPPS)
   { name: "skPembukaan", label: "Nomor SK pembukaan prodi" },
   { name: "tanggalSkPembukaan", label: "Tanggal SK pembukaan prodi" },
   { name: "pejabatSkPembukaan", label: "Pejabat penandatangan SK pembukaan prodi" },
@@ -28,7 +26,6 @@ export const KOLOM_IDENTITAS: { name: KunciIdentitas; label: string; contoh?: st
   { name: "nomorSkAkreditasi", label: "Nomor SK akreditasi" },
   { name: "lembagaAkreditasi", label: "Lembaga akreditasi", contoh: "contoh: BAN-PT atau LAM Teknik" },
   { name: "alamat", label: "Alamat prodi", lebar: true },
-  { name: "kota", label: "Kota kedudukan perguruan tinggi", contoh: "contoh: Bandar Lampung" },
   { name: "telepon", label: "Telepon" },
   { name: "email", label: "Email prodi" },
   { name: "laman", label: "Laman prodi", lebar: true },

@@ -33,7 +33,10 @@ export function subBelumSelesai(urutan: string[], selesai: Set<string>): string[
 export interface DataHalamanAwal {
   prodi: { nama: string; jenjang: string; kodePddikti: string | null };
   identitas: Record<string, string | undefined>;
-  fakultas: { nama: string; perguruanTinggi: string; alamat: string | null; kota: string | null } | null;
+  fakultas: {
+    nama: string; perguruanTinggi: string; alamat: string | null; kota: string | null;
+    skPendirian?: string | null; tanggalSkPendirian?: string | null;
+  } | null;
   jumlahTim: number;
 }
 
@@ -51,12 +54,13 @@ export function dataKosongHalamanAwal(d: DataHalamanAwal): DataKosong {
     muka: kosong([
       ['Nama fakultas', d.fakultas?.nama],
       ['Nama perguruan tinggi', d.fakultas?.perguruanTinggi],
-      ['Kota', i.kota || d.fakultas?.kota],
+      ['Kota', d.fakultas?.kota || i.kota],
     ]),
     identitas: kosong([
       ['Kode PDDikti', d.prodi.kodePddikti],
-      ['SK pendirian perguruan tinggi', i.skPendirian],
-      ['Tanggal SK pendirian', i.tanggalSkPendirian],
+      // D7: SK pendirian PT milik identitas institusi; identitas prodi lama sebagai cadangan
+      ['SK pendirian perguruan tinggi', d.fakultas?.skPendirian || i.skPendirian],
+      ['Tanggal SK pendirian', d.fakultas?.tanggalSkPendirian || i.tanggalSkPendirian],
       ['SK pembukaan prodi', i.skPembukaan],
       ['Tanggal SK pembukaan', i.tanggalSkPembukaan],
       ['Tahun pertama menerima mahasiswa', i.tahunPertamaMenerima],

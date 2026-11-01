@@ -115,6 +115,14 @@ model Fakultas {
   perguruanTinggi String
   alamat          String?
   kota            String?
+  // D7 (desain form 2, 2 Nov 2026): identitas institusi dipakai LED (identitas pengusul) dan LKPS (sheet Menu);
+  // SK pendirian PT pindah dari identitas tiap prodi supaya tidak diisi berulang
+  statusPt           String?
+  kodePos            String?
+  telepon            String?
+  skPendirian        String?
+  tanggalSkPendirian String?
+  pejabatSkPendirian String?
   updatedAt       DateTime @updatedAt
 }
 

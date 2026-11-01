@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { Landmark, Pencil, Plus } from "lucide-react";
 import { wajibAdmin } from "@/modules/bersama/sesi";
 import { ambilFakultas, daftarProdi } from "@/modules/bersama/data/organisasi";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { IdentitasUpps } from "./form-fakultas";
 import { TombolHapusProdi } from "./tombol-hapus";
 
 export const metadata: Metadata = { title: "Program studi" };
@@ -38,17 +37,17 @@ export default async function HalamanProdi() {
         langkah={[
           "Tambahkan program studi beserta jenjang, kode PDDikti, tanggal akreditasi berakhir, dan identitas pengusulnya.",
           "Pastikan instrumen jenjang prodi aktif (menu Instrumen) dan buat akun Tim Prodi (Kelola akun); Tim Prodi membuat LED prodinya.",
-          "Identitas UPPS di sampul LED (Fakultas Teknik, Universitas Lampung) sudah terisi; klik Ubah hanya bila perlu.",
+          "Perguruan tinggi, UPPS, alamat, dan SK pendirian PT diatur sekali di menu Identitas institusi.",
         ]}
       />
-      <IdentitasUpps
-        awal={{
-          nama: fakultas?.nama ?? "",
-          perguruanTinggi: fakultas?.perguruanTinggi ?? "",
-          alamat: fakultas?.alamat ?? "",
-          kota: fakultas?.kota ?? "",
-        }}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 text-sm">
+        <span className="flex min-w-0 items-center gap-2">
+          <Landmark className="size-4 shrink-0 text-primary" aria-hidden />
+          <span className="text-muted-foreground">Institusi:</span>
+          <span className="font-medium">{[fakultas?.nama, fakultas?.perguruanTinggi, fakultas?.kota].filter(Boolean).join(" · ") || "Belum diisi"}</span>
+        </span>
+        <Button asChild size="sm" variant="outline"><Link href="/pengaturan/institusi"><Pencil aria-hidden />Identitas institusi</Link></Button>
+      </div>
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">
           {prodi.length === 0 ? (

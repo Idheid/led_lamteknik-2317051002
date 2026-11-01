@@ -17,15 +17,36 @@ export const teksOpsional = (maks = 300) =>
     .nullish()
     .transform((v) => (v ? v : null));
 
-/** Identitas fakultas (pengganti UPPS, revisi 19 Okt 2026): diisi sekali oleh PJ. */
+/** Status perguruan tinggi sesuai pilihan sheet Menu LKPS LAM Teknik. */
+export const STATUS_PT = [
+  "Perguruan Tinggi Negeri - Satker",
+  "Perguruan Tinggi Negeri - Badan Layanan Umum",
+  "Perguruan Tinggi Negeri - Badan Hukum",
+  "Perguruan Tinggi Swasta",
+] as const;
+
+/**
+ * Identitas institusi (UPPS dan perguruan tinggi; revisi 19 Okt 2026, D7 2 Nov 2026): diisi sekali oleh Admin UPPS,
+ * dipakai identitas pengusul LED dan sheet Menu LKPS. SK pendirian PT di sini, bukan di identitas tiap prodi.
+ */
 export const skemaFakultas = z.object({
-  nama: teksWajib("Nama fakultas"),
+  nama: teksWajib("Nama UPPS"),
   perguruanTinggi: teksWajib("Nama perguruan tinggi"),
+  statusPt: z.enum(STATUS_PT).nullish().or(z.literal("")).transform((v) => (v ? v : null)),
   alamat: teksOpsional(500),
   kota: teksOpsional(80),
+  kodePos: teksOpsional(10),
+  telepon: teksOpsional(60),
+  skPendirian: teksOpsional(),
+  tanggalSkPendirian: teksOpsional(40),
+  pejabatSkPendirian: teksOpsional(160),
 });
 export type MasukanFakultas = z.input<typeof skemaFakultas>;
 
+/**
+ * Identitas pengusul satu prodi (Tim Prodi). D7: skPendirian, tanggalSkPendirian, pejabatSkPendirian, dan kota kini
+ * milik identitas institusi; kuncinya tetap diterima untuk data lama (dipakai sebagai cadangan saat ekspor).
+ */
 export const skemaIdentitasProdi = z.object({
   skPendirian: teksOpsional(),
   tanggalSkPendirian: teksOpsional(40),

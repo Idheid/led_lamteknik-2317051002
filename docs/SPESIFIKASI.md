@@ -128,7 +128,7 @@ langsung mengalihkan ke beranda peran. Tombol **LKPS | LED** di kepala halaman m
 **Bersama (LED & LKPS)** ditambah grup modul yang dibuka saja; di halaman bersama, grup modul terakhir yang dibuka
 (cookie `modul_terakhir`, bawaan LED).
 - Admin UPPS:
-  - Bersama: Dashboard akreditasi `/dashboard`, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
+  - Bersama: Dashboard akreditasi `/dashboard`, Identitas institusi `/pengaturan/institusi`, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
     akun, Kunci API dan model AI;
   - LED: Pantau LED prodi `/led/pantau` (beranda tombol LED), Basis Pengetahuan fakultas;
   - LKPS: Kelengkapan LKPS prodi (`/lkps`).
@@ -146,7 +146,8 @@ Membuka alamat milik peran lain diarahkan ke beranda peran.
 | --- | --- | --- |
 | Halaman awal `/` | Langsung ke beranda peran (Dashboard akreditasi, LED prodi, LED ditugaskan) | Semua |
 | Kelola akun | Tambah akun di halaman sendiri `/admin/akun/tambah` (Tim Prodi wajib memilih prodi; satu prodi boleh beberapa akun), kolom program studi; menu baris: Ubah nama, Ubah peran (sesi akun dicabut, tercatat di log; admin tidak bisa mengubah peran sendiri; minimal satu Admin UPPS aktif), pindah prodi, atur ulang sandi, nonaktifkan, hapus; status cadangan terakhir | Admin UPPS |
-| Program studi | Identitas UPPS untuk dokumen LED (satu baris ringkas, form di dialog Ubah), 16 prodi FT Unila (bisa ditambah), urut akreditasi berakhir, jumlah akun Tim Prodi; per prodi: Riwayat akreditasi (Konfirmasi/Tolak catatan Tim Prodi), Catat hasil akreditasi (isi dari PDF SK tanpa AI atau Baca dengan AI), alasan koreksi wajib bila data akreditasi diubah langsung | Admin UPPS |
+| Identitas institusi (`/pengaturan/institusi`) | Perguruan tinggi, UPPS, status PT (pilihan sheet Menu LKPS), alamat, kota, kode pos, telepon, SK pendirian PT (nomor, tanggal, pejabat); dipakai identitas pengusul LED dan sheet Menu LKPS | Admin UPPS |
+| Program studi | Baris ringkas institusi (tautan ke Identitas institusi), 16 prodi FT Unila (bisa ditambah), urut akreditasi berakhir, jumlah akun Tim Prodi; per prodi: Riwayat akreditasi (Konfirmasi/Tolak catatan Tim Prodi), Catat hasil akreditasi (isi dari PDF SK tanpa AI atau Baca dengan AI), alasan koreksi wajib bila data akreditasi diubah langsung | Admin UPPS |
 | Kunci API (tab Kunci, Model Gemini, Log) | Kunci utama fakultas dan kunci cadangan dalam satu halaman, model narasi/cadangan/embedding, pemakaian token | Admin UPPS |
 | Penugasan asesor | Satu asesor per LED | Admin UPPS |
 | Dashboard akreditasi (`/dashboard`, fitur bersama) | Tab Semua Prodi, Prioritas Re-akreditasi, Sudah Unggul, Dalam Review LPMPP; kolom program studi dan jenjang, lembaga dan peringkat (riwayat), masa berlaku dan hitung mundur, kelengkapan LKPS dan LED, simulasi asesor, status LPMPP, aksi (Detail, Review LPMPP, Catat hasil, Ingatkan). Detail prodi `/dashboard/prodi/[id]` (D5): ringkasan hanya baca lintas modul (akreditasi dan riwayat, LED, LKPS, review LPMPP, akun Tim Prodi) dengan tombol Buka LED, Buka data LKPS, Lihat penilaian, Catat hasil, Ubah data prodi. Isi Pantau LED lama: LED aktif semua prodi: kesiapan, jadwal, status review, asesor, tombol Lihat (hanya baca); Catat hasil akreditasi pada LED Layak diajukan/ekspor final; lencana Perlu LED baru dan tombol Ingatkan Tim Prodi; akun Tim Prodi dengan login terakhir, tanda Belum ada akun / Periksa akun, tautan Tambah akun dan Kelola akun per prodi | Admin UPPS |

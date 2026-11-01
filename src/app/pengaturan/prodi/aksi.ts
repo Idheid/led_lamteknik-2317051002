@@ -9,6 +9,7 @@ import type { IdentitasProdi, MasukanFakultas, MasukanProdi } from "@/modules/be
 export async function aksiSimpanFakultas(masukan: MasukanFakultas) {
   const r = await jalankanAksi((p) => org.simpanFakultas(p, masukan).then(() => null));
   revalidatePath("/led", "layout");
+  revalidatePath("/pengaturan", "layout");
   return r;
 }
 

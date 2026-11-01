@@ -196,6 +196,7 @@ test("F-22/F-23/F-24 berkas Word: instruksi, catatan, dan kotak isian hilang; da
   assert.ok(teks.includes("PROGRAM SARJANA TEKNIK CONTOH"));
   assert.ok(teks.includes("UNIVERSITAS CONTOH") && teks.includes("BANDAR LAMPUNG"));
   assert.ok(teks.includes("Perguruan Tinggi: Universitas Contoh"));
+  assert.ok(teks.includes("SK Pendirian Uji 1"), "D7: SK pendirian PT dari identitas institusi");
   assert.ok(teks.includes("Dr. Ani Lestari") && teks.includes("Citra Dewi"), "tim penyusun dan Tabel 2.1/2.2 terisi");
   assert.ok(teks.includes("Program studi menjalankan kebijakan secara terencana"));
   assert.ok(teks.includes("Tabel 2.3. Unit kerja UPPS"), "tabel bernomor per bab, setelah Tabel 2.1 dan 2.2 template");

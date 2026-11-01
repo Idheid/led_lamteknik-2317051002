@@ -28,6 +28,7 @@ export const MENU_BERSAMA_ADMIN: GrupNav = {
   label: LABEL_BERSAMA,
   item: [
     { judul: "Dashboard akreditasi", href: "/dashboard", ikon: "dasbor" },
+    { judul: "Identitas institusi", href: "/pengaturan/institusi", ikon: "institusi" },
     { judul: "Program studi", href: "/pengaturan/prodi", ikon: "prodi" },
     { judul: "Instrumen LAM Teknik", href: "/led/instrumen", ikon: "instrumen" },
     { judul: "Penugasan reviewer LPMPP", href: "/admin/penugasan", ikon: "review" },
