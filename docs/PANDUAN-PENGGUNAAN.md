@@ -5,9 +5,14 @@ Prodi**, dan **Asesor (reviewer)**. Satu instalasi website dipakai satu fakultas
 
 **Satu aplikasi LED dan LKPS LAM Teknik** (desain form 2, 2 Nov 2026). Setelah login, setiap peran langsung masuk ke
 berandanya: Admin UPPS ke **Dashboard akreditasi**, Tim Prodi ke **LED prodi**, reviewer LPMPP ke **LED ditugaskan**.
-Satu menu di sidebar berisi semua yang dikerjakan peran itu (LED, Data LKPS, pengaturan), tanpa memilih modul. Peran
-"Asesor" di aplikasi ini adalah **Reviewer LPMPP** (reviewer internal). Membuka alamat milik peran lain diarahkan ke
-beranda peran sendiri. Setiap halaman punya kotak **Petunjuk halaman ini** yang bisa
+
+- Tombol **LKPS | LED** di bagian atas halaman memindahkan antara fitur khusus LKPS dan fitur khusus LED.
+- Fitur yang sama untuk keduanya ada di grup sidebar **Bersama (LED & LKPS)** dan selalu tampil. Bila tidak ada modul
+  yang menyala di tombol atas, Anda sedang di halaman bersama, misalnya Dashboard.
+- Selama modul LKPS masih disiapkan, LKPS diunggah sekali sebagai berkas ke LED aktif prodi (menu Data LKPS, tombol
+  LKPS menyala) dan langsung dipakai LED.
+- Peran "Asesor" di aplikasi ini adalah **Reviewer LPMPP** (reviewer internal).
+- Membuka alamat milik peran lain diarahkan ke beranda peran sendiri. Setiap halaman punya kotak **Petunjuk halaman ini** yang bisa
 ditutup.
 
 **Pemasangan pertama**: selama website belum punya admin, halaman login menampilkan formulir **Buat akun admin
@@ -40,9 +45,10 @@ Admin UPPS menyiapkan semua yang dipakai bersama: akun, program studi, instrumen
 dan penugasan reviewer LPMPP, lalu memantau kesiapan akreditasi semua prodi. Admin tidak menyusun LED. Sidebar Admin
 UPPS:
 
-- **Pemantauan**: Dashboard akreditasi, Penugasan reviewer LPMPP.
-- **Penyusunan LED & LKPS**: Instrumen, Basis Pengetahuan fakultas.
-- **Pengaturan UPPS**: Program studi, Kelola akun, Kunci API dan model AI.
+- **Bersama (LED & LKPS)**: Dashboard akreditasi, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
+  akun, Kunci API dan model AI.
+- **LED** (tombol LED): Basis Pengetahuan fakultas.
+- **LKPS** (tombol LKPS): Kelengkapan LKPS prodi.
 
 ### 1. Program studi dan identitas fakultas
 
@@ -178,8 +184,8 @@ Prodi melihatnya di tab **Dokumen bersama fakultas** tanpa bisa mengubah.
 
 ## B. Tim Prodi
 
-Setelah login Tim Prodi langsung masuk ke **LED prodi**. Sidebar **Prodi saya** berisi **LED prodi**, **Data LKPS**, dan
-**Identitas prodi**. Data LKPS diunggah sekali (Excel template LKPS LAM Teknik 2025 atau PDF per tabel) ke LED aktif dan
+Setelah login Tim Prodi langsung masuk ke **LED prodi**. Sidebar: grup **Bersama** (Identitas prodi), grup **LED** (LED
+prodi), dan grup **LKPS** (Data LKPS), sesuai tombol LKPS | LED yang dipilih. Data LKPS diunggah sekali (Excel template LKPS LAM Teknik 2025 atau PDF per tabel) ke LED aktif dan
 dipakai langsung untuk menyusun LED; menu Data LKPS membuka halaman yang sama dengan menu Data LKPS di dalam LED.
 Klik LED: sidebar berganti menjadi menu **LED ini** (Beranda LED, Perkiraan nilai, Data LKPS, Basis Pengetahuan, Tim
 penyusun, Ekspor Word), kriteria C.1–C.7, dan bab lain. Semua akun Tim Prodi satu prodi melihat dan menyusun LED yang

@@ -124,14 +124,20 @@ Sidebar kiri (bisa diciutkan menjadi ikon; menjadi laci di layar kecil), area ke
 progres selalu terlihat. Bahasa Indonesia.
 
 Satu aplikasi LED dan LKPS LAM Teknik (desain form 2, 2 Nov 2026; menggantikan "Pilih modul" 31 Okt 2026): `/`
-langsung mengalihkan ke beranda peran, tanpa tombol pindah modul. Menu per peran:
+langsung mengalihkan ke beranda peran. Tombol **LKPS | LED** di kepala halaman memindahkan modul. Sidebar berisi grup
+**Bersama (LED & LKPS)** ditambah grup modul yang dibuka; di halaman bersama, grup LED dan LKPS tampil keduanya.
 - Admin UPPS:
-  - **Pemantauan**: Dashboard akreditasi `/dashboard`, Penugasan reviewer LPMPP;
-  - **Penyusunan LED & LKPS**: Instrumen, Basis Pengetahuan fakultas;
-  - **Pengaturan UPPS**: Program studi, Kelola akun, Kunci API dan model AI.
-- Tim Prodi, **Prodi saya**: LED prodi, Data LKPS (`/lkps` membuka Data LKPS LED aktif selama modul LKPS belum siap),
-  Identitas prodi; lalu menu LED ini.
-- Reviewer LPMPP (peran `ASESOR`): LED ditugaskan, lalu Penilaian dan Ringkasan review.
+  - Bersama: Dashboard akreditasi `/dashboard`, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
+    akun, Kunci API dan model AI;
+  - LED: Basis Pengetahuan fakultas;
+  - LKPS: Kelengkapan LKPS prodi (`/lkps`).
+- Tim Prodi:
+  - Bersama: Identitas prodi;
+  - LED: LED prodi (lalu menu LED ini);
+  - LKPS: Data LKPS (`/lkps` membuka Data LKPS LED aktif selama modul LKPS belum siap; tombol LKPS menyala).
+- Reviewer LPMPP (peran `ASESOR`):
+  - LED: LED ditugaskan, lalu Penilaian dan Ringkasan review;
+  - LKPS: Data LKPS (LED yang ditugaskan, ke Penilaian).
 
 Membuka alamat milik peran lain diarahkan ke beranda peran.
 

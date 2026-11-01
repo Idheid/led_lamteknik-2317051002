@@ -1895,3 +1895,47 @@ Dikerjakan D1 lalu D2, satu commit per butir.
 | `npm run test:unit` | 163/163 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
 | `npm run build` | Lulus (28 halaman statis) |
+
+
+### D3: tombol LKPS | LED kembali, fitur bersama di grup "Bersama"
+
+Permintaan Adrianne setelah D1: pengguna harus tetap bisa membedakan fitur LED dan fitur LKPS (termasuk modul LKPS Ghalib
+nanti), jadi tombol pindah modul di kepala halaman dikembalikan. Fitur yang sama atau harus selaras ditampilkan
+gabung.
+
+- `pindah-modul.tsx` dikembalikan:
+  - ikon kotak menuju beranda peran;
+  - LKPS menyala di `/lkps` dan di Data LKPS yang sementara ada di LED (`/led/{id}/lkps`);
+  - LED menyala di `/led/...`; halaman bersama tidak menyalakan modul ("Bersama: LED dan LKPS LAM Teknik").
+- `menuPeran(peran, konteks)` menggantikan `menuLuarModul` (`components/shell/menu-peran.ts`):
+  - grup **Bersama (LED & LKPS)**:
+    - Admin: Dashboard akreditasi, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola akun, Kunci
+      API dan model AI. Instrumen dipindah ke Bersama karena Matriks Penilaian dan tabel LKPS acuan dipakai LED dan
+      LKPS;
+    - Tim Prodi: Identitas prodi;
+  - grup **LED · Laporan Evaluasi Diri**: Admin Basis Pengetahuan fakultas, Tim Prodi LED prodi, reviewer LED
+    ditugaskan;
+  - grup **LKPS · Laporan Kinerja Prodi**: Admin Kelengkapan LKPS prodi, Tim Prodi dan reviewer Data LKPS;
+  - `ShellLed`, asesor = Bersama + LED; `ShellLkps` = Bersama + LKPS; `ShellBersama` (Dashboard, Program studi, Kelola
+    akun, Kunci API, Penugasan, Ganti sandi) = Bersama + LED + LKPS. Dashboard kini memakai `ShellBersama`.
+- `/lkps` menjadi beranda modul LKPS sementara per peran:
+  - Tim Prodi: ke Data LKPS LED aktif;
+  - Admin: tabel **Kelengkapan LKPS prodi** (data yang sama dengan kolom di Dashboard);
+  - reviewer: LED yang ditugaskan, menuju Penilaian.
+- Integrasi modul Ghalib nanti: menunya (`MENU_LKPS` di `modules/lkps/komponen/shell-lkps.tsx`) dimasukkan ke grup LKPS
+  di `menu-peran.ts`, dan `/lkps` diganti berandanya. Data LKPS di LED menjadi hanya baca dari modul LKPS lewat
+  `modules/lkps/index.ts`.
+- Dokumen: `CLAUDE.md`, `docs/PANDUAN-PENGGUNAAN.md` (pembuka, Admin, Tim Prodi), dan `docs/SPESIFIKASI.md` (menu per
+  peran).
+- Uji browser:
+  - Admin di Dashboard: tombol LKPS | LED tanpa modul menyala, sidebar Bersama + LED + LKPS;
+  - Admin di `/lkps`: LKPS menyala, sidebar Bersama + LKPS, tabel Kelengkapan LKPS 17 prodi;
+  - Admin di Basis Pengetahuan fakultas: LED menyala, sidebar Bersama + LED;
+  - Tim Prodi Sipil: di `/led` LED menyala (Bersama + LED); `/lkps` dialihkan ke Data LKPS LED aktif dan tombol LKPS
+    menyala ("Laporan Kinerja Program Studi").
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 163/163 lulus |
+| `npm run test:integrasi` | 98/98 lulus |

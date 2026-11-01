@@ -3,7 +3,7 @@ import type { Pengguna } from "@/modules/bersama/akses";
 import { ambilFakultas } from "@/modules/bersama/data/organisasi";
 import type { GrupNav } from "@/components/shell/nav-sidebar";
 import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
-import { menuLuarModul } from "@/components/shell/menu-peran";
+import { menuPeran } from "@/components/shell/menu-peran";
 
 /**
  * Menu LKPS (kerangka 31 Okt 2026). Ghalib menambah menu modul LKPS di sini, misalnya "Semua LKPS", "Impor Excel",
@@ -15,13 +15,13 @@ export const MENU_LKPS: GrupNav = {
 };
 
 /**
- * Tata letak modul LKPS. Desain form 2 (2 Nov 2026): menu yang sama dengan LED (satu aplikasi); menu modul LKPS Ghalib
- * ditambahkan di depan saat modulnya siap.
+ * Tata letak modul LKPS: grup Bersama (sama dengan LED) dan grup LKPS. Menu modul LKPS Ghalib (MENU_LKPS) dimasukkan ke
+ * grup LKPS di menu-peran.ts saat modulnya siap.
  */
 export async function ShellLkps({ pengguna, children }: { pengguna: Pengguna; children: ReactNode }) {
   const fakultas = await ambilFakultas();
   return (
-    <ShellAplikasi pengguna={pengguna} grup={menuLuarModul(pengguna.peran)} subjudul={fakultas?.nama ?? "Fakultas belum diisi"} beranda="/lkps">
+    <ShellAplikasi pengguna={pengguna} grup={menuPeran(pengguna.peran, "lkps")} subjudul={fakultas?.nama ?? "Fakultas belum diisi"} beranda="/lkps">
       {children}
     </ShellAplikasi>
   );

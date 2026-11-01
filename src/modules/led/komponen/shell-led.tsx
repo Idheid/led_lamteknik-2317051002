@@ -4,7 +4,7 @@ import { ambilFakultas, ambilProdi } from "@/modules/bersama/data/organisasi";
 import { bagianProyek, daftarProyek } from "@/modules/led/data/proyek";
 import type { GrupNav, StatusLencana } from "@/components/shell/nav-sidebar";
 import { ShellAplikasi } from "@/components/shell/shell-aplikasi";
-import { MENU_ADMIN, MENU_TIM_PRODI } from "@/components/shell/menu-peran";
+import { menuPeran } from "@/components/shell/menu-peran";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { PemilihLed } from "./pemilih-led";
 
@@ -33,7 +33,7 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
 
   if (pengguna.peran === "ADMIN") {
     return (
-      <ShellAplikasi pengguna={pengguna} grup={MENU_ADMIN} subjudul={`Admin UPPS · ${subjudul}`} beranda="/dashboard">
+      <ShellAplikasi pengguna={pengguna} grup={menuPeran("ADMIN", "led")} subjudul={`Admin UPPS · ${subjudul}`} beranda="/dashboard">
         {children}
       </ShellAplikasi>
     );
@@ -41,7 +41,7 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
   if (!data) {
     const prodi = pengguna.prodiId ? await ambilProdi(pengguna, pengguna.prodiId) : null;
     return (
-      <ShellAplikasi pengguna={pengguna} grup={[MENU_TIM_PRODI]} subjudul={prodi ? `${namaJenjang(prodi.jenjang)} ${prodi.nama}` : subjudul} beranda="/led">
+      <ShellAplikasi pengguna={pengguna} grup={menuPeran(pengguna.peran, "led")} subjudul={prodi ? `${namaJenjang(prodi.jenjang)} ${prodi.nama}` : subjudul} beranda="/led">
         {children}
       </ShellAplikasi>
     );

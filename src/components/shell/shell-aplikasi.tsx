@@ -11,6 +11,8 @@ import type { Pengguna } from "@/modules/bersama/akses";
 import { LABEL_PERAN } from "@/modules/bersama/peran";
 import { MenuPengguna } from "./menu-pengguna";
 import { NavSidebar, type GrupNav } from "./nav-sidebar";
+import { berandaLed } from "./menu-peran";
+import { PindahModul } from "./pindah-modul";
 import { Lonceng } from "./lonceng";
 
 interface Props {
@@ -27,9 +29,9 @@ interface Props {
 }
 
 /**
- * Tata letak dengan sidebar (bisa diciutkan menjadi ikon; menjadi laci di layar kecil). Kepala halaman berisi nama
- * aplikasi, lonceng (semua peran, termasuk pengingat akreditasi untuk Admin UPPS), dan menu pengguna. Desain form 2
- * (2 Nov 2026): LED dan LKPS satu aplikasi, jadi tidak ada lagi tombol pindah modul LKPS | LED.
+ * Tata letak dengan sidebar (bisa diciutkan menjadi ikon; menjadi laci di layar kecil). Kepala halaman berisi tombol
+ * pindah modul LKPS | LED, lonceng (semua peran, termasuk pengingat akreditasi untuk Admin UPPS), dan menu pengguna.
+ * Fitur bersama kedua modul ada di grup "Bersama" di sidebar (menu-peran.ts).
  */
 export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Teknik", subjudul, beranda, atasMenu, children }: Props) {
   const simpan = (await cookies()).get("sidebar_state")?.value;
@@ -64,7 +66,7 @@ export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Te
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
           <SidebarTrigger className="-ml-1" aria-label="Ciutkan atau buka sidebar" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
-          <span className="truncate text-sm text-muted-foreground">LED dan LKPS LAM Teknik</span>
+          <PindahModul hrefLed={berandaLed(pengguna.peran)} />
           <span className="ml-auto flex items-center gap-1">
             <Lonceng />
             <MenuPengguna nama={pengguna.nama} email={pengguna.email} peran={LABEL_PERAN[pengguna.peran]} />

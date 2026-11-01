@@ -4,7 +4,7 @@ import type { GrupNav } from "@/components/shell/nav-sidebar";
 import { GalatAkses } from "@/modules/bersama/akses";
 import { bagianProyek } from "@/modules/led/data/proyek";
 import { wajibPeran } from "@/modules/bersama/sesi";
-import { MENU_ADMIN, MENU_ASESOR } from "@/components/shell/menu-peran";
+import { menuPeran } from "@/components/shell/menu-peran";
 
 /**
  * Satu LED yang ditugaskan (revisi 22 Okt 2026): hanya baca, catatan revisi, dan penilaian akhir. Revisi 31 Okt 2026:
@@ -24,7 +24,7 @@ export default async function LayoutLedAsesor({ children, params }: LayoutProps<
   const dasar = `/led/asesor/${proyekId}`;
   const isi = data.bagian.filter((b) => b.jenis === "kriteria" || b.jenis === "bab" || b.jenis === "butir");
   const grup: GrupNav[] = [
-    ...(admin ? MENU_ADMIN : [MENU_ASESOR]),
+    ...menuPeran(p.peran, "led"),
     {
       label: admin ? "LED ini (hanya baca)" : "LED ini",
       item: [

@@ -9,7 +9,7 @@ import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MENU_ASESOR } from "./menu";
+import { menuPeran } from "./menu";
 
 export const metadata: Metadata = { title: "LED ditugaskan" };
 
@@ -20,7 +20,7 @@ export default async function HalamanAsesor() {
   const p = await wajibAsesor();
   const led = await ledAsesor(p);
   return (
-    <ShellAplikasi pengguna={p} grup={[MENU_ASESOR]} subjudul="Reviewer LPMPP" beranda="/led/asesor">
+    <ShellAplikasi pengguna={p} grup={menuPeran(p.peran, "led")} subjudul="Reviewer LPMPP" beranda="/led/asesor">
       <JudulHalaman judul="LED ditugaskan" />
       <Petunjuk
         kunci="asesor-beranda"
