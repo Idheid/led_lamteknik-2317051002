@@ -349,8 +349,9 @@ export function periksaBerkasInstrumen(m: MasukanPeriksa): HasilPeriksa {
       : `Berkas ini ${kenal.nama}${kenal.tahun && !kenal.nama.includes(String(kenal.tahun)) ? ` (instrumen ${kenal.tahun})` : ''} dan sudah ditandai usang.`;
     return tolak('berkas usang', alasan, `Gunakan ${jenis === 'template' ? 'Template LEDPS' : label} LAM Teknik ${y} dari lamteknik.or.id.`);
   }
-  if (d?.kode === 'struktur-lama' || d?.kode === 'jenjang-tidak-ada') {
-    return tolak(d.judul.toLowerCase(), d.pesan, d.langkah);
+  // struktur lama: bila Matriks sudah ada, lapis 2 di bawah yang menolak (pesannya menyebut kedua daftar kriteria)
+  if ((d?.kode === 'struktur-lama' && !m.pasangan) || d?.kode === 'jenjang-tidak-ada') {
+    return tolak(d.kode === 'struktur-lama' ? 'struktur LED lama' : 'jenjang tidak ada di template', d.pesan, d.langkah);
   }
   if (d?.kode === 'format-lain') info.push(`${d.pesan} ${d.langkah}`);
   if (kenal && kenal.tahun !== null && kenal.tahun !== y) {

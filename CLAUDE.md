@@ -38,7 +38,23 @@ di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revis
    per jenjang setiap ± 5 tahun** (Template LED .docx, Matriks Penilaian .pdf, Pedoman Penilaian .pdf + halaman tabel bobot):
    template diurai tanpa AI, tabel bobot dibaca tanpa AI, tabel matriks dibaca AI per kelompok kecil; hasil dicek Admin UPPS di
    halaman cek (PDF di samping tabel, usulan AI ditandai, pemeriksaan otomatis) lalu diaktifkan. Satu versi aktif per
-   jenjang; versi lama tetap tersimpan dan LED lama tetap memakai versinya.
+   jenjang; versi lama tetap tersimpan dan LED lama tetap memakai versinya. Perbaikan 2 Nov 2026
+   (`docs/PERBAIKAN-INSTRUMEN.md`):
+   - **Tahun instrumen** wajib diisi (2020 sampai tahun berjalan + 2, dan tidak lebih lama dari versi aktif jenjang itu).
+   - **Pemeriksaan berkas saat diunggah**, dari isi berkas saja (metadata dan nama berkas tidak dipakai):
+     - jenis berkas;
+     - tahun dan jenjang di teks Matriks/Pedoman harus sama dengan isian;
+     - kriteria Template LED harus sama dengan kriteria Matriks (template tidak memuat tahun);
+     - sidik jari SHA-256 berkas resmi/usang (`data/instrumen/sidik-jari.json` + tabel `SidikJariInstrumen` yang
+       dipelajari saat versi diaktifkan).
+     Berkas yang ditolak tidak disimpan dan tampil sebagai kotak di halaman versi. Tahun yang tidak tertulis di teks
+     atau skema lain wajib dicentang Admin. Tahun baru yang cocok tidak pernah ditolak.
+   - Template yang tidak terbaca mendapat **diagnosis** (rusak, bukan Template LED, struktur lama, format judul lain,
+     jenjang tidak ada), bukan galat umum.
+   - Format judul lain dipetakan Admin lewat **Pemetaan judul** (peran tiap gaya paragraf, tanpa AI). Ekstraksi dan
+     ekspor memakai pemetaan yang sama.
+   - **Usulan AI** untuk pemetaan bersifat opsional: hanya atas klik Admin setelah melihat perkiraan token, yang
+     dikirim hanya kerangka judul, dan hasilnya hanya mengisi usulan.
 2. **Tiga peran** (revisi 31 Okt 2026, Pak Tris; enum `Peran` = `ADMIN`, `TIM_PRODI`, `ASESOR`), semua lewat login:
    - **Admin UPPS**: Kelola akun (Admin UPPS, Tim Prodi beserta prodinya, Asesor), Program studi dan identitas
      fakultas, Instrumen, Basis Pengetahuan fakultas (unggah/hapus), Kunci API (kunci utama fakultas dan kunci
@@ -380,6 +396,21 @@ Dikerjakan dari `docs/RENCANA-REVISI-31OKT.md` (Tahap 0–9, branch `revisi-31ok
   potongan), uji cari dengan kueri generate (`kueriGenerate`).
 - Server dan cadangan: `Dockerfile`, `docker-compose.produksi.yml`, `Caddyfile`, `src/modules/bersama/proses/cadangan.ts` (antrean
   `cadangan-harian`, model `Cadangan`), `scripts/cadangan.ts`, `docs/PANDUAN-SERVER.md`.
+
+## Struktur kode (perbaikan instrumen 2 Nov 2026)
+
+- Pemeriksaan berkas: `led/domain/periksa-berkas-instrumen.ts` (logika murni tiga lapis), `led/instrumen/baca-berkas.ts`
+  (baca .docx/.pdf, SHA-256), `led/data/unggah-instrumen.ts` (`unggahBerkasInstrumen`, `periksaSebelumEkstraksi`,
+  `konfirmasiBerkasInstrumen`, `tandaiBerkasUsang`, belajar sidik jari saat `aktifkanVersiCek`). Kolom
+  `VersiInstrumen.tahunInstrumen`, `sidikJari`, `riwayatPeriksa`; model `SidikJariInstrumen`.
+- Diagnosis template: `led/domain/diagnosis-template.ts`.
+- Pemetaan judul: `PemetaanTemplate` dan `uraiTemplate(paragraf, pemetaan?)` di `led/domain/template-led.ts`;
+  `led/domain/pemetaan-template.ts` (tabel gaya, usulan awal, pratinjau); halaman `/led/instrumen/[versiId]/pemetaan`;
+  kolom `pemetaanTemplate`.
+- Usulan AI: `led/domain/usulan-struktur.ts` (kerangka, prompt, perkiraan token), worker `struktur-template`
+  (`led/proses/struktur-template.ts`), kolom `usulanStruktur`.
+- Fikstur: `tests/fikstur/instrumen/` (template resmi 2025, template LPMPP 2022, template format lain dari
+  `scripts/buat-fikstur-format-lain.ts`, Matriks Sarjana dan D3 2025, Pedoman 2025).
 
 ## Konvensi
 

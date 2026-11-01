@@ -85,14 +85,47 @@ Tim Prodi. Prodi yang masih punya LED atau akun Tim Prodi tidak bisa dihapus.
 Butir penilaian dan pertanyaan diambil dari berkas resmi LAM Teknik. LED baru otomatis memakai instrumen aktif jenjang
 prodinya.
 
-1. Menu **Instrumen** → **Instrumen baru**: pilih jenjang.
+1. Menu **Instrumen** → **Instrumen baru**: pilih jenjang dan isi **Tahun instrumen** (tahun yang tertulis di Matriks
+   Penilaian, misalnya 2025). Nama dan kode mengikuti jenjang dan tahun.
 2. Unggah **Template LED (.docx)**, **Matriks Penilaian (.pdf)**, dan **Pedoman Penilaian (.pdf)** beserta halaman tabel
-   bobot jenjang itu.
-3. **Mulai ekstraksi**: template dan tabel bobot dibaca tanpa AI, tabel matriks dibaca Gemini sedikit demi sedikit.
-   Bila kuota habis, ekstraksi tertunda dan dilanjutkan otomatis setelah kunci baru diisi.
+   bobot jenjang itu. Isi setiap berkas langsung diperiksa (lihat *Berkas yang benar* dan *Bila berkas ditolak* di
+   bawah). Di bawah nama berkas tampil apa yang terbaca, misalnya "Terbaca: tahun 2025 · Sarjana · 7 kriteria".
+3. Bila diminta, centang konfirmasi (misalnya "Saya sudah memastikan berkas ini instrumen tahun …" bila tahun tidak
+   tertulis di Matriks), lalu **Mulai ekstraksi**: template dan tabel bobot dibaca tanpa AI, tabel matriks dibaca
+   Gemini sedikit demi sedikit. Bila kuota habis, ekstraksi tertunda dan dilanjutkan otomatis setelah kunci baru diisi.
 4. **Periksa hasil ekstraksi**: PDF asli di kiri, butir di kanan; kolom bertanda **usulan AI** wajib diperiksa.
 5. Pemeriksaan otomatis harus lolos (total bobot 100, nomor berurutan, deskriptor skor 4, sub-bagian, instruksi).
-6. **Sudah dicek, aktifkan**. Instrumen lama tetap tersimpan; LED lama tetap memakai versinya.
+6. **Sudah dicek, aktifkan**. Instrumen lama tetap tersimpan; LED lama tetap memakai versinya. Berkas versi yang
+   diaktifkan dikenali sistem saat diunggah lagi. Di halaman versi lama, tombol **Tandai berkas usang** membuat
+   berkasnya ditolak bila diunggah lagi; berkas yang juga dipakai versi aktif tidak ditandai.
+
+**Berkas yang benar per jenjang** (unduh dari lamteknik.or.id, folder instrumen tahun itu):
+
+| Berkas | Isi yang diperiksa | Contoh berkas 2025 |
+| --- | --- | --- |
+| Template LED (.docx) | "LAPORAN EVALUASI DIRI" di halaman awal; kriteria sama dengan Matriks | *Template LEDPS LAM Teknik … (Seluruh Jenjang).docx*, berlaku untuk semua jenjang |
+| Matriks Penilaian (.pdf) | judul "MATRIKS PENILAIAN … PROGRAM {jenjang} IAPS-AV {tahun}" dan tabel No/Kriteria/Indikator/4–0 | *Matrik Penilaian LED dan LKPS {Jenjang} APS Akademik dan Vokasi Teknik 2025 ….pdf*, satu per jenjang |
+| Pedoman Penilaian (.pdf) | "PEDOMAN PENILAIAN" dan tahunnya | *Pedoman Penilaian Instrumen LAM Teknik 2025.pdf*, satu untuk semua jenjang |
+
+Template LED dari folder LPMPP ("Template Laporan Evaluasi Diri Program Studi APS … (LED Word).docx") adalah struktur
+lama (2022, 9 kriteria) dan selalu ditolak. Template PJJ atau Unggul Internasional untuk instrumen reguler harus
+dikonfirmasi lebih dulu.
+
+**Bila berkas ditolak**: kotak merah di halaman versi menjelaskan alasannya, apa yang terbaca dari isi berkas (jenis,
+tahun, jenjang, kriteria, berkas yang dikenali), dan langkah berikutnya. Berkas yang ditolak tidak disimpan.
+
+- *Jenis berkas salah*: unggah berkas di baris yang sesuai (misalnya Pedoman di baris Matriks).
+- *Tahun tidak sesuai*: periksa berkasnya, atau ubah **Tahun instrumen** di Identitas versi bila isiannya yang keliru.
+- *Jenjang tidak sesuai*: unggah Matriks jenjang instrumen ini, atau buat instrumen baru untuk jenjang Matriks itu.
+- *Kriteria template tidak cocok dengan Matriks*: template dan Matriks berasal dari tahun atau skema berbeda; ganti
+  salah satunya.
+- *Berkas usang / struktur LED lama*: pakai Template LEDPS LAM Teknik tahun itu dari lamteknik.or.id.
+- *Format judul tidak dikenali* (kotak kuning, berkas tetap disimpan): template baru yang judulnya berbeda dari template
+  yang dikenal. Buka **Pemetaan judul**, pilih peran setiap gaya paragraf (BAB, bagian Bab II, kriteria, judul
+  sub-bagian, instruksi, abaikan), lalu lihat pratinjau: jumlah kriteria harus sama dengan Matriks. Usulan awal sudah
+  diisi tanpa AI. Bila belum tepat, **Minta usulan AI** (memakai token): perkiraan token dan model tampil dulu, yang
+  dikirim hanya kerangka judul, dan hasilnya hanya mengisi usulan yang ditandai "usulan AI". Simpan pemetaan, lalu
+  lanjutkan ekstraksi dan periksa hasilnya di halaman Cek.
 
 ### 5. Basis Pengetahuan fakultas
 

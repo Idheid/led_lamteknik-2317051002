@@ -1456,3 +1456,53 @@ Semua keputusan diambil dari **isi berkas**; metadata Word/PDF dan nama berkas t
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 151/151 lulus |
 | `npm run test:integrasi` | 85/85 lulus |
+
+### I5: fikstur, uji, dan dokumen
+
+- Fikstur baru di `tests/fikstur/instrumen/`:
+  - `template-led-lama-2022.docx`: salinan template LPMPP Sarjana "APS Akademik dan Vokasi (LED Word)", SHA-256
+    `58e897fe…`, sama dengan daftar sidik jari;
+  - `matriks-d3-2025.pdf`: Matriks D3 2025 resmi dari folder lamteknik.or.id 01_Pasca;
+  - `template-format-lain.docx`: dibuat dengan `scripts/buat-fikstur-format-lain.ts` (lihat catatan I3 soal JSZip).
+    Tanggal di dalam zip dibuat tetap supaya berkasnya sama setiap kali dibuat, dan uji memastikan fikstur sama dengan
+    keluaran skrip.
+- Penyesuaian: template struktur lama yang diunggah sesudah Matriks kini ditolak lewat lapis 2 (ketidakcocokan
+  kriteria; pesannya menyebut kedua daftar dan "struktur LED lama"). Diagnosis "struktur LED lama" dipakai bila Matriks
+  belum ada. Judul penolakan "struktur LED lama" tidak lagi dikecilkan hurufnya.
+- Uji yang diminta dokumen dan letaknya:
+
+| Uji | Letak | Hasil |
+| --- | --- | --- |
+| Template 2025 resmi terbaca untuk semua jenjang, diagnosis cocok | `tests/unit/template-instrumen.test.ts` (I2) | Lulus (D3, S1, STr, S2, S3, PPI) |
+| LPMPP 2022 → struktur LED lama; ditolak lewat sidik jari usang, dan tanpa sidik jari lewat kriteria Matriks 2025 | `tests/unit/template-instrumen.test.ts`, `tests/integrasi/instrumen-fikstur.test.ts` | Lulus |
+| Matriks D3 di versi S1 → ditolak karena jenjang (Matriks D3 diterima di versi D3 dan cocok dengan template resmi) | `instrumen-fikstur.test.ts`, unit Matriks D3 | Lulus |
+| Pedoman diunggah sebagai Matriks → salah jenis | `periksa-berkas-instrumen.test.ts` (integrasi, I1) | Lulus |
+| Isian 2025, Matriks 2030 → ditolak; isian 2030, Matriks 2030, template cocok → diterima walau struktur belum dikenal | domain dan integrasi `periksa-berkas-instrumen.test.ts` (I1) | Lulus |
+| Template resmi 2025 untuk isian 2030 + Matriks 2030 berkriteria sama → diterima dengan info "sama dengan 2025" | domain dan integrasi I1 | Lulus |
+| Sesudah aktivasi sidik jari tersimpan dan berkas yang sama dikenali | `unggah-instrumen.test.ts` (I1) | Lulus |
+| `template-format-lain.docx` + pemetaan → struktur sama dengan resmi; ekspor Word menaruh narasi di judul yang benar | `instrumen-fikstur.test.ts`, unit I3 | Lulus |
+| Usulan AI dengan `LLM_NARASI=uji`: hanya mengisi usulan, tidak menyimpan sendiri, tidak berjalan tanpa klik | `usulan-struktur.test.ts` (I4) | Lulus |
+
+- Uji ekspor (`instrumen-fikstur.test.ts`):
+  - dua LED, masing-masing memakai versi bertemplate resmi dan versi bertemplate format lain + pemetaan, dengan narasi
+    bertanda di II.A-1, C.1-LB, C.3-KEB, dan C.6-SWOT;
+  - `bangunDocx` keduanya: sub-bagian Sarjana sama, tidak ada sub-bagian yang tidak ditemukan, dan daftar placeholder
+    sama (lebih dari 90);
+  - paragraf tepat di atas setiap narasi sama dengan berkas dari template resmi dan memuat judul sub-bagiannya.
+- Metadata berkas tidak dipakai di uji mana pun.
+- Dokumen:
+  - `CLAUDE.md` keputusan butir 1 (tahun instrumen, pemeriksaan berkas, diagnosis, pemetaan judul, usulan AI opsional)
+    dan bagian baru "Struktur kode (perbaikan instrumen 2 Nov 2026)";
+  - `docs/PANDUAN-PENGGUNAAN.md` A.4 Instrumen: Tahun instrumen, konfirmasi, Tandai berkas usang, tabel berkas yang
+    benar per jenjang, dan langkah bila berkas ditolak (termasuk Pemetaan judul dan Minta usulan AI).
+- Pemeriksaan akhir tambahan: `npm run build` lulus (25 halaman statis). Peringatan pelacakan berkas Turbopack untuk
+  `bersama/penyimpanan.ts` sudah ada sejak sebelum perbaikan ini.
+- Sisa uji browser di basis data pengembangan: versi draf `LAMTEKNIK-2025-S1-I1` (template format lain + pemetaan,
+  belum diekstrak). Akun uji yang sempat dibuat untuk I1 sudah dihapus, dan `public/_uji/` dihapus.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 153/153 lulus |
+| `npm run test:integrasi` | 87/87 lulus |
+| `npm run build` | Lulus |
