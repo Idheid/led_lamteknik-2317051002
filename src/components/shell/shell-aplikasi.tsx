@@ -11,7 +11,7 @@ import type { Pengguna } from "@/modules/bersama/akses";
 import { LABEL_PERAN } from "@/modules/bersama/peran";
 import { MenuPengguna } from "./menu-pengguna";
 import { NavSidebar, type GrupNav } from "./nav-sidebar";
-import { berandaLed } from "./menu-peran";
+import { berandaLed, type KonteksMenu } from "./menu-peran";
 import { PindahModul } from "./pindah-modul";
 import { Lonceng } from "./lonceng";
 
@@ -25,6 +25,8 @@ interface Props {
   beranda: string;
   /** Konten tambahan di atas menu (misalnya pemilih proyek). */
   atasMenu?: ReactNode;
+  /** Diisi halaman bersama: modul yang sidebarnya sedang tampil (tombol LKPS | LED menyala sesuai ini). */
+  modul?: KonteksMenu;
   children: ReactNode;
 }
 
@@ -33,7 +35,7 @@ interface Props {
  * pindah modul LKPS | LED, lonceng (semua peran, termasuk pengingat akreditasi untuk Admin UPPS), dan menu pengguna.
  * Fitur bersama kedua modul ada di grup "Bersama" di sidebar (menu-peran.ts).
  */
-export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Teknik", subjudul, beranda, atasMenu, children }: Props) {
+export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Teknik", subjudul, beranda, atasMenu, modul, children }: Props) {
   const simpan = (await cookies()).get("sidebar_state")?.value;
   return (
     <SidebarProvider defaultOpen={simpan !== "false"}>
@@ -66,7 +68,7 @@ export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Te
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
           <SidebarTrigger className="-ml-1" aria-label="Ciutkan atau buka sidebar" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
-          <PindahModul hrefLed={berandaLed(pengguna.peran)} />
+          <PindahModul hrefLed={berandaLed(pengguna.peran)} modulBersama={modul} />
           <span className="ml-auto flex items-center gap-1">
             <Lonceng />
             <MenuPengguna nama={pengguna.nama} email={pengguna.email} peran={LABEL_PERAN[pengguna.peran]} />

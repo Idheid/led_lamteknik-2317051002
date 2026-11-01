@@ -4,7 +4,7 @@ import { wajibTimProdi } from "@/modules/bersama/sesi";
 import { ambilProdi } from "@/modules/bersama/data/organisasi";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import type { IdentitasProdi } from "@/modules/bersama/validasi";
-import { ShellMenuLed } from "@/modules/led/komponen/shell-led";
+import { ShellBersama } from "@/components/shell/shell-bersama";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +20,7 @@ export default async function HalamanIdentitasProdi() {
   const prodi = await ambilProdi(p, p.prodiId);
   if (!prodi) redirect("/");
   return (
-    <ShellMenuLed pengguna={p}>
+    <ShellBersama pengguna={p}>
       <JudulHalaman
         judul="Identitas prodi"
         deskripsi={`${namaJenjang(prodi.jenjang)} ${prodi.nama}${prodi.kodePddikti ? ` · kode PDDikti ${prodi.kodePddikti}` : ""}${prodi.akreditasiBerlakuSampai ? ` · akreditasi s.d. ${fmtTanggal.format(prodi.akreditasiBerlakuSampai)}` : ""}`}
@@ -35,6 +35,6 @@ export default async function HalamanIdentitasProdi() {
           <FormIdentitasProdi prodiId={prodi.id} awal={(prodi.identitas ?? {}) as Partial<IdentitasProdi>} />
         </CardContent>
       </Card>
-    </ShellMenuLed>
+    </ShellBersama>
   );
 }

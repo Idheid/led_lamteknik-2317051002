@@ -125,11 +125,12 @@ progres selalu terlihat. Bahasa Indonesia.
 
 Satu aplikasi LED dan LKPS LAM Teknik (desain form 2, 2 Nov 2026; menggantikan "Pilih modul" 31 Okt 2026): `/`
 langsung mengalihkan ke beranda peran. Tombol **LKPS | LED** di kepala halaman memindahkan modul. Sidebar berisi grup
-**Bersama (LED & LKPS)** ditambah grup modul yang dibuka; di halaman bersama, grup LED dan LKPS tampil keduanya.
+**Bersama (LED & LKPS)** ditambah grup modul yang dibuka saja; di halaman bersama, grup modul terakhir yang dibuka
+(cookie `modul_terakhir`, bawaan LED).
 - Admin UPPS:
   - Bersama: Dashboard akreditasi `/dashboard`, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
     akun, Kunci API dan model AI;
-  - LED: Basis Pengetahuan fakultas;
+  - LED: Pantau LED prodi `/led/pantau` (beranda tombol LED), Basis Pengetahuan fakultas;
   - LKPS: Kelengkapan LKPS prodi (`/lkps`).
 - Tim Prodi:
   - Bersama: Identitas prodi;
@@ -148,8 +149,9 @@ Membuka alamat milik peran lain diarahkan ke beranda peran.
 | Program studi | Identitas fakultas, 16 prodi FT Unila (bisa ditambah), urut akreditasi berakhir, jumlah akun Tim Prodi; per prodi: Riwayat akreditasi (Konfirmasi/Tolak catatan Tim Prodi), Catat hasil akreditasi (isi dari PDF SK tanpa AI atau Baca dengan AI), alasan koreksi wajib bila data akreditasi diubah langsung | Admin UPPS |
 | Kunci API (tab Kunci, Model Gemini, Log) | Kunci utama fakultas dan kunci cadangan dalam satu halaman, model narasi/cadangan/embedding, pemakaian token | Admin UPPS |
 | Penugasan asesor | Satu asesor per LED | Admin UPPS |
-| Dashboard akreditasi (`/dashboard`; `/led/pantau` dialihkan) | Tab Semua Prodi, Prioritas Re-akreditasi, Sudah Unggul, Dalam Review LPMPP; kolom program studi dan jenjang, lembaga dan peringkat (riwayat), masa berlaku dan hitung mundur, kelengkapan LKPS dan LED, simulasi asesor, status LPMPP, aksi (Detail, Lihat LED, Catat hasil, Ingatkan). Isi Pantau LED lama: LED aktif semua prodi: kesiapan, jadwal, status review, asesor, tombol Lihat (hanya baca); Catat hasil akreditasi pada LED Layak diajukan/ekspor final; lencana Perlu LED baru dan tombol Ingatkan Tim Prodi; akun Tim Prodi dengan login terakhir, tanda Belum ada akun / Periksa akun, tautan Tambah akun dan Kelola akun per prodi | Admin UPPS |
+| Dashboard akreditasi (`/dashboard`, fitur bersama) | Tab Semua Prodi, Prioritas Re-akreditasi, Sudah Unggul, Dalam Review LPMPP; kolom program studi dan jenjang, lembaga dan peringkat (riwayat), masa berlaku dan hitung mundur, kelengkapan LKPS dan LED, simulasi asesor, status LPMPP, aksi (Detail, Lihat LED, Catat hasil, Ingatkan). Isi Pantau LED lama: LED aktif semua prodi: kesiapan, jadwal, status review, asesor, tombol Lihat (hanya baca); Catat hasil akreditasi pada LED Layak diajukan/ekspor final; lencana Perlu LED baru dan tombol Ingatkan Tim Prodi; akun Tim Prodi dengan login terakhir, tanda Belum ada akun / Periksa akun, tautan Tambah akun dan Kelola akun per prodi | Admin UPPS |
 | Instrumen | Instrumen per jenjang: unggah berkas, ekstraksi, periksa hasil, aktifkan | Admin UPPS |
+| Pantau LED prodi (`/led/pantau`, modul LED) | Kartu per prodi: progres narasi, jadwal, status review, catatan reviewer, reviewer LPMPP, status LPMPP; klik kartu membuka LED hanya baca; tombol Penilaian, Tugaskan reviewer, Catat hasil; daftar prodi tanpa LED aktif (Perlu LED baru, Detail prodi / Tambah akun Tim Prodi) | Admin UPPS |
 | Basis Pengetahuan fakultas | Dokumen bersama yang dipakai semua LED (kode sumber U); Tim Prodi melihatnya lewat tab di Basis Pengetahuan LED | Admin UPPS |
 | LED prodi | LED aktif (kartu) dan arsip prodi akun (dengan label "Diajukan {tahun} · {peringkat}"); kartu "Mulai LED periode berikutnya" bila syaratnya terpenuhi (≤ 18 bulan, Layak diajukan, ekspor final, atau hasil dicatat): tahun, TS, bahan yang disalin, konfirmasi; bila belum ada LED aktif, kartu "Mulai LED {prodi}": tahun pengajuan dan dua pilihan TS saja (TS bawaan dipilih ulang setiap tahun diganti), nama otomatis "LED {prodi} {tahun} (TS {tahun akademik})" yang bisa diubah di Pengaturan LED; `/led/baru` diarahkan ke `/led` | Tim Prodi |
 | Identitas prodi | SK pendirian/pembukaan, akreditasi, alamat, kontak (nama dan jenjang diatur Admin UPPS) | Tim Prodi |

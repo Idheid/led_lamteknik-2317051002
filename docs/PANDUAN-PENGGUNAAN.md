@@ -7,8 +7,9 @@ Prodi**, dan **Asesor (reviewer)**. Satu instalasi website dipakai satu fakultas
 berandanya: Admin UPPS ke **Dashboard akreditasi**, Tim Prodi ke **LED prodi**, reviewer LPMPP ke **LED ditugaskan**.
 
 - Tombol **LKPS | LED** di bagian atas halaman memindahkan antara fitur khusus LKPS dan fitur khusus LED.
-- Fitur yang sama untuk keduanya ada di grup sidebar **Bersama (LED & LKPS)** dan selalu tampil. Bila tidak ada modul
-  yang menyala di tombol atas, Anda sedang di halaman bersama, misalnya Dashboard.
+- Fitur yang sama untuk keduanya ada di grup sidebar **Bersama (LED & LKPS)** dan selalu tampil, disertai fitur modul
+  yang sedang dibuka saja (LED atau LKPS, tidak pernah keduanya). Saat membuka halaman bersama, misalnya Dashboard,
+  sidebar tetap menampilkan modul terakhir yang Anda pilih dan keterangan di atas berbunyi "Fitur bersama LED dan LKPS".
 - Selama modul LKPS masih disiapkan, LKPS diunggah sekali sebagai berkas ke LED aktif prodi (menu Data LKPS, tombol
   LKPS menyala) dan langsung dipakai LED.
 - Peran "Asesor" di aplikasi ini adalah **Reviewer LPMPP** (reviewer internal).
@@ -47,7 +48,9 @@ UPPS:
 
 - **Bersama (LED & LKPS)**: Dashboard akreditasi, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
   akun, Kunci API dan model AI.
-- **LED** (tombol LED): Basis Pengetahuan fakultas.
+- **LED** (tombol LED): **Pantau LED prodi** (beranda LED: satu kartu per prodi berisi progres narasi, jadwal, status
+  review, dan reviewer LPMPP; klik kartu untuk membaca LED prodi hanya baca, atau Penilaian, Tugaskan reviewer, Catat
+  hasil), Basis Pengetahuan fakultas.
 - **LKPS** (tombol LKPS): Kelengkapan LKPS prodi.
 
 ### 1. Program studi dan identitas fakultas
@@ -158,7 +161,7 @@ Prodi melihatnya di tab **Dokumen bersama fakultas** tanpa bisa mengubah.
 ### 6. Penugasan reviewer LPMPP dan Dashboard akreditasi
 
 - **Penugasan asesor**: pilih asesor di kolom **Asesor** setiap LED; satu LED satu asesor. Asesor langsung diberi tahu.
-- **Dashboard akreditasi** (`/dashboard`, menggantikan Pantau LED): matriks kinerja dan kesiapan semua prodi, urut
+- **Dashboard akreditasi** (`/dashboard`, fitur bersama; pemantauan khusus LED ada di **Pantau LED prodi**): matriks kinerja dan kesiapan semua prodi, urut
   akreditasi berakhir. Tab **Semua Prodi**, **Prioritas Re-akreditasi** (berakhir ≤ 18 bulan, sudah lewat, atau perlu
   LED baru), **Sudah Unggul**, dan **Dalam Review LPMPP**, masing-masing dengan jumlahnya. Kolom:
   - program studi dan jenjang (kode PDDikti, tanda Perlu LED baru dan status akun);

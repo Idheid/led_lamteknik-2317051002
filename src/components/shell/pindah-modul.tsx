@@ -1,20 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { LayoutGrid } from "lucide-react";
 import { cn } from "@/modules/bersama/utils";
+import { KUKI_MODUL, type KonteksMenu } from "./menu-peran";
 
 /**
  * Tombol pindah modul di kepala halaman: LKPS dan LED berpindah langsung; ikon kotak kembali ke beranda peran.
  * Desain form 2 (2 Nov 2026, atas permintaan Adrianne): tombol ini dipertahankan untuk fitur khusus tiap modul, sedangkan
  * fitur bersama ada di grup "Bersama" di sidebar. Modul aktif dibaca dari alamat halaman; Data LKPS yang sementara
- * diunggah ke LED (/led/{id}/lkps) dihitung sebagai LKPS. Halaman bersama (dashboard, pengaturan) tidak menandai modul.
+ * diunggah ke LED (/led/{id}/lkps) dihitung sebagai LKPS. D4: modul yang dibuka disimpan di cookie supaya halaman
+ * bersama (dashboard, pengaturan) tetap menampilkan sidebar modul itu; tombolnya menyala dengan tanda "bersama".
  */
-export function PindahModul({ hrefLed }: { hrefLed: string }) {
+export function PindahModul({ hrefLed, modulBersama }: { hrefLed: string; modulBersama?: KonteksMenu }) {
   const jalur = usePathname();
-  const aktif = jalur === "/lkps" || jalur.startsWith("/lkps/") || /^\/led\/[^/]+\/lkps(\/|$)/.test(jalur) ? "lkps"
+  const dariAlamat = jalur === "/lkps" || jalur.startsWith("/lkps/") || /^\/led\/[^/]+\/lkps(\/|$)/.test(jalur) ? "lkps"
     : jalur === "/led" || jalur.startsWith("/led/") ? "led" : null;
+  // halaman bersama di bawah /led (mis. Instrumen) mengikuti sidebar yang sedang tampil
+  const aktif = modulBersama ?? dariAlamat;
+  useEffect(() => {
+    if (aktif) document.cookie = `${KUKI_MODUL}=${aktif}; path=/; max-age=31536000; samesite=lax`;
+  }, [aktif]);
   const modul = [
     { kode: "lkps", label: "LKPS", judul: "Laporan Kinerja Program Studi", href: "/lkps" },
     { kode: "led", label: "LED", judul: "Laporan Evaluasi Diri", href: hrefLed },
@@ -46,7 +54,7 @@ export function PindahModul({ hrefLed }: { hrefLed: string }) {
         ))}
       </div>
       <span className="hidden truncate text-sm text-muted-foreground lg:inline">
-        {aktif === "lkps" ? "Laporan Kinerja Program Studi" : aktif === "led" ? "Laporan Evaluasi Diri" : "Bersama: LED dan LKPS LAM Teknik"}
+        {modulBersama ? "Fitur bersama LED dan LKPS" : aktif === "lkps" ? "Laporan Kinerja Program Studi" : aktif === "led" ? "Laporan Evaluasi Diri" : "LED dan LKPS LAM Teknik"}
       </span>
     </nav>
   );

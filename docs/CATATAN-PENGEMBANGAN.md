@@ -1939,3 +1939,36 @@ gabung.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 163/163 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
+
+### D4: Admin, LED dan LKPS tidak tercampur; Pantau LED prodi
+
+Permintaan Adrianne: di bagian Admin, LKPS hanya menampilkan fitur Bersama + LKPS dan LED hanya Bersama + LED; Admin juga
+bisa memantau LED setiap prodi di modul LED, bukan hanya dari tabel dashboard.
+
+- `menuPeran(peran, konteks)` kini hanya `"led" | "lkps"`: selalu Bersama + satu modul. Konteks "bersama" (ketiga
+  grup sekaligus) dihapus.
+- Halaman bersama (`ShellBersama`: Dashboard, Program studi, Instrumen, Penugasan, akun, Identitas prodi) memakai modul
+  terakhir yang dibuka. `PindahModul` menulis cookie `modul_terakhir` (setahun, `samesite=lax`) setiap modul aktif;
+  `ShellBersama` membacanya (`modulDariKuki`, bawaan LED) dan meneruskan `modul` ke `ShellAplikasi`, sehingga tombol
+  LKPS | LED menyala sesuai sidebar dengan keterangan "Fitur bersama LED dan LKPS".
+- Instrumen (`/led/instrumen`) dan Identitas prodi (`/led/identitas-prodi`) termasuk grup Bersama tetapi beralamat di
+  bawah `/led`; keduanya kini memakai `ShellBersama`, jadi membukanya dari LKPS tidak memindahkan ke LED.
+- **Pantau LED prodi** `/led/pantau` dihidupkan lagi (sebelumnya dialihkan ke `/dashboard`): kartu `KartuLed` per prodi
+  (sama dengan beranda LED Tim Prodi) dari `dataDashboard` + `kesiapanSemua`, ditambah reviewer, status LPMPP, tombol
+  Penilaian, Tugaskan reviewer, Catat hasil; prodi tanpa LED aktif di daftar terpisah. Klik kartu membuka
+  `/led/asesor/[id]` (hanya baca).
+- `berandaLed("ADMIN")` = `/led/pantau` (tombol LED); halaman awal `/` memakai `berandaPeran` (Admin tetap ke Dashboard).
+- Uji unit baru `tests/unit/menu-peran.test.ts` (3): grup tidak tercampur, beranda, cookie.
+- Uji browser (Admin uji.l.admin):
+  - cookie LKPS → Dashboard: sidebar Bersama + LKPS, tombol LKPS menyala;
+  - tombol LED → `/led/pantau`: Bersama + LED (Pantau LED prodi, Basis Pengetahuan), kartu Teknik Sipil dan Informatika;
+  - Program studi setelah itu: tetap Bersama + LED;
+  - klik kartu Teknik Sipil → LED hanya baca (Penilaian, Ringkasan, Narasi);
+  - dari `/lkps` klik Instrumen: tetap Bersama + LKPS.
+- Batasan: cookie ditulis setelah halaman modul selesai dimuat (hidrasi); bila belum, halaman bersama memakai LED.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 166/166 lulus |
+| `npm run test:integrasi` | 98/98 lulus |

@@ -95,7 +95,8 @@ di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revis
      - Selama modul LKPS Ghalib belum siap, LKPS diunggah sekali sebagai berkas ke LED aktif dan dipakai LED (menu Data
        LKPS Tim Prodi).
      - Peran `ASESOR` tampil sebagai **Reviewer LPMPP**.
-     - **Dashboard akreditasi** `/dashboard` menggantikan Pantau LED.
+     - **Dashboard akreditasi** `/dashboard` (bersama) memantau lintas modul; di modul LED Admin punya **Pantau LED
+       prodi** `/led/pantau` (kartu per prodi, buka LED hanya baca) sebagai beranda tombol LED.
      - Tim Prodi menekan **Mulai LED periode berikutnya**: LED lama diarsipkan (atau sudah diarsipkan karena hasilnya
        dicatat) dan LED baru dibuat dalam satu transaksi.
      - Bahan dari LED lama yang disalin bila dipilih: tim penyusun (periksa ulang), bahan dari prodi (per kode atau
@@ -232,10 +233,12 @@ Satu website dua modul (permintaan Adrianne 31 Okt 2026, mengikuti arahan Pak Tr
 basis data"). Bagian "Struktur kode" yang lebih lama di bawah adalah catatan per iterasi; jalurnya sudah diperbarui ke
 lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
 
-- **Alur pengguna** (desain form 2, 2 Nov 2026): login sekali → `/` mengalihkan ke beranda peran (`berandaLed`).
-  Tombol LKPS | LED (`src/components/shell/pindah-modul.tsx`) memindahkan modul. Sidebar `menuPeran(peran, konteks)` di
-  `src/components/shell/menu-peran.ts`: Bersama + LED (`ShellLed`), Bersama + LKPS (`ShellLkps`), atau ketiganya di
-  halaman bersama (`ShellBersama`, mis. Dashboard). Menu modul LKPS Ghalib dimasukkan ke grup LKPS saat siap.
+- **Alur pengguna** (desain form 2, 2 Nov 2026): login sekali → `/` mengalihkan ke beranda peran (`berandaPeran`;
+  tombol LED memakai `berandaLed`). Tombol LKPS | LED (`src/components/shell/pindah-modul.tsx`) memindahkan modul dan
+  menyimpan modul terakhir di cookie `modul_terakhir`. Sidebar `menuPeran(peran, "led" | "lkps")` di
+  `src/components/shell/menu-peran.ts` selalu Bersama + satu modul, tidak pernah tercampur: `ShellLed`, `ShellLkps`,
+  dan halaman bersama (`ShellBersama`: Dashboard, Program studi, Instrumen, akun, Identitas prodi) mengikuti cookie.
+  Menu modul LKPS Ghalib dimasukkan ke grup LKPS saat siap.
   Dashboard akreditasi: `src/app/dashboard/`, `led/data/dashboard.ts`, `led/domain/dashboard.ts`.
 - **Rute** (`src/app`): `/` (halaman awal), `/login`, `/akun`, `/admin/*` dan `/pengaturan/prodi` (Admin UPPS); LED di
   grup rute `src/app/led/(tim-prodi)/` dan `src/app/led/(admin)/` (lihat bagian revisi 31 Okt 2026); `/led/asesor/*` di

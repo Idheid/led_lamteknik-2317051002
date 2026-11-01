@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { wajibLogin } from "@/modules/bersama/sesi";
-import { berandaLed } from "@/components/shell/menu-peran";
+import { berandaPeran } from "@/components/shell/menu-peran";
 import { MenuPengguna } from "@/components/shell/menu-pengguna";
 import { LABEL_PERAN } from "@/modules/bersama/peran";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Akreditasi LAM Teknik" };
  */
 export default async function HalamanAwal() {
   const p = await wajibLogin();
-  if (p.peran !== "TIM_PRODI" || p.prodiId) redirect(berandaLed(p.peran));
+  if (p.peran !== "TIM_PRODI" || p.prodiId) redirect(berandaPeran(p.peran));
   // akun Tim Prodi tanpa prodi (data lama): jangan dialihkan ke /led yang mengembalikan ke sini
   return (
     <main className="mx-auto flex min-h-svh max-w-xl flex-col justify-center gap-4 p-6">

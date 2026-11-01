@@ -5,10 +5,18 @@ import type { GrupNav } from "./nav-sidebar";
  * Menu sidebar per peran (desain form 2, 2 Nov 2026, disesuaikan atas permintaan Adrianne): tombol LKPS | LED di kepala
  * halaman memindahkan antara fitur khusus LKPS dan khusus LED; fitur yang sama atau harus selaras untuk keduanya
  * (dashboard, program studi, akun, kunci API, instrumen, penugasan reviewer, identitas prodi) ada di grup "Bersama" yang
- * tampil di kedua modul. Di halaman bersama (mis. Dashboard), grup LED dan LKPS tampil sekaligus.
+ * tampil di kedua modul. D4: sidebar tidak pernah mencampur grup LED dan LKPS; di halaman bersama (mis. Dashboard) yang
+ * tampil adalah modul terakhir yang dibuka (cookie KUKI_MODUL, diisi tombol LKPS | LED).
  */
 
-export type KonteksMenu = "led" | "lkps" | "bersama";
+export type KonteksMenu = "led" | "lkps";
+
+/** Cookie modul terakhir yang dibuka; dibaca halaman bersama supaya sidebar tetap Bersama + modul itu. */
+export const KUKI_MODUL = "modul_terakhir";
+
+export function modulDariKuki(nilai: string | undefined): KonteksMenu {
+  return nilai === "lkps" ? "lkps" : "led";
+}
 
 const LABEL_BERSAMA = "Bersama (LED & LKPS)";
 const LABEL_LED = "LED · Laporan Evaluasi Diri";
@@ -30,7 +38,10 @@ export const MENU_BERSAMA_ADMIN: GrupNav = {
 
 export const MENU_LED_ADMIN: GrupNav = {
   label: LABEL_LED,
-  item: [{ judul: "Basis Pengetahuan fakultas", href: "/led/dokumen-bersama", ikon: "dokumen" }],
+  item: [
+    { judul: "Pantau LED prodi", href: "/led/pantau", ikon: "proyek" },
+    { judul: "Basis Pengetahuan fakultas", href: "/led/dokumen-bersama", ikon: "dokumen" },
+  ],
 };
 
 export const MENU_LKPS_ADMIN: GrupNav = {
@@ -73,15 +84,20 @@ function grupPeran(peran: Peran): { bersama: GrupNav | null; led: GrupNav; lkps:
   return { bersama: MENU_BERSAMA_TIM, led: MENU_LED_TIM, lkps: MENU_LKPS_TIM };
 }
 
-/** Sidebar menurut peran dan modul yang sedang dibuka: Bersama + LED, Bersama + LKPS, atau semuanya. */
+/** Sidebar menurut peran dan modul yang sedang dibuka: Bersama + LED atau Bersama + LKPS. */
 export function menuPeran(peran: Peran, konteks: KonteksMenu): GrupNav[] {
   const g = grupPeran(peran);
-  const modul = konteks === "led" ? [g.led] : konteks === "lkps" ? [g.lkps] : [g.led, g.lkps];
-  return g.bersama ? [g.bersama, ...modul] : modul;
+  const modul = konteks === "lkps" ? g.lkps : g.led;
+  return g.bersama ? [g.bersama, modul] : [modul];
 }
 
-/** Beranda LED menurut peran (tombol LED): Admin UPPS dashboard, reviewer LED yang ditugaskan, Tim Prodi LED prodinya. */
+/** Beranda LED menurut peran (tombol LED): Admin UPPS Pantau LED prodi, reviewer LED ditugaskan, Tim Prodi LED prodinya. */
 export function berandaLed(peran: Peran): string {
-  if (peran === "ADMIN") return "/dashboard";
+  if (peran === "ADMIN") return "/led/pantau";
   return peran === "ASESOR" ? "/led/asesor" : "/led";
+}
+
+/** Halaman awal setelah login: Admin UPPS ke Dashboard akreditasi (bersama), peran lain ke beranda LED. */
+export function berandaPeran(peran: Peran): string {
+  return peran === "ADMIN" ? "/dashboard" : berandaLed(peran);
 }
