@@ -211,7 +211,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   // jawaban penyusun
   const jawaban = await prisma.jawabanForm.findUnique({ where: { proyekId_subBagianKode: { proyekId, subBagianKode } } });
   const jawabanForm = jawaban?.isi.trim() ? samarkanTeks(jawaban.isi.trim()) : null;
-  if (jawabanForm) legenda.J = "Jawaban penyusun di formulir";
+  if (jawabanForm) legenda.J = "Bahan dari prodi";
 
   // LKPS aktif: metrik butir angka dan tabel terkait
   // revisi 31 Okt 2026: tabel gabungan semua berkas sumber (PDF per tabel), berkas terbaru menang

@@ -101,7 +101,7 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           "Pastikan status kunci API Gemini aktif; bila belum, hubungi Admin UPPS.",
           "Unggah LKPS di menu Data LKPS, lalu periksa tabel dan metrik hasil bacaan.",
           "Unggah dokumen pendukung di menu Basis Pengetahuan.",
-          "Buka kriteria di tabel di bawah, isi jawaban penyusun, lalu klik Generate kriteria.",
+          "Buka kriteria di tabel di bawah, isi Bahan dari prodi (fakta untuk AI), lalu klik Generate kriteria.",
         ]}
       />
       {!statusKunci.adaYangBisaDipakai && !pakaiPenyediaUji() && (

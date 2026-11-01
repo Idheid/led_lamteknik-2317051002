@@ -81,8 +81,8 @@ export default async function HalamanRingkasanKriteria({ params }: PageProps<"/l
         fungsi={`Ringkasan ${istilah}: setiap sub-bagian dikerjakan di halamannya sendiri, satu pertanyaan satu halaman.`}
         langkah={[
           "Klik Lanjutkan untuk membuka sub-bagian pertama yang belum selesai.",
-          "Di setiap halaman: baca instruksi template dan butir penilaian, periksa data LKPS, isi Jawaban penyusun, unggah dokumen pendukung, lalu Generate.",
-          "Pindah dengan tombol Sebelumnya dan Berikutnya; jawaban disimpan otomatis sebelum pindah.",
+          "Di setiap halaman: baca instruksi template dan butir penilaian, periksa data LKPS, isi Bahan dari prodi (fakta untuk AI, tidak ikut diekspor), unggah dokumen pendukung, lalu Generate.",
+          "Pindah dengan tombol Sebelumnya dan Berikutnya; bahan disimpan otomatis sebelum pindah.",
           `Atau klik Generate semua di halaman ini: urutannya indikator kinerja, latar belakang dan kebijakan, analisis faktor, lalu SWOT.`,
           `Setelah semua sub-bagian punya draf dan sudah diperiksa, klik Tandai selesai.`,
         ]}

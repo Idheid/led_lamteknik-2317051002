@@ -12,10 +12,11 @@ type Status = "tersimpan" | "berubah" | "menyimpan" | "gagal";
 const JEDA_SIMPAN_MS = 1200;
 
 /**
- * Jawaban penyusun (sumber "J" di prompt). Simpan otomatis; disimpan juga sebelum pindah halaman
+ * Bahan dari prodi untuk AI (perbaikan 1 Nov 2026, P3; dulu "Jawaban penyusun"): sumber "J" di prompt, tidak ikut
+ * diekspor (yang diekspor adalah Narasi). Simpan otomatis; disimpan juga sebelum pindah halaman
  * (Sebelumnya/Berikutnya) dan saat komponen dilepas; peringatan bila menutup tab sebelum tersimpan.
  */
-export function IsianJawaban({ proyekId, subBagianKode, awal }: { proyekId: string; subBagianKode: string; awal: string }) {
+export function IsianJawaban({ proyekId, subBagianKode, awal, contoh }: { proyekId: string; subBagianKode: string; awal: string; contoh?: string }) {
   const [isi, setIsi] = useState(awal);
   const [status, setStatus] = useState<Status>("tersimpan");
   const [pesan, setPesan] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export function IsianJawaban({ proyekId, subBagianKode, awal }: { proyekId: stri
   return (
     <Field>
       <div className="flex items-center justify-between gap-2">
-        <FieldLabel htmlFor={id}>Jawaban penyusun</FieldLabel>
+        <FieldLabel htmlFor={id}>Bahan dari prodi (untuk AI)</FieldLabel>
         <span className="flex items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
           {status === "menyimpan" && <><Loader2 className="size-3 animate-spin" aria-hidden />Menyimpan…</>}
           {status === "berubah" && "Belum tersimpan"}
@@ -99,9 +100,11 @@ export function IsianJawaban({ proyekId, subBagianKode, awal }: { proyekId: stri
         value={isi}
         onChange={(e) => ubah(e.target.value)}
         onBlur={() => void simpanSegera()}
-        placeholder="Jawab instruksi template di atas dengan fakta: angka, nama kegiatan, nomor dan tanggal dokumen. Sistem hanya memakai fakta yang Anda berikan atau yang ada di dokumen."
+        placeholder={contoh ?? "Contoh: fakta yang belum ada di dokumen: kegiatan, nomor dan tanggal SK, angka, rencana."}
       />
-      <FieldDescription>{pesan ?? "Disimpan otomatis, juga saat Anda pindah ke halaman lain. Menjadi sumber [J] saat narasi disusun."}</FieldDescription>
+      <FieldDescription>
+        {pesan ?? "Tulis fakta yang belum ada di dokumen: kegiatan, nomor dan tanggal SK, angka, rencana. AI memakainya saat menyusun narasi (sumber J). Isian ini tidak ikut diekspor; yang diekspor adalah Narasi. Disimpan otomatis."}
+      </FieldDescription>
     </Field>
   );
 }

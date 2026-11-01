@@ -143,7 +143,7 @@
     @apply text-justify;
   }
   .editor-narasi p[data-sumber]::after {
-    content: "Sumber: " attr(data-sumber);
+    content: "Sumber: " attr(data-sumber-label);
     @apply mt-0.5 block font-mono text-[0.7rem] leading-snug text-primary/70 select-none;
   }
   /* revisi 22 Okt 2026: verifikasi per kalimat */

@@ -1069,3 +1069,28 @@ pecahan bisa ditolak; kini memakai toleransi pembulatan dan diberi uji domain.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 123/123 lulus |
 | `npm run test:integrasi` | 75/75 lulus |
+
+### P3: "Jawaban penyusun" menjadi "Bahan dari prodi (untuk AI)"
+
+- Isian di halaman sub-bagian berlabel **"Bahan dari prodi (untuk AI)"** dengan keterangan: tulis fakta yang belum ada di
+  dokumen (kegiatan, nomor dan tanggal SK, angka, rencana); AI memakainya saat menyusun narasi (sumber J); isian tidak
+  ikut diekspor, yang diekspor adalah Narasi. Placeholder berisi contoh sesuai sub-bagian dari `contohBahanProdi`
+  (`src/modules/led/domain/bahan-prodi.ts`: per kriteria C.1–C.7, AF, SWOT, kata pengantar, Bab III, umum).
+- Kode sumber di bawah paragraf memakai atribut tampilan `data-sumber-label` (`labelKodeSumber`): "Sumber: J = Bahan dari
+  prodi, T-1". "Keterangan kode sumber" menulis J = "Bahan dari prodi" (juga untuk versi lama yang legendanya masih
+  "Jawaban penyusun di formulir"); legenda versi baru langsung "Bahan dari prodi".
+- Petunjuk Beranda LED dan ringkasan kriteria, pesan panel draf, dan penanda mode uji tidak lagi menyebut "jawaban
+  penyusun". Label blok di prompt LLM ("JAWABAN PENYUSUN [J]") tidak diubah karena bukan teks antarmuka dan dikunci uji
+  domain prompt.
+- Bagian P3 di `panel-draf.tsx` (legenda J), `[sub]/page.tsx` (prop `contoh`), dan `editor-narasi.tsx`
+  (`data-sumber-label`) ikut commit P4 karena berkas yang sama dirombak di P4; commit P3 memuat sisanya.
+- Uji domain baru `bahan-prodi.test.ts` (contoh per sub-bagian, label kode sumber).
+- Diperiksa di browser (LED uji Teknik Sipil, C.1-IKU-a): label, keterangan, dan contoh tampil; setelah bahan diisi dan
+  sub-bagian di-generate ulang (model uji), penanda paragraf berbunyi "Sumber: J = Bahan dari prodi, T-1" dan legenda
+  J = "Bahan dari prodi".
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 125/125 lulus |
+| `npm run test:integrasi` | 75/75 lulus |

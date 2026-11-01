@@ -33,7 +33,7 @@ function keluaran(pengguna: string) {
     {
       teks: sumber.length
         ? "[Mode uji] Pelaksanaan dipantau melalui *monitoring* dan evaluasi berkala, lalu hasilnya ditindaklanjuti dalam rapat program studi."
-        : "[Mode uji] [BELUM ADA BUKTI: dokumen pendukung atau jawaban penyusun untuk bagian ini]",
+        : "[Mode uji] [BELUM ADA BUKTI: dokumen pendukung atau bahan dari prodi untuk bagian ini]",
       sumber: kutip,
     },
   ];
