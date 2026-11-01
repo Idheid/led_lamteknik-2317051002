@@ -55,7 +55,8 @@ UPPS:
 
 ### 1. Program studi dan identitas fakultas
 
-Menu **Program studi**. Identitas fakultas (nama fakultas, perguruan tinggi, alamat, kota) diisi sekali. 16 prodi FT
+Menu **Program studi**. Identitas UPPS untuk sampul dan tabel identitas LED (Fakultas Teknik · Universitas Lampung ·
+Bandar Lampung) sudah terisi dan tampil sebagai satu baris; klik **Ubah** hanya bila nama atau alamat berubah. 16 prodi FT
 Unila sudah terisi beserta tanggal akreditasi berakhir dan peringkat terakhir; lengkapi **kode PDDikti**, dan tambah prodi
 bila perlu. Daftar diurutkan dari akreditasi yang paling dekat berakhir dan menampilkan kesiapan LED serta jumlah akun
 Tim Prodi. Prodi yang masih punya LED atau akun Tim Prodi tidak bisa dihapus.

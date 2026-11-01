@@ -12,9 +12,9 @@ import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FormFakultas } from "./form-fakultas";
+import { IdentitasUpps } from "./form-fakultas";
 import { TombolHapusProdi } from "./tombol-hapus";
 
 export const metadata: Metadata = { title: "Program studi" };
@@ -36,27 +36,19 @@ export default async function HalamanProdi() {
         kunci="pj-prodi"
         fungsi="Daftar prodi diurutkan menurut tanggal akreditasi berakhir, jadi prodi yang harus menyusun LED berikutnya tampil paling atas."
         langkah={[
-          "Isi identitas fakultas sekali (dipakai di halaman muka dan identitas semua LED).",
           "Tambahkan program studi beserta jenjang, kode PDDikti, tanggal akreditasi berakhir, dan identitas pengusulnya.",
           "Pastikan instrumen jenjang prodi aktif (menu Instrumen) dan buat akun Tim Prodi (Kelola akun); Tim Prodi membuat LED prodinya.",
+          "Identitas UPPS di sampul LED (Fakultas Teknik, Universitas Lampung) sudah terisi; klik Ubah hanya bila perlu.",
         ]}
       />
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Identitas fakultas</CardTitle>
-          <CardDescription>Pengganti UPPS: diisi sekali untuk satu instalasi website.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FormFakultas
-            awal={{
-              nama: fakultas?.nama ?? "",
-              perguruanTinggi: fakultas?.perguruanTinggi ?? "",
-              alamat: fakultas?.alamat ?? "",
-              kota: fakultas?.kota ?? "",
-            }}
-          />
-        </CardContent>
-      </Card>
+      <IdentitasUpps
+        awal={{
+          nama: fakultas?.nama ?? "",
+          perguruanTinggi: fakultas?.perguruanTinggi ?? "",
+          alamat: fakultas?.alamat ?? "",
+          kota: fakultas?.kota ?? "",
+        }}
+      />
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">
           {prodi.length === 0 ? (

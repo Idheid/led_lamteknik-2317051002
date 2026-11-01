@@ -1997,3 +1997,23 @@ ada sebagai peran Reviewer LPMPP; tidak dibuat modul audit atau peran baru. Dise
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 166/166 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
+
+### D6: Identitas fakultas di Program studi diringkas
+
+Pertanyaan Adrianne: kartu "Identitas fakultas" di Program studi untuk apa, karena LAM Teknik pasti Fakultas Teknik.
+Datanya tetap diperlukan: nama UPPS, perguruan tinggi, alamat, dan kota dicetak di halaman muka dan tabel identitas LED
+(`ekspor/isi-data.ts`, `domain/rangkaian.ts`) dan dipakai prompt narasi; nilainya sudah terisi bawaan (`prodi-bawaan.ts`).
+Yang diperbaiki tampilannya:
+
+- Kartu form besar diganti satu baris "Identitas di sampul LED: Fakultas Teknik · Universitas Lampung · Bandar Lampung"
+  dengan tombol **Ubah** yang membuka dialog form (`IdentitasUpps` di `form-fakultas.tsx`); dialog tertutup setelah
+  disimpan. Label "Nama fakultas" menjadi "Nama UPPS (fakultas)".
+- Petunjuk halaman: langkah "Isi identitas fakultas sekali" diganti catatan bahwa identitas sudah terisi.
+- Model `Fakultas` dan isinya tidak berubah.
+- Uji browser (Admin): baris ringkas tampil, dialog Ubah terbuka berisi nilai sekarang, Simpan menutup dialog.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 166/166 lulus |
+| `npm run test:integrasi` | 98/98 lulus |
