@@ -7,6 +7,9 @@ import { daftarProyek } from "@/modules/led/data/proyek";
 import { daftarPenugasan } from "@/modules/led/data/review";
 import { kesiapanSemua } from "@/modules/led/data/kesiapan";
 import { syaratCatatHasil } from "@/modules/led/data/akreditasi";
+import { statusPeriodeProdi } from "@/modules/bersama/data/pengingat-akreditasi";
+import { Badge } from "@/components/ui/badge";
+import { TombolIngatkan } from "./tombol-ingatkan";
 import { RingkasKesiapan } from "@/modules/led/komponen/kesiapan";
 import { ShellMenuLed } from "@/modules/led/komponen/shell-led";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
@@ -33,6 +36,8 @@ export default async function HalamanPantauLed() {
   // L1: LED Layak diajukan atau sudah diekspor final bisa dicatat hasil akreditasinya
   const bolehCatat = new Set<string>();
   for (const l of aktif) if ((await syaratCatatHasil(l)).boleh) bolehCatat.add(l.id);
+  // L2: prodi yang akreditasinya berakhir ≤ 18 bulan lagi tanpa LED aktif periode berikutnya
+  const periode = new Map((await statusPeriodeProdi()).map((s) => [s.prodiId, s]));
   const namaAsesor = new Map(asesor.map((a) => [a.id, a.name]));
   const baris = prodi.map((x) => ({ prodi: x, led: aktif.find((l) => l.prodiId === x.id) ?? null }));
   const jumlahLed = baris.filter((b) => b.led).length;
@@ -77,6 +82,12 @@ export default async function HalamanPantauLed() {
                       <div className="text-xs text-muted-foreground">
                         {x.akreditasiBerlakuSampai ? `Akreditasi s.d. ${fmtTanggal.format(x.akreditasiBerlakuSampai)}` : "Akreditasi berakhir belum diisi"}
                       </div>
+                      {periode.get(x.id)?.perluLedBaru && (
+                        <div className="mt-2 flex flex-col items-start gap-2">
+                          <Badge variant="outline" className="border-amber-400 text-amber-800 dark:text-amber-200">Perlu LED baru</Badge>
+                          {x._count.anggota > 0 && <TombolIngatkan prodiId={x.id} />}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="align-top text-sm">
                       {led

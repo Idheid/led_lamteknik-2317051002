@@ -1584,3 +1584,42 @@ per butir.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 155/155 lulus |
 | `npm run test:integrasi` | 91/91 lulus |
+
+
+### L2: pengingat otomatis
+
+- Fungsi murni di `bersama/domain/akreditasi.ts`:
+  - `ambangPengingat(berlakuSampai, hariIni)`: ambang terkecil yang sudah tercapai, yaitu hari ini ≥ tanggal berakhir
+    − 18/12/6 bulan. Akreditasi yang sudah lewat tetap ambang 6. Bila pekerjaan harian sempat mati, hanya ambang
+    terkini yang dikirim;
+  - `acuanPeriode`: tanggal SK, lalu tanggal mulai berlaku; untuk data awal prodi, lima tahun sebelum berakhir;
+  - `perluLedBaru`: ≤ 18 bulan dan tidak ada LED aktif yang dibuat sesudah acuan itu;
+  - `pesanPengingat`, misalnya "Akreditasi Sarjana Teknik Elektro berakhir 20 Agu 2030 (12 bulan lagi). Mulai LED
+    periode berikutnya."
+- Tabel `PengingatTerkirim { prodiId, berlakuSampai, ambang }` (unik), migrasi `20261102130000_pengingat_akreditasi`.
+  Karena tanggal berakhir ikut menjadi kunci, SK baru memulai siklus pengingat baru.
+- `bersama/data/pengingat-akreditasi.ts`:
+  - `statusPeriodeProdi`;
+  - `kirimPengingatAkreditasi(hariIni)`: lonceng ke semua akun Tim Prodi aktif (tautan `/led`) dan Admin UPPS (tautan
+    `/led/pantau`);
+  - `ingatkanTimProdi` (Admin, dicatat `ingatkan_tim_prodi`).
+  - Modul bersama membaca tabel LED lewat Prisma tanpa mengimpor kode LED, jadi uji batas modul tetap lulus.
+- Pekerjaan worker `pengingat-akreditasi` (antrean bersama) dijadwalkan setiap hari pukul 07.00 WIB
+  (`PENGINGAT_JADWAL` untuk mengubahnya, `missed: once` seperti cadangan harian). Untuk menjalankannya manual:
+  `npm run pengingat`.
+- Pantau LED: lencana **Perlu LED baru** dan tombol **Ingatkan Tim Prodi** (bila prodi punya akun Tim Prodi).
+- Uji:
+  - domain (tambahan di `akreditasi.test.ts`): batas tepat 18/12/6 bulan, sudah lewat, acuan periode, LED periode lalu
+    atau yang diarsipkan tidak dihitung, teks pesan;
+  - integrasi `pengingat-akreditasi.test.ts` (2 uji): empat prodi (12 bulan, > 18 bulan, sudah punya LED baru, 6 bulan
+    dengan LED lama), dikirim ke Tim Prodi dan Admin; hari berikutnya tidak dikirim ulang; ambang 6 bulan dikirim
+    sekali lagi; Ingatkan Tim Prodi hanya Admin.
+- Uji browser: Pantau LED di basis data pengembangan menandai empat prodi yang berakhir 20 Des 2027 dengan Perlu LED
+  baru. Teknik Sipil (berakhir 20 Des 2026) tidak ditandai karena sudah punya LED aktif. Pengiriman pengingat diuji di
+  alur L6.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 156/156 lulus |
+| `npm run test:integrasi` | 93/93 lulus |

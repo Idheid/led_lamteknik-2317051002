@@ -107,3 +107,64 @@ export function bacaSk(teksAsli: string): UsulanSk {
 export function samarkanAngkaPanjang(teks: string): string {
   return teks.replace(/\d[\d ]{13,}\d/g, (m) => (m.replace(/\D/g, '').length >= 15 ? '[disamarkan]' : m));
 }
+
+// ------------------------------------------------------------------ L2: pengingat LED periode berikutnya
+
+/** Ambang pengingat dalam bulan sebelum akreditasi berakhir; dikirim sekali per ambang. */
+export const AMBANG_PENGINGAT = [18, 12, 6] as const;
+export type Ambang = (typeof AMBANG_PENGINGAT)[number];
+
+/** Bulan kalender penuh dari hariIni sampai berakhir (negatif bila sudah lewat). */
+export function bulanSampai(berakhir: Date, hariIni: Date): number {
+  let n = (berakhir.getUTCFullYear() - hariIni.getUTCFullYear()) * 12 + (berakhir.getUTCMonth() - hariIni.getUTCMonth());
+  if (berakhir.getUTCDate() < hariIni.getUTCDate()) n -= 1;
+  return n;
+}
+
+/**
+ * Ambang terkecil yang sudah tercapai: ≤ 6 bulan → 6, ≤ 12 → 12, ≤ 18 → 18; lebih dari 18 bulan → null. Akreditasi yang
+ * sudah berakhir tetap 6 (paling mendesak). Bila pekerjaan harian sempat tidak berjalan, hanya ambang terkini yang dikirim.
+ */
+export function ambangPengingat(berlakuSampai: Date | null, hariIni: Date): Ambang | null {
+  if (!berlakuSampai) return null;
+  // tercapai bila hari ini sudah sampai di (tanggal berakhir − N bulan)
+  const batas = (a: number) => {
+    const d = new Date(berlakuSampai);
+    d.setUTCMonth(d.getUTCMonth() - a);
+    return d;
+  };
+  return [...AMBANG_PENGINGAT].reverse().find((a) => hariIni.getTime() >= batas(a).getTime()) ?? null;
+}
+
+/**
+ * Acuan awal periode akreditasi berjalan: tanggal SK, lalu tanggal mulai berlaku; bila keduanya tidak tercatat
+ * (data awal prodi), lima tahun sebelum akreditasi berakhir.
+ */
+export function acuanPeriode(r: { tanggalSk: Date | null; berlakuMulai: Date | null; berlakuSampai: Date | null }): Date | null {
+  if (r.tanggalSk) return r.tanggalSk;
+  if (r.berlakuMulai) return r.berlakuMulai;
+  if (!r.berlakuSampai) return null;
+  const d = new Date(r.berlakuSampai);
+  d.setUTCFullYear(d.getUTCFullYear() - 5);
+  return d;
+}
+
+/**
+ * Prodi perlu LED baru: akreditasi berakhir ≤ 18 bulan lagi dan belum ada LED aktif untuk periode berikutnya (LED aktif
+ * yang dibuat sesudah acuan periode berjalan, yaitu tanggal SK terakhir).
+ */
+export function perluLedBaru(
+  m: { berlakuSampai: Date | null; acuan: Date | null; led: { createdAt: Date; diarsipkanPada: Date | null }[] },
+  hariIni: Date,
+): boolean {
+  if (!ambangPengingat(m.berlakuSampai, hariIni)) return false;
+  return !m.led.some((l) => !l.diarsipkanPada && (!m.acuan || l.createdAt > m.acuan));
+}
+
+const fmtTanggal = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+export function pesanPengingat(namaProdi: string, berlakuSampai: Date, hariIni: Date): string {
+  const n = bulanSampai(berlakuSampai, hariIni);
+  const sisa = n < 0 ? 'sudah lewat' : n === 0 ? 'kurang dari sebulan lagi' : `${n} bulan lagi`;
+  return `Akreditasi ${namaProdi} berakhir ${fmtTanggal.format(berlakuSampai)} (${sisa}). Mulai LED periode berikutnya.`;
+}

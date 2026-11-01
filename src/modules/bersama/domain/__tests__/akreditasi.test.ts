@@ -45,3 +45,29 @@ test('L1: tanggal Indonesia, penyamaran angka panjang, riwayat terbaru, label ar
   assert.equal(riwayatBerlakuTerbaru([]), null);
   assert.equal(labelArsipLed(2026, 'Terakreditasi Unggul'), 'Diajukan 2026 · Terakreditasi Unggul');
 });
+
+test('L2: ambang pengingat 18/12/6 bulan dan perluLedBaru', async () => {
+  const { ambangPengingat, perluLedBaru, acuanPeriode, pesanPengingat } = await import('../akreditasi.ts');
+  const t = (s: string) => new Date(`${s}T00:00:00.000Z`);
+  const akhir = t('2030-08-20');
+  assert.equal(ambangPengingat(akhir, t('2028-08-19')), null, '24 bulan lagi');
+  assert.equal(ambangPengingat(akhir, t('2029-02-19')), null, '18 bulan + 1 hari');
+  assert.equal(ambangPengingat(akhir, t('2029-02-20')), 18);
+  assert.equal(ambangPengingat(akhir, t('2029-08-19')), 18, '12 bulan + 1 hari');
+  assert.equal(ambangPengingat(akhir, t('2029-08-20')), 12);
+  assert.equal(ambangPengingat(akhir, t('2030-02-20')), 6);
+  assert.equal(ambangPengingat(akhir, t('2031-01-01')), 6, 'sudah berakhir tetap paling mendesak');
+  assert.equal(ambangPengingat(null, t('2030-01-01')), null);
+
+  const acuan = acuanPeriode({ tanggalSk: null, berlakuMulai: null, berlakuSampai: akhir });
+  assert.equal(acuan?.toISOString().slice(0, 10), '2025-08-20', 'data awal: lima tahun sebelum berakhir');
+  assert.equal(acuanPeriode({ tanggalSk: t('2025-08-01'), berlakuMulai: t('2025-08-20'), berlakuSampai: akhir })?.toISOString().slice(0, 10), '2025-08-01');
+  const hari = t('2029-08-20');
+  const lama = { createdAt: t('2024-01-10'), diarsipkanPada: null };
+  assert.equal(perluLedBaru({ berlakuSampai: akhir, acuan, led: [] }, hari), true);
+  assert.equal(perluLedBaru({ berlakuSampai: akhir, acuan, led: [lama] }, hari), true, 'LED aktif periode lalu tidak dihitung');
+  assert.equal(perluLedBaru({ berlakuSampai: akhir, acuan, led: [{ createdAt: t('2029-03-01'), diarsipkanPada: null }] }, hari), false);
+  assert.equal(perluLedBaru({ berlakuSampai: akhir, acuan, led: [{ createdAt: t('2029-03-01'), diarsipkanPada: t('2029-04-01') }] }, hari), true, 'LED baru yang diarsipkan tidak dihitung');
+  assert.equal(perluLedBaru({ berlakuSampai: akhir, acuan, led: [] }, t('2027-01-01')), false, 'belum 18 bulan');
+  assert.equal(pesanPengingat('Sarjana Teknik Elektro', akhir, hari), 'Akreditasi Sarjana Teknik Elektro berakhir 20 Agu 2030 (12 bulan lagi). Mulai LED periode berikutnya.');
+});

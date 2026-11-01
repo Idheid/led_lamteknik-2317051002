@@ -16,7 +16,8 @@
     "db:generate": "prisma generate",
     "postinstall": "prisma generate",
     "worker": "tsx src/worker/index.ts",
-    "cadangan": "tsx scripts/cadangan.ts"
+    "cadangan": "tsx scripts/cadangan.ts",
+    "pengingat": "tsx scripts/pengingat-akreditasi.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.87",

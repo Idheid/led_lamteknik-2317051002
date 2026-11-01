@@ -158,6 +158,17 @@ model RiwayatAkreditasi {
   @@index([prodiId, status, createdAt])
 }
 
+// L2 (2 Nov 2026): pengingat akreditasi berakhir yang sudah terkirim (sekali per prodi, tanggal berakhir, dan ambang)
+model PengingatTerkirim {
+  id            String   @id @default(cuid())
+  prodiId       String
+  berlakuSampai DateTime
+  ambang        Int      // 18, 12, atau 6 bulan
+  createdAt     DateTime @default(now())
+
+  @@unique([prodiId, berlakuSampai, ambang])
+}
+
 // ----------------------------------------------------------------- Pengaturan LLM
 
 model PengaturanLLM {

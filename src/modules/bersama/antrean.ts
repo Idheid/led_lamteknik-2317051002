@@ -21,6 +21,8 @@ export const ANTREAN = {
   strukturTemplate: "struktur-template",
   // bersama (src/worker/bersama.ts)
   cadangan: "cadangan-harian",
+  // L2 (2 Nov 2026): pengingat akreditasi berakhir 18/12/6 bulan, setiap hari
+  pengingatAkreditasi: "pengingat-akreditasi",
   // modul LKPS (src/worker/lkps.ts): tambahkan di sini dengan awalan "lkps-", misalnya impor: "lkps-impor-excel"
 } as const;
 
