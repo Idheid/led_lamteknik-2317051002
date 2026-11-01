@@ -40,10 +40,11 @@ export const PERAN_BARU: { kunci: Peran; judul: string; isi: string }[] = [
  * Formulir Tambah akun (perbaikan 1 Nov 2026, P2: halaman sendiri `/admin/akun/tambah`, sebelumnya dialog yang
  * terpotong di layar laptop). Pilihan peran dengan penjelasan; akun Tim Prodi wajib memilih program studi.
  */
-export function FormTambahAkun({ prodi }: { prodi: PilihanProdi[] }) {
+export function FormTambahAkun({ prodi, prodiAwal = "" }: { prodi: PilihanProdi[]; prodiAwal?: string }) {
   const router = useRouter();
   const [peran, setPeran] = useState<Peran>("TIM_PRODI");
-  const [prodiId, setProdiId] = useState("");
+  // L3: dari Pantau LED, prodi sudah terpilih
+  const [prodiId, setProdiId] = useState(prodi.some((x) => x.id === prodiAwal) ? prodiAwal : "");
   const [galatProdi, setGalatProdi] = useState(false);
   const { sibuk, jalankan } = useAksi();
   const form = useForm<MasukanAkun>({

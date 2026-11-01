@@ -5,7 +5,8 @@ import { prisma } from "@/modules/bersama/db";
 import { GalatAkses, type Pengguna } from "@/modules/bersama/akses";
 import { ingatkanTimProdi, kirimPengingatAkreditasi, statusPeriodeProdi } from "@/modules/bersama/data/pengingat-akreditasi";
 import { buatProyek } from "@/modules/led/data/proyek";
-import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
+import { bersihkanDb, bisaLogin, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
+import { simpanProdi } from "@/modules/bersama/data/organisasi";
 
 /** L2 (2 Nov 2026): pengingat akreditasi berakhir 18/12/6 bulan, sekali per ambang. */
 
@@ -67,4 +68,28 @@ test("L2: Ingatkan Tim Prodi dari Pantau LED (hanya Admin UPPS)", async () => {
   assert.equal(await ingatkanTimProdi(admin, e.prodi.id, HARI), 1);
   assert.equal((await lonceng(e.tim.id)).length, 1);
   assert.equal(await prisma.logAktivitas.count({ where: { aksi: "ingatkan_tim_prodi", objekId: e.prodi.id } }), 1);
+});
+
+test("L3: login terakhir tercatat; status akun Tim Prodi di Pantau LED dan di pengingat Admin", async () => {
+  const f = await prodi("Teknik Akun", "80006", "2027-06-01");
+  assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: f.tim.id } })).loginTerakhir, null);
+  assert.ok(await bisaLogin(`tim.80006@uji.test`, "SandiTim#123"));
+  const login = (await prisma.user.findUniqueOrThrow({ where: { id: f.tim.id } })).loginTerakhir;
+  assert.ok(login && Date.now() - login.getTime() < 60_000, "diisi saat login");
+
+  // prodi tanpa akun Tim Prodi, dan prodi yang akunnya tidak login > 12 bulan
+  const kosong = await simpanProdi(admin, { nama: "Teknik Tanpa Akun", jenjang: "S1", kodePddikti: "80007", akreditasiBerlakuSampai: "2027-06-01", identitas: {} });
+  const g = await prodi("Teknik Lama Tak Login", "80008", "2027-06-01");
+  await prisma.user.update({ where: { id: g.tim.id }, data: { loginTerakhir: new Date("2025-01-01T00:00:00.000Z"), createdAt: new Date("2024-01-01T00:00:00.000Z") } });
+  const status = new Map((await statusPeriodeProdi(HARI)).map((x) => [x.prodiId, x]));
+  assert.equal(status.get(f.prodi.id)?.statusAkun, "baik");
+  assert.equal(status.get(kosong.id)?.statusAkun, "belum-ada");
+  assert.equal(status.get(g.prodi.id)?.statusAkun, "periksa");
+  assert.deepEqual(status.get(f.prodi.id)?.akun.map((a) => [a.email, Boolean(a.loginTerakhir)]), [["tim.80006@uji.test", true]]);
+
+  await kirimPengingatAkreditasi(HARI);
+  const pesan = (await lonceng(admin.id)).map((x) => x.pesan);
+  assert.ok(pesan.some((x) => x.startsWith("Akreditasi Sarjana Teknik Tanpa Akun") && x.endsWith("Belum ada akun Tim Prodi.")));
+  assert.ok(pesan.some((x) => x.startsWith("Akreditasi Sarjana Teknik Lama Tak Login") && x.endsWith("Periksa akun Tim Prodi.")));
+  assert.ok(pesan.some((x) => x.startsWith("Akreditasi Sarjana Teknik Akun") && x.endsWith("Mulai LED periode berikutnya.")));
 });

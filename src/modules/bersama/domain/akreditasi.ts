@@ -168,3 +168,25 @@ export function pesanPengingat(namaProdi: string, berlakuSampai: Date, hariIni: 
   const sisa = n < 0 ? 'sudah lewat' : n === 0 ? 'kurang dari sebulan lagi' : `${n} bulan lagi`;
   return `Akreditasi ${namaProdi} berakhir ${fmtTanggal.format(berlakuSampai)} (${sisa}). Mulai LED periode berikutnya.`;
 }
+
+// ------------------------------------------------------------------ L3: akun Tim Prodi sebelum periode baru
+
+export type StatusAkunProdi = 'belum-ada' | 'periksa' | 'baik';
+
+/**
+ * "belum-ada": prodi tanpa akun Tim Prodi aktif. "periksa": semua akun aktif tidak login lebih dari 12 bulan (akun yang
+ * belum pernah login dihitung dari tanggal dibuat). Selain itu "baik".
+ */
+export function statusAkunProdi(akun: { aktif: boolean; loginTerakhir: Date | null; dibuat: Date }[], hariIni: Date): StatusAkunProdi {
+  const aktif = akun.filter((a) => a.aktif);
+  if (!aktif.length) return 'belum-ada';
+  const batas = new Date(hariIni);
+  batas.setUTCMonth(batas.getUTCMonth() - 12);
+  return aktif.every((a) => (a.loginTerakhir ?? a.dibuat).getTime() < batas.getTime()) ? 'periksa' : 'baik';
+}
+
+export const LABEL_STATUS_AKUN: Record<StatusAkunProdi, string | null> = {
+  'belum-ada': 'Belum ada akun Tim Prodi',
+  periksa: 'Periksa akun Tim Prodi',
+  baik: null,
+};

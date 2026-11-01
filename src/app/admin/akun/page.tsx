@@ -46,10 +46,14 @@ function StatusCadangan({ status }: { status: Awaited<ReturnType<typeof statusCa
   );
 }
 
-export default async function HalamanAkun() {
+export default async function HalamanAkun({ searchParams }: PageProps<"/admin/akun">) {
   const p = await wajibAdmin();
-  const [akun, cadangan, daftar] = await Promise.all([daftarAkun(p), statusCadangan(p), daftarProdi(p)]);
+  const [semuaAkun, cadangan, daftar] = await Promise.all([daftarAkun(p), statusCadangan(p), daftarProdi(p)]);
   const prodi = daftar.map((x) => ({ id: x.id, label: `${namaJenjang(x.jenjang)} ${x.nama}` }));
+  // L3: saringan prodi dari Pantau LED (?prodi=...)
+  const { prodi: saring } = (await searchParams) as { prodi?: string };
+  const prodiSaring = saring ? prodi.find((x) => x.id === saring) : undefined;
+  const akun = prodiSaring ? semuaAkun.filter((a) => a.prodi?.id === prodiSaring.id) : semuaAkun;
   return (
     <>
       <JudulHalaman
@@ -67,6 +71,11 @@ export default async function HalamanAkun() {
         ]}
       />
       <StatusCadangan status={cadangan} />
+      {prodiSaring && (
+        <p className="text-sm">
+          Akun {prodiSaring.label} saja. <Link className="text-primary hover:underline" href="/admin/akun">Tampilkan semua akun</Link>
+        </p>
+      )}
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">
           <Table>
@@ -78,6 +87,7 @@ export default async function HalamanAkun() {
                 <TableHead>Program studi</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Dibuat</TableHead>
+                <TableHead>Login terakhir</TableHead>
                 <TableHead className="w-12 pr-4" />
               </TableRow>
             </TableHeader>
@@ -96,6 +106,7 @@ export default async function HalamanAkun() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{fmtTanggal.format(a.createdAt)}</TableCell>
+                  <TableCell className="text-muted-foreground">{a.loginTerakhir ? fmtTanggal.format(a.loginTerakhir) : "belum pernah"}</TableCell>
                   <TableCell className="pr-4 text-right">
                     {a.id !== p.id && <AksiBarisAkun id={a.id} nama={a.name} email={a.email} aktif={!a.banned} prodiId={a.role === "TIM_PRODI" ? a.prodi?.id ?? null : undefined} prodi={prodi} />}
                   </TableCell>

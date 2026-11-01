@@ -3,7 +3,10 @@ import { GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/a
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { AKTIF } from "@/modules/bersama/data/organisasi";
 import { beritahu } from "@/modules/bersama/data/pemberitahuan";
-import { acuanPeriode, ambangPengingat, perluLedBaru, pesanPengingat, riwayatBerlakuTerbaru, type Ambang } from "@/modules/bersama/domain/akreditasi";
+import {
+  acuanPeriode, ambangPengingat, LABEL_STATUS_AKUN, perluLedBaru, pesanPengingat, riwayatBerlakuTerbaru, statusAkunProdi,
+  type Ambang, type StatusAkunProdi,
+} from "@/modules/bersama/domain/akreditasi";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 
 /**
@@ -18,6 +21,9 @@ export interface StatusPeriode {
   berlakuSampai: Date | null;
   ambang: Ambang | null;
   perluLedBaru: boolean;
+  /** L3: akun Tim Prodi prodi ini beserta login terakhir */
+  akun: { id: string; nama: string; email: string; aktif: boolean; loginTerakhir: Date | null }[];
+  statusAkun: StatusAkunProdi;
 }
 
 /** Status periode semua prodi (dipakai pekerjaan harian dan Pantau LED). */
@@ -26,6 +32,7 @@ export async function statusPeriodeProdi(hariIni = new Date()): Promise<StatusPe
     include: {
       riwayatAkreditasi: { where: { status: "berlaku" } },
       proyek: { select: { createdAt: true, diarsipkanPada: true } },
+      anggota: { where: { role: "TIM_PRODI" }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true, banned: true, loginTerakhir: true, createdAt: true } },
     },
   });
   return prodi.map((x) => {
@@ -38,6 +45,8 @@ export async function statusPeriodeProdi(hariIni = new Date()): Promise<StatusPe
       berlakuSampai,
       ambang: ambangPengingat(berlakuSampai, hariIni),
       perluLedBaru: perluLedBaru({ berlakuSampai, acuan, led: x.proyek }, hariIni),
+      akun: x.anggota.map((a) => ({ id: a.id, nama: a.name, email: a.email, aktif: !a.banned, loginTerakhir: a.loginTerakhir })),
+      statusAkun: statusAkunProdi(x.anggota.map((a) => ({ aktif: !a.banned, loginTerakhir: a.loginTerakhir, dibuat: a.createdAt })), hariIni),
     };
   });
 }
@@ -54,7 +63,9 @@ async function kirim(s: StatusPeriode, hariIni: Date) {
   const pesan = pesanPengingat(s.nama, s.berlakuSampai!, hariIni);
   const { tim, admin } = await penerima(s.prodiId);
   await beritahu(tim, { pesan, tautan: "/led" });
-  await beritahu(admin, { pesan, tautan: "/led/pantau" });
+  // L3: Admin UPPS sekaligus diingatkan memeriksa akun Tim Prodi prodi itu
+  const akun = LABEL_STATUS_AKUN[s.statusAkun];
+  await beritahu(admin, { pesan: akun ? `${pesan} ${akun}.` : pesan, tautan: "/led/pantau" });
 }
 
 /** Pekerjaan harian: kirim pengingat untuk ambang yang baru tercapai. Mengembalikan jumlah prodi yang diingatkan. */

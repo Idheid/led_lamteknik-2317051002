@@ -1623,3 +1623,34 @@ per butir.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 156/156 lulus |
 | `npm run test:integrasi` | 93/93 lulus |
+
+
+### L3: akun Tim Prodi sebelum periode baru
+
+- `User.loginTerakhir` (migrasi `20261102140000_login_terakhir`, diisi dari sesi yang masih tersimpan) diperbarui
+  setiap kali sesi login dibuat lewat `databaseHooks.session.create.after` Better Auth.
+- `statusAkunProdi` (domain):
+  - "Belum ada akun Tim Prodi" bila tidak ada akun aktif;
+  - "Periksa akun Tim Prodi" bila semua akun aktif tidak login lebih dari 12 bulan. Akun yang belum pernah login
+    dihitung dari tanggal dibuat, supaya akun baru tidak langsung ditandai.
+- `statusPeriodeProdi` membawa daftar akun Tim Prodi dan statusnya.
+  - Pantau LED menampilkan setiap akun aktif dengan "login {tanggal}" atau "belum pernah login", lencana status, dan
+    tautan cepat **Tambah akun** (`/admin/akun/tambah?prodi=…`, prodi sudah terpilih) dan **Kelola akun**
+    (`/admin/akun?prodi=…`, tersaring per prodi, dengan "Tampilkan semua akun").
+  - Pengingat untuk Admin UPPS (L2) ditambah "Belum ada akun Tim Prodi." atau "Periksa akun Tim Prodi." bila perlu.
+- Kelola akun mendapat kolom Login terakhir.
+- Uji:
+  - domain (tambahan di `akreditasi.test.ts`): belum ada, akun nonaktif, batas 12 bulan, akun baru belum login;
+  - integrasi (tambahan di `pengingat-akreditasi.test.ts`): login lewat Better Auth mengisi `loginTerakhir`, status
+    tiga prodi, dan pesan pengingat Admin memuat status akun.
+- Uji browser:
+  - Pantau LED menampilkan "Uji Tim Sipil · belum pernah login" dan "Tim Prodi Demo · login 31 Okt 2026", dan prodi
+    tanpa akun bertanda "Belum ada akun Tim Prodi";
+  - Kelola akun `?prodi=` hanya menampilkan satu akun Sipil, dan Tambah akun `?prodi=` sudah memilih Sarjana Teknik
+    Sipil.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 157/157 lulus |
+| `npm run test:integrasi` | 94/94 lulus |

@@ -163,7 +163,7 @@ export async function daftarAkun(p: Pengguna) {
   return prisma.user.findMany({
     orderBy: [{ role: "asc" }, { name: "asc" }],
     select: {
-      id: true, name: true, email: true, role: true, banned: true, createdAt: true, wajibGantiSandi: true,
+      id: true, name: true, email: true, role: true, banned: true, createdAt: true, wajibGantiSandi: true, loginTerakhir: true,
       prodi: { select: { id: true, nama: true, jenjang: true } },
     },
   });

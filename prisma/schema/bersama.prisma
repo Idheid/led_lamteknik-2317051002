@@ -41,6 +41,8 @@ model User {
   banExpires    DateTime?
   // kolom tambahan (Better Auth additionalFields)
   wajibGantiSandi Boolean @default(false) // akun baru atau sandi diatur ulang admin
+  // L3 (2 Nov 2026): diisi setiap kali sesi login dibuat (hook Better Auth), untuk memeriksa akun Tim Prodi per periode
+  loginTerakhir DateTime?
   // revisi 31 Okt 2026: prodi akun Tim Prodi (wajib untuk TIM_PRODI, kosong untuk peran lain)
   prodiId       String?
   prodi         Prodi?    @relation(fields: [prodiId], references: [id], onDelete: Restrict)

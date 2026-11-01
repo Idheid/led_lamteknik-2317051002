@@ -7,7 +7,8 @@ import { daftarProyek } from "@/modules/led/data/proyek";
 import { daftarPenugasan } from "@/modules/led/data/review";
 import { kesiapanSemua } from "@/modules/led/data/kesiapan";
 import { syaratCatatHasil } from "@/modules/led/data/akreditasi";
-import { statusPeriodeProdi } from "@/modules/bersama/data/pengingat-akreditasi";
+import { statusPeriodeProdi, type StatusPeriode } from "@/modules/bersama/data/pengingat-akreditasi";
+import { LABEL_STATUS_AKUN } from "@/modules/bersama/domain/akreditasi";
 import { Badge } from "@/components/ui/badge";
 import { TombolIngatkan } from "./tombol-ingatkan";
 import { RingkasKesiapan } from "@/modules/led/komponen/kesiapan";
@@ -23,6 +24,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export const metadata: Metadata = { title: "Pantau LED" };
 
 const fmtTanggal = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "UTC" });
+const fmtLogin = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "Asia/Jakarta" });
+
+/** L3: akun Tim Prodi prodi ini dengan login terakhir, tanda perlu diperiksa, dan tautan cepat ke Kelola akun. */
+function AkunTimProdi({ prodiId, s }: { prodiId: string; s: StatusPeriode | undefined }) {
+  if (!s) return null;
+  const label = LABEL_STATUS_AKUN[s.statusAkun];
+  return (
+    <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
+      {s.akun.filter((a) => a.aktif).map((a) => (
+        <span key={a.id}>{a.nama} · {a.loginTerakhir ? `login ${fmtLogin.format(a.loginTerakhir)}` : "belum pernah login"}</span>
+      ))}
+      {label && <Badge variant="outline" className="w-fit border-amber-400 text-amber-800 dark:text-amber-200">{label}</Badge>}
+      <span className="flex flex-wrap gap-2">
+        <Link className="text-primary hover:underline" href={`/admin/akun/tambah?prodi=${prodiId}`}>Tambah akun</Link>
+        {s.akun.length > 0 && <Link className="text-primary hover:underline" href={`/admin/akun?prodi=${prodiId}`}>Kelola akun</Link>}
+      </span>
+    </div>
+  );
+}
 
 /**
  * Pantau LED (revisi 31 Okt 2026): Admin UPPS melihat LED aktif semua prodi, diurutkan menurut akreditasi berakhir,
@@ -88,6 +108,7 @@ export default async function HalamanPantauLed() {
                           {x._count.anggota > 0 && <TombolIngatkan prodiId={x.id} />}
                         </div>
                       )}
+                      <AkunTimProdi prodiId={x.id} s={periode.get(x.id)} />
                     </TableCell>
                     <TableCell className="align-top text-sm">
                       {led

@@ -71,3 +71,18 @@ test('L2: ambang pengingat 18/12/6 bulan dan perluLedBaru', async () => {
   assert.equal(perluLedBaru({ berlakuSampai: akhir, acuan, led: [] }, t('2027-01-01')), false, 'belum 18 bulan');
   assert.equal(pesanPengingat('Sarjana Teknik Elektro', akhir, hari), 'Akreditasi Sarjana Teknik Elektro berakhir 20 Agu 2030 (12 bulan lagi). Mulai LED periode berikutnya.');
 });
+
+test('L3: status akun Tim Prodi (belum ada, periksa bila semua tidak login > 12 bulan)', async () => {
+  const { statusAkunProdi } = await import('../akreditasi.ts');
+  const t = (s: string) => new Date(`${s}T00:00:00.000Z`);
+  const hari = t('2029-08-20');
+  assert.equal(statusAkunProdi([], hari), 'belum-ada');
+  assert.equal(statusAkunProdi([{ aktif: false, loginTerakhir: t('2029-08-01'), dibuat: t('2024-01-01') }], hari), 'belum-ada', 'akun nonaktif tidak dihitung');
+  assert.equal(statusAkunProdi([{ aktif: true, loginTerakhir: t('2028-08-19'), dibuat: t('2024-01-01') }], hari), 'periksa');
+  assert.equal(statusAkunProdi([{ aktif: true, loginTerakhir: t('2028-08-21'), dibuat: t('2024-01-01') }], hari), 'baik');
+  assert.equal(statusAkunProdi([
+    { aktif: true, loginTerakhir: t('2026-01-01'), dibuat: t('2024-01-01') },
+    { aktif: true, loginTerakhir: null, dibuat: t('2029-06-01') },
+  ], hari), 'baik', 'akun baru yang belum login dihitung dari tanggal dibuat');
+  assert.equal(statusAkunProdi([{ aktif: true, loginTerakhir: null, dibuat: t('2027-01-01') }], hari), 'periksa');
+});

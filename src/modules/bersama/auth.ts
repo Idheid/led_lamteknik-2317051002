@@ -29,6 +29,16 @@ export const auth = betterAuth({
       prodiId: { type: "string", required: false, input: false },
     },
   },
+  // L3 (2 Nov 2026): catat login terakhir setiap kali sesi baru dibuat (masuk dengan kata sandi)
+  databaseHooks: {
+    session: {
+      create: {
+        after: async (sesi) => {
+          await prisma.user.update({ where: { id: sesi.userId }, data: { loginTerakhir: new Date() } }).catch(() => undefined);
+        },
+      },
+    },
+  },
   plugins: [
     admin({
       ac,
