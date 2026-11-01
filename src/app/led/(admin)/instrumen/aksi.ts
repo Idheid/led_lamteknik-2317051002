@@ -97,6 +97,12 @@ export async function aksiSimpanPemetaan(versiId: string, masukan: MasukanPemeta
   return r;
 }
 
+export async function aksiMintaUsulanAi(versiId: string) {
+  const r = await jalankanAksi((p) => unggah.mintaUsulanAi(p, versiId).then(() => null));
+  revalidatePath(`/led/instrumen/${versiId}`, "layout");
+  return r;
+}
+
 export async function aksiTandaiBerkasUsang(versiId: string) {
   const r = await jalankanAksi((p) => unggah.tandaiBerkasUsang(p, versiId));
   revalidatePath(`/led/instrumen/${versiId}`);

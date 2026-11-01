@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { IsianHalamanBobot, TombolEkstraksi } from "./kendali-ekstraksi";
 import { CentangKonfirmasi, TombolTandaiUsang } from "./periksa-berkas";
+import { TombolUsulanAi, type PerkiraanUsulanAi } from "./pemetaan/tombol-usulan-ai";
 
 const LABEL_EKSTRAKSI: Record<string, string> = {
   antre: "Menunggu antrean", berjalan: "Sedang berjalan", tertunda: "Tertunda", selesai: "Selesai", gagal: "Gagal",
@@ -126,7 +127,7 @@ export function KotakDiagnosis({ d, children }: { d: DiagnosisTemplate; children
 }
 
 /** Tiga berkas sumber instrumen jenjang dan kendali ekstraksinya (revisi 19 Okt 2026). */
-export function BerkasSumber({ v, tahunUsang }: { v: VersiBerkas; tahunUsang: number | null }) {
+export function BerkasSumber({ v, tahunUsang, perkiraanAi }: { v: VersiBerkas; tahunUsang: number | null; perkiraanAi: PerkiraanUsulanAi | null }) {
   const info = bacaInfoEkstraksi(v.ekstraksi);
   const terkunci = v.status === "aktif" || v._count.proyek > 0;
   const berjalan = info?.status === "antre" || info?.status === "berjalan";
@@ -161,6 +162,7 @@ export function BerkasSumber({ v, tahunUsang }: { v: VersiBerkas; tahunUsang: nu
             {!terkunci && (
               <div className="flex flex-wrap gap-2">
                 <Button asChild size="sm"><Link href={`/led/instrumen/${v.id}/pemetaan`}><ListTree aria-hidden />Pemetaan judul</Link></Button>
+                {perkiraanAi && <TombolUsulanAi versiId={v.id} perkiraan={perkiraanAi} keHalamanPemetaan />}
               </div>
             )}
           </KotakDiagnosis>

@@ -18,7 +18,7 @@ import { FormVersi } from "./form-versi";
 import { infoTemplateLed } from "@/modules/led/data/ekspor";
 import { UnggahBerkas } from "@/components/unggah-berkas";
 import { BerkasSumber } from "./berkas-sumber";
-import { bisaTandaiUsang } from "@/modules/led/data/unggah-instrumen";
+import { bacaSidikJariVersi, bisaTandaiUsang, perkiraanUsulanAi } from "@/modules/led/data/unggah-instrumen";
 
 export const metadata: Metadata = { title: "Detail versi instrumen" };
 
@@ -35,6 +35,9 @@ export default async function HalamanVersi({ params }: PageProps<"/led/instrumen
   const tpl = await infoTemplateLed(p, versiId);
   const perJenjang = new Map(v.butirPerJenjang.map((b) => [b.jenjang, b]));
   const tahunUsang = await bisaTandaiUsang(v);
+  // perkiraan usulan AI (I4) hanya dihitung bila template perlu dipetakan
+  const perluPeta = Boolean(v.templateLedLokasi && bacaSidikJariVersi(v.sidikJari).template?.diagnosis?.bisaDipetakan);
+  const perkiraanAi = perluPeta && !v.terkunci && v.status !== "aktif" ? await perkiraanUsulanAi(p, v.id) : null;
   return (
     <>
       <JudulHalaman
@@ -70,7 +73,7 @@ export default async function HalamanVersi({ params }: PageProps<"/led/instrumen
           "Bagian dan sub-bagian bisa disunting dari daftar di bawah selama instrumen belum dipakai LED.",
         ]}
       />
-      {v.jenjangUtama && <BerkasSumber v={v} tahunUsang={tahunUsang} />}
+      {v.jenjangUtama && <BerkasSumber v={v} tahunUsang={tahunUsang} perkiraanAi={perkiraanAi} />}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Template LEDPS (Word) untuk ekspor</CardTitle>

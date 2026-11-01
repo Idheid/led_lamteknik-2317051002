@@ -28,14 +28,21 @@ interface Props {
   usulan: PemetaanTemplate;
   tersimpan: PemetaanTemplate | null;
   kriteriaMatriks: number | null;
-  /** I4: gaya yang diisi usulan AI */
-  dariAi?: string[];
+  /** I4: usulan AI yang belum disimpan (mengisi tabel dan ditandai "usulan AI") */
+  usulanAi?: { gaya: Record<string, PeranGaya>; alasan: Record<string, string> } | null;
 }
 
 /** Tabel peran gaya paragraf dan pratinjau struktur hasil pemetaan (I3). */
-export function FormPemetaan({ versiId, jenjang, terkunci, paragraf, gaya, usulan, tersimpan, kriteriaMatriks, dariAi = [] }: Props) {
+export function FormPemetaan({ versiId, jenjang, terkunci, paragraf, gaya, usulan, tersimpan, kriteriaMatriks, usulanAi }: Props) {
   const awal = tersimpan ?? usulan;
-  const [peran, setPeran] = useState<Record<string, PeranGaya>>(awal.gaya);
+  // usulan AI menimpa isian awal hanya untuk gaya yang dinilainya (termasuk "seperti biasa")
+  const denganAi = { ...awal.gaya };
+  for (const g of Object.keys(usulanAi?.alasan ?? {})) {
+    if (usulanAi!.gaya[g]) denganAi[g] = usulanAi!.gaya[g];
+    else delete denganAi[g];
+  }
+  const dariAi = Object.keys(usulanAi?.alasan ?? {}).filter((g) => denganAi[g] !== awal.gaya[g]);
+  const [peran, setPeran] = useState<Record<string, PeranGaya>>(denganAi);
   const [polaCatatan, setPolaCatatan] = useState(awal.polaCatatan ?? "");
   const [kotak, setKotak] = useState<"bawaan" | "tabel">(awal.kotak ?? "bawaan");
   const [diubah, setDiubah] = useState<Set<string>>(new Set());
@@ -107,6 +114,9 @@ export function FormPemetaan({ versiId, jenjang, terkunci, paragraf, gaya, usula
                       </SelectContent>
                     </Select>
                     {asal(g.gaya) && <Badge variant="outline" className="mt-1">{asal(g.gaya)}</Badge>}
+                    {asal(g.gaya) === "usulan AI" && usulanAi?.alasan[g.gaya] && (
+                      <p className="mt-1 text-xs text-muted-foreground">{usulanAi.alasan[g.gaya]}</p>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

@@ -17,6 +17,8 @@ export const ANTREAN = {
   instrumen: "ekstrak-instrumen",
   // revisi 31 Okt 2026: usulan skor rubrik per butir narasi
   skorRubrik: "skor-rubrik",
+  // perbaikan 2 Nov 2026 (I4): usulan struktur template dari AI, hanya atas permintaan Admin
+  strukturTemplate: "struktur-template",
   // bersama (src/worker/bersama.ts)
   cadangan: "cadangan-harian",
   // modul LKPS (src/worker/lkps.ts): tambahkan di sini dengan awalan "lkps-", misalnya impor: "lkps-impor-excel"

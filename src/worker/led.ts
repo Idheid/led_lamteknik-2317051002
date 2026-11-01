@@ -6,6 +6,7 @@ import { prosesDokumen } from "@/modules/led/proses/dokumen";
 import { prosesTugasGenerate, pulihkanTugasTerputus } from "@/modules/led/proses/generate";
 import { prosesEkspor } from "@/modules/led/proses/ekspor";
 import { prosesEkstraksiInstrumen, pulihkanEkstraksiTerputus } from "@/modules/led/proses/instrumen";
+import { prosesUsulanStruktur } from "@/modules/led/proses/struktur-template";
 import { prosesSkorRubrik } from "@/modules/led/proses/skor-rubrik";
 
 /**
@@ -34,6 +35,9 @@ export async function daftarkanPengerjaLed(bos: PgBoss): Promise<void> {
   await bos.work<{ versiId: string }>(ANTREAN.instrumen, { localConcurrency: 1 }, async ([tugas]) => {
     console.log(`[instrumen] ${tugas.data.versiId}`);
     console.log(`[instrumen] ${tugas.data.versiId} ${await prosesEkstraksiInstrumen(tugas.data.versiId)}`);
+  });
+  await bos.work<{ versiId: string }>(ANTREAN.strukturTemplate, { localConcurrency: 1 }, async ([tugas]) => {
+    console.log(`[struktur-template] ${tugas.data.versiId} ${await prosesUsulanStruktur(tugas.data.versiId)}`);
   });
   await bos.work<{ proyekId: string }>(ANTREAN.skorRubrik, { localConcurrency: 1 }, async ([tugas]) => {
     console.log(`[skor-rubrik] ${tugas.data.proyekId}`);

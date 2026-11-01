@@ -19,6 +19,8 @@ import { bacaBerkasInstrumen, bacaTemplate, sha256 } from "@/modules/led/instrum
 import type { DiagnosisTemplate } from "@/modules/led/domain/diagnosis-template";
 import { bacaPemetaan, type PemetaanTemplate } from "@/modules/led/domain/template-led";
 import { daftarGaya, usulanPemetaan } from "@/modules/led/domain/pemetaan-template";
+import { perkiraanToken, promptStruktur } from "@/modules/led/domain/usulan-struktur";
+import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
 import { bacaParagrafTemplate } from "@/modules/led/instrumen/template";
 import { skemaPemetaan, type MasukanPemetaan } from "@/modules/led/validasi";
 import {
@@ -263,8 +265,8 @@ export async function unggahBerkasInstrumen(p: Pengguna, versiId: string, jenis:
     where: { id: v.id },
     data: {
       sidikJari: { ...sj, [jenis]: ringkasan(hasil) } as unknown as Prisma.InputJsonValue,
-      // template baru: pemetaan judul template lama tidak berlaku lagi
-      ...(jenis === "template" ? { pemetaanTemplate: Prisma.DbNull } : {}),
+      // template baru: pemetaan judul dan usulan AI untuk template lama tidak berlaku lagi
+      ...(jenis === "template" ? { pemetaanTemplate: Prisma.DbNull, usulanStruktur: Prisma.DbNull } : {}),
     },
   });
   if (jenis === "template") {
@@ -424,11 +426,56 @@ export async function simpanPemetaan(p: Pengguna, versiId: string, masukan: Masu
     where: { id: v.id },
     data: {
       pemetaanTemplate: pemetaan as unknown as Prisma.InputJsonValue,
+      // usulan AI (I4) sudah diperiksa dan disimpan Admin lewat pemetaan ini
+      usulanStruktur: Prisma.DbNull,
       ...(hasil.diterima ? { sidikJari: { ...sj, template: ringkasan(hasil) } as unknown as Prisma.InputJsonValue } : {}),
     },
   });
   await catatAktivitas(p, "simpan_pemetaan_template", "versi_instrumen", v.id, { gaya: data.gaya, diagnosis: baca.diagnosis?.kode });
   return { diagnosis: baca.diagnosis?.kode ?? null, masalah: hasil.diterima ? null : `${hasil.judul}. ${hasil.alasan}` };
+}
+
+// ---------------------------------------------------------------- usulan struktur dari AI (I4)
+
+export type StatusUsulanStruktur = "antre" | "berjalan" | "selesai" | "gagal";
+
+export interface UsulanStruktur {
+  status: StatusUsulanStruktur;
+  diminta: string;
+  olehId: string;
+  pesan?: string | null;
+  gaya?: Record<string, PemetaanTemplate["gaya"][string]>;
+  alasan?: Record<string, string>;
+  model?: string;
+  tokenMasuk?: number;
+  tokenKeluar?: number;
+  selesai?: string;
+}
+
+export function bacaUsulanStruktur(v: unknown): UsulanStruktur | null {
+  return v && typeof v === "object" && "status" in v ? (v as UsulanStruktur) : null;
+}
+
+/** Perkiraan sebelum meminta usulan AI: jumlah judul yang dikirim, perkiraan token, dan model dari Pengaturan LLM. */
+export async function perkiraanUsulanAi(p: Pengguna, versiId: string) {
+  const v = await versiMilik(p, versiId);
+  if (!v.templateLedLokasi) throw new GalatPengguna("Unggah Template LED (.docx) lebih dulu.");
+  const paragraf = await bacaParagrafTemplate(await bacaBerkas(v.templateLedLokasi));
+  const { sistem, pengguna, jumlahJudul, gaya } = promptStruktur(paragraf, bacaSidikJariVersi(v.sidikJari).matriks?.kriteria ?? []);
+  return { jumlahJudul, perkiraanToken: perkiraanToken(sistem, pengguna, gaya.length), model: (await modelAiAktif()).labelNarasi };
+}
+
+/** Admin mengonfirmasi permintaan usulan AI: dikerjakan worker; tidak pernah berjalan tanpa klik ini. */
+export async function mintaUsulanAi(p: Pengguna, versiId: string) {
+  const v = await versiMilik(p, versiId);
+  pastikanBelumAktif(v);
+  if (!v.templateLedLokasi) throw new GalatPengguna("Unggah Template LED (.docx) lebih dulu.");
+  const kini = bacaUsulanStruktur(v.usulanStruktur);
+  if (kini && (kini.status === "antre" || kini.status === "berjalan")) throw new GalatPengguna("Usulan AI sedang dibuat.");
+  const u: UsulanStruktur = { status: "antre", diminta: new Date().toISOString(), olehId: p.id };
+  await prisma.versiInstrumen.update({ where: { id: v.id }, data: { usulanStruktur: u as unknown as Prisma.InputJsonValue } });
+  await kirimTugas(ANTREAN.strukturTemplate, { versiId: v.id });
+  await catatAktivitas(p, "minta_usulan_ai_struktur", "versi_instrumen", v.id, {});
 }
 
 /** Admin mencentang konfirmasi (tahun tidak tertulis di teks, atau skema berbeda); dicatat di LogAktivitas. */

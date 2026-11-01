@@ -1406,3 +1406,53 @@ Semua keputusan diambil dari **isi berkas**; metadata Word/PDF dan nama berkas t
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 149/149 lulus |
 | `npm run test:integrasi` | 83/83 lulus |
+
+### I4: usulan struktur dari AI (hanya bila Admin memilihnya)
+
+- Tombol **Minta usulan AI** ada di kotak diagnosis halaman versi (I2) dan di halaman Pemetaan (I3).
+  - Tombol ini tidak pernah berjalan otomatis: unggah, diagnosis, halaman Pemetaan, dan perkiraan tidak memanggil AI.
+  - Sebelum dikirim, dialog konfirmasi menampilkan "±{n} judul dikirim, perkiraan {t} token" dan model dari Pengaturan
+    LLM (`modelAiAktif().labelNarasi`).
+- Yang dikirim hanya **kerangka** (`domain/usulan-struktur.ts`):
+  - `kerangkaTemplate` memilih paragraf judul atau calon judul: pendek, dan bernomor, bergaya judul, huruf kapital,
+    atau diawali nomor. Dari tiap paragraf dikirim nama gaya, bernomor, ilvl, dan 120 karakter pertama;
+  - `promptStruktur` menambahkan daftar gaya dan daftar kriteria Matriks bila sudah diunggah;
+  - instruksi "Bagian ini …" dan isi narasi tidak dikirim, dan template tidak memuat data pribadi;
+  - `perkiraanToken` memperkirakan sekitar 4 karakter per token ditambah keluaran per gaya. Untuk template 2025
+    berformat lain: ±161 judul, ±3.300 token.
+- Worker antrean baru `struktur-template` (`proses/struktur-template.ts`):
+  - memakai `panggilTerstruktur` dengan skema Zod (peran per gaya, termasuk "biasa", ditambah alasan singkat), sehingga
+    aturan kunci dan model cadangannya sama dan setiap panggilan tercatat di `LogPemakaian`
+    (`struktur-template:{kode}`);
+  - di mode uji (`LLM_NARASI=uji`) keluarannya tetap tanpa Gemini;
+  - bila kunci habis atau belum ada, berhenti dengan status gagal dan pesan "Usulan AI berhenti: … Pemetaan judul tetap
+    bisa diisi sendiri tanpa AI." Tidak diulang otomatis, berbeda dengan penyusunan narasi, karena usulan ini hanya
+    dibuat atas klik Admin.
+- `VersiInstrumen.usulanStruktur Json?` (migrasi `20261102110000_usulan_struktur`) menyimpan status, peran per gaya,
+  alasan, model, token, dan waktu.
+  - Hasil AI **hanya mengisi usulan**: tabel Pemetaan menimpa isian awal untuk gaya yang dinilai AI, menandainya
+    "usulan AI", dan menampilkan alasannya. `pemetaanTemplate` tidak pernah diubah oleh AI.
+  - Admin memeriksa lalu menekan Simpan pemetaan; setelah itu `usulanStruktur` dikosongkan. Unggah template baru juga
+    mengosongkannya.
+  - Halaman Pemetaan memantau status (`PemantauProses`) selama usulan dibuat.
+- Uji:
+  - domain `usulan-struktur.test.ts` (2 uji): kerangka tanpa isi narasi dan instruksi, teks paling panjang 120
+    karakter, daftar kriteria Matriks, perkiraan token, keluaran AI menjadi usulan, gaya asing diabaikan;
+  - integrasi `usulan-struktur.test.ts` (2 uji):
+    - dengan `LLM_NARASI=uji`: unggah, halaman Pemetaan, dan perkiraan tidak memanggil AI (LogPemakaian 0), dan worker
+      tanpa permintaan tidak berbuat apa-apa;
+    - setelah diminta, usulan selesai sama dengan pemetaan yang benar, tetapi `pemetaanTemplate` tetap kosong;
+      LogPemakaian 1 dan LogAktivitas `minta_usulan_ai_struktur` tercatat; permintaan ganda ditolak; setelah Admin
+      menyimpan, usulan dikosongkan;
+    - tanpa kunci (mode uji dimatikan): gagal dengan pesan jelas dan tidak diulang otomatis.
+- Uji browser (server pengembangan dan worker dengan `LLM_NARASI=uji`):
+  - di halaman Pemetaan, Minta usulan AI menampilkan dialog "±161 judul dikirim, perkiraan 3.301 token. Model: model
+    uji pengembangan (tanpa Gemini)";
+  - setelah Kirim ke AI, worker mencatat `[struktur-template] … selesai`, dan halaman diperbarui sendiri dengan "Usulan
+    AI (uji-narasi, 0 token) sudah diisikan ke tabel".
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 151/151 lulus |
+| `npm run test:integrasi` | 85/85 lulus |
