@@ -1160,3 +1160,50 @@ pecahan bisa ditolak; kini memakai toleransi pembulatan dan diberi uji domain.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 127/127 lulus |
 | `npm run test:integrasi` | 76/76 lulus |
+
+### Tahap 9: dokumen dan pemeriksaan akhir
+
+Dokumen:
+
+- `CLAUDE.md`:
+  - Keputusan yang dikunci butir 1 (instrumen diunggah Admin UPPS), butir 2 (tiga peran, tabel akses ringkas, aturan
+    akun termasuk Ubah nama/Ubah peran, LED baru dari kartu Mulai LED), butir 3 (halaman sub-bagian dua tab, Bahan dari
+    prodi, baris Periksa), butir 8 (kunci dikelola Admin UPPS), dan Konvensi hak akses.
+  - Bagian baru "Struktur kode (revisi 31 Okt 2026)" (route group, akses, menu, prodi bawaan, LED baru dan TS, akun,
+    penilaian, susun seluruh LED, LKPS PDF per tabel, komponen halaman sub-bagian).
+- `docs/SPESIFIKASI.md`: tabel menu per peran (termasuk Tambah akun di halaman sendiri, Ubah nama/Ubah peran, kartu
+  Mulai LED, susunan halaman sub-bagian, tampilan asesor) dan sumber J = Bahan dari prodi di konteks RAG.
+- `docs/PANDUAN-PENGGUNAAN.md` ditulis ulang menjadi A Admin UPPS, B Tim Prodi, C Asesor, termasuk P1–P5.
+
+Uji browser (server pengembangan dengan `LLM_NARASI=uji` dan `EMBEDDING_PENYEDIA=uji` supaya kuota Gemini tidak
+terpakai; akun uji `uji.admin@`, `uji.tim.sipil@`, `uji.tim@`, `uji.asesor@`, `uji.asesor2@demo.test`):
+
+| Langkah | Hasil |
+| --- | --- |
+| Admin UPPS membuat akun Tim Prodi Teknik Sipil; login pertama wajib ganti sandi | Berhasil |
+| Tim Prodi membuat LED (TS 2025/2026 · pengajuan 2026) | Berhasil (sebelum P5; kartu Mulai LED diuji terpisah di P5) |
+| Unggah LKPS: 3 PDF sekaligus, 43/43 tabel terbaca dari 3 sumber; unggah dokumen .docx | Berhasil |
+| Susun seluruh LED: 13/13 bagian, 105 draf | Berhasil |
+| Perkiraan nilai → Hitung usulan skor: 72/72 butir, 324,19 | Berhasil |
+| Admin UPPS menugaskan asesor; Tim Prodi Ajukan review → Direview | Berhasil |
+| Asesor memblok teks → catatan; Tim Prodi menyunting + Sudah diperbaiki; asesor Terima | Berhasil (diulang di tata letak P4 dengan panel samping) |
+| Asesor menilai di halaman Penilaian: butir 1 lewat UI (total berubah langsung 324,19 → 324,42) | Berhasil; 71 butir lainnya diisi lewat fungsi data `simpanSkor` sebagai asesor |
+| Asesor Layak diajukan (324,45) | Berhasil |
+| Tim Prodi ekspor final: syarat awal 73 hal | Tim penyusun diisi lewat UI; satu penanda `[BELUM ADA BUKTI]` dihapus lewat editor dan C.1 Tandai selesai lewat UI; 57 penanda sisa (keluaran model uji) dihapus dan 12 bagian lain ditandai selesai lewat fungsi data `simpanSuntingan`/`tandaiBagianSelesai` sebagai Tim Prodi; 37 perbedaan angka diberi alasan lewat tombol Beri alasan |
+| Ekspor final | Berhasil: 33 halaman sebelum Lampiran (34 dengan Lampiran), 722 KB, unduhan .docx 200 OK |
+| Admin UPPS Pantau LED: Sipil Layak diajukan, 105/105 selesai; Lihat → tampilan hanya baca (editor tidak bisa disunting, tanpa formulir catatan) | Berhasil |
+
+Catatan uji:
+
+- 37 perbedaan angka sebagian besar berasal dari teks model uji yang menyebut nomor sub-bagian (misalnya "› 3.i
+  Publikasi …" terbaca sebagai angka 3). Dengan narasi Gemini asli hal ini jarang terjadi; bila sering muncul,
+  pemeriksa konsistensi bisa mengabaikan nomor sub-bagian.
+- LED uji Sipil sempat dikembalikan ke Direview lewat SQL untuk uji P4, lalu dinyatakan Layak lagi lewat UI.
+- Instrumen LAMTEKNIK-2025-PASCA diaktifkan lewat UI untuk uji ini (sebelumnya nonaktif); akun dan LED uji dibiarkan di
+  basis data pengembangan. Berkas uji `public/_uji/` dihapus.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm test` (unit + integrasi) | unit 127/127, integrasi 76/76 lulus |
+| `npm run build` | Lulus (25 halaman statis) |

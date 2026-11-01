@@ -29,40 +29,57 @@ Dokumen rencana lengkap (Claude Doc): https://claude.ai/code/artifact/ba67e45c-5
 
 Revisi 19 Okt 2026 (dokumen "Rencana Revisi Website LED LAM Teknik", disetujui Adrianne) mengubah butir 1–4 dan 8;
 rinciannya di `docs/CATATAN-PENGEMBANGAN.md` bagian Revisi 19 Okt 2026. Revisi 22 Okt 2026 (tab "Revisi 22 Oktober"
-di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revisi 22 Okt 2026.
+di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revisi 22 Okt 2026. Revisi 31 Okt 2026
+(`docs/RENCANA-REVISI-31OKT.md`, masukan Pak Tris 6) mengubah butir 1, 2, dan 8; rinciannya di bagian "Revisi 31 Oktober
+2026 (peran dan masukan Pak Tris 6)".
 
 1. Lembaga: **LAM Teknik saja**, dibedakan per **jenjang** (10 jenjang), bukan per jurusan. Skema: Pasca Terakreditasi
-   Pertama dan Unggul (Peraturan LAM Teknik No. 5 dan 6 Tahun 2025), 7 kriteria C.1–C.7. **Instrumen diunggah PJ per
-   jenjang setiap ± 5 tahun** (Template LED .docx, Matriks Penilaian .pdf, Pedoman Penilaian .pdf + halaman tabel bobot):
-   template diurai tanpa AI, tabel bobot dibaca tanpa AI, tabel matriks dibaca AI per kelompok kecil; hasil dicek PJ di
+   Pertama dan Unggul (Peraturan LAM Teknik No. 5 dan 6 Tahun 2025), 7 kriteria C.1–C.7. **Instrumen diunggah Admin UPPS
+   per jenjang setiap ± 5 tahun** (Template LED .docx, Matriks Penilaian .pdf, Pedoman Penilaian .pdf + halaman tabel bobot):
+   template diurai tanpa AI, tabel bobot dibaca tanpa AI, tabel matriks dibaca AI per kelompok kecil; hasil dicek Admin UPPS di
    halaman cek (PDF di samping tabel, usulan AI ditandai, pemeriksaan otomatis) lalu diaktifkan. Satu versi aktif per
    jenjang; versi lama tetap tersimpan dan LED lama tetap memakai versinya.
-2. **Tiga peran** (revisi 22 Okt 2026), semua lewat login:
-   - **Admin**: **Akun PJ** (juga akun asesor), **Penugasan asesor**, dan **Kunci API** (kunci cadangan, model Gemini,
-     log pemakaian), serta melihat status cadangan terakhir. Admin tidak membuka LED.
-   - **Penanggung jawab fakultas** (satu akun untuk seluruh fakultas): semua LED (dikelompokkan per prodi), program
-     studi dan identitas fakultas (pengganti UPPS), instrumen, dokumen bersama fakultas, kunci API fakultas; di dalam LED:
-     Data LKPS, dokumen, tim penyusun, kriteria, ekspor Word.
-   - **Asesor**: reviewer internal, satu asesor per LED (ditugaskan admin). Hanya membaca LED yang ditugaskan, memblok
-     teks dan memberi catatan revisi (real time di layar PJ), menerima/membuka lagi perbaikan, memberi skor 0–4 per butir,
-     dan menyatakan Layak diajukan atau Perlu revisi. Tidak bisa menyunting, generate, atau ekspor. Ekspor final PJ
-     terbuka setelah Layak diajukan; ekspor DRAF kapan saja.
+2. **Tiga peran** (revisi 31 Okt 2026, Pak Tris; enum `Peran` = `ADMIN`, `TIM_PRODI`, `ASESOR`), semua lewat login:
+   - **Admin UPPS**: Kelola akun (Admin UPPS, Tim Prodi beserta prodinya, Asesor), Program studi dan identitas
+     fakultas, Instrumen, Basis Pengetahuan fakultas (unggah/hapus), Kunci API (kunci utama fakultas dan kunci
+     cadangan), Model Gemini, Log, status cadangan, Penugasan asesor, dan Pantau LED. Melihat semua LED **hanya baca**
+     (tidak membuat, menyusun, menilai, atau mengekspor LED).
+   - **Tim Prodi**: akun terikat satu prodi (`User.prodiId`); satu prodi boleh beberapa akun dan semuanya menyusun LED
+     yang sama. Membuat LED prodinya (prodi dari akun), mengisi identitas prodinya (bukan nama/jenjang), melihat Basis
+     Pengetahuan fakultas dan status kunci API; di dalam LED: Data LKPS, dokumen, tim penyusun, jawaban, generate
+     (termasuk Susun seluruh LED), suntingan, Perkiraan nilai, ekspor Word, ajukan review, tandai sudah diperbaiki.
+   - **Asesor**: reviewer internal, satu asesor per LED (ditugaskan Admin UPPS). Hanya membaca LED yang ditugaskan,
+     memblok teks dan memberi catatan revisi (real time di layar Tim Prodi), menerima/membuka lagi perbaikan, memberi skor
+     0–4 per butir di halaman Penilaian (narasi tampil di baris butir), dan menyatakan Layak diajukan atau Perlu revisi.
+     Tidak bisa menyunting, generate, atau ekspor. Ekspor final Tim Prodi terbuka setelah Layak diajukan; ekspor DRAF
+     kapan saja.
+   - Ringkas akses: akun/prodi/fakultas/instrumen/kunci/penugasan = Admin UPPS; LED prodi = Tim Prodi prodinya; LED yang
+     ditugaskan = asesor (baca, catatan, skor); semua LED = Admin UPPS (baca).
    - Tidak ada pembagian kriteria ke anggota.
    - Aturan akun: semua pengguna bisa mengganti kata sandi sendiri (wajib kata sandi lama); akun baru dan akun yang
-     sandinya diatur ulang wajib mengganti sandi saat login. Hanya admin yang mengatur ulang sandi, menonaktifkan, dan
-     menghapus akun; admin tidak bisa menonaktifkan/menghapus diri sendiri dan minimal ada satu admin aktif. LED, kunci
-     API, dan riwayat versi milik **fakultas**, bukan akun. Pergantian PJ: nonaktifkan akun lama, buat akun baru.
-   - **LED per periode 5 tahun** ("Periode 2026–2031"): satu LED aktif per prodi; LED baru = prodi + tahun pengajuan +
-     nama, instrumen otomatis instrumen aktif jenjang prodi, TS ("tahun data LKPS") dihitung dari tahun pengajuan.
+     sandinya diatur ulang wajib mengganti sandi saat login. Hanya Admin UPPS yang membuat akun, mengatur ulang sandi,
+     memindahkan akun Tim Prodi ke prodi lain, mengubah nama dan peran akun (perbaikan 1 Nov 2026: Ubah nama/Ubah peran
+     di halaman sendiri; Tim Prodi wajib prodi, prodi dikosongkan untuk peran lain; sesi akun dicabut; tercatat di log),
+     menonaktifkan, dan menghapus akun; admin tidak bisa menonaktifkan/menghapus/mengubah peran diri sendiri dan minimal
+     ada satu Admin UPPS aktif. Tambah akun juga halaman sendiri (`/admin/akun/tambah`). LED dan riwayat versi milik **prodi**, kunci API milik
+     **fakultas**, bukan akun. Pergantian anggota tim: buat akun Tim Prodi baru, nonaktifkan akun lama.
+   - **LED satu pengajuan**: satu LED aktif per prodi; LED baru dari kartu "Mulai LED {prodi}" di `/led` (perbaikan 1 Nov
+     2026; `/led/baru` diarahkan ke `/led`) = tahun pengajuan + TS (dua pilihan: (P−1)/P atau (P−2)/(P−1); TS bawaan
+     dipilih ulang setiap tahun diganti), tanpa isian nama: nama otomatis "LED {prodi} {tahun} (TS {tahun akademik})",
+     bisa diubah di Pengaturan LED; instrumen otomatis instrumen aktif jenjang prodi.
+     Kartu dan judul memakai "TS 2026/2027 · pengajuan 2027"; label periode 5 tahun hanya kecil di Pengaturan LED.
 3. **Satu sub-bagian satu halaman**: ringkasan kriteria (status sub-bagian, target kata, Lanjutkan, Generate semua,
    Tandai selesai), lalu halaman per sub-bagian berisi instruksi template, butir dan daftar cek skor 4 (dari deskriptor
-   skor 4 resmi yang dipecah per nomor), data LKPS atau nilai manual, jawaban penyusun, dokumen, hasil generate dan
-   riwayat versi; Sebelumnya/Berikutnya menyimpan isian dulu. Pertanyaan pemandu dan "dokumen yang diharapkan" buatan
+   skor 4 resmi yang dipecah per nomor), data LKPS atau nilai manual, Bahan dari prodi (untuk AI; sumber J, tidak
+   diekspor), dokumen, hasil generate dan riwayat versi; Sebelumnya/Berikutnya dan pemilih dropdown "n dari m" menyimpan
+   isian dulu. Perbaikan 1 Nov 2026: dua tab "1. Bahan untuk AI" dan "2. Narasi (masuk ke Word)" (tab awal Narasi bila
+   ada draf), baris Periksa (Catatan asesor, Pemeriksaan, Verifikasi) yang membuka panel samping, pita kuning bila ada
+   catatan asesor terbuka; tampilan asesor bersusunan sama. Pertanyaan pemandu dan "dokumen yang diharapkan" buatan
    sendiri dihapus: pertanyaan = instruksi resmi template.
 4. **Generate semua** (ringkasan kriteria) dan **generate satu sub-bagian**; AF/SWOT memberi peringatan bila belum ada draf
    IKU. Satu panggilan LLM = satu sub-bagian. Hasil bisa disunting; **setiap generate/suntingan disimpan sebagai versi**
    dan bisa dibandingkan/dipulihkan. Butir angka: rumus lama (`kodeRumus`) bila cocok; tanpa rumus atau rumus gagal
-   membaca LKPS → nilai hitung diisi PJ (`NilaiManual`) dan menjadi sumber narasi.
+   membaca LKPS → nilai hitung diisi Tim Prodi (`NilaiManual`) dan menjadi sumber narasi.
 5. Bagian di luar kriteria (kata pengantar, ringkasan eksekutif, Bab I, II.A, II.B, Bab III, Bab IV) **ikut di-generate**
    mengikuti instruksi template. Halaman muka, identitas, dan tabel tim diisi dari data.
 6. **Maksimal 150 halaman termasuk cover dan kata pengantar** (arahan pembimbing, lebih ketat dari template);
@@ -70,7 +87,9 @@ di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revis
    Panjang narasi per butir mengikuti bobot; butir berjenis angka ditulis singkat. Lihat `src/modules/led/domain/anggaran.ts`.
 7. **TS** = tahun akademik penuh terakhir saat pengajuan (Okt 2026 -> TS 2025/2026). Disimpan per proyek sebagai
    tahun mulai; label TS di LKPS diganti tahun nyata di narasi. Lihat `src/modules/bersama/domain/tahun-akademik.ts`.
-8. **Kunci API**: urutan dicoba **kunci fakultas (PJ) → kunci cadangan admin** (`pakaiCadanganAdmin`). Saat kuota habis
+8. **Kunci API**: dikelola **Admin UPPS saja** di satu halaman `/admin/kunci-api` (kunci utama fakultas dan kunci
+   cadangan; nilai `KunciAPI.pemilik` tetap `penanggung_jawab` = utama, `super_admin` = cadangan). Tim Prodi hanya melihat
+   status kunci dan pesan "Hubungi Admin UPPS". Urutan dicoba **kunci utama → kunci cadangan** (`pakaiCadanganAdmin`). Saat kuota habis
    generate dan ekstraksi instrumen berhenti rapi, sistem meminta kunci baru, lalu lanjut dari butir/kelompok itu.
    Kuota Gemini dihitung **per project Google**, bukan per kunci; reset tengah malam waktu Pasifik (14.00–15.00 WIB);
    galat 429 RESOURCE_EXHAUSTED. Lihat `src/modules/bersama/domain/kunci-api.ts`.
@@ -175,16 +194,15 @@ Satu website dua modul (permintaan Adrianne 31 Okt 2026, mengikuti arahan Pak Tr
 basis data"). Bagian "Struktur kode" yang lebih lama di bawah adalah catatan per iterasi; jalurnya sudah diperbarui ke
 lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
 
-- **Alur pengguna**: login sekali → `/` halaman awal "Pilih modul" (kartu LKPS dan LED; PJ juga melihat Data bersama)
-  → modul. Di kepala setiap halaman ada tombol **LKPS | LED** (`src/components/shell/pindah-modul.tsx`) dan ikon kembali
-  ke halaman awal. Admin tetap langsung ke `/admin/akun` (`berandaPeran`).
-- **Rute** (`src/app`): `/` (halaman awal), `/login`, `/akun`, `/admin/*` (bersama); `/pengaturan/prodi` dan
-  `/pengaturan/kunci-api` (data bersama LKPS & LED, PJ); `/led` + `/led/baru` + `/led/[proyekId]/*` + `/led/instrumen` +
-  `/led/dokumen-bersama` di `src/app/led/(penyusun)/` (grup rute: hanya PJ, alamat tetap `/led/...`); `/led/asesor/*` di
-  `src/app/led/asesor/`; `/lkps` (kerangka) di `src/app/lkps/`. Route Handler LED di `src/app/api/led/*`;
+- **Alur pengguna**: login sekali → `/` halaman awal "Pilih modul" untuk ketiga peran (kartu LKPS dan LED; Admin UPPS
+  juga melihat Pengaturan UPPS) → modul. Di kepala setiap halaman ada tombol **LKPS | LED**
+  (`src/components/shell/pindah-modul.tsx`) dan ikon kembali ke halaman awal.
+- **Rute** (`src/app`): `/` (halaman awal), `/login`, `/akun`, `/admin/*` dan `/pengaturan/prodi` (Admin UPPS); LED di
+  grup rute `src/app/led/(tim-prodi)/` dan `src/app/led/(admin)/` (lihat bagian revisi 31 Okt 2026); `/led/asesor/*` di
+  `src/app/led/asesor/`; `/lkps` (kerangka, ketiga peran) di `src/app/lkps/`. Route Handler LED di `src/app/api/led/*`;
   `/api/auth` dan `/api/pemberitahuan` bersama. Aksi review `src/app/led/aksi-review.ts`, aksi lonceng
   `src/app/aksi-pemberitahuan.ts`, aksi kunci `src/app/aksi-kunci.ts`.
-- **Alamat lama** `/proyek/*`, `/proyek/prodi`, `/proyek/kunci-api`, `/asesor/*` diarahkan oleh `redirects()` di
+- **Alamat lama** `/proyek/*`, `/proyek/prodi`, `/proyek/kunci-api`, `/pengaturan/kunci-api`, `/asesor/*` diarahkan oleh `redirects()` di
   `next.config.ts`; tautan pemberitahuan lama diperbarui migrasi `20261031090000_rute_modul`.
 - **Modul** (`src/modules`, aturan di `src/modules/README.md`, diuji `tests/unit/batas-modul.test.ts`):
   - `bersama/`: `akses.ts`, `aksi.ts`, `antrean.ts`, `auth.ts`, `auth-client.ts`, `db.ts`, `jalur.ts`, `kripto.ts`,
@@ -198,18 +216,57 @@ lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
     instrumen, LED baru, jawaban, tim penyusun), `tampil.ts` (`formatMetrik`).
   - `lkps/`: kerangka untuk Ghalib (`README.md`, `index.ts` = pintu modul, `komponen/shell-lkps.tsx`).
   - Komponen tampilan umum tetap di `src/components/` (shadcn/ui, `shell/` = `ShellAplikasi`, `ShellBersama`,
-    `ShellPeran`, `menu-peran.ts` dengan `MENU_DATA_BERSAMA`, lonceng, menu pengguna).
+    `ShellPeran`, `menu-peran.ts` dengan menu per peran, lonceng, menu pengguna).
 - **Prisma**: skema dipecah `prisma/schema/{bersama,led,lkps}.prisma` (`prisma.config.ts` → `schema: "prisma/schema"`,
   output generator `../../src/generated/prisma`); satu basis data, migrasi tetap `prisma/migrations/`.
 - **Worker**: `src/worker/index.ts` (satu proses) memanggil `src/worker/{bersama,led,lkps}.ts`. Nama antrean tidak
   diubah; antrean LKPS nanti berawalan `lkps-`.
 - **Uji**: `npm run test:unit` menjalankan `src/modules/*/domain/__tests__/*.test.ts` dan `tests/unit/*.test.ts`.
-- Peran belum diubah di langkah ini (masih Admin / PJ fakultas / Asesor). Keputusan Adrianne 31 Okt 2026: peran akan
-  mengikuti Pak Tris (Admin UPPS mengatur instrumen, prodi, akun, kunci API; akun Tim Prodi per prodi; Asesor/Reviewer)
-  sebagai langkah berikutnya.
-- **Rencana kerja berikutnya: `docs/RENCANA-REVISI-31OKT.md`** (peran Admin UPPS / Tim Prodi / Asesor, prodi FT terisi,
-  LED baru berfokus TS, penilaian di depan dengan usulan skor AI, susun seluruh LED otomatis, jadwal hanya pengingat,
-  nama model AI, LKPS PDF per tabel). Kerjakan tahap demi tahap sesuai dokumen itu.
+- Peran dan menu revisi 31 Okt 2026 (Admin UPPS / Tim Prodi / Asesor) sudah dikerjakan; lihat bagian "Struktur kode
+  (revisi 31 Okt 2026)" di bawah. Bagian ini tetap berlaku untuk modul, Prisma, worker, dan uji.
+
+## Struktur kode (revisi 31 Okt 2026)
+
+Dikerjakan dari `docs/RENCANA-REVISI-31OKT.md` (Tahap 0–9, branch `revisi-31okt`); catatan per tahap di
+`docs/CATATAN-PENGEMBANGAN.md`.
+
+- **Peran dan akses**: `src/modules/bersama/peran.ts` (`PERAN`, `LABEL_PERAN`, `berandaPeran` = `/` untuk semua),
+  `akses.ts` (`pastikanAdmin`, `pastikanTimProdi`, `pastikanProdiSendiri`, `pastikanPeran`, `pastikanAsesor`), `sesi.ts`
+  (`wajibAdmin`, `wajibTimProdi`, `wajibPeran`, `wajibAsesor`; peran lain diarahkan ke `/`). `Pengguna.prodiId` dari sesi
+  (Better Auth `additionalFields.prodiId`, `input: false`). LED: `ambilProyek(p, id)` = Tim Prodi pemilik;
+  `ambilProyek(p, id, { baca: true })` juga Admin UPPS (semua LED) dan asesor yang ditugaskan; `ambilProyekUbah` = Tim
+  Prodi pemilik dan LED tidak diarsipkan. Akun: `buatAkunTimProdi`, `buatAkunAsesor`, `buatAkunAdmin`, `pindahProdiAkun`,
+  `simpanIdentitasProdi` (`src/modules/bersama/data/organisasi.ts`). Pemberitahuan review ke semua akun Tim Prodi prodi
+  pemilik LED.
+- **Menu dan rute**: `src/components/shell/menu-peran.ts` (`MENU_PENGATURAN_UPPS`, `MENU_LED_ADMIN`, `MENU_LKPS_ADMIN`,
+  `MENU_ADMIN`, `menuLuarModul`, `berandaLed`: admin `/led/pantau`, asesor `/led/asesor`, Tim Prodi `/led`). Rute LED:
+  `src/app/led/(tim-prodi)/` (`/led` dengan kartu Mulai LED, `/led/baru` → `/led`, `/led/identitas-prodi`,
+  `/led/[proyekId]/*`), `src/app/led/(admin)/`
+  (`/led/pantau`, `/led/instrumen`, `/led/dokumen-bersama`), `src/app/led/asesor/` (asesor; `/led/asesor/[proyekId]/*`
+  juga tampilan hanya baca Admin UPPS). `/pengaturan/prodi` dan `/admin/*` milik Admin UPPS; `/pengaturan/kunci-api`
+  diarahkan ke `/admin/kunci-api` (`next.config.ts`).
+- **Prodi bawaan**: `data/prodi/ft-unila.json` (16 prodi) dan `src/modules/bersama/data/prodi-bawaan.ts`
+  (`isiProdiBawaan`, idempoten nama + jenjang) dari `prisma/seed.ts` dan pemasangan pertama.
+- **LED baru dan TS**: `pilihanTs`, `tsBawaan`, `labelTsPengajuan`, `namaLedOtomatis`, `isianSetelahGantiTahun`
+  (`src/modules/bersama/domain/tahun-akademik.ts`), `skemaProyek` (`nama` opsional; kosong = nama otomatis di
+  `buatProyek`), `skemaNamaProyek` (ubah nama, wajib), `src/app/led/(tim-prodi)/form-mulai-led.tsx`.
+- **Akun (perbaikan 1 Nov 2026)**: `ubahNamaAkun`, `ubahPeranAkun` (`src/modules/bersama/data/organisasi.ts`), halaman
+  `/admin/akun/tambah`, `/admin/akun/[id]/nama`, `/admin/akun/[id]/peran`.
+- **Penilaian**: model `UsulanSkor`, antrean `skor-rubrik` (`src/modules/led/proses/skor-rubrik.ts`), rekap murni
+  (`nilaiButir`, `persenNilai`, `rekapPenilaian`, `skorTerpakai`, `perluNilaiUlang` di `src/modules/led/domain/review.ts`),
+  `penilaianProyek` dan `mulaiSkorRubrik` (`src/modules/led/data/review.ts`), halaman bersama
+  `src/modules/led/komponen/penilaian/halaman-penilaian.tsx` (asesor `/led/asesor/[id]/penilaian`, Tim Prodi
+  `/led/[id]/penilaian` "Perkiraan nilai", admin hanya baca), narasi hanya baca `src/modules/led/komponen/narasi/narasi-baca.tsx`.
+  `panggilTerstruktur({ keluaranUji })` untuk `LLM_NARASI=uji` selain narasi.
+- **Susun seluruh LED**: `TugasGenerate.bagianBerikutnya`, `rangkaianKe`, `rangkaianTotal`; urutan di
+  `src/modules/led/domain/rangkaian.ts`; `rencanaSusun`/`lanjutkanRangkaian` (`src/modules/led/proses/generate.ts`),
+  `rencanaSusunSeluruh`/`mulaiSusunSeluruh` (`src/modules/led/data/generate.ts`); kartu halaman otomatis dari data
+  `src/modules/led/komponen/halaman-otomatis.tsx`. Jeda model uji `LLM_NARASI_UJI_JEDA_MS`.
+- **Model AI disebut jelas**: `modelAiAktif()` (`src/modules/bersama/data/pengaturan.ts`) dari `PengaturanLLM`.
+- **LKPS PDF per tabel**: `sumberLkps` (`src/modules/led/data/sumber-lkps.ts`) menggabung tabel semua berkas sumber
+  (`gabungTabelLkps`, `ringkasTabelTerbaca` di `src/modules/led/data-lkps/gabung.ts`); Excel lengkap menggantikan semua
+  sumber, PDF ditambahkan. `petaHalamanTabelPdf` (baca-pdf.ts) untuk uji pemecahan PDF.
+- **Uji helper**: `tests/integrasi/bantu.ts` (`buatAdmin`, `siapkanFakultas`, `buatTimProdi`, `siapkanProdi`).
 
 ## Struktur kode (setelah iterasi 1)
 
@@ -252,7 +309,9 @@ lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
   30 menit), pulihkan, bandingkan, tandai selesai. `tugas-generate.ts`: antre ulang tugas tertunda saat kunci baru ditambah.
   `pengaturan.ts`: muat daftar model Google, uji model. `pemakaian.ts`: log untuk super admin.
 - UI: `src/modules/led/komponen/narasi/` (editor Tiptap, banner antrean di layout proyek, tombol generate),
-  `src/app/led/(penyusun)/[proyekId]/bagian/[kode]/panel-draf.tsx` (tab Hasil generate / Riwayat versi).
+  `src/app/led/(tim-prodi)/[proyekId]/bagian/[kode]/panel-draf.tsx` (tab Narasi: editor, baris Periksa, Riwayat versi),
+  `tab-sub.tsx` (dua tab), `pemilih-sub.tsx` (dropdown sub-bagian), `src/modules/led/komponen/narasi/panel-samping.tsx`
+  (`BarisPeriksa`, panel samping Sheet), `src/modules/led/domain/bahan-prodi.ts` (label dan contoh Bahan dari prodi).
   Status antrean: `GET /api/led/proyek/[proyekId]/generate`.
 - Kunci API per prodi: `/pengaturan/kunci-api` (juga dari daftar proyek), komponen bersama `src/components/kunci-api/`.
 - Akun: `src/app/akun/ganti-sandi`; `wajibGantiSandi` memaksa ganti sandi (`wajibLogin`, `jalankanAksi`, `jalankanRute`).
@@ -325,12 +384,15 @@ lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
 ## Konvensi
 
 - Teks antarmuka, pesan galat, dan nama domain dalam **Bahasa Indonesia** (kode boleh campuran; ikuti istilah domain:
-  `butir`, `subBagian`, `kriteria`, `proyek`, `penanggungJawab`). Nama variabel konsisten dengan seed dan skema.
+  `butir`, `subBagian`, `kriteria`, `proyek`, `timProdi`). Di antarmuka pakai "Admin UPPS", "Tim Prodi", "Asesor";
+  jangan "PJ" atau "penanggung jawab". Nama variabel konsisten dengan seed dan skema.
 - TypeScript strict, tanpa `any`. Validasi semua masukan dengan Zod di server.
 - Logika domain murni ditaruh di `src/modules/<modul>/domain/` dan diberi uji. Akses data di `src/modules/<modul>/data/` atau server actions,
   bukan di komponen.
-- Setiap aksi server memeriksa sesi dan peran: PJ fakultas mengakses semua LED fakultas; asesor hanya membaca LED yang
-  ditugaskan; admin tidak mengakses LED, prodi, instrumen, maupun dokumen (hanya akun, penugasan asesor, dan kunci API).
+- Setiap aksi server memeriksa sesi dan peran (revisi 31 Okt 2026): Tim Prodi hanya LED dan identitas prodinya sendiri;
+  asesor hanya membaca dan menilai LED yang ditugaskan; Admin UPPS mengelola akun, prodi, fakultas, instrumen, Basis
+  Pengetahuan fakultas, kunci API dan model, penugasan asesor, dan membaca semua LED tanpa mengubahnya. Fungsi data
+  memakai `pastikan*`/`ambilProyek`; halaman memakai `wajib*`.
 - Kunci API dienkripsi (AES-256-GCM, kunci dari `ENCRYPTION_KEY`), hanya didekripsi di server/worker, tidak pernah
   dikirim ke browser atau ditulis ke log. Tampilkan hanya 4 karakter terakhir.
 - Angka di narasi dihitung sistem dari LKPS, bukan oleh LLM. Format Indonesia lewat `src/modules/bersama/domain/teks.ts`.

@@ -8,20 +8,27 @@ Bila ada yang bertentangan, dokumen rencana yang terbaru yang berlaku; catat per
 Revisi 19 Okt 2026: peran Admin (akun PJ, kunci API) dan Penanggung jawab fakultas (PJ); instrumen diunggah PJ per
 jenjang; satu sub-bagian satu halaman. Revisi 22 Okt 2026: peran ketiga **Asesor** (review real time, skor 0–4,
 Layak diajukan), Basis Pengetahuan, rujukan dan Daftar Rujukan di Word, verifikasi per kalimat, konsistensi angka,
-target dan capaian, kesiapan dan jadwal kerja mundur, ekspor DRAF, server produksi dan cadangan harian. Rincian di
-`CATATAN-PENGEMBANGAN.md`.
+target dan capaian, kesiapan dan jadwal kerja mundur, ekspor DRAF, server produksi dan cadangan harian. Revisi 31 Okt
+2026 (masukan Pak Tris 6): peran **Admin UPPS**, **Tim Prodi** (akun per prodi), **Asesor**; 16 prodi FT Unila sudah
+terisi; LED baru berfokus pada TS; Penilaian di depan dengan usulan skor AI; Susun seluruh LED; jadwal hanya pengingat;
+model AI disebut; LKPS PDF per tabel. Rincian di `CATATAN-PENGEMBANGAN.md`.
 
-1. Admin membuat akun PJ fakultas. PJ mengisi identitas fakultas dan program studi, lalu mengunggah instrumen per
-   jenjang (Template LED, Matriks Penilaian, Pedoman Penilaian), memeriksa hasil ekstraksi, dan mengaktifkannya.
-2. PJ membuat LED per periode 5 tahun (prodi, tahun pengajuan, nama); instrumen dan TS ditentukan otomatis.
-3. PJ mengunggah LKPS dan dokumen pendukung, lalu mengisi jawaban per sub-bagian (pertanyaan = instruksi resmi template)
-   dan nilai hitung butir angka yang tidak punya rumus.
+1. Admin UPPS melengkapi identitas fakultas dan program studi (16 prodi FT Unila sudah terisi), membuat akun Tim Prodi
+   per prodi dan akun asesor, mengunggah instrumen per jenjang (Template LED, Matriks Penilaian, Pedoman Penilaian),
+   memeriksa hasil ekstraksi dan mengaktifkannya, mengisi kunci API, dan mengunggah Basis Pengetahuan fakultas.
+2. Tim Prodi membuat LED prodinya: tahun pengajuan dan TS (dua pilihan: (P−1)/P atau (P−2)/(P−1)); nama, instrumen,
+   dan prodi ditentukan otomatis. Tim Prodi melengkapi identitas prodi.
+3. Tim Prodi mengunggah LKPS (Excel, atau PDF per tabel sekaligus) dan dokumen pendukung, lalu mengisi jawaban per
+   sub-bagian (pertanyaan = instruksi resmi template) dan nilai hitung butir angka yang tidak punya rumus.
 4. Sistem memproses dokumen (ekstrak, potong, embedding).
-5. Generate semua (per kriteria) atau satu sub-bagian; PJ memeriksa, menyunting, mengulang sampai sesuai,
-   lalu menandai kriteria selesai.
-6. Setelah C.1–C.7 selesai: generate Bab II.B, Bab III, Bab I, Bab IV, ringkasan eksekutif, kata pengantar
-   (bagian yang merangkum isi lain dikerjakan paling akhir).
-7. Hitung halaman (≤ 150 termasuk cover) lalu unduh berkas Word. Unggah ke LAM Teknik dilakukan manual oleh prodi.
+5. **Susun seluruh LED** (C.1–C.7, Bab II, III, I, IV, lalu kata pengantar dan ringkasan), Generate semua per kriteria,
+   atau satu sub-bagian; Tim Prodi memeriksa, menyunting, mengulang sampai sesuai, lalu menandai kriteria selesai.
+6. **Perkiraan nilai**: usulan skor AI per butir narasi (rubrik) dan skor sistem butir angka; Tim Prodi memperbaiki
+   narasi pada butir yang unsurnya masih kurang, lalu Ajukan review.
+7. Asesor mereview (catatan revisi pada teks, terima perbaikan), menilai di halaman **Penilaian** sambil membaca narasi,
+   lalu menyatakan Layak diajukan atau Perlu revisi. Admin UPPS memantau semua LED (hanya baca).
+8. Hitung halaman (≤ 150 termasuk cover) lalu Tim Prodi mengunduh berkas Word final. Unggah ke LAM Teknik dilakukan
+   manual oleh prodi.
 
 ## 2. Struktur isian dan butir penilaian
 
@@ -46,7 +53,8 @@ target dan capaian, kesiapan dan jadwal kerja mundur, ekspor DRAF, server produk
 - Konteks per panggilan (`KonteksSubBagian` di `src/modules/led/domain/prompt.ts`):
   - instruksi sub-bagian sesuai jenjang;
   - butir terkait: deskriptor dan unsur skor 4;
-  - jawaban penyusun dari form (sumber `J`);
+  - Bahan dari prodi (untuk AI), isian per sub-bagian yang tidak ikut diekspor (sumber `J`, label "J = Bahan dari
+    prodi"; label blok di prompt tetap "JAWABAN PENYUSUN");
   - metrik yang dihitung sistem dari LKPS (sumber `M-…`), label TS sudah diganti tahun nyata;
   - tabel LKPS yang dirujuk butir, ringkas (sumber `T-…`);
   - potongan dokumen hasil pencarian (sumber `D…`): disaring per proyek dan sub-bagian (plus dokumen umum), pencarian
@@ -115,31 +123,35 @@ pemeriksaan hanya peringatan). Setiap paragraf diberi rujukan singkat; Daftar Ru
 Sidebar kiri (bisa diciutkan menjadi ikon; menjadi laci di layar kecil), area kerja kanan. Satu layar satu tugas,
 progres selalu terlihat. Bahasa Indonesia.
 
-Satu website dua modul (31 Okt 2026): setelah login, PJ dan asesor membuka halaman awal **Pilih modul** (`/`) dengan
-kartu LKPS (`/lkps`) dan LED (`/led`, asesor `/led/asesor`); kepala halaman berisi tombol **LKPS | LED** dan ikon kembali
-ke halaman awal. Program studi (`/pengaturan/prodi`) dan Kunci API fakultas (`/pengaturan/kunci-api`) adalah **data
-bersama LKPS & LED** dan tampil di sidebar kedua modul. Admin tidak membuka modul. Menu LKPS diisi saat modul LKPS
-digabung (masih kerangka).
+Satu website dua modul (31 Okt 2026): setelah login, ketiga peran membuka halaman awal **Pilih modul** (`/`) dengan
+kartu LKPS (`/lkps`) dan LED (Admin UPPS `/led/pantau`, Tim Prodi `/led`, asesor `/led/asesor`) serta keterangan model
+AI yang dipakai; kepala halaman berisi tombol **LKPS | LED** dan ikon kembali ke halaman awal. Revisi 31 Okt 2026: menu
+per peran. Admin UPPS: grup **Pengaturan UPPS** (Kelola akun, Program studi, Kunci API, Penugasan asesor), grup **LED**
+(Pantau LED, Instrumen, Basis Pengetahuan fakultas), grup **LKPS** (kosong dulu). Tim Prodi: menu LED prodi dan
+Identitas prodi, lalu menu LED ini. Asesor: LED ditugaskan, lalu Penilaian dan Ringkasan review. Membuka alamat milik
+peran lain diarahkan ke halaman awal. Menu LKPS diisi saat modul LKPS digabung (masih kerangka).
 
 | Menu | Isi | Peran |
 | --- | --- | --- |
-| Akun PJ | Akun penanggung jawab, asesor, dan admin; atur ulang sandi, nonaktifkan; status cadangan terakhir | Admin |
-| Penugasan asesor | Satu asesor per LED | Admin |
-| Kunci API (tab Kunci, Model Gemini, Log pemakaian) | Kunci cadangan, model narasi/cadangan/embedding, pemakaian token | Admin |
-| Pilih modul (halaman awal) | Kartu LKPS dan LED, data bersama | PJ fakultas, Asesor |
-| Semua LED | LED dikelompokkan per prodi, label periode, LED baru | PJ fakultas |
-| Program studi (data bersama) | Identitas fakultas, daftar prodi (urut akreditasi berakhir) | PJ fakultas |
-| Instrumen | Instrumen per jenjang: unggah berkas, ekstraksi, periksa hasil, aktifkan | PJ fakultas |
-| Basis Pengetahuan fakultas | Dokumen bersama yang dipakai semua LED (kode sumber U) | PJ fakultas |
-| Kunci API fakultas (data bersama) | Daftar kunci, status, tambah kunci, uji koneksi | PJ fakultas |
-| Beranda LED | Progres, periode akreditasi, Pengaturan LED (TS, nama, arsip) | PJ fakultas |
-| Data LKPS | Unggah Excel/PDF, hasil baca per tabel, sumber nilai butir angka | PJ fakultas |
-| Kriteria C.1 … C.7 dan bab lain | Ringkasan kriteria + satu halaman per sub-bagian (instruksi, butir dan daftar cek skor 4, data LKPS/nilai manual, jawaban, dokumen, hasil generate dan riwayat); Sebelumnya/Berikutnya | PJ fakultas |
-| Basis Pengetahuan, Tim penyusun | Tab Dokumen LED ini / Dokumen bersama fakultas, lihat potongan, uji cari, tahun, tautan bukti; tim penyusun | PJ fakultas |
-| Ekspor Word | Pemeriksaan sebelum ekspor, ekspor DRAF dan final, jumlah halaman, unduh .docx | PJ fakultas |
-| LED ditugaskan, Ringkasan review | LED dari admin, status review, catatan yang menunggu | Asesor |
-| Sub-bagian (hanya baca) | Blok teks → catatan revisi, Bandingkan, Terima, Buka lagi, Balas | Asesor |
-| Penilaian akhir | Skor 0–4 per butir dengan deskriptor, nilai akhir dan perkiraan status, Layak diajukan / Perlu revisi | Asesor |
+| Pilih modul (halaman awal) | Kartu LKPS dan LED, model AI; Admin UPPS juga Pengaturan UPPS; Tim Prodi melihat nama prodinya | Semua |
+| Kelola akun | Tambah akun di halaman sendiri `/admin/akun/tambah` (Tim Prodi wajib memilih prodi; satu prodi boleh beberapa akun), kolom program studi; menu baris: Ubah nama, Ubah peran (sesi akun dicabut, tercatat di log; admin tidak bisa mengubah peran sendiri; minimal satu Admin UPPS aktif), pindah prodi, atur ulang sandi, nonaktifkan, hapus; status cadangan terakhir | Admin UPPS |
+| Program studi | Identitas fakultas, 16 prodi FT Unila (bisa ditambah), urut akreditasi berakhir, jumlah akun Tim Prodi | Admin UPPS |
+| Kunci API (tab Kunci, Model Gemini, Log) | Kunci utama fakultas dan kunci cadangan dalam satu halaman, model narasi/cadangan/embedding, pemakaian token | Admin UPPS |
+| Penugasan asesor | Satu asesor per LED | Admin UPPS |
+| Pantau LED | LED aktif semua prodi: kesiapan, jadwal, status review, asesor, tombol Lihat (hanya baca) | Admin UPPS |
+| Instrumen | Instrumen per jenjang: unggah berkas, ekstraksi, periksa hasil, aktifkan | Admin UPPS |
+| Basis Pengetahuan fakultas | Dokumen bersama yang dipakai semua LED (kode sumber U); Tim Prodi melihatnya lewat tab di Basis Pengetahuan LED | Admin UPPS |
+| LED prodi | LED aktif (kartu) dan arsip prodi akun; bila belum ada LED aktif, kartu "Mulai LED {prodi}": tahun pengajuan dan dua pilihan TS saja (TS bawaan dipilih ulang setiap tahun diganti), nama otomatis "LED {prodi} {tahun} (TS {tahun akademik})" yang bisa diubah di Pengaturan LED; `/led/baru` diarahkan ke `/led` | Tim Prodi |
+| Identitas prodi | SK pendirian/pembukaan, akreditasi, alamat, kontak (nama dan jenjang diatur Admin UPPS) | Tim Prodi |
+| Beranda LED | Susun seluruh LED, kartu Perkiraan nilai, review asesor, jadwal kerja (hanya pengingat), status kunci API, halaman otomatis dari data dan data yang masih kosong, Pengaturan LED (TS, nama, arsip, periode kecil) | Tim Prodi |
+| Perkiraan nilai | Ringkasan total, persen, perkiraan status, batang per kriteria; tabel per kriteria (skor otomatis AI/sistem, skor asesor, nilai, persentase), narasi tiap butir, tombol Hitung usulan skor | Tim Prodi |
+| Data LKPS | Unggah Excel atau banyak PDF per tabel, tabel terbaca/belum ada, hasil baca per tabel, sumber nilai butir angka | Tim Prodi |
+| Kriteria C.1 … C.7 dan bab lain | Ringkasan kriteria + satu halaman per sub-bagian: kepala (kode · n dari m · judul, status, Generate, Sebelumnya, pemilih dropdown "n dari m", Berikutnya), tab "1. Bahan untuk AI" (instruksi dan butir/daftar cek skor 4 yang bisa dilipat, data LKPS/nilai manual/target, Bahan dari prodi, dokumen, Generate narasi) dan tab "2. Narasi (masuk ke Word)" (editor selebar halaman tanpa periksa ejaan, versi dan model AI, Selesai, Riwayat versi); baris Periksa (Catatan asesor, Pemeriksaan, Verifikasi) membuka panel samping ± 26rem; pita kuning bila ada catatan asesor terbuka | Tim Prodi |
+| Basis Pengetahuan, Tim penyusun | Tab Dokumen LED ini / Dokumen bersama fakultas (hanya baca), lihat potongan, uji cari, tahun, tautan bukti; tim penyusun | Tim Prodi |
+| Ekspor Word | Pemeriksaan sebelum ekspor, ekspor DRAF dan final, jumlah halaman, unduh .docx | Tim Prodi |
+| LED ditugaskan | LED dari Admin UPPS, status review, catatan yang menunggu | Asesor |
+| Penilaian (item pertama LED ini) | Halaman yang sama dengan Perkiraan nilai: pilih skor 0–4 per butir sambil membaca narasi, total berubah langsung, alasan bila berbeda dari skor sistem, Layak diajukan / Perlu revisi | Asesor (Admin UPPS hanya baca) |
+| Ringkasan review, sub-bagian | Susunan sub-bagian sama dengan Tim Prodi (narasi selebar halaman, baris Periksa dengan panel Catatan asesor, pita kuning bila ada catatan sudah diperbaiki); blok teks → catatan revisi, Bandingkan, Terima, Buka lagi, Balas | Asesor (Admin UPPS hanya baca) |
 
 Aturan tampilan: komponen shadcn/ui; teks isi ≥ 14 px, kontras WCAG AA; lencana status (belum, draf, selesai) di menu
 kriteria; simpan otomatis + peringatan saat meninggalkan halaman yang belum tersimpan; proses lama tampil sebagai
