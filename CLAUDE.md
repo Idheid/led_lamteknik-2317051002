@@ -96,7 +96,9 @@ di dokumen yang sama) mengubah butir 2, 6, 9, dan 11; rinciannya di bagian Revis
        LKPS Tim Prodi).
      - Peran `ASESOR` tampil sebagai **Reviewer LPMPP**.
      - **Dashboard akreditasi** `/dashboard` (bersama) memantau lintas modul; di modul LED Admin punya **Pantau LED
-       prodi** `/led/pantau` (kartu per prodi, buka LED hanya baca) sebagai beranda tombol LED.
+       prodi** `/led/pantau` (kartu per prodi, buka LED hanya baca) sebagai beranda tombol LED. Aksi Dashboard: Detail
+       (`/dashboard/prodi/[id]`, ringkasan hanya baca lintas modul dan pintu ke LED/LKPS), Review LPMPP (Penilaian;
+       padanan "Audit/Review" contoh dosen = review internal LPMPP, bukan modul audit terpisah), Catat hasil, Ingatkan.
      - Tim Prodi menekan **Mulai LED periode berikutnya**: LED lama diarsipkan (atau sudah diarsipkan karena hasilnya
        dicatat) dan LED baru dibuat dalam satu transaksi.
      - Bahan dari LED lama yang disalin bila dipilih: tim penyusun (periksa ulang), bahan dari prodi (per kode atau

@@ -161,7 +161,11 @@ Prodi melihatnya di tab **Dokumen bersama fakultas** tanpa bisa mengubah.
 ### 6. Penugasan reviewer LPMPP dan Dashboard akreditasi
 
 - **Penugasan asesor**: pilih asesor di kolom **Asesor** setiap LED; satu LED satu asesor. Asesor langsung diberi tahu.
-- **Dashboard akreditasi** (`/dashboard`, fitur bersama; pemantauan khusus LED ada di **Pantau LED prodi**): matriks kinerja dan kesiapan semua prodi, urut
+- **Dashboard akreditasi** (`/dashboard`, fitur bersama; pemantauan khusus LED ada di **Pantau LED prodi**). Kolom
+  Aksi: **Detail** (nama prodi juga bisa diklik) membuka ringkasan satu prodi: akreditasi dan riwayatnya, kartu LED
+  (progres, Buka LED hanya baca), kartu LKPS (kelengkapan, Buka data LKPS), Review LPMPP (status, reviewer, catatan
+  terbuka, simulasi skor), dan akun Tim Prodi; **Ubah data prodi** di sana membuka Program studi. **Review LPMPP** membuka
+  halaman Penilaian LED prodi (status review, catatan reviewer, simulasi skor). Dashboard berisi matriks kinerja dan kesiapan semua prodi, urut
   akreditasi berakhir. Tab **Semua Prodi**, **Prioritas Re-akreditasi** (berakhir ≤ 18 bulan, sudah lewat, atau perlu
   LED baru), **Sudah Unggul**, dan **Dalam Review LPMPP**, masing-masing dengan jumlahnya. Kolom:
   - program studi dan jenjang (kode PDDikti, tanda Perlu LED baru dan status akun);

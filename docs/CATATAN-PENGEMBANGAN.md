@@ -1972,3 +1972,28 @@ bisa memantau LED setiap prodi di modul LED, bukan hanya dari tabel dashboard.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 166/166 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
+
+### D5: aksi Dashboard (Detail, Review LPMPP) dan halaman Detail prodi
+
+Diskusi dengan Adrianne: tombol "Lihat LED" di Dashboard terasa dobel dengan Pantau LED prodi, dan "Detail" membuka
+halaman pengaturan (form), bukan ringkasan. "Audit" pada contoh dosen dipetakan ke review internal LPMPP (AMI), yang sudah
+ada sebagai peran Reviewer LPMPP; tidak dibuat modul audit atau peran baru. Disepakati:
+
+- Dashboard = "prodi mana yang perlu perhatian"; aksi: **Detail**, **Review LPMPP** (`/led/asesor/[id]/penilaian`),
+  Catat hasil, Ingatkan. "Lihat LED" dihapus; nama prodi di tabel juga menuju Detail.
+- **Detail prodi** `/dashboard/prodi/[id]` (baru, hanya baca, `ShellBersama`): kartu Akreditasi (lembaga, peringkat, SK,
+  masa berlaku, peringatan Perlu LED baru + Ingatkan), LED (kelengkapan, `RingkasKesiapan`, Buka LED hanya baca), LKPS
+  (kelengkapan, Buka data LKPS), Review LPMPP (status, reviewer, catatan terbuka, simulasi skor, Lihat penilaian,
+  Tugaskan reviewer), Tim Prodi (akun, login terakhir), Riwayat akreditasi. Tombol Catat hasil dan Ubah data prodi.
+  Prodi tidak dikenal → 404.
+- Pantau LED prodi tetap tempat kerja harian di modul LED.
+- `dataDashboard` menerima `{ prodiId }` (satu baris) dan mengembalikan `catatanTerbuka`. Konstanta tampilan
+  (`WARNA_MASA`, `NADA_STATUS`, `Kelengkapan`, `fmtTanggal`) dipindah ke `src/app/dashboard/tampil.tsx`.
+- Uji browser (Admin): baris Teknik Sipil berisi Detail dan Review LPMPP (ke Penilaian); Detail Teknik Sipil
+  (LED 2031, 2 akun, SK fiktif uji) dan Teknik Geofisika (tanpa LED: Perlu LED baru, Belum ada akun); id salah → 404.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 166/166 lulus |
+| `npm run test:integrasi` | 98/98 lulus |

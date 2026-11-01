@@ -13,10 +13,11 @@ import { masaBerlaku, persenLed, statusLpmpp } from "@/modules/led/domain/dashbo
  * (riwayat akreditasi berlaku terbaru), masa berlaku dan hitung mundur, kelengkapan LKPS dan LED, simulasi asesor
  * (perkiraan nilai gabungan skor reviewer dan skor otomatis), status LPMPP, perlu LED baru, dan akun Tim Prodi.
  */
-export async function dataDashboard(p: Pengguna, hariIni = new Date()) {
+export async function dataDashboard(p: Pengguna, hariIni = new Date(), opsi: { prodiId?: string } = {}) {
   pastikanAdmin(p);
   const [prodi, periode, riwayat, asesor] = await Promise.all([
     prisma.prodi.findMany({
+      where: opsi.prodiId ? { id: opsi.prodiId } : {},
       orderBy: [{ akreditasiBerlakuSampai: { sort: "asc", nulls: "last" } }, { nama: "asc" }],
       include: { proyek: { orderBy: { createdAt: "desc" } } },
     }),
@@ -60,6 +61,7 @@ export async function dataDashboard(p: Pengguna, hariIni = new Date()) {
       }),
       bolehCatat: syarat?.boleh ?? false,
       perluLedBaru: s?.perluLedBaru ?? false,
+      catatanTerbuka: kesiapan?.catatanTerbuka ?? 0,
       akun: s?.akun.filter((a) => a.aktif) ?? [],
       statusAkun: s?.statusAkun ?? "belum-ada",
     };
