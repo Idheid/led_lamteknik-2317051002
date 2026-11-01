@@ -15,7 +15,7 @@ import {
 import { kelompokBaris, susunMatriks } from "@/modules/led/domain/matriks";
 import { katalogRumus } from "@/modules/led/domain/metrik-lkps";
 import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
-import { petakanSubBagian, uraiTemplate, type SubRujukan } from "@/modules/led/domain/template-led";
+import { bacaPemetaan, petakanSubBagian, uraiTemplate, type SubRujukan } from "@/modules/led/domain/template-led";
 import { bacaHalamanPdf } from "@/modules/led/instrumen/pdf";
 import { bacaParagrafTemplate } from "@/modules/led/instrumen/template";
 import { diagnosisTemplate, teksRingkasan } from "@/modules/led/domain/diagnosis-template";
@@ -80,11 +80,14 @@ async function rujukanSub(versiId: string, jenjang: string) {
   };
 }
 
-export async function langkahTemplate(versi: { id: string; templateLedLokasi: string | null; tahunInstrumen: number }, jenjang: string): Promise<string[]> {
+export async function langkahTemplate(
+  versi: { id: string; templateLedLokasi: string | null; tahunInstrumen: number; pemetaanTemplate: unknown }, jenjang: string,
+): Promise<string[]> {
   if (await prisma.bagian.count({ where: { versiId: versi.id } })) return [];
   if (!versi.templateLedLokasi) throw new Error("Template LED belum diunggah.");
   const paragraf = await bacaParagrafTemplate(await bacaBerkas(versi.templateLedLokasi));
-  const semua = uraiTemplate(paragraf);
+  // perbaikan 2 Nov 2026 (I3): pemetaan judul oleh Admin untuk template yang formatnya lain
+  const semua = uraiTemplate(paragraf, bacaPemetaan(versi.pemetaanTemplate));
   // perbaikan 2 Nov 2026 (I2): pesan diagnosis dari hasil pembacaan, bukan galat umum
   const diag = diagnosisTemplate(paragraf, semua, { jenjang, tahun: versi.tahunInstrumen });
   if (diag.kode !== "cocok") throw new Error(`${diag.pesan} ${diag.langkah} Terbaca: ${teksRingkasan(diag.ringkasan)}.`);

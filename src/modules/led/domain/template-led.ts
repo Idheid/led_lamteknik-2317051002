@@ -13,6 +13,30 @@ import { JENJANG } from '../../bersama/domain/jenjang.ts';
  *   sama (mis. dua-duanya "semua program"), keduanya sub-bagian terpisah (I, II).
  */
 
+/**
+ * Pemetaan judul oleh Admin (perbaikan 2 Nov 2026, I3) untuk template yang formatnya tidak dikenali aturan bawaan:
+ * peran setiap gaya paragraf. Gaya yang tidak dipetakan diperlakukan seperti biasa (paragraf bernomor = judul, dst.).
+ */
+export type PeranGaya = 'bab' | 'bagian2' | 'penanda' | 'kriteria' | 'sub1' | 'sub2' | 'sub3' | 'instruksi' | 'abaikan';
+
+export const PERAN_GAYA: PeranGaya[] = ['bab', 'bagian2', 'penanda', 'kriteria', 'sub1', 'sub2', 'sub3', 'instruksi', 'abaikan'];
+
+export interface PemetaanTemplate {
+  /** nama gaya → peran */
+  gaya: Record<string, PeranGaya>;
+  /** pola (regex) catatan jenjang; kosong = bawaan "disampaikan oleh pengusul ... pada program ..." */
+  polaCatatan?: string | null;
+  /** kotak isian: bawaan (kotak teks/bentuk) atau setiap tabel dianggap kotak isian */
+  kotak?: 'bawaan' | 'tabel';
+}
+
+/** Pemetaan tersimpan (Json) → PemetaanTemplate, atau null bila kosong. */
+export function bacaPemetaan(v: unknown): PemetaanTemplate | null {
+  if (!v || typeof v !== 'object' || !('gaya' in v)) return null;
+  const p = v as PemetaanTemplate;
+  return Object.keys(p.gaya ?? {}).length || p.polaCatatan || p.kotak === 'tabel' ? p : null;
+}
+
 export interface ParagrafTemplate {
   teks: string;
   gaya: string;
@@ -100,7 +124,13 @@ interface Judul {
   dalam: number;
 }
 
-export function uraiTemplate(paragraf: ParagrafTemplate[]): BagianHasilTemplate[] {
+/**
+ * `pemetaan` opsional (I3): tanpa pemetaan, aturan bawaan berdasarkan nama gaya resmi ("I. Judul Besar", "II. Sub
+ * Judul", "C.1. ..."); dengan pemetaan, peran gaya menggantikan aturan nama gaya itu.
+ */
+export function uraiTemplate(paragraf: ParagrafTemplate[], pemetaan?: PemetaanTemplate | null): BagianHasilTemplate[] {
+  const peta = pemetaan ?? null;
+  const polaCatatan = peta?.polaCatatan ? new RegExp(peta.polaCatatan, 'i') : CATATAN;
   const bagian: BagianHasilTemplate[] = [];
   let kini: BagianHasilTemplate | null = null;
   let nomorKriteria = 0;
@@ -168,39 +198,46 @@ export function uraiTemplate(paragraf: ParagrafTemplate[]): BagianHasilTemplate[
     geser.clear();
   };
 
-  for (const p of paragraf) {
+  for (const asli of paragraf) {
+    // pemetaan: setiap tabel dianggap kotak isian
+    const p = peta?.kotak === 'tabel' && asli.tabel ? { ...asli, teks: '', tabel: false, kotak: true } : asli;
+    const peran = peta?.gaya[p.gaya];
     const teks = rapi(p.teks);
-    if (p.tabel || /^toc/i.test(p.gaya)) continue;
+    if (p.tabel || /^toc/i.test(p.gaya) || peran === 'abaikan') continue;
     const gaya = p.gaya.toLowerCase();
+    const gayaBab = peta ? peran === 'bab' : /judul besar|heading 1|title/.test(gaya);
+    const gayaJudulBesar = peta ? peran === 'bab' : /judul besar/.test(gaya);
+    const gayaBagian2 = peta ? peran === 'bagian2' : /sub judul/.test(gaya);
+    const gayaKriteria = peta ? peran === 'kriteria' : /^c\.\d+\./.test(gaya);
 
     // ---- judul besar
     const bab = /^BAB\s+([IVX]+)\.?\s*(.*)$/i.exec(teks);
-    if (bab && (/judul besar|heading 1|title/.test(gaya) || teks === teks.toUpperCase())) {
+    if (bab && (gayaBab || teks === teks.toUpperCase())) {
       const r = bab[1].toUpperCase();
       dalamBab2 = r === 'II';
       if (r !== 'II') bukaBagian(r, teks, r === 'III' ? 'butir' : 'bab');
       else { tutupBlok(); simpanKelompok(); kini = null; }
       continue;
     }
-    if (/^LAMPIRAN$/i.test(teks) && /judul besar|heading 1/.test(gaya)) {
+    if (/^LAMPIRAN$/i.test(teks) && (peta ? gayaBab : /judul besar|heading 1/.test(gaya))) {
       dalamBab2 = false;
       bukaBagian('LAMPIRAN', 'LAMPIRAN', 'bab');
       continue;
     }
-    if (/judul besar/.test(gaya)) {
-      // KATA PENGANTAR, DAFTAR ISI, dsb.: bagian awal, diatur sistem
+    if (gayaJudulBesar || (peran === 'penanda' && teks)) {
+      // KATA PENGANTAR, DAFTAR ISI, dsb.: bagian awal, diatur sistem; penanda "Kriteria Akreditasi" (pemetaan)
       tutupBlok();
       simpanKelompok();
       kini = null;
       continue;
     }
-    if (dalamBab2 && /sub judul/.test(gaya) && teks) {
+    if (dalamBab2 && gayaBagian2 && teks) {
       if (/kriteria akreditasi/i.test(teks)) { tutupBlok(); simpanKelompok(); kini = null; continue; }
       const huruf = bagian.filter((b) => /^II\./.test(b.kode)).length;
       bukaBagian(`II.${String.fromCharCode(65 + huruf)}`, teks, huruf === 1 ? 'butir' : 'bab');
       continue;
     }
-    if (/^c\.\d+\./.test(gaya) && teks && !p.numId) {
+    if (gayaKriteria && teks && !p.numId) {
       nomorKriteria += 1;
       bukaBagian(`C.${nomorKriteria}`, teks, 'kriteria');
       continue;
@@ -208,10 +245,19 @@ export function uraiTemplate(paragraf: ParagrafTemplate[]): BagianHasilTemplate[
     if (!kini) continue;
 
     // ---- isi bagian
+    // pemetaan: judul sub-bagian tingkat 1-3 menurut gaya
+    if (teks && (peran === 'sub1' || peran === 'sub2' || peran === 'sub3')) {
+      tutupBlok();
+      const dalam = Number(peran.slice(3)) - 1;
+      while (tumpuk.length && tumpuk[tumpuk.length - 1].dalam >= dalam) tumpuk.pop();
+      tumpuk.push({ teks: bersihJudul(teks.replace(/^[ivx]{1,4}\.\s+/i, '')), dalam });
+      if (p.kotak) { blok = { instruksi: [], catatan: [] }; tutupBlok(); }
+      continue;
+    }
     // catatan biru bisa berdiri sendiri atau menempel di akhir instruksi
     const pisah = pisahCatatanAkhir(teks);
-    const catatan = CATATAN.test(teks) && (pisah.catatan === null || !pisah.instruksi || /^[(/]/.test(pisah.instruksi));
-    const instruksi = INSTRUKSI.test(teks);
+    const catatan = polaCatatan.test(teks) && (pisah.catatan === null || !pisah.instruksi || /^[(/]/.test(pisah.instruksi));
+    const instruksi = INSTRUKSI.test(teks) || peran === 'instruksi';
     // paragraf bernomor berisi judul dan instruksi sekaligus: "Analisis Faktor ... Berisi deskripsi ..."
     const gabung = p.numId && !instruksi ? /^(.{5,160}?)\s+((?:Berisi|Bagian ini)\b.*)$/.exec(teks) : null;
     const judulRomawi = !p.numId && /^[IVX]{1,4}\.\s+\S/.test(teks) && teks.length <= 120 && !instruksi;

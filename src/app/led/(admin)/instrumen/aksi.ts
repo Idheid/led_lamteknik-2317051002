@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/modules/bersama/aksi";
 import * as ins from "@/modules/led/data/instrumen";
 import * as unggah from "@/modules/led/data/unggah-instrumen";
-import type { MasukanButir, MasukanSubBagian, MasukanVersiJenjang } from "@/modules/led/validasi";
+import type { MasukanButir, MasukanPemetaan, MasukanSubBagian, MasukanVersiJenjang } from "@/modules/led/validasi";
 
 // ---------------------------------------------------------------- Instrumen
 
@@ -88,6 +88,12 @@ export async function aksiMulaiEkstraksi(versiId: string, ulang: boolean) {
 export async function aksiKonfirmasiBerkas(versiId: string, jenis: "tahun" | "skema") {
   const r = await jalankanAksi((p) => unggah.konfirmasiBerkasInstrumen(p, versiId, jenis).then(() => null));
   revalidatePath(`/led/instrumen/${versiId}`);
+  return r;
+}
+
+export async function aksiSimpanPemetaan(versiId: string, masukan: MasukanPemetaan) {
+  const r = await jalankanAksi((p) => unggah.simpanPemetaan(p, versiId, masukan));
+  revalidatePath(`/led/instrumen/${versiId}`, "layout");
   return r;
 }
 

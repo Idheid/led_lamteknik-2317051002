@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { prisma } from "@/modules/bersama/db";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { periksaKodeRumus, tahunAktifJenjang } from "@/modules/led/data/instrumen";
@@ -17,6 +17,10 @@ import { teksPerHalaman } from "@/modules/led/instrumen/pdf";
 import { skemaButir, skemaVersiJenjang, type MasukanButir, type MasukanVersiJenjang } from "@/modules/led/validasi";
 import { bacaBerkasInstrumen, bacaTemplate, sha256 } from "@/modules/led/instrumen/baca-berkas";
 import type { DiagnosisTemplate } from "@/modules/led/domain/diagnosis-template";
+import { bacaPemetaan, type PemetaanTemplate } from "@/modules/led/domain/template-led";
+import { daftarGaya, usulanPemetaan } from "@/modules/led/domain/pemetaan-template";
+import { bacaParagrafTemplate } from "@/modules/led/instrumen/template";
+import { skemaPemetaan, type MasukanPemetaan } from "@/modules/led/validasi";
 import {
   konfirmasiTertunda, LABEL_JENIS, periksaBerkasInstrumen, periksaTahunAktif, SKEMA_VERSI, tambahRiwayat,
   type BacaanBerkas, type BerkasDikenal, type HasilPeriksa, type Konfirmasi, type SidikJariDikenal,
@@ -113,6 +117,7 @@ function ringkasan(hasil: HasilPeriksa): RingkasanBerkas {
 
 type VersiPeriksa = {
   id: string; kode: string; tahunInstrumen: number; jenjangUtama: string | null; riwayatPeriksa: unknown; sidikJari: unknown;
+  pemetaanTemplate: unknown;
   templateLedLokasi: string | null; templateLedNama: string | null; matriksLokasi: string | null; matriksNama: string | null;
   pedomanLokasi: string | null; pedomanNama: string | null;
 };
@@ -131,9 +136,11 @@ async function bacaanTersimpan(v: VersiPeriksa, j: JenisBerkasInstrumen): Promis
   return lokasi ? bacaBerkasInstrumen(j, await bacaBerkas(lokasi)) : null;
 }
 
-/** Bacaan berkas (template beserta diagnosisnya) dari isi berkas. */
-async function bacaUntukPeriksa(v: VersiPeriksa, j: JenisBerkasInstrumen, isi: Buffer): Promise<{ bacaan: BacaanBerkas; diagnosis?: DiagnosisTemplate }> {
-  if (j === "template") return bacaTemplate(isi, { jenjang: v.jenjangUtama, tahun: v.tahunInstrumen });
+/** Bacaan berkas (template beserta diagnosisnya) dari isi berkas; `pemetaan` hanya untuk template yang tersimpan. */
+async function bacaUntukPeriksa(
+  v: VersiPeriksa, j: JenisBerkasInstrumen, isi: Buffer, pemetaan: PemetaanTemplate | null = null,
+): Promise<{ bacaan: BacaanBerkas; diagnosis?: DiagnosisTemplate }> {
+  if (j === "template") return bacaTemplate(isi, { jenjang: v.jenjangUtama, tahun: v.tahunInstrumen }, pemetaan);
   return { bacaan: await bacaBerkasInstrumen(j, isi) };
 }
 
@@ -254,7 +261,11 @@ export async function unggahBerkasInstrumen(p: Pengguna, versiId: string, jenis:
   const sj = bacaSidikJariVersi(v.sidikJari);
   const simpanSidik = () => prisma.versiInstrumen.update({
     where: { id: v.id },
-    data: { sidikJari: { ...sj, [jenis]: ringkasan(hasil) } as unknown as Prisma.InputJsonValue },
+    data: {
+      sidikJari: { ...sj, [jenis]: ringkasan(hasil) } as unknown as Prisma.InputJsonValue,
+      // template baru: pemetaan judul template lama tidak berlaku lagi
+      ...(jenis === "template" ? { pemetaanTemplate: Prisma.DbNull } : {}),
+    },
   });
   if (jenis === "template") {
     await unggahTemplateLed(p, versiId, berkas);
@@ -355,7 +366,7 @@ async function periksaSebelumEkstraksi(p: Pengguna, v: VersiPeriksa) {
   const baca: Partial<Record<JenisBerkasInstrumen, { bacaan: BacaanBerkas; diagnosis?: DiagnosisTemplate }>> = {};
   for (const j of JENIS_BERKAS) {
     const lokasi = lokasiBerkas(v, j);
-    if (lokasi) baca[j] = await bacaUntukPeriksa(v, j, await bacaBerkas(lokasi));
+    if (lokasi) baca[j] = await bacaUntukPeriksa(v, j, await bacaBerkas(lokasi), bacaPemetaan(v.pemetaanTemplate));
   }
   const sj = bacaSidikJariVersi(v.sidikJari);
   for (const j of JENIS_BERKAS) {
@@ -371,6 +382,53 @@ async function periksaSebelumEkstraksi(p: Pengguna, v: VersiPeriksa) {
   if (tertunda.length) {
     throw new GalatPengguna(`Centang konfirmasi di bagian Berkas sumber sebelum ekstraksi: ${tertunda.map((k) => k.teks).join(" ")}`);
   }
+}
+
+// ---------------------------------------------------------------- pemetaan judul (I3)
+
+/** Data halaman Pemetaan judul: paragraf template, tabel gaya, usulan awal tanpa AI, dan pemetaan tersimpan. */
+export async function dataPemetaan(p: Pengguna, versiId: string) {
+  const v = await versiMilik(p, versiId);
+  if (!v.templateLedLokasi) throw new GalatPengguna("Unggah Template LED (.docx) lebih dulu.");
+  const paragraf = await bacaParagrafTemplate(await bacaBerkas(v.templateLedLokasi));
+  const kriteriaMatriks = bacaSidikJariVersi(v.sidikJari).matriks?.kriteria?.length || undefined;
+  return {
+    versi: v,
+    paragraf: paragraf.map((x) => ({ ...x, teks: x.teks.slice(0, 2000) })),
+    gaya: daftarGaya(paragraf),
+    usulan: usulanPemetaan(paragraf, { jumlahKriteria: kriteriaMatriks }),
+    pemetaan: bacaPemetaan(v.pemetaanTemplate),
+    kriteriaMatriks: kriteriaMatriks ?? null,
+  };
+}
+
+/**
+ * Simpan pemetaan judul: template dibaca ulang dengan pemetaan itu (diagnosis, kriteria, kecocokan dengan Matriks).
+ * Pemetaan tetap disimpan walau belum cocok supaya Admin bisa melanjutkannya; ekstraksi menunggu sampai cocok.
+ */
+export async function simpanPemetaan(p: Pengguna, versiId: string, masukan: MasukanPemetaan) {
+  const v = await versiMilik(p, versiId);
+  pastikanBelumAktif(v);
+  if (!v.templateLedLokasi) throw new GalatPengguna("Unggah Template LED (.docx) lebih dulu.");
+  const data = skemaPemetaan.parse(masukan);
+  const pemetaan: PemetaanTemplate = { gaya: data.gaya, polaCatatan: data.polaCatatan || null, kotak: data.kotak };
+  const baca = await bacaUntukPeriksa(v, "template", await bacaBerkas(v.templateLedLokasi), pemetaan);
+  const sj = bacaSidikJariVersi(v.sidikJari);
+  const pasangan = await bacaanTersimpan(v, "matriks");
+  const hasil = periksaBerkasInstrumen({
+    jenis: "template", namaBerkas: namaBerkasVersi(v, "template"), tahunIsian: v.tahunInstrumen, jenjangVersi: v.jenjangUtama,
+    tahunAktif: v.jenjangUtama ? await tahunAktifJenjang(v.jenjangUtama, v.id) : null,
+    bacaan: baca.bacaan, diagnosis: baca.diagnosis, pasangan, dikenal: await sidikJariDikenal(),
+  });
+  await prisma.versiInstrumen.update({
+    where: { id: v.id },
+    data: {
+      pemetaanTemplate: pemetaan as unknown as Prisma.InputJsonValue,
+      ...(hasil.diterima ? { sidikJari: { ...sj, template: ringkasan(hasil) } as unknown as Prisma.InputJsonValue } : {}),
+    },
+  });
+  await catatAktivitas(p, "simpan_pemetaan_template", "versi_instrumen", v.id, { gaya: data.gaya, diagnosis: baca.diagnosis?.kode });
+  return { diagnosis: baca.diagnosis?.kode ?? null, masalah: hasil.diterima ? null : `${hasil.judul}. ${hasil.alasan}` };
 }
 
 /** Admin mencentang konfirmasi (tahun tidak tertulis di teks, atau skema berbeda); dicatat di LogAktivitas. */

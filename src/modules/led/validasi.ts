@@ -2,6 +2,8 @@ import { z } from "zod";
 import { pilihanTs } from "@/modules/bersama/domain/tahun-akademik";
 import { KODE_JENJANG } from "@/modules/bersama/domain/jenjang";
 import { tahunInstrumenSah } from "@/modules/led/domain/periksa-berkas-instrumen";
+import { PERAN_GAYA } from "@/modules/led/domain/template-led";
+import { polaCatatanSah } from "@/modules/led/domain/pemetaan-template";
 import { teksOpsional, teksWajib } from "@/modules/bersama/validasi";
 
 /** Skema Zod khusus modul LED (instrumen, LED baru, jawaban penyusun, tim penyusun). Pesan galat dalam Bahasa Indonesia. */
@@ -20,6 +22,15 @@ export const skemaVersiUbah = z.object({
   catatan: teksOpsional(2000),
   tahunInstrumen: skemaTahunInstrumen().optional(),
 });
+
+/** Pemetaan judul template oleh Admin (perbaikan 2 Nov 2026, I3). */
+export const skemaPemetaan = z.object({
+  gaya: z.record(z.string().max(200), z.enum(PERAN_GAYA)).refine((g) => Object.keys(g).length <= 200, "Terlalu banyak gaya."),
+  polaCatatan: z.string().trim().max(300).nullish()
+    .refine((x) => !x || polaCatatanSah(x), "Pola catatan jenjang bukan pola (regex) yang sah."),
+  kotak: z.enum(["bawaan", "tabel"]).default("bawaan"),
+});
+export type MasukanPemetaan = z.input<typeof skemaPemetaan>;
 
 /** Versi instrumen baru untuk satu jenjang (revisi 19 Okt 2026): berkasnya diunggah setelah dibuat. */
 export const skemaVersiJenjang = z.object({

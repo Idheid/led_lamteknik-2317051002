@@ -105,6 +105,7 @@ export function diagnosisTemplate(
     };
   }
   if (!kriteria.length) {
+    // dengan pemetaan (I3) kriteria tetap kosong: format-lain, supaya Admin memperbaiki pemetaannya
     const lama = new Set(KRITERIA_LAMA.map(kunciKriteria));
     const samaLama = ringkasan.kriteria.filter((k) => lama.has(kunciKriteria(k))).length;
     if (samaLama >= 4) {

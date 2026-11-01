@@ -37,6 +37,7 @@ model VersiInstrumen {
   tahunInstrumen    Int
   sidikJari         Json?     // bacaan tiap berkas (sha256, tahun, jenjang, kriteria), konfirmasi yang diperlukan/diberikan
   riwayatPeriksa    Json?     // tiga penolakan terakhir (ditampilkan di halaman versi)
+  pemetaanTemplate  Json?     // I3: peran gaya paragraf template yang formatnya tidak dikenali aturan bawaan
   proyek      ProyekLED[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt

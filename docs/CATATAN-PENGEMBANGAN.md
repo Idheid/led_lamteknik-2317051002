@@ -1339,3 +1339,70 @@ Semua keputusan diambil dari **isi berkas**; metadata Word/PDF dan nama berkas t
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 144/144 lulus |
 | `npm run test:integrasi` | 82/82 lulus |
+
+### I3: pemetaan judul oleh Admin (tanpa AI, tanpa token)
+
+- `VersiInstrumen.pemetaanTemplate Json?` (migrasi `20261102100000_pemetaan_template`) menyimpan `{ gaya: { nama gaya →
+  peran }, polaCatatan, kotak }`. Peran yang tersedia: BAB, Bagian Bab II, Penanda "Kriteria Akreditasi", Kriteria,
+  judul sub-bagian tingkat 1/2/3, Instruksi, Abaikan. Gaya yang tidak dipetakan dibaca "seperti biasa".
+- `uraiTemplate(paragraf, pemetaan?)` (`domain/template-led.ts`):
+  - tanpa pemetaan, perilakunya persis seperti sebelumnya, dan semua uji lama tetap lulus;
+  - dengan pemetaan, peran gaya menggantikan aturan nama gaya resmi ("I. Judul Besar", "II. Sub Judul", "C.1. …");
+  - judul sub-bagian tingkat 1–3 membuka judul pada kedalaman itu, dan Instruksi memaksa paragraf menjadi instruksi;
+  - pola catatan jenjang sendiri (regex, divalidasi `polaCatatanSah`) dan pilihan "setiap tabel adalah kotak isian".
+- `domain/pemetaan-template.ts`:
+  - `daftarGaya`: nama gaya, jumlah paragraf, bernomor, tingkat (ilvl), dan 3 contoh teks.
+  - `usulanPemetaan` (tanpa AI):
+    - gaya yang memuat "BAB …" menjadi BAB;
+    - gaya yang memuat "Kriteria Akreditasi" menjadi Bagian Bab II, atau Penanda bila hanya dipakai di situ;
+    - gaya yang muncul tepat N kali di bawah "Kriteria Akreditasi" menjadi Kriteria (N = jumlah kriteria Matriks);
+    - "heading 2/3" menjadi sub-bagian, hanya bila template hampir tidak memakai penomoran Word untuk judul. Pada
+      template resmi aturan ini mengubah hasil (103 → 107 sub-bagian Sarjana), jadi dibatasi.
+  - `pratinjauPemetaan`: pohon bagian → sub-bagian per jenjang, dengan peringatan bila kriteria kosong, jumlah kriteria
+    ≠ Matriks, jenjang tanpa sub-bagian, atau Bab II tidak terbaca.
+- Data (`unggah-instrumen.ts`):
+  - `dataPemetaan` dan `simpanPemetaan`;
+  - simpan membaca ulang template dengan pemetaan itu: diagnosis, kriteria, dan kecocokan dengan Matriks. Bila cocok,
+    ringkasan template diperbarui;
+  - pemetaan tetap disimpan walau belum cocok, dan ekstraksi menunggu sampai diagnosis cocok;
+  - aksi dicatat `simpan_pemetaan_template`, dan unggah template baru mengosongkan pemetaan.
+- Pemetaan yang sama dipakai di semua tempat template dibaca: pemeriksaan sebelum ekstraksi (I1/I2), langkah template
+  di worker (`proses/instrumen.ts`), dan kriteria untuk lapis 2.
+  - Ekspor Word (`ekspor/template.ts`) tidak memakai nama gaya. Placeholder dicari dari teks instruksi dan judul
+    sub-bagian hasil ekstraksi, yang dibuat dengan pemetaan. Jadi ekspor otomatis mengikuti pemetaan yang sama
+    (diuji di I5).
+- Halaman `/led/instrumen/[versiId]/pemetaan` (Admin UPPS):
+  - tabel gaya dengan pilihan peran (penanda "usulan awal") dan isian pola catatan serta kotak isian;
+  - pratinjau langsung di samping, dihitung di peramban dengan fungsi domain yang sama;
+  - tombol Simpan pemetaan, dan tombol "Pemetaan judul" di kotak diagnosis (I2);
+  - setelah disimpan, halaman versi menulis "Template dibaca dengan pemetaan judul dari Admin" dengan tautan Ubah
+    pemetaan.
+- Fikstur: aturan penggantian gaya ada di `tests/fikstur/instrumen/format-lain.ts` (dipakai uji dan
+  `scripts/buat-fikstur-format-lain.ts`). Template resmi diubah sehingga judulnya hanya Heading 1/2/3; isi, kotak
+  isian, dan penomoran tetap.
+  - Dokumen meminta pustaka `docx`, tetapi gaya diganti langsung di XML (JSZip), karena membuat ulang 774 paragraf
+    beserta kotak teks dan penomoran Word dengan pustaka `docx` tidak akan persis sama. Berkas .docx-nya di-commit di
+    I5.
+- Uji:
+  - domain `pemetaan-template.test.ts` (4 uji): tanpa pemetaan tidak berubah, peran gaya, sub-bagian tingkat 1,
+    instruksi, abaikan, pola catatan dan tabel sebagai kotak, usulan, tabel gaya, pratinjau dengan peringatan, pola
+    tidak sah;
+  - unit `template-instrumen.test.ts`: template resmi berformat Heading 1/2/3 tidak terbaca tanpa pemetaan. Dengan
+    usulan awal, hasilnya sama persis dengan template resmi (`deepEqual` seluruh struktur), dan usulan untuk template
+    resmi tidak mengubah hasilnya;
+  - integrasi `pemetaan-template.test.ts`: unggah format lain, ekstraksi ditolak dengan diagnosis, usulan dan tabel
+    gaya, pola tidak sah ditolak, simpan → cocok dan log, langkah template menghasilkan sub-bagian yang sama dengan
+    versi bertemplate resmi untuk S1, D3, S2, PPI, dan unggah template baru mengosongkan pemetaan.
+- Uji browser (versi `LAMTEKNIK-2025-S1-I1` dengan template format lain):
+  - halaman Pemetaan menampilkan 6 gaya dengan usulan awal (heading 1 = BAB, heading 2 = Bagian Bab II, heading 3 =
+    Kriteria) dan pratinjau 13 bagian, 7 kriteria (Matriks: 7), 103 sub-bagian Sarjana;
+  - Simpan pemetaan berhasil, kotak diagnosis hilang di halaman versi, dan Mulai ekstraksi aktif;
+  - kolom Nomor disembunyikan di layar sempit supaya kolom Peran tetap terlihat;
+  - server pengembangan harus dijalankan ulang setelah migrasi, karena Prisma Client lama belum mengenal
+    `pemetaanTemplate`.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 149/149 lulus |
+| `npm run test:integrasi` | 83/83 lulus |

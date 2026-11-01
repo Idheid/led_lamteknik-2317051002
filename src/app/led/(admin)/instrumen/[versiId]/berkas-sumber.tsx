@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Circle, ClipboardCheck, FileWarning, Info } from "lucide-react";
+import { CheckCircle2, Circle, ClipboardCheck, FileWarning, Info, ListTree } from "lucide-react";
 import {
   bacaInfoEkstraksi, bacaRiwayatPeriksa, bacaSidikJariVersi, konfirmasiVersi, type JenisBerkasInstrumen, type RingkasanBerkas,
 } from "@/modules/led/data/unggah-instrumen";
@@ -35,6 +35,7 @@ interface VersiBerkas {
   tahunInstrumen: number;
   sidikJari: unknown;
   riwayatPeriksa: unknown;
+  pemetaanTemplate: unknown;
   _count: { proyek: number; butir: number };
 }
 
@@ -155,7 +156,21 @@ export function BerkasSumber({ v, tahunUsang }: { v: VersiBerkas; tahunUsang: nu
             <div className="mt-2 flex flex-col gap-2">{tolak.slice(1).map((h) => <KotakPenolakan key={h.waktu} h={h} />)}</div>
           </details>
         )}
-        {v.templateLedNama && sj.template?.diagnosis?.bisaDipetakan && <KotakDiagnosis d={sj.template.diagnosis} />}
+        {v.templateLedNama && sj.template?.diagnosis?.bisaDipetakan && (
+          <KotakDiagnosis d={sj.template.diagnosis}>
+            {!terkunci && (
+              <div className="flex flex-wrap gap-2">
+                <Button asChild size="sm"><Link href={`/led/instrumen/${v.id}/pemetaan`}><ListTree aria-hidden />Pemetaan judul</Link></Button>
+              </div>
+            )}
+          </KotakDiagnosis>
+        )}
+        {v.templateLedNama && v.pemetaanTemplate != null && !sj.template?.diagnosis?.bisaDipetakan && (
+          <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            Template dibaca dengan pemetaan judul dari Admin.
+            <Link href={`/led/instrumen/${v.id}/pemetaan`} className="text-primary hover:underline">{terkunci ? "Lihat pemetaan" : "Ubah pemetaan"}</Link>
+          </p>
+        )}
         <ul className="divide-y">
           <Baris ada={Boolean(v.templateLedNama)} judul="Template LED (.docx)" nama={v.templateLedNama} bacaan={sj.template}>
             {!terkunci && <UnggahBerkas ringkas segarkanSaatGagal url={url("template")} accept=".docx" label={v.templateLedNama ? "Ganti" : "Unggah"} />}

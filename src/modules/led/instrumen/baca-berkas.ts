@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { bacaHalamanPdf } from "@/modules/led/instrumen/pdf";
 import { bacaParagrafTemplate } from "@/modules/led/instrumen/template";
 import { susunMatriks } from "@/modules/led/domain/matriks";
-import { uraiTemplate, type ParagrafTemplate } from "@/modules/led/domain/template-led";
+import { uraiTemplate, type ParagrafTemplate, type PemetaanTemplate } from "@/modules/led/domain/template-led";
 import {
   jenisDocx, jenisPdf, jenjangDariMatriks, kriteriaDariKonteks, kriteriaTemplateCadangan, tahunDariTeks, teksKunciMatriks,
   type BacaanBerkas, type JenisBerkas,
@@ -28,13 +28,13 @@ function ringkas(s: string, n = 160): string {
   return t.length > n ? `${t.slice(0, n - 1)}…` : t;
 }
 
-/** Kriteria template: aturan bawaan (gaya "C.1. ..."), lalu cara cadangan bila formatnya lain. */
-export function kriteriaTemplate(paragraf: ParagrafTemplate[]): string[] {
-  const bawaan = uraiTemplate(paragraf).filter((b) => b.jenis === "kriteria").map((b) => b.nama);
+/** Kriteria template: aturan bawaan (gaya "C.1. ...") atau pemetaan judul (I3), lalu cara cadangan bila formatnya lain. */
+export function kriteriaTemplate(paragraf: ParagrafTemplate[], pemetaan?: PemetaanTemplate | null): string[] {
+  const bawaan = uraiTemplate(paragraf, pemetaan).filter((b) => b.jenis === "kriteria").map((b) => b.nama);
   return bawaan.length ? bawaan : kriteriaTemplateCadangan(paragraf);
 }
 
-export async function bacaDocx(isi: Buffer): Promise<BacaanBerkas & { paragraf: ParagrafTemplate[] }> {
+export async function bacaDocx(isi: Buffer, pemetaan?: PemetaanTemplate | null): Promise<BacaanBerkas & { paragraf: ParagrafTemplate[] }> {
   const sidik = sha256(isi);
   let paragraf: ParagrafTemplate[];
   try {
@@ -46,7 +46,7 @@ export async function bacaDocx(isi: Buffer): Promise<BacaanBerkas & { paragraf: 
   const jenis = jenisDocx(awal);
   return {
     jenis, sha256: sidik, judulAwal: ringkas(awal.slice(0, 3).join(" · ")), tahun: null, jenjang: null,
-    kriteria: jenis === "template" ? kriteriaTemplate(paragraf) : null, paragraf,
+    kriteria: jenis === "template" ? kriteriaTemplate(paragraf, pemetaan) : null, paragraf,
   };
 }
 
@@ -75,11 +75,13 @@ export async function bacaPdf(isi: Buffer, opsi: { lengkap?: boolean } = {}): Pr
   return hasil;
 }
 
-/** Template LED beserta diagnosis pembacaannya (I2). */
-export async function bacaTemplate(isi: Buffer, opsi: { jenjang: string | null; tahun: number }): Promise<{ bacaan: BacaanBerkas; diagnosis: DiagnosisTemplate }> {
-  const { paragraf, ...bacaan } = await bacaDocx(isi);
+/** Template LED beserta diagnosis pembacaannya (I2), memakai pemetaan judul bila ada (I3). */
+export async function bacaTemplate(
+  isi: Buffer, opsi: { jenjang: string | null; tahun: number }, pemetaan?: PemetaanTemplate | null,
+): Promise<{ bacaan: BacaanBerkas; diagnosis: DiagnosisTemplate }> {
+  const { paragraf, ...bacaan } = await bacaDocx(isi, pemetaan);
   const terbuka = bacaan.jenis === "rusak" ? null : paragraf;
-  return { bacaan, diagnosis: diagnosisTemplate(terbuka, terbuka ? uraiTemplate(terbuka) : [], opsi) };
+  return { bacaan, diagnosis: diagnosisTemplate(terbuka, terbuka ? uraiTemplate(terbuka, pemetaan) : [], opsi) };
 }
 
 /** Baca berkas sesuai baris unggahnya (template .docx, matriks/pedoman .pdf). */
