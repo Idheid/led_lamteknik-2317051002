@@ -35,9 +35,11 @@ export interface DataHalamanAwal {
   identitas: Record<string, string | undefined>;
   fakultas: {
     nama: string; perguruanTinggi: string; alamat: string | null; kota: string | null;
-    skPendirian?: string | null; tanggalSkPendirian?: string | null;
+    skPendirian?: string | null; tanggalSkPendirian?: string | null; telepon?: string | null;
   } | null;
   jumlahTim: number;
+  /** D8/D9: false bila logo sampul belum diunggah Admin UPPS; tidak diisi = tidak diperiksa */
+  adaLogo?: boolean;
 }
 
 export interface DataKosong {
@@ -55,6 +57,7 @@ export function dataKosongHalamanAwal(d: DataHalamanAwal): DataKosong {
       ['Nama fakultas', d.fakultas?.nama],
       ['Nama perguruan tinggi', d.fakultas?.perguruanTinggi],
       ['Kota', d.fakultas?.kota || i.kota],
+      ...(d.adaLogo === false ? [['Logo perguruan tinggi', ''] as [string, string]] : []),
     ]),
     identitas: kosong([
       ['Kode PDDikti', d.prodi.kodePddikti],
@@ -66,8 +69,9 @@ export function dataKosongHalamanAwal(d: DataHalamanAwal): DataKosong {
       ['Tahun pertama menerima mahasiswa', i.tahunPertamaMenerima],
       ['Peringkat akreditasi terakhir', i.peringkatAkreditasi],
       ['Nomor SK akreditasi', i.nomorSkAkreditasi],
-      ['Alamat prodi', i.alamat],
-      ['Telepon', i.telepon],
+      // D9: alamat dan telepon institusi menjadi cadangan saat ekspor
+      ['Alamat prodi', i.alamat || d.fakultas?.alamat],
+      ['Telepon', i.telepon || d.fakultas?.telepon],
       ['Email prodi', i.email],
     ]),
     tim: d.jumlahTim > 0 ? [] : ['Susunan tim penyusun'],

@@ -61,6 +61,7 @@ export async function ShellLed({ pengguna, proyekId, children }: { pengguna: Pen
         { judul: "Data LKPS", href: `${dasar}/lkps`, ikon: "lkps" },
         { judul: "Basis Pengetahuan", href: `${dasar}/dokumen`, ikon: "dokumen" },
         { judul: "Tim penyusun", href: `${dasar}/tim`, ikon: "tim" },
+        { judul: "Halaman muka & identitas", href: `${dasar}/halaman-muka`, ikon: "gambar" },
         { judul: "Ekspor Word", href: `${dasar}/ekspor`, ikon: "ekspor" },
       ],
     },

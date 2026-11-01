@@ -202,8 +202,15 @@ Setelah login Tim Prodi langsung masuk ke **LED prodi**. Sidebar: grup **Bersama
 prodi), dan grup **LKPS** (Data LKPS), sesuai tombol LKPS | LED yang dipilih. Data LKPS diunggah sekali (Excel template LKPS LAM Teknik 2025 atau PDF per tabel) ke LED aktif dan
 dipakai langsung untuk menyusun LED; menu Data LKPS membuka halaman yang sama dengan menu Data LKPS di dalam LED.
 Klik LED: sidebar berganti menjadi menu **LED ini** (Beranda LED, Perkiraan nilai, Data LKPS, Basis Pengetahuan, Tim
-penyusun, Ekspor Word), kriteria C.1–C.7, dan bab lain. Semua akun Tim Prodi satu prodi melihat dan menyusun LED yang
+penyusun, **Halaman muka & identitas**, Ekspor Word), kriteria C.1–C.7, dan bab lain. Semua akun Tim Prodi satu prodi melihat dan menyusun LED yang
 sama; riwayat versi mencatat siapa yang menyunting.
+
+**Halaman muka & identitas** (di setiap LED) memperlihatkan pratinjau halaman muka (logo, judul, prodi, perguruan
+tinggi, UPPS, kota, tahun) dan tabel identitas pengusul persis seperti hasil ekspor, beserta daftar **Masih kosong**.
+Setiap baris diberi tanda asal data: bergembok bila diatur Admin UPPS (Identitas institusi, Program studi, Logo sampul
+LED) atau diambil dari riwayat akreditasi; bertanda pensil bila diisi Tim Prodi. Data prodi (SK pembukaan, tahun pertama
+menerima mahasiswa, alamat, telepon, email, laman) bisa diisi langsung di halaman ini; tersimpan ke Identitas prodi dan
+dipakai juga oleh LKPS dan LED berikutnya.
 
 ### 1. Persiapan
 

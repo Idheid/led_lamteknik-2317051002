@@ -2072,3 +2072,29 @@ Logo hanya dipakai halaman muka LED (LKPS berupa tabel Excel tanpa sampul), jadi
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 171/171 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
+
+### D9: Halaman muka & identitas (Tim Prodi, per LED)
+
+- Domain `led/domain/halaman-muka.ts`: `barisIdentitas` (16 baris sesuai urutan template, nilai + asal: institusi,
+  admin/Program studi, riwayat, prodi; cadangan institusi untuk alamat dan telepon, cadangan identitas prodi lama untuk
+  SK pendirian) dan `nilaiIdentitas`. Ekspor Word kini mengambil nilai identitas dari fungsi ini, jadi pratinjau dan Word
+  selalu sama.
+- `dataKosongHalamanAwal`: `adaLogo` opsional (false → "Logo perguruan tinggi" di daftar halaman muka); alamat dan
+  telepon institusi dihitung sebagai cadangan (sama dengan ekspor).
+- Halaman `/led/[proyekId]/halaman-muka` (menu LED ini, setelah Tim penyusun): daftar Masih kosong, pratinjau halaman
+  muka (kertas A4 mini: logo atau tanda "Logo belum diunggah", judul, program, PT, UPPS, kota, tahun), tabel identitas
+  pengusul dengan lencana asal (gembok untuk data Admin/riwayat, pensil untuk data prodi), form data prodi
+  (`FormIdentitasProdi`, tersimpan ke Identitas prodi), ringkasan tim penyusun, tombol Ekspor Word.
+- Beranda LED: kartu Halaman otomatis dan Identitas pengusul menautkan ke halaman ini; `adaLogo` ikut diperiksa.
+- Uji domain baru `halaman-muka.test.ts` (3). Uji integrasi ekspor tetap lulus (nilai identitas lewat `nilaiIdentitas`).
+- Uji browser lewat build produksi di port 3100 (server dev pengguna di port 3000 masih memegang Prisma client lama):
+  - Admin: Identitas institusi disimpan (kode pos, SK pendirian dan tanggalnya: data uji di dev DB);
+  - Admin: logo uji 200 × 200 diunggah di Logo sampul LED, pratinjau tampil;
+  - Tim Prodi Sipil: halaman muka menampilkan logo, PT, UPPS, kota, tahun; 16 baris identitas dengan asal; Masih
+    kosong 7; mengisi telepon dan tahun pertama menerima lalu Simpan → baris terbarui, Masih kosong 5.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck`, `npm run build` | Lulus |
+| `npm run test:unit` | 174/174 lulus |
+| `npm run test:integrasi` | 98/98 lulus |

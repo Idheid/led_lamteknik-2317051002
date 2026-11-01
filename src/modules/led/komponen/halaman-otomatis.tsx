@@ -9,8 +9,8 @@ import type { DataKosong } from "@/modules/led/domain/rangkaian";
  */
 export function HalamanOtomatis({ proyekId, kosong }: { proyekId: string; kosong: DataKosong }) {
   const baris = [
-    { judul: "Halaman muka (sampul)", kosong: kosong.muka, href: "/led/identitas-prodi", sumber: "identitas fakultas dan prodi" },
-    { judul: "Identitas pengusul", kosong: kosong.identitas, href: "/led/identitas-prodi", sumber: "Identitas prodi" },
+    { judul: "Halaman muka (sampul)", kosong: kosong.muka, href: `/led/${proyekId}/halaman-muka`, sumber: "Halaman muka & identitas" },
+    { judul: "Identitas pengusul", kosong: kosong.identitas, href: `/led/${proyekId}/halaman-muka`, sumber: "Halaman muka & identitas" },
     { judul: "Tim penyusun (Tabel 2.1, 2.2)", kosong: kosong.tim, href: `/led/${proyekId}/tim`, sumber: "Tim penyusun" },
   ];
   return (

@@ -31,6 +31,7 @@ import { penilaianProyek, ringkasReview } from "@/modules/led/data/review";
 import { KartuPerkiraanNilai } from "@/modules/led/komponen/penilaian/kartu-perkiraan";
 import { HalamanOtomatis } from "@/modules/led/komponen/halaman-otomatis";
 import { dataKosongHalamanAwal } from "@/modules/led/domain/rangkaian";
+import { ambilLogo } from "@/modules/led/data/logo";
 import { rencanaSusunSeluruh, STATUS_TUGAS_AKTIF } from "@/modules/led/data/generate";
 import { ambilFakultas } from "@/modules/bersama/data/organisasi";
 import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
@@ -60,12 +61,13 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
     kesiapanLed(proyekId),
     ringkasReview(p, proyekId),
   ]);
-  const [nilai, rencana, fakultas, tugasAktif, model] = await Promise.all([
+  const [nilai, rencana, fakultas, tugasAktif, model, logo] = await Promise.all([
     penilaianProyek(p, proyekId, { tanpaNarasi: true }),
     rencanaSusunSeluruh(p, proyekId),
     ambilFakultas(),
     prisma.tugasGenerate.count({ where: { proyekId, status: { in: STATUS_TUGAS_AKTIF } } }),
     modelAiAktif(),
+    ambilLogo(),
   ]);
   // L1 (2 Nov 2026): catat hasil akreditasi setelah LED Layak diajukan atau diekspor final
   const hasil = await statusHasilAkreditasi(p, proyek);
@@ -93,6 +95,7 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
     identitas: ident as Record<string, string | undefined>,
     fakultas,
     jumlahTim: (tim.dosen?.length ?? 0) + (tim.tendik?.length ?? 0),
+    adaLogo: Boolean(logo),
   });
 
   return (
@@ -428,7 +431,9 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Identitas pengusul</CardTitle>
-              <CardDescription>Diisi di menu Identitas prodi; dipakai di halaman identitas LED.</CardDescription>
+              <CardDescription>
+                Pratinjau lengkap dan pengisian di <Link className="text-primary underline" href={`/led/${proyek.id}/halaman-muka`}>Halaman muka &amp; identitas</Link>.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">

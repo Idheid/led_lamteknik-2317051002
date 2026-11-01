@@ -14,6 +14,7 @@ import { hitungKata } from "@/modules/bersama/domain/teks";
 import { aktifkanPerbaruiField, siapkanDokumen, type LaporanTemplate, type SubTemplate } from "@/modules/led/ekspor/template";
 import { isiDataProyek, PERINGATAN_LOGO, type AnggotaTim, type DataEkspor } from "@/modules/led/ekspor/isi-data";
 import { sisipkanLogo } from "@/modules/led/ekspor/logo";
+import { nilaiIdentitas } from "@/modules/led/domain/halaman-muka";
 import { berkasLogo } from "@/modules/led/data/logo";
 import { dokumenKeWord, konteksBaru, patchDaftar, patchIsi } from "@/modules/led/ekspor/word";
 import { hitungHalamanDocx } from "@/modules/led/ekspor/halaman";
@@ -121,28 +122,29 @@ export async function bangunDocx(proyekId: string, opsi: { jenis?: JenisEkspor }
   const ident = (proyek.prodi.identitas ?? {}) as Partial<IdentitasProdi>;
   const tim = bacaTim(proyek.timPenyusun);
   const { tanggal, tahun } = tanggalHariIni();
+  // D9: nilai identitas pengusul dihitung sama dengan pratinjau Halaman muka & identitas
+  const n = nilaiIdentitas({ fakultas, identitas: ident as Record<string, string | undefined>, prodi: { nama: proyek.prodi.nama, namaJenjang: namaJenjang(proyek.jenjang) } });
   const data: DataEkspor = {
-    perguruanTinggi: fakultas?.perguruanTinggi ?? "",
-    upps: fakultas?.nama ?? "",
-    jenisProgram: namaJenjang(proyek.jenjang),
-    namaProdi: proyek.prodi.nama,
+    perguruanTinggi: n.perguruanTinggi,
+    upps: n.upps,
+    jenisProgram: n.jenisProgram,
+    namaProdi: n.namaProdi,
     kota: fakultas?.kota || ident.kota || "",
     tahun,
     tanggalPengisian: tanggal,
     identitas: {
-      alamat: ident.alamat || fakultas?.alamat || "",
-      telepon: ident.telepon || fakultas?.telepon || "",
-      emailWebsite: [ident.email, ident.laman].filter(Boolean).join(" / "),
-      // D7: SK pendirian PT dari identitas institusi; identitas prodi lama sebagai cadangan
-      skPendirian: fakultas?.skPendirian || ident.skPendirian || "",
-      tanggalSkPendirian: fakultas?.tanggalSkPendirian || ident.tanggalSkPendirian || "",
-      pejabatSkPendirian: fakultas?.pejabatSkPendirian || ident.pejabatSkPendirian || "",
-      skPembukaan: ident.skPembukaan ?? "",
-      tanggalSkPembukaan: ident.tanggalSkPembukaan ?? "",
-      pejabatSkPembukaan: ident.pejabatSkPembukaan ?? "",
-      tahunPertamaMenerima: ident.tahunPertamaMenerima ?? "",
-      peringkatAkreditasi: ident.peringkatAkreditasi ?? "",
-      nomorSkAkreditasi: ident.nomorSkAkreditasi ?? "",
+      alamat: n.alamat,
+      telepon: n.telepon,
+      emailWebsite: n.emailWebsite,
+      skPendirian: n.skPendirian,
+      tanggalSkPendirian: n.tanggalSkPendirian,
+      pejabatSkPendirian: n.pejabatSkPendirian,
+      skPembukaan: n.skPembukaan,
+      tanggalSkPembukaan: n.tanggalSkPembukaan,
+      pejabatSkPembukaan: n.pejabatSkPembukaan,
+      tahunPertamaMenerima: n.tahunPertamaMenerima,
+      peringkatAkreditasi: n.peringkatAkreditasi,
+      nomorSkAkreditasi: n.nomorSkAkreditasi,
     },
     prodiUpps: semuaProdi.map((x, i) => {
       const id = (x.identitas ?? {}) as Partial<IdentitasProdi>;
