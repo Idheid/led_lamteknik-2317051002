@@ -1207,3 +1207,97 @@ Catatan uji:
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm test` (unit + integrasi) | unit 127/127, integrasi 76/76 lulus |
 | `npm run build` | Lulus (25 halaman statis) |
+
+## Perbaikan unggah instrumen (2 Nov 2026)
+
+Dari `docs/PERBAIKAN-INSTRUMEN.md` (Adrianne mencoba menambah instrumen jenjang selain Sarjana), dikerjakan berurutan
+I1 sampai I5 di branch `revisi-31okt`, satu commit per butir, dengan aturan kerja `docs/RENCANA-REVISI-31OKT.md`.
+
+### I1: pemeriksaan berkas dan tahun instrumen saat diunggah
+
+Semua keputusan diambil dari **isi berkas**; metadata Word/PDF dan nama berkas tidak dipakai sama sekali.
+
+- Data:
+  - `VersiInstrumen.tahunInstrumen Int` (migrasi `20261102090000_periksa_berkas_instrumen` mengisi versi lama dengan
+    2025), `sidikJari Json?` (ringkasan bacaan tiap berkas yang diterima dan centang konfirmasi yang diberikan),
+    `riwayatPeriksa Json?` (tiga penolakan terakhir).
+  - Model baru `SidikJariInstrumen` (berkas yang dipelajari saat versi diaktifkan atau ditandai usang).
+  - Berkas `data/instrumen/sidik-jari.json`: enam SHA-256 dari dokumen ditambah satu berkas LPMPP yang belum tercantum
+    (template Magister "Unggul Khusus-Unggul Internasional", `df3a7663…`, struktur lama, usang). Juga struktur kriteria
+    2025 reguler, 2025 Unggul Internasional, dan struktur lama (9 kriteria).
+- Formulir "Instrumen baru" mendapat isian wajib **Tahun instrumen**; nama dan kode mengikuti tahun dan jenjang. Tahun
+  juga tampil dan bisa diubah di Identitas versi selama versi belum aktif. Validasi: 2020 ≤ tahun ≤ tahun berjalan + 2
+  ("Tahun instrumen tidak masuk akal."). Tahun lebih lama dari versi aktif jenjang yang sama ditolak saat membuat dan
+  saat mengubah tahun. Versi lama lintas jenjang yang memuat butir jenjang itu ikut dihitung.
+- Logika murni `src/modules/led/domain/periksa-berkas-instrumen.ts`:
+  - jenis berkas dari isi (`jenisDocx`, `jenisPdf`);
+  - lapis 1: `tahunDariTeks` (pola `I?APS-xx 2025`, "Instrumen LAM Teknik 2025", "Peraturan LAM Teknik Nomor n Tahun
+    2025", judul "MATRIKS/PEDOMAN PENILAIAN … 2025"; pola kuat didahulukan) dan `jenjangDariMatriks`.
+    `jenjangDariMatriks` membaca judul halaman "PROGRAM STUDI - PROGRAM X I?APS-", karena sampul resmi matriks
+    Sarjana/D3 salah tulis "PROGRAM DIPLOMA SATU";
+  - lapis 2: `kriteriaDariKonteks` (judul "I. …" di bawah "A. KRITERIA" hasil `susunMatriks`),
+    `kriteriaTemplateCadangan` (template bergaya "heading": judul pertama sesudah "Kriteria Akreditasi" menentukan gaya
+    dan tingkat), `cocokKriteria`;
+  - lapis 3: sidik jari berkas dan struktur yang dikenal;
+  - keputusan `periksaBerkasInstrumen`, `konfirmasiTertunda`, `tambahRiwayat`.
+- Pembanding kriteria memakai `kunciTeks` tanpa spasi, karena teks PDF bisa terpotong ("Akuntabilita s"). Selain itu
+  "Pengabdian kepada Masyarakat" disamakan dengan "PkM". Nama yang tidak terbaca sebagai konteks dicari di seluruh teks
+  matriks. Cocok bila tidak ada kriteria template yang hilang dan tidak ada kriteria matriks yang lebih; ini setara
+  dengan "jumlah sama dan setiap nama ada", tetapi tetap benar bila satu baris judul kriteria tidak terbaca.
+- Pembaca berkas (I/O) `src/modules/led/instrumen/baca-berkas.ts`:
+  - membaca paragraf .docx, teks 3 halaman awal PDF, dan seluruh Matriks untuk kriteria (sekitar 0,4 detik untuk 35–40
+    halaman), sehingga cukup cepat dijalankan sinkron;
+  - .docx yang diunggah di baris PDF tetap disebut jenisnya.
+- Alur unggah (`unggahBerkasInstrumen`):
+  - berkas dibaca dan diperiksa sebelum disimpan. Berkas yang ditolak tidak disimpan; penolakannya masuk
+    `riwayatPeriksa` dan `LogAktivitas` (`tolak_berkas_instrumen`) lalu dilempar `GalatBerkasDitolak`;
+  - lapis 2 berjalan bila pasangannya (template ↔ matriks) sudah terunggah, dengan membaca ulang berkas pasangan dari
+    penyimpanan;
+  - sebelum ekstraksi, ketiga berkas diperiksa sekali lagi, karena tahun bisa diubah sesudah unggah, lalu centang
+    konfirmasi diwajibkan;
+  - "Saya sudah memastikan berkas ini instrumen tahun {y}" diminta bila tahun tidak tertulis di teks. Centang skema
+    diminta untuk template PJJ atau Unggul Internasional di versi reguler. Centang berlaku untuk tahun dan SHA-256 saat
+    dicentang dan dicatat di `LogAktivitas` (`konfirmasi_tahun_instrumen`).
+- Belajar versi baru:
+  - saat versi diaktifkan, SHA-256 berkasnya (dengan kriteria template) disimpan ke `SidikJariInstrumen`. Berkas yang
+    sudah ada di `sidik-jari.json` tidak ditimpa, supaya template resmi 2025 tetap tercatat sebagai 2025;
+  - tombol **Tandai berkas usang** muncul di versi nonaktif bila sudah ada versi aktif jenjang yang sama dengan tahun
+    lebih baru. Berkas yang juga dipakai versi aktif dilewati (misalnya template yang sama dipakai lagi di tahun baru).
+- Halaman versi:
+  - kotak penolakan (judul, alasan, apa yang terbaca dari isi berkas, langkah berikutnya, waktu). Penolakan lain
+    dilipat di "Penolakan sebelumnya", dan kotak hilang setelah berkas jenis itu diterima;
+  - baris "Terbaca: tahun 2025 · Sarjana · 7 kriteria" dan info sidik jari di tiap berkas;
+  - blok centang konfirmasi; tombol Mulai ekstraksi nonaktif sampai centang diberikan;
+  - `UnggahBerkas` mendapat `segarkanSaatGagal`, supaya kotak penolakan langsung tampil.
+- Keputusan teknis:
+  - Versi tidak punya kolom skema. Semua versi yang dibuat aplikasi ini dianggap LED reguler (`SKEMA_VERSI`).
+  - Di uji integrasi, tahun 2030 di-set langsung lewat Prisma, karena validasi formulir hanya menerima sampai tahun
+    berjalan + 2. Uji domain memakai 2030 langsung.
+- Diperiksa dengan semua berkas di `../Led Lamteknik/`:
+  - 21 Matriks (reguler, PJJ, Unggul Internasional, Perpanjangan) terbaca tahun 2025 dengan jenjang yang benar,
+    termasuk "DIPLOMATIGA PJJ";
+  - Pedoman Penilaian terbaca 2025; Naskah Akademik dan Pedoman Penyusunan dikenali sebagai jenis lain;
+  - template LPMPP terbaca 9 kriteria lama, dan "Peringatan Pengisian LED" dikenali.
+- Uji:
+  - domain `periksa-berkas-instrumen.test.ts` (11 uji): tahun dua arah, tahun baru 2030 diterima walau struktur belum
+    dikenal, template resmi 2025 untuk 2030 diterima dengan info, kriteria lama ditolak tanpa sidik jari, usang, skema,
+    jenjang, salah jenis, tahun aktif, konfirmasi, riwayat;
+  - integrasi `periksa-berkas-instrumen.test.ts` (6 uji) memakai berkas fikstur dan Matriks sintetis (pdf-lib):
+    batas tahun, penolakan tidak disimpan dan riwayat tiga terakhir, berkas resmi diterima, tahun baru 2030 dan template
+    belum dikenal diterima, tahun diubah lalu ditolak sebelum ekstraksi, centang tahun, tandai usang;
+  - `unggah-instrumen.test.ts` ditambah: sidik jari matriks/pedoman tersimpan saat aktivasi dan dikenali pada unggahan
+    berikutnya.
+- Uji browser (server pengembangan, akun uji Admin UPPS):
+  - tahun 2024 ditolak ("Sudah ada instrumen aktif tahun 2025 untuk Sarjana; tahun 2024 lebih lama."); nama dan kode
+    mengikuti tahun;
+  - versi `LAMTEKNIK-2025-S1-I1` dibuat. Pedoman di baris Matriks, Matriks D3, dan template LPMPP masing-masing ditolak
+    dengan alasan yang tepat, dan kotak penolakan tampil setelah dimuat ulang;
+  - berkas resmi diterima dengan "Terbaca: …" dan info, lalu kotak penolakan hilang.
+  - Server pengembangan yang sedang berjalan harus dijalankan ulang, karena Prisma Client lamanya belum mengenal
+    `tahunInstrumen`.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 138/138 lulus |
+| `npm run test:integrasi` | 82/82 lulus |

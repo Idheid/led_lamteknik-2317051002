@@ -113,8 +113,8 @@ test("Revisi 19 Okt tahap 4: unggah instrumen Sarjana (template, matriks, pedoma
   ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "22201", identitas: {} }));
   const ledLama = await buatProyek(pj, { nama: "LED Sipil", tahunPengajuan: 2026 });
 
-  await assert.rejects(buatVersiJenjang(pj, { nama: "x", kode: "X", jenjang: "S1" }), GalatAkses, "Tim Prodi tidak mengurus instrumen");
-  const versi = await buatVersiJenjang(admin, { nama: "Instrumen LAM Teknik 2025 Sarjana", kode: "LAMTEKNIK-2025-S1", jenjang: "S1", peraturan: ["Perlem LAM Teknik 2025"] });
+  await assert.rejects(buatVersiJenjang(pj, { nama: "x", kode: "X", jenjang: "S1", tahunInstrumen: 2025 }), GalatAkses, "Tim Prodi tidak mengurus instrumen");
+  const versi = await buatVersiJenjang(admin, { nama: "Instrumen LAM Teknik 2025 Sarjana", kode: "LAMTEKNIK-2025-S1", jenjang: "S1", tahunInstrumen: 2025, peraturan: ["Perlem LAM Teknik 2025"] });
   assert.equal(versi.status, "draf");
   assert.equal(versi.aktif, false);
   assert.ok(await prisma.tabelLkpsAcuan.count({ where: { versiId: versi.id } }) > 0, "tabel LKPS acuan disalin dari versi rujukan");
@@ -200,11 +200,18 @@ test("Revisi 19 Okt tahap 4: unggah instrumen Sarjana (template, matriks, pedoma
   assert.equal(versiLama.aktif, false, "versi lama jenjang yang sama dinonaktifkan");
   assert.equal((await prisma.proyekLED.findUniqueOrThrow({ where: { id: ledLama.id } })).versiId, lama.id, "LED lama tetap memakai versi lamanya");
   await assert.rejects(unggahBerkasInstrumen(admin, versi.id, "matriks", BERKAS.matriks), GalatPengguna, "versi aktif tidak bisa diubah");
+
+  // perbaikan 2 Nov 2026 (I1): sidik jari versi yang diaktifkan dipelajari; template resmi sudah ada di sidik-jari.json
+  const dipelajari = await prisma.sidikJariInstrumen.findMany({ orderBy: { jenis: "asc" } });
+  assert.deepEqual(dipelajari.map((x) => `${x.jenis}:${x.tahun}:${x.status}`), ["matriks:2025:resmi", "pedoman:2025:resmi"]);
+  assert.equal(dipelajari[0].jenjang, "S1");
 });
 
 test("Ekstraksi berhenti rapi saat kuota habis, lalu dilanjutkan dari kelompok yang sama setelah kunci baru diisi", async () => {
-  const versi = await buatVersiJenjang(admin, { nama: "Instrumen Sarjana (salinan uji)", kode: "LAMTEKNIK-2025-S1-B", jenjang: "S1" });
-  for (const jenis of ["template", "matriks", "pedoman"] as const) await unggahBerkasInstrumen(admin, versi.id, jenis, BERKAS[jenis]);
+  const versi = await buatVersiJenjang(admin, { nama: "Instrumen Sarjana (salinan uji)", kode: "LAMTEKNIK-2025-S1-B", jenjang: "S1", tahunInstrumen: 2025 });
+  const dikenali: string[] = [];
+  for (const jenis of ["template", "matriks", "pedoman"] as const) dikenali.push(...(await unggahBerkasInstrumen(admin, versi.id, jenis, BERKAS[jenis])).info);
+  assert.ok(dikenali.includes("Berkas dikenali: Matriks Penilaian instrumen 2025 (LAMTEKNIK-2025-S1)."), "berkas versi aktif dikenali pada unggahan berikutnya");
   tiruan.panggilan = 0;
   tiruan.gagalSetelah = 3;
   await mulaiEkstraksi(admin, versi.id);

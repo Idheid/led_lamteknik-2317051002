@@ -26,7 +26,7 @@ export async function aksiHapusVersi(id: string) {
   return r;
 }
 
-export async function aksiUbahVersi(id: string, masukan: { nama: string; kode: string; catatan: string }) {
+export async function aksiUbahVersi(id: string, masukan: { nama: string; kode: string; catatan: string; tahunInstrumen?: number }) {
   const r = await jalankanAksi((p) => ins.ubahVersi(p, id, masukan).then(() => null));
   revalidatePath("/led/instrumen", "layout");
   return r;
@@ -82,6 +82,18 @@ export async function aksiAturHalamanBobot(versiId: string, teks: string) {
 export async function aksiMulaiEkstraksi(versiId: string, ulang: boolean) {
   const r = await jalankanAksi((p) => unggah.mulaiEkstraksi(p, versiId, { ulang }).then(() => null));
   revalidatePath(`/led/instrumen/${versiId}`, "layout");
+  return r;
+}
+
+export async function aksiKonfirmasiBerkas(versiId: string, jenis: "tahun" | "skema") {
+  const r = await jalankanAksi((p) => unggah.konfirmasiBerkasInstrumen(p, versiId, jenis).then(() => null));
+  revalidatePath(`/led/instrumen/${versiId}`);
+  return r;
+}
+
+export async function aksiTandaiBerkasUsang(versiId: string) {
+  const r = await jalankanAksi((p) => unggah.tandaiBerkasUsang(p, versiId));
+  revalidatePath(`/led/instrumen/${versiId}`);
   return r;
 }
 

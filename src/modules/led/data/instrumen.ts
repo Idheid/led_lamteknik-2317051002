@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { kodeSalinan } from "@/modules/led/domain/instrumen";
+import { periksaTahunAktif } from "@/modules/led/domain/periksa-berkas-instrumen";
 import { BUTIR_ANGKA_SARJANA } from "@/modules/led/domain/metrik-lkps";
 import { skemaBagianUbah, skemaButir, skemaSubBagian, skemaVersiUbah, type MasukanButir, type MasukanSubBagian } from "@/modules/led/validasi";
 
@@ -23,6 +24,18 @@ async function pastikanVersiBisaDiubah(db: Tx | typeof prisma, versiId: string):
   if (n > 0) {
     throw new GalatPengguna(`Versi ini dipakai ${n} proyek LED sehingga dikunci. Salin versi ini untuk membuat perubahan.`);
   }
+}
+
+/**
+ * Tahun instrumen aktif tertinggi untuk satu jenjang (selain versi `kecuali`): versi jenjang itu atau versi lama
+ * lintas jenjang yang memuat butir jenjang tersebut (perbaikan 2 Nov 2026).
+ */
+export async function tahunAktifJenjang(jenjang: string, kecuali?: string): Promise<number | null> {
+  const aktif = await prisma.versiInstrumen.findMany({
+    where: { aktif: true, ...(kecuali ? { NOT: { id: kecuali } } : {}), OR: [{ jenjangUtama: jenjang }, { jenjangUtama: null, butir: { some: { jenjang } } }] },
+    select: { tahunInstrumen: true },
+  });
+  return aktif.length ? Math.max(...aktif.map((v) => v.tahunInstrumen)) : null;
 }
 
 /** Kode rumus harus ada di katalog rumus; "" berarti tanpa rumus (nilai diisi manual); undefined = tidak diubah. */
@@ -78,6 +91,14 @@ export async function ubahVersi(p: Pengguna, id: string, masukan: unknown) {
   pastikanAdmin(p);
   const data = skemaVersiUbah.parse(masukan);
   await pastikanVersiBisaDiubah(prisma, id);
+  const lama = await prisma.versiInstrumen.findUniqueOrThrow({ where: { id } });
+  if (data.tahunInstrumen !== undefined && data.tahunInstrumen !== lama.tahunInstrumen) {
+    // perbaikan 2 Nov 2026: tahun instrumen bisa diubah selama versi belum aktif
+    if (lama.aktif) throw new GalatPengguna("Tahun instrumen tidak bisa diubah karena versi ini sudah aktif.");
+    const aktif = lama.jenjangUtama ? await tahunAktifJenjang(lama.jenjangUtama, id) : null;
+    const galat = periksaTahunAktif(data.tahunInstrumen, aktif, lama.jenjangUtama);
+    if (galat) throw new GalatPengguna(galat);
+  }
   const bentrok = await prisma.versiInstrumen.findFirst({ where: { kode: data.kode, NOT: { id } } });
   if (bentrok) throw new GalatPengguna(`Kode versi ${data.kode} sudah dipakai.`);
   const v = await prisma.versiInstrumen.update({ where: { id }, data });
@@ -131,6 +152,7 @@ export async function salinVersi(p: Pengguna, id: string) {
           lembaga: asal.lembaga,
           peraturan: asal.peraturan as Prisma.InputJsonValue,
           catatan: asal.catatan,
+          tahunInstrumen: asal.tahunInstrumen,
           aktif: false,
           disalinDariId: asal.id,
           jenjang: asal.jenjang as Prisma.InputJsonValue,

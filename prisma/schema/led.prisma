@@ -33,6 +33,10 @@ model VersiInstrumen {
   ekstraksi         Json?     // status dan laporan ekstraksi: { status, pesan, langkah, butir, sub, galat }
   dicekPada         DateTime?
   dicekOlehId       String?
+  // Perbaikan 2 Nov 2026 (I1): tahun instrumen dan pemeriksaan isi berkas saat diunggah
+  tahunInstrumen    Int
+  sidikJari         Json?     // bacaan tiap berkas (sha256, tahun, jenjang, kriteria), konfirmasi yang diperlukan/diberikan
+  riwayatPeriksa    Json?     // tiga penolakan terakhir (ditampilkan di halaman versi)
   proyek      ProyekLED[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -509,4 +513,21 @@ model SkorAsesor {
   updatedAt  DateTime  @updatedAt
 
   @@unique([proyekId, butirKode])
+}
+
+// Sidik jari berkas instrumen yang dipelajari saat versi diaktifkan atau ditandai usang (digabung dengan
+// data/instrumen/sidik-jari.json). Perbaikan 2 Nov 2026 (I1).
+model SidikJariInstrumen {
+  id        String   @id @default(cuid())
+  sha256    String   @unique
+  jenis     String   // template, matriks, pedoman
+  nama      String
+  tahun     Int?
+  skema     String   @default("reguler")
+  status    String   // resmi, usang
+  kriteria  Json?    // daftar kriteria (template)
+  jenjang   String?
+  versiId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

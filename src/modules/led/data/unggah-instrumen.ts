@@ -4,7 +4,7 @@ import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
-import { periksaKodeRumus } from "@/modules/led/data/instrumen";
+import { periksaKodeRumus, tahunAktifJenjang } from "@/modules/led/data/instrumen";
 import { unggahTemplateLed } from "@/modules/led/data/ekspor";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { bacaBerkas, hapusBerkas, simpanBerkas } from "@/modules/bersama/penyimpanan";
@@ -15,6 +15,11 @@ import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { pecahUnsurSkor4 } from "@/modules/led/domain/navigasi";
 import { teksPerHalaman } from "@/modules/led/instrumen/pdf";
 import { skemaButir, skemaVersiJenjang, type MasukanButir, type MasukanVersiJenjang } from "@/modules/led/validasi";
+import { bacaBerkasInstrumen, sha256 } from "@/modules/led/instrumen/baca-berkas";
+import {
+  konfirmasiTertunda, LABEL_JENIS, periksaBerkasInstrumen, periksaTahunAktif, SKEMA_VERSI, tambahRiwayat,
+  type BacaanBerkas, type BerkasDikenal, type HasilPeriksa, type Konfirmasi, type SidikJariDikenal,
+} from "@/modules/led/domain/periksa-berkas-instrumen";
 
 /**
  * Instrumen per jenjang diunggah PJ setiap 5 tahun (revisi 19 Okt 2026): Template LED (.docx), Matriks Penilaian
@@ -23,6 +28,119 @@ import { skemaButir, skemaVersiJenjang, type MasukanButir, type MasukanVersiJenj
  */
 
 export type JenisBerkasInstrumen = "template" | "matriks" | "pedoman";
+
+const JENIS_BERKAS: JenisBerkasInstrumen[] = ["template", "matriks", "pedoman"];
+
+// ---------------------------------------------------------------- pemeriksaan berkas (perbaikan 2 Nov 2026, I1)
+
+/** Ringkasan bacaan satu berkas yang diterima, disimpan di VersiInstrumen.sidikJari. */
+export type RingkasanBerkas = HasilPeriksa["bacaan"] & {
+  namaBerkas: string;
+  waktu: string;
+  info: string[];
+  konfirmasi: HasilPeriksa["konfirmasi"];
+};
+
+export interface SidikJariVersi {
+  template?: RingkasanBerkas;
+  matriks?: RingkasanBerkas;
+  pedoman?: RingkasanBerkas;
+  /** centang yang sudah diberikan Admin: berlaku untuk tahun dan berkas (sha256) saat dicentang */
+  diberikan?: Partial<Record<Konfirmasi, { tahun: number; sha256: string[]; olehId: string; pada: string }>>;
+}
+
+export function bacaSidikJariVersi(v: unknown): SidikJariVersi {
+  return v && typeof v === "object" ? (v as SidikJariVersi) : {};
+}
+
+export function bacaRiwayatPeriksa(v: unknown): HasilPeriksa[] {
+  return Array.isArray(v) ? (v as HasilPeriksa[]) : [];
+}
+
+/** Konfirmasi yang masih wajib dicentang sebelum ekstraksi (dari ringkasan berkas yang terunggah). */
+export function konfirmasiVersi(v: { tahunInstrumen: number; sidikJari: unknown }) {
+  const sj = bacaSidikJariVersi(v.sidikJari);
+  const perlu = JENIS_BERKAS.flatMap((j) => (sj[j]?.konfirmasi ?? []).map((k) => ({ ...k, berkas: j })));
+  const sha = Object.fromEntries(JENIS_BERKAS.filter((j) => sj[j]).map((j) => [j, sj[j]!.sha256]));
+  return konfirmasiTertunda(perlu, sj.diberikan ?? {}, v.tahunInstrumen, sha);
+}
+
+/** Berkas ditolak saat diunggah atau sebelum ekstraksi; `hasil` ditampilkan sebagai kotak di halaman versi. */
+export class GalatBerkasDitolak extends GalatPengguna {
+  constructor(readonly hasil: HasilPeriksa) {
+    super(`${hasil.judul}. ${hasil.alasan}`);
+  }
+}
+
+let dikenalJson: SidikJariDikenal | null = null;
+
+/** Sidik jari bawaan (data/instrumen/sidik-jari.json) digabung dengan yang dipelajari (tabel SidikJariInstrumen). */
+export async function sidikJariDikenal(): Promise<SidikJariDikenal> {
+  dikenalJson ??= JSON.parse(await readFile(join(process.cwd(), "data/instrumen/sidik-jari.json"), "utf8")) as SidikJariDikenal;
+  const db = await prisma.sidikJariInstrumen.findMany({ orderBy: { createdAt: "asc" } });
+  const berkas: Record<string, BerkasDikenal> = { ...dikenalJson.berkas };
+  for (const x of db) {
+    berkas[x.sha256] = {
+      nama: x.nama, tahun: x.tahun, skema: x.skema, sumber: "dipelajari dari instrumen yang diaktifkan",
+      status: x.status === "usang" ? "usang" : "resmi",
+    };
+  }
+  const struktur = [...dikenalJson.struktur];
+  for (const x of db) {
+    const kriteria = Array.isArray(x.kriteria) ? (x.kriteria as string[]) : [];
+    if (x.jenis === "template" && x.status === "resmi" && kriteria.length) struktur.push({ tahun: x.tahun, skema: x.skema, kriteria });
+  }
+  return { berkas, struktur };
+}
+
+async function simpanPenolakan(p: Pengguna, versiId: string, riwayat: unknown, hasil: HasilPeriksa) {
+  await prisma.versiInstrumen.update({
+    where: { id: versiId },
+    data: { riwayatPeriksa: tambahRiwayat(bacaRiwayatPeriksa(riwayat), hasil) as unknown as Prisma.InputJsonValue },
+  });
+  await catatAktivitas(p, "tolak_berkas_instrumen", "versi_instrumen", versiId, { jenis: hasil.jenisBerkas, nama: hasil.namaBerkas, judul: hasil.judul });
+}
+
+function ringkasan(hasil: HasilPeriksa): RingkasanBerkas {
+  return { ...hasil.bacaan, namaBerkas: hasil.namaBerkas, waktu: hasil.waktu, info: hasil.info, konfirmasi: hasil.konfirmasi };
+}
+
+type VersiPeriksa = {
+  id: string; kode: string; tahunInstrumen: number; jenjangUtama: string | null; riwayatPeriksa: unknown; sidikJari: unknown;
+  templateLedLokasi: string | null; templateLedNama: string | null; matriksLokasi: string | null; matriksNama: string | null;
+  pedomanLokasi: string | null; pedomanNama: string | null;
+};
+
+function lokasiBerkas(v: VersiPeriksa, j: JenisBerkasInstrumen) {
+  return j === "template" ? v.templateLedLokasi : j === "matriks" ? v.matriksLokasi : v.pedomanLokasi;
+}
+
+function namaBerkasVersi(v: VersiPeriksa, j: JenisBerkasInstrumen) {
+  return (j === "template" ? v.templateLedNama : j === "matriks" ? v.matriksNama : v.pedomanNama) ?? j;
+}
+
+/** Bacaan berkas yang sudah terunggah di versi ini (dibaca ulang dari penyimpanan). */
+async function bacaanTersimpan(v: VersiPeriksa, j: JenisBerkasInstrumen): Promise<BacaanBerkas | null> {
+  const lokasi = lokasiBerkas(v, j);
+  return lokasi ? bacaBerkasInstrumen(j, await bacaBerkas(lokasi)) : null;
+}
+
+/** Jalankan tiga lapis pemeriksaan untuk satu berkas; berkas yang ditolak dicatat di riwayat lalu dilempar. */
+async function periksaAtauTolak(
+  p: Pengguna, v: VersiPeriksa, jenis: JenisBerkasInstrumen, namaBerkas: string, bacaan: BacaanBerkas,
+  pasangan: BacaanBerkas | null, dikenal: SidikJariDikenal,
+): Promise<HasilPeriksa> {
+  const hasil = periksaBerkasInstrumen({
+    jenis, namaBerkas, tahunIsian: v.tahunInstrumen, jenjangVersi: v.jenjangUtama,
+    tahunAktif: v.jenjangUtama ? await tahunAktifJenjang(v.jenjangUtama, v.id) : null,
+    bacaan, pasangan, dikenal,
+  });
+  if (!hasil.diterima) {
+    await simpanPenolakan(p, v.id, v.riwayatPeriksa, hasil);
+    throw new GalatBerkasDitolak(hasil);
+  }
+  return hasil;
+}
 
 export type StatusEkstraksi = "antre" | "berjalan" | "tertunda" | "selesai" | "gagal";
 
@@ -83,6 +201,8 @@ export async function buatVersiJenjang(p: Pengguna, masukan: MasukanVersiJenjang
   pastikanAdmin(p);
   const data = skemaVersiJenjang.parse(masukan);
   if (await prisma.versiInstrumen.findUnique({ where: { kode: data.kode } })) throw new GalatPengguna(`Kode versi ${data.kode} sudah dipakai.`);
+  const lebihLama = periksaTahunAktif(data.tahunInstrumen, await tahunAktifJenjang(data.jenjang), data.jenjang);
+  if (lebihLama) throw new GalatPengguna(lebihLama);
   const rujukan = await versiRujukan("", data.jenjang);
   const bawaan = rujukan ? null : await kerangkaBawaan();
   const tabelRujukan = rujukan ? await prisma.tabelLkpsAcuan.findMany({ where: { versiId: rujukan.id } }) : bawaan!.tabelLkps;
@@ -93,6 +213,7 @@ export async function buatVersiJenjang(p: Pengguna, masukan: MasukanVersiJenjang
       lembaga: "LAM Teknik",
       peraturan: data.peraturan as Prisma.InputJsonValue,
       catatan: data.catatan,
+      tahunInstrumen: data.tahunInstrumen,
       aktif: false,
       status: "draf",
       jenjangUtama: data.jenjang,
@@ -103,21 +224,30 @@ export async function buatVersiJenjang(p: Pengguna, masukan: MasukanVersiJenjang
       tabelLkps: { create: tabelRujukan.map((t) => ({ kode: t.kode, sheet: t.sheet, judul: t.judul })) },
     },
   });
-  await catatAktivitas(p, "buat", "versi_instrumen", v.id, { kode: v.kode, jenjang: data.jenjang });
+  await catatAktivitas(p, "buat", "versi_instrumen", v.id, { kode: v.kode, jenjang: data.jenjang, tahun: data.tahunInstrumen });
   return v;
 }
 
-/** Unggah salah satu dari tiga berkas sumber. Pedoman: letak tabel bobot jenjang ini dideteksi sebagai usulan. */
+/**
+ * Unggah salah satu dari tiga berkas sumber. Isinya diperiksa sinkron lebih dulu (jenis, tahun, jenjang, kriteria,
+ * sidik jari); berkas yang ditolak tidak disimpan. Pedoman: letak tabel bobot jenjang ini dideteksi sebagai usulan.
+ */
 export async function unggahBerkasInstrumen(p: Pengguna, versiId: string, jenis: JenisBerkasInstrumen, berkas: { nama: string; isi: Buffer }) {
   const v = await versiMilik(p, versiId);
   pastikanBelumAktif(v);
   if (berkas.isi.length > UKURAN_MAKS) throw new GalatPengguna("Berkas terlalu besar (maks. 40 MB).");
+  const bacaan = await bacaBerkasInstrumen(jenis, berkas.isi);
+  const pasangan = jenis === "template" ? await bacaanTersimpan(v, "matriks") : jenis === "matriks" ? await bacaanTersimpan(v, "template") : null;
+  const hasil = await periksaAtauTolak(p, v, jenis, berkas.nama, bacaan, pasangan, await sidikJariDikenal());
+  const sj = bacaSidikJariVersi(v.sidikJari);
+  const simpanSidik = () => prisma.versiInstrumen.update({
+    where: { id: v.id },
+    data: { sidikJari: { ...sj, [jenis]: ringkasan(hasil) } as unknown as Prisma.InputJsonValue },
+  });
   if (jenis === "template") {
     await unggahTemplateLed(p, versiId, berkas);
-    return { usulanHalamanBobot: null };
-  }
-  if (!/\.pdf$/i.test(berkas.nama) || berkas.isi.subarray(0, 5).toString("latin1") !== "%PDF-") {
-    throw new GalatPengguna(`${jenis === "matriks" ? "Matriks Penilaian" : "Pedoman Penilaian"} harus berupa berkas PDF.`);
+    await simpanSidik();
+    return { usulanHalamanBobot: null, info: hasil.info };
   }
   let usulan: string | null = null;
   if (jenis === "pedoman" && v.jenjangUtama) {
@@ -140,8 +270,9 @@ export async function unggahBerkasInstrumen(p: Pengguna, versiId: string, jenis:
         ...(info ? { ekstraksi: { ...info, usulanHalamanBobot: usulan } as unknown as Prisma.InputJsonValue } : {}),
       },
   });
+  await simpanSidik();
   await catatAktivitas(p, "unggah_berkas_instrumen", "versi_instrumen", v.id, { jenis, nama: berkas.nama });
-  return { usulanHalamanBobot: usulan };
+  return { usulanHalamanBobot: usulan, info: hasil.info };
 }
 
 export async function aturHalamanBobot(p: Pengguna, versiId: string, teks: string) {
@@ -177,6 +308,7 @@ export async function mulaiEkstraksi(p: Pengguna, versiId: string, opsi: { ulang
   if (v.pedomanLokasi && !v.halamanBobot) throw new GalatPengguna("Isi halaman tabel bobot di Pedoman Penilaian (contoh 223-227).");
   const info = bacaInfoEkstraksi(v.ekstraksi);
   if (info && (info.status === "antre" || info.status === "berjalan")) throw new GalatPengguna("Ekstraksi sedang berjalan.");
+  await periksaSebelumEkstraksi(p, v);
   if (opsi.ulang) {
     await prisma.$transaction([
       prisma.butirPenilaian.deleteMany({ where: { versiId: v.id } }),
@@ -200,6 +332,110 @@ export async function mulaiEkstraksi(p: Pengguna, versiId: string, opsi: { ulang
   });
   await kirimTugas(ANTREAN.instrumen, { versiId: v.id });
   await catatAktivitas(p, "ekstrak_instrumen", "versi_instrumen", v.id, { ulang: Boolean(opsi.ulang) });
+}
+
+/**
+ * Pemeriksaan sekali lagi sebelum ekstraksi (tahun instrumen bisa saja diubah setelah berkas diunggah): lapis 1 dan
+ * 2 untuk berkas yang terunggah, lalu centang konfirmasi yang wajib. Ekstraksi tidak bisa dimulai sebelum lulus.
+ */
+async function periksaSebelumEkstraksi(p: Pengguna, v: VersiPeriksa) {
+  const dikenal = await sidikJariDikenal();
+  const bacaan: Partial<Record<JenisBerkasInstrumen, BacaanBerkas | null>> = {};
+  for (const j of JENIS_BERKAS) bacaan[j] = await bacaanTersimpan(v, j);
+  const sj = bacaSidikJariVersi(v.sidikJari);
+  for (const j of JENIS_BERKAS) {
+    const b = bacaan[j];
+    if (!b) continue;
+    const pasangan = j === "template" ? bacaan.matriks ?? null : j === "matriks" ? bacaan.template ?? null : null;
+    sj[j] = ringkasan(await periksaAtauTolak(p, v, j, namaBerkasVersi(v, j), b, pasangan, dikenal));
+  }
+  await prisma.versiInstrumen.update({ where: { id: v.id }, data: { sidikJari: sj as unknown as Prisma.InputJsonValue } });
+  const tertunda = konfirmasiVersi({ tahunInstrumen: v.tahunInstrumen, sidikJari: sj });
+  if (tertunda.length) {
+    throw new GalatPengguna(`Centang konfirmasi di bagian Berkas sumber sebelum ekstraksi: ${tertunda.map((k) => k.teks).join(" ")}`);
+  }
+}
+
+/** Admin mencentang konfirmasi (tahun tidak tertulis di teks, atau skema berbeda); dicatat di LogAktivitas. */
+export async function konfirmasiBerkasInstrumen(p: Pengguna, versiId: string, jenis: Konfirmasi) {
+  const v = await versiMilik(p, versiId);
+  pastikanBelumAktif(v);
+  const perlu = konfirmasiVersi(v).filter((k) => k.jenis === jenis);
+  if (!perlu.length) throw new GalatPengguna("Tidak ada yang perlu dikonfirmasi.");
+  const sj = bacaSidikJariVersi(v.sidikJari);
+  const sha = JENIS_BERKAS.filter((j) => sj[j]?.konfirmasi.some((k) => k.jenis === jenis)).map((j) => sj[j]!.sha256);
+  sj.diberikan = { ...sj.diberikan, [jenis]: { tahun: v.tahunInstrumen, sha256: sha, olehId: p.id, pada: new Date().toISOString() } };
+  await prisma.versiInstrumen.update({ where: { id: v.id }, data: { sidikJari: sj as unknown as Prisma.InputJsonValue } });
+  await catatAktivitas(p, `konfirmasi_${jenis}_instrumen`, "versi_instrumen", v.id, { tahun: v.tahunInstrumen, teks: perlu.map((k) => k.teks) });
+}
+
+/**
+ * "Belajar versi baru": saat versi diaktifkan, SHA-256 berkasnya (dan kriteria template) disimpan supaya berkas yang
+ * sama dikenali pada unggahan berikutnya. Berkas yang sudah ada di sidik-jari.json tidak ditimpa.
+ */
+async function pelajariSidikJari(v: VersiPeriksa) {
+  dikenalJson ??= JSON.parse(await readFile(join(process.cwd(), "data/instrumen/sidik-jari.json"), "utf8")) as SidikJariDikenal;
+  const sj = bacaSidikJariVersi(v.sidikJari);
+  for (const j of JENIS_BERKAS) {
+    const lokasi = lokasiBerkas(v, j);
+    if (!lokasi) continue;
+    const sha = sj[j]?.sha256 ?? sha256(await bacaBerkas(lokasi));
+    if (dikenalJson.berkas[sha]) continue;
+    await prisma.sidikJariInstrumen.upsert({
+      where: { sha256: sha },
+      create: {
+        sha256: sha, jenis: j, nama: `${LABEL_JENIS[j]} instrumen ${v.tahunInstrumen} (${v.kode})`, tahun: v.tahunInstrumen,
+        skema: SKEMA_VERSI, status: "resmi",
+        kriteria: (j === "template" && sj.template?.kriteria ? sj.template.kriteria : undefined) as Prisma.InputJsonValue | undefined,
+        jenjang: j === "matriks" ? v.jenjangUtama : null, versiId: v.id,
+      },
+      update: {},
+    });
+  }
+}
+
+/** Tahun versi aktif yang lebih baru bila berkas versi (nonaktif) ini boleh ditandai usang; null bila tidak. */
+export async function bisaTandaiUsang(v: { id: string; aktif: boolean; jenjangUtama: string | null; tahunInstrumen: number }) {
+  if (v.aktif || !v.jenjangUtama) return null;
+  const aktif = await tahunAktifJenjang(v.jenjangUtama, v.id);
+  return aktif !== null && aktif > v.tahunInstrumen ? aktif : null;
+}
+
+/**
+ * Tandai berkas versi lama sebagai usang (satu tombol di halaman versi lama). Berkas yang juga dipakai versi aktif
+ * (mis. template yang sama dipakai lagi di instrumen tahun baru) tidak ditandai.
+ */
+export async function tandaiBerkasUsang(p: Pengguna, versiId: string) {
+  const v = await versiMilik(p, versiId);
+  const baru = await bisaTandaiUsang(v);
+  if (baru === null) throw new GalatPengguna("Berkas hanya bisa ditandai usang setelah instrumen tahun yang lebih baru untuk jenjang ini diaktifkan.");
+  const dipakai = new Set(
+    (await prisma.versiInstrumen.findMany({ where: { aktif: true }, select: { sidikJari: true } }))
+      .flatMap((x) => JENIS_BERKAS.map((j) => bacaSidikJariVersi(x.sidikJari)[j]?.sha256).filter((h): h is string => Boolean(h))),
+  );
+  const sj = bacaSidikJariVersi(v.sidikJari);
+  const ditandai: string[] = [];
+  const dilewati: string[] = [];
+  for (const j of JENIS_BERKAS) {
+    const lokasi = lokasiBerkas(v, j);
+    if (!lokasi) continue;
+    const sha = sj[j]?.sha256 ?? sha256(await bacaBerkas(lokasi));
+    if (dipakai.has(sha)) {
+      dilewati.push(LABEL_JENIS[j]);
+      continue;
+    }
+    await prisma.sidikJariInstrumen.upsert({
+      where: { sha256: sha },
+      create: {
+        sha256: sha, jenis: j, nama: `${LABEL_JENIS[j]} instrumen ${v.tahunInstrumen} (${v.kode})`, tahun: v.tahunInstrumen,
+        skema: SKEMA_VERSI, status: "usang", jenjang: v.jenjangUtama, versiId: v.id,
+      },
+      update: { status: "usang" },
+    });
+    ditandai.push(LABEL_JENIS[j]);
+  }
+  await catatAktivitas(p, "tandai_usang", "versi_instrumen", v.id, { ditandai, dilewati, tahunBaru: baru });
+  return { ditandai, dilewati };
 }
 
 /** Lanjutkan ekstraksi yang tertunda karena kunci API (dipanggil setelah kunci baru ditambahkan). */
@@ -308,5 +544,6 @@ export async function aktifkanVersiCek(p: Pengguna, versiId: string) {
       data: { aktif: true, status: "aktif", dicekPada: new Date(), dicekOlehId: p.id },
     });
   });
+  await pelajariSidikJari(versi);
   await catatAktivitas(p, "aktifkan", "versi_instrumen", versi.id, { kode: versi.kode, jenjang: versi.jenjangUtama });
 }

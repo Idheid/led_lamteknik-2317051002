@@ -63,6 +63,7 @@ export const skemaSeedInstrumen = z.object({
     lembaga: z.string().default("LAM Teknik"),
     peraturan: z.array(z.string()),
     catatan: z.string().nullish(),
+    tahunInstrumen: z.number().int().default(2025),
   }),
   jenjang: z.array(z.object({ kode: z.string(), nama: z.string() })),
   bagian: z.array(skemaBagian),
@@ -102,6 +103,7 @@ export async function imporInstrumen(
           lembaga: seed.versi.lembaga,
           peraturan: seed.versi.peraturan,
           catatan: seed.versi.catatan ?? null,
+          tahunInstrumen: seed.versi.tahunInstrumen,
           aktif: opsi.aktif ?? true,
           jenjang: seed.jenjang,
           // revisi 19 Okt 2026: satu versi untuk satu jenjang (instrumen bawaan hanya berisi butir Sarjana)

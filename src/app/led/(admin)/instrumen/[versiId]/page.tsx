@@ -18,6 +18,7 @@ import { FormVersi } from "./form-versi";
 import { infoTemplateLed } from "@/modules/led/data/ekspor";
 import { UnggahBerkas } from "@/components/unggah-berkas";
 import { BerkasSumber } from "./berkas-sumber";
+import { bisaTandaiUsang } from "@/modules/led/data/unggah-instrumen";
 
 export const metadata: Metadata = { title: "Detail versi instrumen" };
 
@@ -33,6 +34,7 @@ export default async function HalamanVersi({ params }: PageProps<"/led/instrumen
   const peraturan = Array.isArray(v.peraturan) ? (v.peraturan as string[]) : [];
   const tpl = await infoTemplateLed(p, versiId);
   const perJenjang = new Map(v.butirPerJenjang.map((b) => [b.jenjang, b]));
+  const tahunUsang = await bisaTandaiUsang(v);
   return (
     <>
       <JudulHalaman
@@ -40,6 +42,7 @@ export default async function HalamanVersi({ params }: PageProps<"/led/instrumen
         deskripsi={
           <span className="flex flex-wrap items-center gap-2">
             <span className="font-mono">{v.kode}</span>
+            <span>· tahun {v.tahunInstrumen}</span>
             {v.disalinDari && (
               <>
                 · disalin dari <Link className="underline" href={`/led/instrumen/${v.disalinDari.id}`}>{v.disalinDari.kode}</Link>
@@ -61,12 +64,13 @@ export default async function HalamanVersi({ params }: PageProps<"/led/instrumen
         kunci="admin-versi"
         fungsi="Satu instrumen jenjang: berkas sumber, hasil ekstraksi (bagian, sub-bagian, butir), dan status aktifnya."
         langkah={[
-          "Unggah tiga berkas sumber, isi halaman tabel bobot, lalu klik Mulai ekstraksi.",
+          "Unggah tiga berkas sumber. Isinya diperiksa langsung: berkas yang tahun, jenjang, atau kriterianya tidak sesuai ditolak dengan alasannya.",
+          "Isi halaman tabel bobot, centang konfirmasi bila diminta, lalu klik Mulai ekstraksi.",
           "Setelah selesai, klik Periksa hasil ekstraksi untuk mencocokkan tabel dengan PDF asli dan mengaktifkan instrumen.",
           "Bagian dan sub-bagian bisa disunting dari daftar di bawah selama instrumen belum dipakai LED.",
         ]}
       />
-      {v.jenjangUtama && <BerkasSumber v={v} />}
+      {v.jenjangUtama && <BerkasSumber v={v} tahunUsang={tahunUsang} />}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Template LEDPS (Word) untuk ekspor</CardTitle>
@@ -175,7 +179,7 @@ export default async function HalamanVersi({ params }: PageProps<"/led/instrumen
               )}
             </CardHeader>
             <CardContent>
-              <FormVersi id={v.id} terkunci={v.terkunci} awal={{ nama: v.nama, kode: v.kode, catatan: v.catatan ?? "" }} />
+              <FormVersi id={v.id} terkunci={v.terkunci} aktif={v.aktif} awal={{ nama: v.nama, kode: v.kode, catatan: v.catatan ?? "", tahunInstrumen: v.tahunInstrumen }} />
             </CardContent>
           </Card>
           <Button asChild variant="outline">

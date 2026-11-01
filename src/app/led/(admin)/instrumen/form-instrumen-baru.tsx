@@ -23,22 +23,33 @@ export function TombolInstrumenBaru({ tahun }: { tahun: number }) {
   const { sibuk, jalankan } = useAksi();
   const [buka, setBuka] = useState(false);
   const [jenjang, setJenjang] = useState("S1");
+  const [tahunInstrumen, setTahunInstrumen] = useState(String(tahun));
   const [nama, setNama] = useState(`Instrumen LAM Teknik ${tahun} Sarjana`);
   const [kode, setKode] = useState(`LAMTEKNIK-${tahun}-S1`);
   const [peraturan, setPeraturan] = useState("");
 
+  // nama dan kode mengikuti jenjang dan tahun instrumen (masih bisa diubah sendiri)
+  function isiOtomatis(j: string, t: string) {
+    const n = JENJANG.find((x) => x.kode === j)?.nama ?? j;
+    setNama(`Instrumen LAM Teknik ${t} ${n}`);
+    setKode(`LAMTEKNIK-${t}-${SANDI[j] ?? j}`);
+  }
+
   function pilihJenjang(j: string) {
     setJenjang(j);
-    const n = JENJANG.find((x) => x.kode === j)?.nama ?? j;
-    setNama(`Instrumen LAM Teknik ${tahun} ${n}`);
-    setKode(`LAMTEKNIK-${tahun}-${SANDI[j] ?? j}`);
+    isiOtomatis(j, tahunInstrumen);
+  }
+
+  function gantiTahun(t: string) {
+    setTahunInstrumen(t);
+    if (/^\d{4}$/.test(t)) isiOtomatis(jenjang, t);
   }
 
   function kirim(e: React.FormEvent) {
     e.preventDefault();
     jalankan(
       () => aksiBuatVersiJenjang({
-        nama, kode: kode.toUpperCase(), jenjang: jenjang as "S1",
+        nama, kode: kode.toUpperCase(), jenjang: jenjang as "S1", tahunInstrumen: Number(tahunInstrumen),
         peraturan: peraturan.split("\n").map((x) => x.trim()).filter(Boolean),
       }),
       { sukses: "Instrumen dibuat. Unggah tiga berkasnya.", lalu: (id) => { setBuka(false); router.push(`/led/instrumen/${id}`); } },
@@ -67,6 +78,14 @@ export function TombolInstrumenBaru({ tahun }: { tahun: number }) {
                   {JENJANG.map((j) => <SelectItem key={j.kode} value={j.kode}>{j.nama} ({j.kode})</SelectItem>)}
                 </SelectContent>
               </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="ins-tahun">Tahun instrumen</FieldLabel>
+              <Input
+                id="ins-tahun" inputMode="numeric" className="w-32 max-w-32 tabular-nums" value={tahunInstrumen}
+                onChange={(e) => gantiTahun(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              />
+              <FieldDescription>Tahun yang tertulis di Matriks Penilaian, misalnya 2025. Berkas yang tahunnya berbeda ditolak saat diunggah.</FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor="ins-nama">Nama</FieldLabel>

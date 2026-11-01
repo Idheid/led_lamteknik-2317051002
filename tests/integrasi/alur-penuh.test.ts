@@ -117,7 +117,7 @@ test("Alur penuh: Admin UPPS tambah prodi dan akun Tim Prodi → unggah instrume
   await assert.rejects(buatProyek(pj, { nama: "LED Elektro 2026", tahunPengajuan: 2026 }), /Instrumen jenjang Sarjana belum aktif/);
 
   // 2. Admin UPPS mengunggah instrumen Sarjana, ekstraksi, cek, aktifkan
-  const versi = await buatVersiJenjang(admin, { nama: "Instrumen LAM Teknik 2025 Sarjana", kode: "LAMTEKNIK-2025-S1", jenjang: "S1" });
+  const versi = await buatVersiJenjang(admin, { nama: "Instrumen LAM Teknik 2025 Sarjana", kode: "LAMTEKNIK-2025-S1", jenjang: "S1", tahunInstrumen: 2025 });
   await unggahBerkasInstrumen(admin, versi.id, "template", { nama: "template.docx", isi: fikstur("instrumen/template-ledps-2025.docx") });
   await unggahBerkasInstrumen(admin, versi.id, "matriks", { nama: "matriks.pdf", isi: fikstur("instrumen/matriks-sarjana-2025.pdf") });
   await unggahBerkasInstrumen(admin, versi.id, "pedoman", { nama: "pedoman.pdf", isi: fikstur("instrumen/pedoman-penilaian-2025.pdf") });

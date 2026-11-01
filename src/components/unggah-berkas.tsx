@@ -19,10 +19,12 @@ interface Props {
   onSelesai?: () => void;
   /** revisi 23 Okt 2026: halaman tambah data kembali ke daftar setelah berhasil diunggah */
   kembaliKe?: string;
+  /** perbaikan 2 Nov 2026: muat ulang halaman juga saat ditolak (kotak penolakan dibaca dari server) */
+  segarkanSaatGagal?: boolean;
 }
 
 /** Unggah berkas lewat Route Handler (bukan aksi server: batas 1 MB). Bisa klik atau seret-lepas. */
-export function UnggahBerkas({ url, accept, label = "Pilih berkas", keterangan, multiple, isian, ringkas, onSelesai, kembaliKe }: Props) {
+export function UnggahBerkas({ url, accept, label = "Pilih berkas", keterangan, multiple, isian, ringkas, onSelesai, kembaliKe, segarkanSaatGagal }: Props) {
   const router = useRouter();
   const masukan = useRef<HTMLInputElement>(null);
   const [sibuk, setSibuk] = useState(false);
@@ -40,6 +42,7 @@ export function UnggahBerkas({ url, accept, label = "Pilih berkas", keterangan, 
       const data = (await r.json().catch(() => ({}))) as { pesan?: string };
       if (!r.ok) {
         toast.error(data.pesan ?? `Unggah gagal (${r.status}).`);
+        if (segarkanSaatGagal) router.refresh();
         return;
       }
       toast.success(daftar.length > 1 ? `${daftar.length} berkas diunggah. Diproses di latar.` : `${daftar[0].name} diunggah. Diproses di latar.`);

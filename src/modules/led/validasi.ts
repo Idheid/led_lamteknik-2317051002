@@ -1,16 +1,24 @@
 import { z } from "zod";
 import { pilihanTs } from "@/modules/bersama/domain/tahun-akademik";
 import { KODE_JENJANG } from "@/modules/bersama/domain/jenjang";
+import { tahunInstrumenSah } from "@/modules/led/domain/periksa-berkas-instrumen";
 import { teksOpsional, teksWajib } from "@/modules/bersama/validasi";
 
 /** Skema Zod khusus modul LED (instrumen, LED baru, jawaban penyusun, tim penyusun). Pesan galat dalam Bahasa Indonesia. */
 
 // ---------------------------------------------------------------- Instrumen
 
+/** Tahun instrumen (perbaikan 2 Nov 2026): 2020 sampai tahun berjalan + 2. */
+function skemaTahunInstrumen() {
+  return z.coerce.number({ error: "Isi tahun instrumen." }).int("Tahun instrumen tidak masuk akal.")
+    .refine((t) => tahunInstrumenSah(t, new Date().getFullYear()), "Tahun instrumen tidak masuk akal.");
+}
+
 export const skemaVersiUbah = z.object({
   nama: teksWajib("Nama versi"),
   kode: teksWajib("Kode versi", 60).regex(/^[A-Z0-9._-]+$/, "Kode hanya huruf kapital, angka, titik, garis bawah, atau tanda hubung."),
   catatan: teksOpsional(2000),
+  tahunInstrumen: skemaTahunInstrumen().optional(),
 });
 
 /** Versi instrumen baru untuk satu jenjang (revisi 19 Okt 2026): berkasnya diunggah setelah dibuat. */
@@ -18,6 +26,7 @@ export const skemaVersiJenjang = z.object({
   nama: teksWajib("Nama instrumen"),
   kode: teksWajib("Kode versi", 60).regex(/^[A-Z0-9._-]+$/, "Kode hanya huruf kapital, angka, titik, garis bawah, atau tanda hubung."),
   jenjang: z.enum(KODE_JENJANG),
+  tahunInstrumen: skemaTahunInstrumen(),
   peraturan: z.array(z.string().trim().min(1).max(300)).max(20).default([]),
   catatan: teksOpsional(2000),
 });

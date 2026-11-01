@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { CheckCircle2, Circle, ClipboardCheck } from "lucide-react";
-import { bacaInfoEkstraksi } from "@/modules/led/data/unggah-instrumen";
+import { CheckCircle2, Circle, ClipboardCheck, FileWarning, Info } from "lucide-react";
+import {
+  bacaInfoEkstraksi, bacaRiwayatPeriksa, bacaSidikJariVersi, konfirmasiVersi, type JenisBerkasInstrumen, type RingkasanBerkas,
+} from "@/modules/led/data/unggah-instrumen";
+import type { HasilPeriksa } from "@/modules/led/domain/periksa-berkas-instrumen";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { UnggahBerkas } from "@/components/unggah-berkas";
 import { PemantauProses } from "@/components/status-proses";
@@ -8,7 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { IsianHalamanBobot, TombolEkstraksi } from "./kendali-ekstraksi";
+import { CentangKonfirmasi, TombolTandaiUsang } from "./periksa-berkas";
 
 const LABEL_EKSTRAKSI: Record<string, string> = {
   antre: "Menunggu antrean", berjalan: "Sedang berjalan", tertunda: "Tertunda", selesai: "Selesai", gagal: "Gagal",
@@ -26,10 +31,23 @@ interface VersiBerkas {
   pedomanNama: string | null;
   halamanBobot: string | null;
   ekstraksi: unknown;
+  tahunInstrumen: number;
+  sidikJari: unknown;
+  riwayatPeriksa: unknown;
   _count: { proyek: number; butir: number };
 }
 
-function Baris({ ada, judul, nama, children }: { ada: boolean; judul: string; nama: string | null; children: React.ReactNode }) {
+/** Apa yang terbaca dari isi berkas yang diterima (perbaikan 2 Nov 2026). */
+function teksBacaan(r: RingkasanBerkas): string {
+  const bagian = [
+    r.tahun ? `tahun ${r.tahun}` : r.jenis !== "template" ? "tahun tidak tertulis" : null,
+    r.jenjang ? namaJenjang(r.jenjang) : null,
+    r.kriteria?.length ? `${r.kriteria.length} kriteria` : null,
+  ].filter(Boolean);
+  return bagian.length ? `Terbaca: ${bagian.join(" · ")}` : "";
+}
+
+function Baris({ ada, judul, nama, bacaan, children }: { ada: boolean; judul: string; nama: string | null; bacaan?: RingkasanBerkas; children: React.ReactNode }) {
   return (
     <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-2">
@@ -37,6 +55,12 @@ function Baris({ ada, judul, nama, children }: { ada: boolean; judul: string; na
         <div className="min-w-0">
           <div className="font-medium">{judul}</div>
           <div className="truncate text-xs text-muted-foreground">{nama ?? "belum diunggah"}</div>
+          {ada && bacaan && (
+            <div className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
+              {teksBacaan(bacaan) && <span>{teksBacaan(bacaan)}</span>}
+              {bacaan.info.map((x) => <span key={x} className="flex items-start gap-1"><Info className="mt-0.5 size-3 shrink-0" aria-hidden />{x}</span>)}
+            </div>
+          )}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">{children}</div>
@@ -44,38 +68,88 @@ function Baris({ ada, judul, nama, children }: { ada: boolean; judul: string; na
   );
 }
 
+/** Kotak penolakan: judul, alasan, apa yang terbaca dari isi berkas, dan langkah berikutnya. */
+function KotakPenolakan({ h }: { h: HasilPeriksa }) {
+  return (
+    <Alert variant="destructive">
+      <FileWarning aria-hidden />
+      <AlertTitle>{h.judul}</AlertTitle>
+      <AlertDescription className="flex flex-col gap-2">
+        <p>{h.alasan}</p>
+        <dl className="grid gap-x-3 gap-y-0.5 text-xs text-foreground/80 sm:grid-cols-[auto_1fr]">
+          <dt className="font-medium">Berkas</dt>
+          <dd className="break-words">{h.namaBerkas}</dd>
+          {h.terbaca.map((t) => (
+            <div key={t.label} className="contents">
+              <dt className="font-medium">{t.label}</dt>
+              <dd className="break-words">{t.nilai}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="text-xs"><span className="font-medium">Langkah berikutnya:</span> {h.langkah}</p>
+        <p className="text-xs text-muted-foreground">{new Date(h.waktu).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })} · berkas ini tidak disimpan.</p>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 /** Tiga berkas sumber instrumen jenjang dan kendali ekstraksinya (revisi 19 Okt 2026). */
-export function BerkasSumber({ v }: { v: VersiBerkas }) {
+export function BerkasSumber({ v, tahunUsang }: { v: VersiBerkas; tahunUsang: number | null }) {
   const info = bacaInfoEkstraksi(v.ekstraksi);
   const terkunci = v.status === "aktif" || v._count.proyek > 0;
   const berjalan = info?.status === "antre" || info?.status === "berjalan";
-  const siap = Boolean(v.templateLedNama && v.matriksNama && (!v.pedomanNama || v.halamanBobot));
+  const sj = bacaSidikJariVersi(v.sidikJari);
+  // penolakan yang lebih baru daripada berkas jenis itu yang terakhir diterima
+  const tolak = bacaRiwayatPeriksa(v.riwayatPeriksa).filter((h) => !sj[h.jenisBerkas as JenisBerkasInstrumen] || h.waktu > sj[h.jenisBerkas as JenisBerkasInstrumen]!.waktu);
+  const konfirmasi = konfirmasiVersi(v);
+  const siap = Boolean(v.templateLedNama && v.matriksNama && (!v.pedomanNama || v.halamanBobot)) && konfirmasi.length === 0;
   const persen = info?.jumlahKelompok ? Math.round(((info.kelompokSelesai ?? 0) / info.jumlahKelompok) * 100) : 0;
   const url = (jenis: string) => `/api/led/instrumen/${v.id}/berkas/${jenis}`;
   return (
     <Card>
       <PemantauProses aktif={berjalan} detik={4} />
       <CardHeader>
-        <CardTitle className="text-base">Berkas sumber dan ekstraksi · {v.jenjangUtama ? namaJenjang(v.jenjangUtama) : ""}</CardTitle>
+        <CardTitle className="text-base">Berkas sumber dan ekstraksi · {v.jenjangUtama ? namaJenjang(v.jenjangUtama) : ""} · tahun {v.tahunInstrumen}</CardTitle>
         <CardDescription>
           Template diurai tanpa AI. Tabel Matriks Penilaian dibaca per baris lalu dikirim ke Gemini sedikit demi sedikit; bila kuota habis,
           ekstraksi berhenti rapi dan bisa dilanjutkan dengan kunci lain atau esok hari.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-sm">
+        {tolak[0] && <KotakPenolakan h={tolak[0]} />}
+        {tolak.length > 1 && (
+          <details className="rounded-lg border p-3 text-xs">
+            <summary className="cursor-pointer font-medium">Penolakan sebelumnya ({tolak.length - 1})</summary>
+            <div className="mt-2 flex flex-col gap-2">{tolak.slice(1).map((h) => <KotakPenolakan key={h.waktu} h={h} />)}</div>
+          </details>
+        )}
         <ul className="divide-y">
-          <Baris ada={Boolean(v.templateLedNama)} judul="Template LED (.docx)" nama={v.templateLedNama}>
-            {!terkunci && <UnggahBerkas ringkas url={url("template")} accept=".docx" label={v.templateLedNama ? "Ganti" : "Unggah"} />}
+          <Baris ada={Boolean(v.templateLedNama)} judul="Template LED (.docx)" nama={v.templateLedNama} bacaan={sj.template}>
+            {!terkunci && <UnggahBerkas ringkas segarkanSaatGagal url={url("template")} accept=".docx" label={v.templateLedNama ? "Ganti" : "Unggah"} />}
           </Baris>
-          <Baris ada={Boolean(v.matriksNama)} judul="Matriks Penilaian (.pdf)" nama={v.matriksNama}>
+          <Baris ada={Boolean(v.matriksNama)} judul="Matriks Penilaian (.pdf)" nama={v.matriksNama} bacaan={sj.matriks}>
             {v.matriksNama && <a href={url("matriks")} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Buka</a>}
-            {!terkunci && <UnggahBerkas ringkas url={url("matriks")} accept=".pdf" label={v.matriksNama ? "Ganti" : "Unggah"} />}
+            {!terkunci && <UnggahBerkas ringkas segarkanSaatGagal url={url("matriks")} accept=".pdf" label={v.matriksNama ? "Ganti" : "Unggah"} />}
           </Baris>
-          <Baris ada={Boolean(v.pedomanNama)} judul="Pedoman Penilaian (.pdf)" nama={v.pedomanNama}>
+          <Baris ada={Boolean(v.pedomanNama)} judul="Pedoman Penilaian (.pdf)" nama={v.pedomanNama} bacaan={sj.pedoman}>
             {v.pedomanNama && <a href={url("pedoman")} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Buka</a>}
-            {!terkunci && <UnggahBerkas ringkas url={url("pedoman")} accept=".pdf" label={v.pedomanNama ? "Ganti" : "Unggah"} />}
+            {!terkunci && <UnggahBerkas ringkas segarkanSaatGagal url={url("pedoman")} accept=".pdf" label={v.pedomanNama ? "Ganti" : "Unggah"} />}
           </Baris>
         </ul>
+        {konfirmasi.length > 0 && !terkunci && (
+          <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
+            <p className="text-xs font-medium">Wajib dicentang sebelum ekstraksi</p>
+            {[...new Map(konfirmasi.map((k) => [k.jenis, k])).values()].map((k) => (
+              <CentangKonfirmasi key={k.jenis} versiId={v.id} jenis={k.jenis} teks={k.teks} nonaktif={terkunci} />
+            ))}
+          </div>
+        )}
+        {tahunUsang !== null && (v.templateLedNama || v.matriksNama || v.pedomanNama) && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-xs text-muted-foreground">
+            <span>Sudah ada instrumen aktif tahun {tahunUsang} untuk jenjang ini. Tandai berkas versi ini usang supaya tidak terunggah lagi.</span>
+            <TombolTandaiUsang versiId={v.id} tahunBaru={tahunUsang} />
+          </div>
+        )}
         {v.pedomanNama && (
           <IsianHalamanBobot versiId={v.id} awal={v.halamanBobot ?? ""} usulan={info?.usulanHalamanBobot ?? null} nonaktif={terkunci} />
         )}
@@ -105,7 +179,9 @@ export function BerkasSumber({ v }: { v: VersiBerkas }) {
             </p>
           )}
           {!siap && !terkunci && (
-            <p className="text-xs text-muted-foreground">Unggah Template LED dan Matriks Penilaian (dan halaman tabel bobot bila Pedoman diunggah) untuk mulai.</p>
+            <p className="text-xs text-muted-foreground">
+              Unggah Template LED dan Matriks Penilaian (dan halaman tabel bobot bila Pedoman diunggah){konfirmasi.length ? ", lalu centang konfirmasi di atas," : ""} untuk mulai.
+            </p>
           )}
         </div>
         {v._count.butir > 0 && (

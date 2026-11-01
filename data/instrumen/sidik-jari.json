@@ -1,0 +1,96 @@
+{
+  "keterangan": "Sidik jari berkas instrumen yang dikenal (perbaikan 2 Nov 2026, I1). SHA-256 dihitung dari isi berkas di ../Led Lamteknik/. Versi yang diaktifkan menambah sidik jari ke tabel SidikJariInstrumen; isinya digabung dengan berkas ini.",
+  "berkas": {
+    "0a8caea91326748bea48dc6c1c97eda997e3cb4c0557defb2d3a2a7e0cf1a8f5": {
+      "nama": "Template LEDPS LAM Teknik 2025 (Seluruh Jenjang)",
+      "tahun": 2025,
+      "skema": "reguler",
+      "sumber": "lamteknik.or.id",
+      "status": "resmi"
+    },
+    "5f5ccbf8cd5c5e799174bd4708879275628e78909b3487204d0f110e74b4fa82": {
+      "nama": "Template LEDPS LAM Teknik 2025 Unggul Internasional",
+      "tahun": 2025,
+      "skema": "unggul-internasional",
+      "sumber": "lamteknik.or.id",
+      "status": "resmi"
+    },
+    "5f515d17e3ca849f98b1664aa66927bf90a2ae1da0569d7adb4c78761c0d2753": {
+      "nama": "Template LEDPS LAM Teknik 2025 PJJ",
+      "tahun": 2025,
+      "skema": "pjj",
+      "sumber": "lamteknik.or.id",
+      "status": "resmi"
+    },
+    "58e897fe095a647a09acd20316256f26bb964fd373a69ba6817f4c5d229f3a72": {
+      "nama": "Template LED APS Akademik dan Vokasi",
+      "tahun": null,
+      "skema": "lama",
+      "sumber": "folder LPMPP",
+      "status": "usang"
+    },
+    "72b8138727e25e903cec0a703e9a2ff52330663def30053d531f712a45dd1940": {
+      "nama": "Template LED APS Akademik Unggul Internasional",
+      "tahun": null,
+      "skema": "lama",
+      "sumber": "folder LPMPP",
+      "status": "usang"
+    },
+    "df3a7663b0dbe3bd9cfaea82e9781c0e8fd36c986ce94ada3ca7b32cb4279837": {
+      "nama": "Template LED APS Akademik Unggul Internasional (Magister)",
+      "tahun": null,
+      "skema": "lama",
+      "sumber": "folder LPMPP",
+      "status": "usang"
+    },
+    "c40bb41bc207531c9823e97c9176bae2f0978fdb818e3147999e4e1dda2f16df": {
+      "nama": "Template LED APS Profesi Insinyur",
+      "tahun": null,
+      "skema": "lama",
+      "sumber": "folder LPMPP",
+      "status": "usang"
+    }
+  },
+  "struktur": [
+    {
+      "tahun": 2025,
+      "skema": "reguler",
+      "kriteria": [
+        "Diferensiasi Misi (Visi, Misi, Tujuan, dan Strategi)",
+        "Akuntabilitas",
+        "Relevansi Pendidikan, Penelitian, dan PkM",
+        "Sumber Daya Manusia",
+        "Sarana, Prasarana, dan Keselamatan Kesehatan Kerja dan Lingkungan (K3L)",
+        "Mahasiswa dan Luaran Mahasiswa",
+        "Sistem Penjaminan Mutu"
+      ]
+    },
+    {
+      "tahun": 2025,
+      "skema": "unggul-internasional",
+      "kriteria": [
+        "Diferensiasi Misi (Visi, Misi, Tujuan, dan Strategi)",
+        "Akuntabilitas",
+        "Relevansi Penelitian dan Pengabdian kepada Masyarakat",
+        "Sumber Daya Manusia",
+        "Mahasiswa dan Luaran Mahasiswa",
+        "Sistem Penjaminan Mutu"
+      ]
+    },
+    {
+      "tahun": null,
+      "skema": "lama",
+      "kriteria": [
+        "Visi, Misi, Tujuan, dan Strategi",
+        "Tata Pamong, Tata Kelola dan Kerja sama",
+        "Mahasiswa",
+        "Sumber Daya Manusia",
+        "Keuangan, Sarana dan Prasarana",
+        "Pendidikan",
+        "Penelitian",
+        "Pengabdian kepada Masyarakat",
+        "Luaran dan Capaian Tridharma Perguruan Tinggi"
+      ]
+    }
+  ]
+}
