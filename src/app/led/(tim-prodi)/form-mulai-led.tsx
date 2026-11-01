@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
 import { isianSetelahGantiTahun, namaLedOtomatis, pilihanTs, tsBawaan } from "@/modules/bersama/domain/tahun-akademik";
 import { skemaProyek, type MasukanProyek } from "@/modules/led/validasi";
+import { useState } from "react";
 import { TombolKonfirmasi } from "@/components/aksi-klien";
+import { PilihanBahan, pilihanAwal, type BahanSalin } from "./pilihan-bahan";
 import { aksiBuatProyek, aksiMulaiPeriodeBerikutnya } from "./aksi";
 
 export interface ProdiLed {
@@ -30,11 +32,11 @@ export function FormMulaiLed({ prodi, tahunUsulan, tanggalAcuan, berikutnya, chi
   prodi: ProdiLed;
   tahunUsulan: number;
   tanggalAcuan: string;
-  /** L4: Mulai LED periode berikutnya; teks konfirmasi (LED lama diarsipkan, instrumen baru) */
-  berikutnya?: { konfirmasi: string };
-  /** L5: pilihan bahan yang disalin */
+  /** L4: Mulai LED periode berikutnya; teks konfirmasi (LED lama diarsipkan, instrumen baru) dan bahan yang bisa disalin (L5) */
+  berikutnya?: { konfirmasi: string; bahan: BahanSalin };
   children?: React.ReactNode;
 }) {
+  const [salin, setSalin] = useState(() => (berikutnya ? pilihanAwal(berikutnya.bahan) : null));
   const router = useRouter();
   const { sibuk, jalankan } = useAksi();
   const form = useForm<MasukanProyek>({
@@ -47,7 +49,7 @@ export function FormMulaiLed({ prodi, tahunUsulan, tanggalAcuan, berikutnya, chi
   const nama = tahunSah(tahun) && Number.isInteger(ts) ? namaLedOtomatis(prodi.nama, tahun, ts) : null;
 
   const kirim = form.handleSubmit((nilai) =>
-    jalankan(() => (berikutnya ? aksiMulaiPeriodeBerikutnya(nilai) : aksiBuatProyek(nilai)), {
+    jalankan(() => (berikutnya && salin ? aksiMulaiPeriodeBerikutnya(nilai, salin) : aksiBuatProyek(nilai)), {
       sukses: berikutnya ? "LED periode berikutnya dibuat. LED lama diarsipkan." : "LED dibuat.",
       lalu: (id) => router.push(`/led/${id}`),
     }),
@@ -119,6 +121,7 @@ export function FormMulaiLed({ prodi, tahunUsulan, tanggalAcuan, berikutnya, chi
             Nama LED: <span className="font-medium text-foreground">{nama}</span>. Bisa diubah nanti di Pengaturan LED.
           </p>
         )}
+        {berikutnya && salin && <PilihanBahan bahan={berikutnya.bahan} nilai={salin} onUbah={setSalin} />}
         {children}
         {berikutnya ? (
           <TombolKonfirmasi

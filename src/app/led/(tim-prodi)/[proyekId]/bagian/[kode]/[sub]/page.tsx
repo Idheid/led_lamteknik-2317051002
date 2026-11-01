@@ -19,6 +19,7 @@ import { TombolGenerate } from "@/modules/led/komponen/narasi/tombol-generate";
 import { cn } from "@/modules/bersama/utils";
 import { hrefKriteria, hrefSub, muatKriteria } from "../muat";
 import { IsianJawaban } from "../isian-jawaban";
+import { narasiPeriodeLalu } from "@/modules/led/data/periode";
 import { contohBahanProdi } from "@/modules/led/domain/bahan-prodi";
 import { DaftarCek, PanelDraf } from "../panel-draf";
 import { KotakMetrik } from "../kotak-metrik";
@@ -64,8 +65,10 @@ export default async function HalamanSubBagian({ params }: PageProps<"/led/[proy
   const posisi = posisiSub(bagian.subBagian.map((x) => x.kode), kodeSub);
   if (!s || !posisi) notFound();
 
-  const [semuaDokumen, nilai, capaian, catatan] = await Promise.all([
+  const [semuaDokumen, nilai, capaian, catatan, lalu] = await Promise.all([
     daftarDokumen(p, proyekId), nilaiButirProyek(p, proyekId), capaianButirProyek(p, proyekId), daftarCatatan(p, proyekId, kodeSub),
+    // L5: narasi final sub-bagian yang sama di LED periode lalu (hanya baca)
+    narasiPeriodeLalu(proyek, { kode: s.kode, judul: s.judul }),
   ]);
   // panel catatan asesor tampil bila LED punya asesor atau sudah ada catatan (revisi 22 Okt 2026)
   const review = proyek.asesorId || catatan.catatan.length ? { catatan: catatan.catatan, bolehUbah: !proyek.diarsipkanPada } : null;
@@ -218,6 +221,17 @@ export default async function HalamanSubBagian({ params }: PageProps<"/led/[proy
         <section aria-label="Bahan dari prodi">
           <IsianJawaban key={s.kode} proyekId={proyek.id} subBagianKode={s.kode} awal={d.jawaban[s.kode] ?? ""} contoh={contohBahanProdi(s.kode)} />
         </section>
+      )}
+
+      {digenerate && lalu && (
+        <details className="rounded-lg border p-3 text-sm">
+          <summary className="cursor-pointer font-medium">Narasi LED periode lalu</summary>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {lalu.led} (pengajuan {lalu.tahunPengajuan}) · {lalu.judul}. Hanya baca: salin bagian yang masih relevan secara manual, lalu perbarui
+            datanya. {proyek.pakaiNarasiLalu && /-(AF|SWOT)$/.test(s.kode) ? "Untuk sub-bagian ini narasi lama juga dikirim ke AI sebagai pembanding (sumber P)." : ""}
+          </p>
+          <div className="mt-2 max-h-80 overflow-y-auto whitespace-pre-line rounded-md bg-muted/40 p-3 text-sm leading-relaxed">{lalu.teks}</div>
+        </details>
       )}
 
       {digenerate && (

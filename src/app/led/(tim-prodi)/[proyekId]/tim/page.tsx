@@ -4,6 +4,8 @@ import { timPenyusun } from "@/modules/led/data/ekspor";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { FormTim } from "./form-tim";
+import { ambilProyek } from "@/modules/led/data/proyek";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const metadata: Metadata = { title: "Tim penyusun" };
 
@@ -11,6 +13,8 @@ export default async function HalamanTim({ params }: PageProps<"/led/[proyekId]/
   const p = await wajibTimProdi();
   const { proyekId } = await params;
   const tim = await timPenyusun(p, proyekId);
+  // L5: tim disalin dari LED periode lalu; tanda hilang setelah disimpan ulang
+  const periksaUlang = Boolean(((await ambilProyek(p, proyekId)).timPenyusun as { periksaUlang?: boolean } | null)?.periksaUlang);
   const ke = (x: typeof tim.dosen) => x.map((a) => ({ nama: a.nama, nomorInduk: a.nomorInduk ?? "", jabatan: a.jabatan ?? "", tugas: a.tugas ?? "" }));
   return (
     <>
@@ -27,6 +31,12 @@ export default async function HalamanTim({ params }: PageProps<"/led/[proyekId]/
           "Klik Simpan tim penyusun, lalu lanjut ke menu Ekspor Word.",
         ]}
       />
+      {periksaUlang && (
+        <Alert>
+          <AlertTitle>Periksa ulang tim penyusun</AlertTitle>
+          <AlertDescription>Tim ini disalin dari LED periode lalu. Perbarui anggota, jabatan, dan tugasnya, lalu simpan.</AlertDescription>
+        </Alert>
+      )}
       <FormTim proyekId={proyekId} awal={{ dosen: ke(tim.dosen), tendik: ke(tim.tendik) }} />
     </>
   );

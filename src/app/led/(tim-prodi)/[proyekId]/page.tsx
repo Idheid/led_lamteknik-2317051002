@@ -111,6 +111,22 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           "Buka kriteria di tabel di bawah, isi Bahan dari prodi (fakta untuk AI), lalu klik Generate kriteria.",
         ]}
       />
+      {Array.isArray(proyek.bahanBelumDipindah) && proyek.bahanBelumDipindah.length > 0 && (
+        <details className="rounded-lg border p-3 text-sm">
+          <summary className="cursor-pointer font-medium">Bahan lama yang belum dipindah ({proyek.bahanBelumDipindah.length})</summary>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Bahan dari prodi LED periode lalu yang tidak punya padanan di instrumen LED ini. Salin manual ke sub-bagian yang sesuai.
+          </p>
+          <ul className="mt-2 flex flex-col gap-2">
+            {(proyek.bahanBelumDipindah as { kode: string; judul: string; isi: string }[]).map((b) => (
+              <li key={b.kode} className="rounded-md bg-muted/40 p-2">
+                <div className="text-xs font-medium">{b.kode} · {b.judul}</div>
+                <div className="whitespace-pre-line text-sm">{b.isi}</div>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {(hasil.boleh || hasil.catatan) && (
         <Alert>
           <Award aria-hidden />

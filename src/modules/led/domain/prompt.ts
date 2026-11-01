@@ -48,6 +48,8 @@ export interface KonteksSubBagian {
   kriteria?: { kode: string; nama: string } | null;
   butir: ButirKonteks[];
   jawabanForm?: string | null;
+  /** L5 (2 Nov 2026): narasi LED periode lalu sebagai pembanding [P]; hanya bila diaktifkan dan untuk AF/SWOT */
+  narasiLalu?: string | null;
   metrik: MetrikKonteks[];
   tabel: TabelKonteks[];
   potongan: PotonganKonteks[];
@@ -98,6 +100,7 @@ export function susunPengguna(k: KonteksSubBagian): string {
     blok('SUB-BAGIAN YANG DITULIS', `${lokasi}\nInstruksi template: ${k.subBagian.instruksi}`),
     blok('BUTIR PENILAIAN TERKAIT', butir),
     blok('JAWABAN PENYUSUN [J]', k.jawabanForm),
+    blok('NARASI LED PERIODE LALU [P] (periode lalu: gunakan untuk membandingkan, bukan disalin)', k.narasiLalu),
     blok('METRIK DARI SISTEM', metrik),
     blok('TABEL LKPS', tabel),
     blok('POTONGAN DOKUMEN', potongan),
@@ -110,6 +113,7 @@ export function susunPengguna(k: KonteksSubBagian): string {
 export function kodeSumberSah(k: KonteksSubBagian): Set<string> {
   const s = new Set<string>([...k.metrik.map((m) => m.id), ...k.tabel.map((t) => t.id), ...k.potongan.map((p) => p.id)]);
   if (k.jawabanForm && k.jawabanForm.trim()) s.add('J');
+  if (k.narasiLalu && k.narasiLalu.trim()) s.add('P');
   return s;
 }
 

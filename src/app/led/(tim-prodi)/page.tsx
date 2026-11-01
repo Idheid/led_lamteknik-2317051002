@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormMulaiLed } from "./form-mulai-led";
 import { CalendarClock } from "lucide-react";
-import { infoPeriodeBerikutnya } from "@/modules/led/data/periode";
+import { bahanUntukSalin, infoPeriodeBerikutnya } from "@/modules/led/data/periode";
 import { teksKonfirmasiPeriode } from "@/modules/led/domain/periode";
 
 export const metadata: Metadata = { title: "LED prodi" };
@@ -41,6 +41,7 @@ export default async function HalamanLedProdi({ searchParams }: PageProps<"/led"
   const tanggalAcuan = prodi?.akreditasiBerlakuSampai ? usulanBatasPengajuan(prodi.akreditasiBerlakuSampai) : new Date();
   // tahun usulan periode berikutnya: tahun berakhirnya akreditasi (pengajuan sebelum berakhir), atau tahun ini
   const tahunBerikut = prodi?.akreditasiBerlakuSampai ? Math.max(tahunIni, tanggalAcuan.getUTCFullYear()) : tahunIni;
+  const bahanSalin = berikut ? await bahanUntukSalin(p, tahunBerikut) : null;
   const alasan = prodi && aktif.length === 0 && !(await instrumenAktifUntuk(prodi.jenjang))
     ? `Instrumen ${namaJenjang(prodi.jenjang)} belum aktif. Hubungi Admin UPPS.`
     : null;
@@ -97,7 +98,7 @@ export default async function HalamanLedProdi({ searchParams }: PageProps<"/led"
               prodi={{ nama: prodi.nama, alasan: berikut.versi ? null : `Instrumen ${namaJenjang(prodi.jenjang)} belum aktif. Hubungi Admin UPPS.` }}
               tahunUsulan={tahunBerikut}
               tanggalAcuan={tanggalAcuan.toISOString()}
-              berikutnya={{ konfirmasi: teksKonfirmasiPeriode(berikut.lama.nama, berikut.versi?.nama ?? "-") }}
+              berikutnya={{ konfirmasi: teksKonfirmasiPeriode(berikut.lama.nama, berikut.versi?.nama ?? "-"), bahan: bahanSalin! }}
             />
           </CardContent>
         </Card>

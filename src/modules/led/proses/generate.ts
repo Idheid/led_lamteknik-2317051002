@@ -28,6 +28,8 @@ import { subAwalSusun, subBelumSelesai, urutanBagianSusun } from "@/modules/led/
 import { kodeSumberSah, periksaKeluaran, susunPengguna, susunSistem, type KonteksSubBagian } from "@/modules/led/domain/prompt";
 import { formatTahunAkademik, gantiLabelTS, petaTS } from "@/modules/bersama/domain/tahun-akademik";
 import { GalatSementara, panggilNarasi } from "@/modules/led/proses/llm-narasi";
+import { narasiPeriodeLalu } from "@/modules/led/data/periode";
+import { bolehSumberPeriodeLalu } from "@/modules/led/domain/periode";
 
 /**
  * Mesin penyusun (F-13): menyusun konteks satu sub-bagian, memanggil LLM, mengubah keluaran ke dokumen Tiptap,
@@ -90,6 +92,7 @@ export function teksSumberKonteks(k: KonteksSubBagian): Record<string, string> {
   const potong = (s: string) => s.slice(0, MAKS_TEKS_SUMBER);
   const hasil: Record<string, string> = {};
   if (k.jawabanForm) hasil.J = potong(k.jawabanForm);
+  if (k.narasiLalu) hasil.P = potong(k.narasiLalu);
   for (const p of k.potongan) hasil[p.id] = potong(`${p.sumber}\n${p.teks}`);
   for (const t of k.tabel) hasil[t.id] = potong(`${t.judul}\n${t.markdown}`);
   for (const m of k.metrik) hasil[m.id] = potong(`${m.nama} = ${m.nilaiTeks}${m.keterangan ? ` (${m.keterangan})` : ""}`);
@@ -213,6 +216,13 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   const jawabanForm = jawaban?.isi.trim() ? samarkanTeks(jawaban.isi.trim()) : null;
   if (jawabanForm) legenda.J = "Bahan dari prodi";
 
+  // L5: narasi LED periode lalu sebagai pembanding [P] (bawaan mati; hanya evaluasi capaian dan perbaikan)
+  const lalu = proyek.pakaiNarasiLalu && bolehSumberPeriodeLalu(subBagianKode)
+    ? await narasiPeriodeLalu(proyek, { kode: s.kode, judul: s.judul })
+    : null;
+  const narasiLalu = lalu ? samarkanTeks(lalu.teks).slice(0, 6000) : null;
+  if (lalu) legenda.P = `Narasi LED periode lalu (${lalu.led})`;
+
   // LKPS aktif: metrik butir angka dan tabel terkait
   // revisi 31 Okt 2026: tabel gabungan semua berkas sumber (PDF per tabel), berkas terbaru menang
   const berkas = await sumberLkps(proyekId);
@@ -334,6 +344,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
       deskriptorSkor4: gantiLabelTS(b.deskriptorSkor4, ts), unsurSkor4: b.unsurSkor4.map((u) => gantiLabelTS(u, ts)),
     })),
     jawabanForm,
+    narasiLalu,
     metrik,
     tabel,
     potongan,

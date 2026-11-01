@@ -1692,3 +1692,42 @@ per butir.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 158/158 lulus |
 | `npm run test:integrasi` | 95/95 lulus |
+
+
+### L5: salin bahan dari LED lama
+
+- `ProyekLED.asalProyekId`, `pakaiNarasiLalu` (bawaan false), dan `bahanBelumDipindah` (migrasi
+  `20261102150000_salin_bahan_periode`).
+- Kartu Mulai LED periode berikutnya mendapat kotak centang (`pilihan-bahan.tsx`). Semua tercentang kecuali dokumen
+  lebih tua dari 5 tahun dan narasi lama sebagai sumber P:
+  - **Tim penyusun**: disalin ke LED baru dengan tanda `periksaUlang`. Halaman Tim penyusun menampilkan "Periksa ulang
+    tim penyusun"; tandanya hilang begitu tim disimpan, karena skema tim membuang kunci lain;
+  - **Bahan dari prodi**: `petakanBahan` (domain) menyalin per kode yang sama. Bila instrumen berganti, dicocokkan
+    lewat judul sub-bagian (`kunciTeks`, hanya bila judul itu unik). Teks diberi awalan "[dari LED {tahun}]". Yang
+    tidak cocok disimpan di `bahanBelumDipindah` dan tampil di Beranda LED sebagai "Bahan lama yang belum dipindah";
+  - **Dokumen prodi**: dipilih satu per satu (`dokumenDicentangBawaan`: tahun terbit lebih dari 5 tahun sebelum tahun
+    pengajuan baru tidak dicentang). Berkas disalin sebelum transaksi (bukan dipindah); baris Dokumen dibuat di dalam
+    transaksi dengan status "diunggah", lalu diproses ulang lewat antrean `proses-dokumen`. Dokumen diharapkan
+    dibawa hanya bila versi instrumennya sama. Bila transaksi gagal, salinan berkas dihapus lagi;
+  - **Narasi lama tidak disalin.** Di tab Bahan halaman sub-bagian ada panel lipat **Narasi LED periode lalu**
+    (`narasiPeriodeLalu`: kode sama atau judul sama; LED asal, atau LED arsip terbaru prodi), hanya baca;
+  - opsi **sumber P** (bawaan mati): untuk sub-bagian `-AF` (analisis faktor/evaluasi capaian) dan `-SWOT` (strategi
+    perbaikan), narasi lama (disamarkan, maks. 6.000 karakter) masuk prompt sebagai blok "NARASI LED PERIODE LALU [P]
+    (periode lalu: gunakan untuk membandingkan, bukan disalin)". P menjadi kode sumber sah dengan legenda "Narasi LED
+    periode lalu (…)";
+  - **Data LKPS tidak disalin.**
+- Uji:
+  - domain `periode.test.ts` (tambahan): pemetaan bahan per kode dan per judul, bahan kosong diabaikan, dokumen > 5
+    tahun, AF/SWOT, narasi lama per judul, blok P di prompt dan kode sumber;
+  - integrasi `periode-berikutnya.test.ts` (tambahan): pilihan bawaan, tim bertanda periksa ulang, bahan berawalan,
+    bahan tanpa padanan, dokumen terpilih disalin (berkas beda lokasi, isi sama, status diunggah) dan dokumen lama tetap
+    ada, narasi dan LKPS tidak disalin, panel narasi lalu, sumber P hanya AF dan hanya bila diaktifkan, kegagalan di
+    tengah tidak menambah dokumen dan tidak mengarsipkan.
+- Uji browser: kartu periode berikutnya di LED uji Sipil menampilkan Tim penyusun (1 orang), Bahan dari prodi (1
+  sub-bagian), 1 dokumen tercentang, dan sumber P tidak tercentang. Penyalinan sebenarnya diuji di alur L6.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 160/160 lulus |
+| `npm run test:integrasi` | 96/96 lulus |
