@@ -8,6 +8,7 @@ import {
   type BacaanBerkas, type JenisBerkas,
 } from "@/modules/led/domain/periksa-berkas-instrumen";
 import type { HalamanTeks } from "@/modules/led/domain/tata-letak-pdf";
+import { diagnosisTemplate, type DiagnosisTemplate } from "@/modules/led/domain/diagnosis-template";
 
 /**
  * Baca isi berkas instrumen untuk pemeriksaan saat diunggah (perbaikan 2 Nov 2026, I1): paragraf .docx dan teks
@@ -72,6 +73,13 @@ export async function bacaPdf(isi: Buffer, opsi: { lengkap?: boolean } = {}): Pr
     }
   }
   return hasil;
+}
+
+/** Template LED beserta diagnosis pembacaannya (I2). */
+export async function bacaTemplate(isi: Buffer, opsi: { jenjang: string | null; tahun: number }): Promise<{ bacaan: BacaanBerkas; diagnosis: DiagnosisTemplate }> {
+  const { paragraf, ...bacaan } = await bacaDocx(isi);
+  const terbuka = bacaan.jenis === "rusak" ? null : paragraf;
+  return { bacaan, diagnosis: diagnosisTemplate(terbuka, terbuka ? uraiTemplate(terbuka) : [], opsi) };
 }
 
 /** Baca berkas sesuai baris unggahnya (template .docx, matriks/pedoman .pdf). */

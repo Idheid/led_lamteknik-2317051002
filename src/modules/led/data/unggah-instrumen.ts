@@ -15,7 +15,8 @@ import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { pecahUnsurSkor4 } from "@/modules/led/domain/navigasi";
 import { teksPerHalaman } from "@/modules/led/instrumen/pdf";
 import { skemaButir, skemaVersiJenjang, type MasukanButir, type MasukanVersiJenjang } from "@/modules/led/validasi";
-import { bacaBerkasInstrumen, sha256 } from "@/modules/led/instrumen/baca-berkas";
+import { bacaBerkasInstrumen, bacaTemplate, sha256 } from "@/modules/led/instrumen/baca-berkas";
+import type { DiagnosisTemplate } from "@/modules/led/domain/diagnosis-template";
 import {
   konfirmasiTertunda, LABEL_JENIS, periksaBerkasInstrumen, periksaTahunAktif, SKEMA_VERSI, tambahRiwayat,
   type BacaanBerkas, type BerkasDikenal, type HasilPeriksa, type Konfirmasi, type SidikJariDikenal,
@@ -39,6 +40,8 @@ export type RingkasanBerkas = HasilPeriksa["bacaan"] & {
   waktu: string;
   info: string[];
   konfirmasi: HasilPeriksa["konfirmasi"];
+  /** Template LED: diagnosis pembacaan (I2) */
+  diagnosis?: DiagnosisTemplate;
 };
 
 export interface SidikJariVersi {
@@ -102,7 +105,10 @@ async function simpanPenolakan(p: Pengguna, versiId: string, riwayat: unknown, h
 }
 
 function ringkasan(hasil: HasilPeriksa): RingkasanBerkas {
-  return { ...hasil.bacaan, namaBerkas: hasil.namaBerkas, waktu: hasil.waktu, info: hasil.info, konfirmasi: hasil.konfirmasi };
+  return {
+    ...hasil.bacaan, namaBerkas: hasil.namaBerkas, waktu: hasil.waktu, info: hasil.info, konfirmasi: hasil.konfirmasi,
+    ...(hasil.diagnosis ? { diagnosis: hasil.diagnosis } : {}),
+  };
 }
 
 type VersiPeriksa = {
@@ -125,15 +131,21 @@ async function bacaanTersimpan(v: VersiPeriksa, j: JenisBerkasInstrumen): Promis
   return lokasi ? bacaBerkasInstrumen(j, await bacaBerkas(lokasi)) : null;
 }
 
+/** Bacaan berkas (template beserta diagnosisnya) dari isi berkas. */
+async function bacaUntukPeriksa(v: VersiPeriksa, j: JenisBerkasInstrumen, isi: Buffer): Promise<{ bacaan: BacaanBerkas; diagnosis?: DiagnosisTemplate }> {
+  if (j === "template") return bacaTemplate(isi, { jenjang: v.jenjangUtama, tahun: v.tahunInstrumen });
+  return { bacaan: await bacaBerkasInstrumen(j, isi) };
+}
+
 /** Jalankan tiga lapis pemeriksaan untuk satu berkas; berkas yang ditolak dicatat di riwayat lalu dilempar. */
 async function periksaAtauTolak(
-  p: Pengguna, v: VersiPeriksa, jenis: JenisBerkasInstrumen, namaBerkas: string, bacaan: BacaanBerkas,
-  pasangan: BacaanBerkas | null, dikenal: SidikJariDikenal,
+  p: Pengguna, v: VersiPeriksa, jenis: JenisBerkasInstrumen, namaBerkas: string,
+  baca: { bacaan: BacaanBerkas; diagnosis?: DiagnosisTemplate }, pasangan: BacaanBerkas | null, dikenal: SidikJariDikenal,
 ): Promise<HasilPeriksa> {
   const hasil = periksaBerkasInstrumen({
     jenis, namaBerkas, tahunIsian: v.tahunInstrumen, jenjangVersi: v.jenjangUtama,
     tahunAktif: v.jenjangUtama ? await tahunAktifJenjang(v.jenjangUtama, v.id) : null,
-    bacaan, pasangan, dikenal,
+    bacaan: baca.bacaan, diagnosis: baca.diagnosis, pasangan, dikenal,
   });
   if (!hasil.diterima) {
     await simpanPenolakan(p, v.id, v.riwayatPeriksa, hasil);
@@ -236,9 +248,9 @@ export async function unggahBerkasInstrumen(p: Pengguna, versiId: string, jenis:
   const v = await versiMilik(p, versiId);
   pastikanBelumAktif(v);
   if (berkas.isi.length > UKURAN_MAKS) throw new GalatPengguna("Berkas terlalu besar (maks. 40 MB).");
-  const bacaan = await bacaBerkasInstrumen(jenis, berkas.isi);
+  const baca = await bacaUntukPeriksa(v, jenis, berkas.isi);
   const pasangan = jenis === "template" ? await bacaanTersimpan(v, "matriks") : jenis === "matriks" ? await bacaanTersimpan(v, "template") : null;
-  const hasil = await periksaAtauTolak(p, v, jenis, berkas.nama, bacaan, pasangan, await sidikJariDikenal());
+  const hasil = await periksaAtauTolak(p, v, jenis, berkas.nama, baca, pasangan, await sidikJariDikenal());
   const sj = bacaSidikJariVersi(v.sidikJari);
   const simpanSidik = () => prisma.versiInstrumen.update({
     where: { id: v.id },
@@ -340,16 +352,21 @@ export async function mulaiEkstraksi(p: Pengguna, versiId: string, opsi: { ulang
  */
 async function periksaSebelumEkstraksi(p: Pengguna, v: VersiPeriksa) {
   const dikenal = await sidikJariDikenal();
-  const bacaan: Partial<Record<JenisBerkasInstrumen, BacaanBerkas | null>> = {};
-  for (const j of JENIS_BERKAS) bacaan[j] = await bacaanTersimpan(v, j);
+  const baca: Partial<Record<JenisBerkasInstrumen, { bacaan: BacaanBerkas; diagnosis?: DiagnosisTemplate }>> = {};
+  for (const j of JENIS_BERKAS) {
+    const lokasi = lokasiBerkas(v, j);
+    if (lokasi) baca[j] = await bacaUntukPeriksa(v, j, await bacaBerkas(lokasi));
+  }
   const sj = bacaSidikJariVersi(v.sidikJari);
   for (const j of JENIS_BERKAS) {
-    const b = bacaan[j];
+    const b = baca[j];
     if (!b) continue;
-    const pasangan = j === "template" ? bacaan.matriks ?? null : j === "matriks" ? bacaan.template ?? null : null;
+    const pasangan = j === "template" ? baca.matriks?.bacaan ?? null : j === "matriks" ? baca.template?.bacaan ?? null : null;
     sj[j] = ringkasan(await periksaAtauTolak(p, v, j, namaBerkasVersi(v, j), b, pasangan, dikenal));
   }
   await prisma.versiInstrumen.update({ where: { id: v.id }, data: { sidikJari: sj as unknown as Prisma.InputJsonValue } });
+  const diag = sj.template?.diagnosis;
+  if (diag?.bisaDipetakan) throw new GalatPengguna(`${diag.pesan} ${diag.langkah}`);
   const tertunda = konfirmasiVersi({ tahunInstrumen: v.tahunInstrumen, sidikJari: sj });
   if (tertunda.length) {
     throw new GalatPengguna(`Centang konfirmasi di bagian Berkas sumber sebelum ekstraksi: ${tertunda.map((k) => k.teks).join(" ")}`);

@@ -1,5 +1,6 @@
 import { JENJANG, namaJenjang } from '../../bersama/domain/jenjang.ts';
 import { kunciTeks, type ParagrafTemplate } from './template-led.ts';
+import type { DiagnosisTemplate } from './diagnosis-template.ts';
 
 /**
  * Pemeriksaan berkas instrumen saat diunggah (perbaikan 2 Nov 2026, I1). Semua keputusan diambil dari ISI berkas;
@@ -97,6 +98,8 @@ export interface HasilPeriksa {
   konfirmasi: { jenis: Konfirmasi; teks: string }[];
   /** ringkasan bacaan (disimpan di sidik jari versi) */
   bacaan: Omit<BacaanBerkas, 'teksKunci'>;
+  /** diagnosis pembacaan Template LED (I2) */
+  diagnosis?: DiagnosisTemplate;
 }
 
 // ------------------------------------------------------------------ tahun instrumen
@@ -284,6 +287,8 @@ export interface MasukanPeriksa {
   bacaan: BacaanBerkas;
   /** berkas pasangan yang sudah terunggah: template untuk matriks, matriks untuk template */
   pasangan?: BacaanBerkas | null;
+  /** diagnosis Template LED (hanya untuk jenis template) */
+  diagnosis?: DiagnosisTemplate;
   dikenal: SidikJariDikenal;
   waktu?: Date;
 }
@@ -301,6 +306,14 @@ export function periksaBerkasInstrumen(m: MasukanPeriksa): HasilPeriksa {
   if (jenis !== 'template') terbaca.push({ label: 'Tahun di teks', nilai: b.tahun ? String(b.tahun) : 'tidak ditemukan' });
   if (jenis === 'matriks') terbaca.push({ label: 'Jenjang di teks', nilai: b.jenjang ? namaJenjang(b.jenjang) : 'tidak ditemukan' });
   if (b.kriteria) terbaca.push({ label: `Kriteria (${b.kriteria.length})`, nilai: daftar(b.kriteria) });
+  const d = jenis === 'template' ? m.diagnosis : undefined;
+  if (d && d.kode !== 'rusak') {
+    terbaca.push({ label: 'Paragraf', nilai: String(d.ringkasan.jumlahParagraf) });
+    terbaca.push({ label: 'BAB', nilai: daftar(d.ringkasan.bab) });
+    if (!b.kriteria?.length) terbaca.push({ label: 'Kriteria', nilai: 'tidak ditemukan' });
+    terbaca.push({ label: 'Gaya judul terbanyak', nilai: daftar(d.ringkasan.gaya.map((g) => `${g.gaya} (${g.jumlah}): "${g.contoh}"`)) });
+    if (d.ringkasan.jenjang.length) terbaca.push({ label: 'Jenjang di template', nilai: d.ringkasan.jenjang.map(namaJenjang).join(', ') });
+  }
   const kenal = m.dikenal.berkas[b.sha256];
   if (kenal) terbaca.push({ label: 'Berkas dikenali', nilai: `${kenal.nama} (${kenal.status === 'usang' ? 'usang' : 'resmi'})` });
   const info: string[] = [];
@@ -308,14 +321,17 @@ export function periksaBerkasInstrumen(m: MasukanPeriksa): HasilPeriksa {
   const { teksKunci: _t, ...ringkas } = b;
   const hasil = (diterima: boolean, judul: string, alasan: string, langkah: string): HasilPeriksa => ({
     diterima, jenisBerkas: jenis, namaBerkas: m.namaBerkas, waktu: (m.waktu ?? new Date()).toISOString(),
-    judul, alasan, langkah, terbaca, info, konfirmasi, bacaan: ringkas,
+    judul, alasan, langkah, terbaca, info, konfirmasi, bacaan: ringkas, ...(d ? { diagnosis: d } : {}),
   });
   const tolak = (judul: string, alasan: string, langkah: string) => hasil(false, `Berkas ditolak: ${judul}`, alasan, langkah);
 
   const lebihLama = periksaTahunAktif(y, m.tahunAktif, m.jenjangVersi);
   if (lebihLama) return tolak('tahun lebih lama dari instrumen aktif', lebihLama, 'Periksa isian Tahun instrumen. Instrumen yang lebih lama tidak perlu diunggah lagi.');
 
-  // salah jenis berkas (dari isi)
+  // salah jenis berkas (dari isi); untuk template memakai diagnosis I2
+  if (d && (d.kode === 'rusak' || d.kode === 'bukan-template')) {
+    return tolak(d.kode === 'rusak' ? 'berkas rusak' : 'bukan Template LED', d.pesan, d.langkah);
+  }
   if (b.jenis !== jenis) {
     const terdeteksi = b.jenis === 'rusak' || b.jenis === 'bukan-pdf' || b.jenis === 'tidak-dikenal'
       ? `Berkas ini ${LABEL_JENIS[b.jenis]}, bukan ${label}.`
@@ -333,6 +349,10 @@ export function periksaBerkasInstrumen(m: MasukanPeriksa): HasilPeriksa {
       : `Berkas ini ${kenal.nama}${kenal.tahun && !kenal.nama.includes(String(kenal.tahun)) ? ` (instrumen ${kenal.tahun})` : ''} dan sudah ditandai usang.`;
     return tolak('berkas usang', alasan, `Gunakan ${jenis === 'template' ? 'Template LEDPS' : label} LAM Teknik ${y} dari lamteknik.or.id.`);
   }
+  if (d?.kode === 'struktur-lama' || d?.kode === 'jenjang-tidak-ada') {
+    return tolak(d.judul.toLowerCase(), d.pesan, d.langkah);
+  }
+  if (d?.kode === 'format-lain') info.push(`${d.pesan} ${d.langkah}`);
   if (kenal && kenal.tahun !== null && kenal.tahun !== y) {
     info.push(`${label} ini sama persis dengan ${kenal.nama}; dipakai untuk instrumen ${y} bila ${jenis === 'template' ? `kriterianya cocok dengan Matriks ${y}` : 'isinya sesuai'}.`);
   } else if (kenal) {

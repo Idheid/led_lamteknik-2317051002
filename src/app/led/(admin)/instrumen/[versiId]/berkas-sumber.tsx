@@ -4,6 +4,7 @@ import {
   bacaInfoEkstraksi, bacaRiwayatPeriksa, bacaSidikJariVersi, konfirmasiVersi, type JenisBerkasInstrumen, type RingkasanBerkas,
 } from "@/modules/led/data/unggah-instrumen";
 import type { HasilPeriksa } from "@/modules/led/domain/periksa-berkas-instrumen";
+import type { DiagnosisTemplate } from "@/modules/led/domain/diagnosis-template";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { UnggahBerkas } from "@/components/unggah-berkas";
 import { PemantauProses } from "@/components/status-proses";
@@ -93,6 +94,36 @@ function KotakPenolakan({ h }: { h: HasilPeriksa }) {
   );
 }
 
+/** Diagnosis Template LED yang formatnya belum dikenali (I2): apa yang terbaca dan jalan keluarnya. */
+export function KotakDiagnosis({ d, children }: { d: DiagnosisTemplate; children?: React.ReactNode }) {
+  const r = d.ringkasan;
+  return (
+    <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
+      <Info aria-hidden />
+      <AlertTitle>{d.judul}</AlertTitle>
+      <AlertDescription className="flex flex-col gap-2 text-foreground/90">
+        <p>{d.pesan} {d.langkah}</p>
+        <p className="text-xs">
+          Terbaca: {r.jumlahParagraf} paragraf · BAB: {r.bab.join("; ") || "tidak ditemukan"} · kriteria: {r.kriteria.length ? r.kriteria.join("; ") : "tidak ditemukan"}
+        </p>
+        {r.gaya.length > 0 && (
+          <table className="w-full text-left text-xs">
+            <thead><tr className="text-muted-foreground"><th className="py-1 pr-2 font-medium">Gaya judul</th><th className="py-1 pr-2 text-right font-medium">Jumlah</th><th className="py-1 font-medium">Contoh</th></tr></thead>
+            <tbody>
+              {r.gaya.map((g) => (
+                <tr key={g.gaya} className="border-t border-amber-200 dark:border-amber-900">
+                  <td className="py-1 pr-2 font-mono">{g.gaya}</td><td className="py-1 pr-2 text-right tabular-nums">{g.jumlah}</td><td className="py-1 break-words">{g.contoh}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {children}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 /** Tiga berkas sumber instrumen jenjang dan kendali ekstraksinya (revisi 19 Okt 2026). */
 export function BerkasSumber({ v, tahunUsang }: { v: VersiBerkas; tahunUsang: number | null }) {
   const info = bacaInfoEkstraksi(v.ekstraksi);
@@ -102,7 +133,8 @@ export function BerkasSumber({ v, tahunUsang }: { v: VersiBerkas; tahunUsang: nu
   // penolakan yang lebih baru daripada berkas jenis itu yang terakhir diterima
   const tolak = bacaRiwayatPeriksa(v.riwayatPeriksa).filter((h) => !sj[h.jenisBerkas as JenisBerkasInstrumen] || h.waktu > sj[h.jenisBerkas as JenisBerkasInstrumen]!.waktu);
   const konfirmasi = konfirmasiVersi(v);
-  const siap = Boolean(v.templateLedNama && v.matriksNama && (!v.pedomanNama || v.halamanBobot)) && konfirmasi.length === 0;
+  const siap = Boolean(v.templateLedNama && v.matriksNama && (!v.pedomanNama || v.halamanBobot)) && konfirmasi.length === 0
+    && !sj.template?.diagnosis?.bisaDipetakan;
   const persen = info?.jumlahKelompok ? Math.round(((info.kelompokSelesai ?? 0) / info.jumlahKelompok) * 100) : 0;
   const url = (jenis: string) => `/api/led/instrumen/${v.id}/berkas/${jenis}`;
   return (
@@ -123,6 +155,7 @@ export function BerkasSumber({ v, tahunUsang }: { v: VersiBerkas; tahunUsang: nu
             <div className="mt-2 flex flex-col gap-2">{tolak.slice(1).map((h) => <KotakPenolakan key={h.waktu} h={h} />)}</div>
           </details>
         )}
+        {v.templateLedNama && sj.template?.diagnosis?.bisaDipetakan && <KotakDiagnosis d={sj.template.diagnosis} />}
         <ul className="divide-y">
           <Baris ada={Boolean(v.templateLedNama)} judul="Template LED (.docx)" nama={v.templateLedNama} bacaan={sj.template}>
             {!terkunci && <UnggahBerkas ringkas segarkanSaatGagal url={url("template")} accept=".docx" label={v.templateLedNama ? "Ganti" : "Unggah"} />}

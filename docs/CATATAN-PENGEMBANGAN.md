@@ -1301,3 +1301,41 @@ Semua keputusan diambil dari **isi berkas**; metadata Word/PDF dan nama berkas t
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 138/138 lulus |
 | `npm run test:integrasi` | 82/82 lulus |
+
+### I2: pesan galat diagnosis
+
+- Logika murni `src/modules/led/domain/diagnosis-template.ts`:
+  - `diagnosisTemplate(paragraf, hasilUrai, { jenjang, tahun })` menghasilkan rusak, bukan Template LED, struktur LED
+    lama, format judul tidak dikenali, jenjang tidak ada, atau cocok. Setiap diagnosis membawa pesan dan langkah sesuai
+    tabel dokumen;
+  - ringkasan (`ringkasTemplate`) memuat jumlah paragraf, BAB yang ditemukan (tanpa baris daftar isi), kriteria
+    (aturan bawaan atau cara cadangan I1), 10 gaya judul terbanyak dengan contoh teks, dan jenjang yang ada.
+  - Struktur lama dikenali bila sedikitnya 4 kriteria sama dengan 9 kriteria lama dan tidak ada kriteria C.x.
+- Dipakai di tiga tempat:
+  - unggah template (`bacaTemplate` di `baca-berkas.ts`, diteruskan ke `periksaBerkasInstrumen`):
+    - rusak dan bukan Template LED ditolak dengan pesan diagnosis (menggantikan pesan jenis I1 untuk template);
+    - struktur lama dan jenjang tidak ada ditolak, sesudah pemeriksaan sidik jari supaya berkas yang dikenal tetap
+      disebut namanya;
+    - format lain diterima dengan info, dan ringkasannya ikut tampil di "apa yang terbaca";
+  - sebelum ekstraksi: template berformat lain menghentikan ekstraksi dengan pesan diagnosis;
+  - langkah template di worker (`proses/instrumen.ts`): galat umum "Tidak ada kriteria … Pastikan berkas adalah Template
+    LEDPS resmi" dan "tidak memuat sub-bagian untuk jenjang" diganti pesan diagnosis beserta ringkasan yang terbaca.
+- Halaman versi: kotak "Format judul tidak dikenali" (kuning, bukan merah) berisi pesan, ringkasan, dan tabel gaya
+  judul. Mulai ekstraksi nonaktif selama diagnosis ini berlaku. Tombol "Pemetaan judul" ditambahkan di I3 dan "Minta
+  usulan AI" di I4, supaya tidak ada tautan ke halaman yang belum ada.
+- Uji:
+  - domain `diagnosis-template.test.ts` (4 uji): rusak, bukan template, struktur lama, format lain dengan ringkasan,
+    jenjang tidak ada, cocok;
+  - unit `tests/unit/template-instrumen.test.ts`: Template LEDPS 2025 resmi terbaca untuk D3, S1, STr, S2, S3, PPI
+    dengan diagnosis cocok; PDF yang diunggah sebagai template didiagnosis rusak;
+  - integrasi I1 disesuaikan dengan pesan diagnosis untuk berkas rusak.
+- Uji browser: template 2025 yang judulnya diganti ke Heading 1/2/3 (dibuat dengan
+  `scripts/buat-fikstur-format-lain.ts`, di-commit di I3) diterima di versi `LAMTEKNIK-2025-S1-I1`. Kriteria tetap
+  cocok dengan Matriks lewat cara cadangan. Kotak diagnosis tampil (471 paragraf, 4 BAB, 7 kriteria, tabel gaya), dan
+  Mulai ekstraksi nonaktif.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 144/144 lulus |
+| `npm run test:integrasi` | 82/82 lulus |

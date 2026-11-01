@@ -15,9 +15,10 @@ import {
 import { kelompokBaris, susunMatriks } from "@/modules/led/domain/matriks";
 import { katalogRumus } from "@/modules/led/domain/metrik-lkps";
 import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
-import { petakanSubBagian, untukJenjang, uraiTemplate, type SubRujukan } from "@/modules/led/domain/template-led";
+import { petakanSubBagian, uraiTemplate, type SubRujukan } from "@/modules/led/domain/template-led";
 import { bacaHalamanPdf } from "@/modules/led/instrumen/pdf";
 import { bacaParagrafTemplate } from "@/modules/led/instrumen/template";
+import { diagnosisTemplate, teksRingkasan } from "@/modules/led/domain/diagnosis-template";
 import { pakaiNarasiUji } from "@/modules/bersama/llm/narasi-uji";
 import { GalatSementara, panggilTerstruktur } from "@/modules/led/proses/llm-narasi";
 
@@ -79,11 +80,14 @@ async function rujukanSub(versiId: string, jenjang: string) {
   };
 }
 
-export async function langkahTemplate(versi: { id: string; templateLedLokasi: string | null }, jenjang: string): Promise<string[]> {
+export async function langkahTemplate(versi: { id: string; templateLedLokasi: string | null; tahunInstrumen: number }, jenjang: string): Promise<string[]> {
   if (await prisma.bagian.count({ where: { versiId: versi.id } })) return [];
   if (!versi.templateLedLokasi) throw new Error("Template LED belum diunggah.");
-  const semua = uraiTemplate(await bacaParagrafTemplate(await bacaBerkas(versi.templateLedLokasi)));
-  if (!semua.some((b) => b.jenis === "kriteria")) throw new Error("Tidak ada kriteria (C.1, C.2, ...) yang dikenali di Template LED. Pastikan berkas adalah Template LEDPS resmi.");
+  const paragraf = await bacaParagrafTemplate(await bacaBerkas(versi.templateLedLokasi));
+  const semua = uraiTemplate(paragraf);
+  // perbaikan 2 Nov 2026 (I2): pesan diagnosis dari hasil pembacaan, bukan galat umum
+  const diag = diagnosisTemplate(paragraf, semua, { jenjang, tahun: versi.tahunInstrumen });
+  if (diag.kode !== "cocok") throw new Error(`${diag.pesan} ${diag.langkah} Terbaca: ${teksRingkasan(diag.ringkasan)}.`);
   const ruj = await rujukanSub(versi.id, jenjang);
   const daftarRujukan: SubRujukan[] = ruj.bagian.flatMap((b) => b.subBagian.map((s) => ({
     bagianKode: b.kode, kode: s.kode, label: s.label, judul: s.judul, grup: s.grup, tipe: s.tipe,
@@ -93,8 +97,6 @@ export async function langkahTemplate(versi: { id: string; templateLedLokasi: st
   // seluruh struktur template disimpan (semua varian jenjang, seperti versi bawaan) supaya ekspor bisa menghapus
   // paragraf jenjang lain; halaman penyusun menyaring sub-bagian menurut jenjang LED. Butir tetap khusus jenjang versi.
   const peta = petakanSubBagian(semua, daftarRujukan, { jenjang, semuaVarian: semua });
-  const berlaku = untukJenjang(semua, jenjang).flatMap((b) => b.sub).length;
-  if (berlaku === 0) throw new Error(`Template LED tidak memuat sub-bagian untuk jenjang ${jenjang}.`);
   const baru: string[] = [];
   await prisma.$transaction(async (tx) => {
     let urutan = 0;

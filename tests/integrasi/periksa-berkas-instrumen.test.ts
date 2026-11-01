@@ -99,7 +99,8 @@ test("I1: berkas yang salah ditolak saat diunggah, tidak disimpan, dan tercatat 
   const tpl = await ditolak(v.id, "pedoman", TEMPLATE);
   assert.equal(tpl.alasan, "Berkas ini tampaknya Template LED, bukan Pedoman Penilaian.");
   const pdf = await ditolak(v.id, "template", MATRIKS);
-  assert.match(pdf.alasan, /berkas rusak atau bukan dokumen Word, bukan Template LED/);
+  assert.equal(pdf.judul, "Berkas ditolak: berkas rusak", "diagnosis I2");
+  assert.equal(pdf.alasan, "Berkas tidak bisa dibuka sebagai dokumen Word.");
   await ditolak(v.id, "matriks", { nama: "a.pdf", isi: Buffer.from("bukan pdf") });
   const d3 = await ditolak(v.id, "matriks", { nama: "Matriks D3.pdf", isi: await matriksSintetis({ tahun: 2025, jenjang: "DIPLOMA TIGA" }) });
   assert.equal(d3.alasan, "Matriks ini untuk Diploma Tiga, sedangkan instrumen ini untuk Sarjana.");
