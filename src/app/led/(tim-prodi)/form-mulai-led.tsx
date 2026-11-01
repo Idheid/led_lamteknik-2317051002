@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
 import { isianSetelahGantiTahun, namaLedOtomatis, pilihanTs, tsBawaan } from "@/modules/bersama/domain/tahun-akademik";
 import { skemaProyek, type MasukanProyek } from "@/modules/led/validasi";
-import { aksiBuatProyek } from "./aksi";
+import { TombolKonfirmasi } from "@/components/aksi-klien";
+import { aksiBuatProyek, aksiMulaiPeriodeBerikutnya } from "./aksi";
 
 export interface ProdiLed {
   nama: string;
@@ -25,7 +26,15 @@ const tahunSah = (t: number) => Number.isInteger(t) && t >= 2000 && t <= 2100;
  * tahun diganti, TS bawaan tahun itu dipilih ulang. Nama LED dibuat otomatis "LED {prodi} {tahun} (TS {tahun akademik})"
  * dan bisa diubah di Pengaturan LED.
  */
-export function FormMulaiLed({ prodi, tahunUsulan, tanggalAcuan }: { prodi: ProdiLed; tahunUsulan: number; tanggalAcuan: string }) {
+export function FormMulaiLed({ prodi, tahunUsulan, tanggalAcuan, berikutnya, children }: {
+  prodi: ProdiLed;
+  tahunUsulan: number;
+  tanggalAcuan: string;
+  /** L4: Mulai LED periode berikutnya; teks konfirmasi (LED lama diarsipkan, instrumen baru) */
+  berikutnya?: { konfirmasi: string };
+  /** L5: pilihan bahan yang disalin */
+  children?: React.ReactNode;
+}) {
   const router = useRouter();
   const { sibuk, jalankan } = useAksi();
   const form = useForm<MasukanProyek>({
@@ -38,7 +47,10 @@ export function FormMulaiLed({ prodi, tahunUsulan, tanggalAcuan }: { prodi: Prod
   const nama = tahunSah(tahun) && Number.isInteger(ts) ? namaLedOtomatis(prodi.nama, tahun, ts) : null;
 
   const kirim = form.handleSubmit((nilai) =>
-    jalankan(() => aksiBuatProyek(nilai), { sukses: "LED dibuat.", lalu: (id) => router.push(`/led/${id}`) }),
+    jalankan(() => (berikutnya ? aksiMulaiPeriodeBerikutnya(nilai) : aksiBuatProyek(nilai)), {
+      sukses: berikutnya ? "LED periode berikutnya dibuat. LED lama diarsipkan." : "LED dibuat.",
+      lalu: (id) => router.push(`/led/${id}`),
+    }),
   );
   return (
     <form onSubmit={kirim} noValidate>
@@ -107,10 +119,22 @@ export function FormMulaiLed({ prodi, tahunUsulan, tanggalAcuan }: { prodi: Prod
             Nama LED: <span className="font-medium text-foreground">{nama}</span>. Bisa diubah nanti di Pengaturan LED.
           </p>
         )}
-        <Button type="submit" size="lg" disabled={sibuk || Boolean(prodi.alasan)} className="w-fit">
-          <IkonSibuk sibuk={sibuk} />
-          Mulai LED
-        </Button>
+        {children}
+        {berikutnya ? (
+          <TombolKonfirmasi
+            pemicu={<Button type="button" size="lg" disabled={sibuk || Boolean(prodi.alasan)} className="w-fit"><IkonSibuk sibuk={sibuk} />Mulai LED periode berikutnya</Button>}
+            judul="Mulai LED periode berikutnya?"
+            deskripsi={berikutnya.konfirmasi}
+            labelAksi="Mulai LED baru"
+            berbahaya={false}
+            onKonfirmasi={() => void kirim()}
+          />
+        ) : (
+          <Button type="submit" size="lg" disabled={sibuk || Boolean(prodi.alasan)} className="w-fit">
+            <IkonSibuk sibuk={sibuk} />
+            Mulai LED
+          </Button>
+        )}
       </FieldGroup>
     </form>
   );

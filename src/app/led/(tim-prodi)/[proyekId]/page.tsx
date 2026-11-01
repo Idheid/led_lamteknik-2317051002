@@ -39,7 +39,8 @@ import { TombolSusunSeluruh } from "./tombol-susun-seluruh";
 import { KartuReview } from "@/modules/led/komponen/review/kartu-review";
 import { statusHasilAkreditasi } from "@/modules/led/data/akreditasi";
 import { Button } from "@/components/ui/button";
-import { Award } from "lucide-react";
+import { Award, CalendarClock } from "lucide-react";
+import { infoPeriodeBerikutnya } from "@/modules/led/data/periode";
 
 export const metadata: Metadata = { title: "Beranda" };
 
@@ -68,6 +69,7 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
   ]);
   // L1 (2 Nov 2026): catat hasil akreditasi setelah LED Layak diajukan atau diekspor final
   const hasil = await statusHasilAkreditasi(p, proyek);
+  const berikut = await infoPeriodeBerikutnya(p);
   const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
   const anggaran = hitungAnggaran(bagianAnggaran, butir, pengaturan);
   const usulan = usulanHalamanKriteria(bagianAnggaran, butir, pengaturan);
@@ -454,6 +456,18 @@ export default async function Beranda({ params }: PageProps<"/led/[proyekId]">) 
           {/* revisi 31 Okt 2026: label periode 5 tahun bukan hal utama, cukup tampil kecil di sini */}
           <p className="text-xs text-muted-foreground">{labelPeriode(proyek.tahunPengajuan)} (akreditasi berlaku 5 tahun sejak pengajuan).</p>
           <PengaturanProyek proyekId={proyek.id} nama={proyek.nama} diarsipkan={Boolean(proyek.diarsipkanPada)} />
+          {/* L4: Mulai LED periode berikutnya selalu tersedia di sini; peringatan bila LED aktif belum selesai */}
+          {berikut && berikut.lama.id === proyek.id && (
+            <div className="flex flex-col gap-2 rounded-lg border p-3 text-sm">
+              <div className="font-medium">LED periode berikutnya</div>
+              <p className="text-muted-foreground">
+                {berikut.syarat.tampilDiMenu ? berikut.syarat.alasan : `Perhatian: ${berikut.syarat.alasan} LED ini akan diarsipkan bila Anda melanjutkan.`}
+              </p>
+              <Button asChild size="sm" variant="outline" className="w-fit">
+                <Link href="/led?periode=berikutnya#periode-berikutnya"><CalendarClock aria-hidden />Mulai LED periode berikutnya</Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </>

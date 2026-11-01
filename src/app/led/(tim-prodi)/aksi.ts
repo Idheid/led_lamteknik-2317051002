@@ -14,6 +14,14 @@ import { simpanJadwal } from "@/modules/led/data/kesiapan";
 import { simpanTarget } from "@/modules/led/data/target-butir";
 import { periksaDenganAi } from "@/modules/led/data/verifikasi";
 import { simpanAlasanKonsistensi } from "@/modules/led/data/konsistensi";
+import { mulaiLedPeriodeBerikutnya } from "@/modules/led/data/periode";
+
+/** L4: Mulai LED periode berikutnya (LED lama diarsipkan, LED baru dibuat dalam satu transaksi). */
+export async function aksiMulaiPeriodeBerikutnya(masukan: MasukanProyek) {
+  const r = await jalankanAksi(async (p) => (await mulaiLedPeriodeBerikutnya(p, masukan)).baru.id);
+  revalidatePath("/led", "layout");
+  return r;
+}
 
 export async function aksiBuatProyek(masukan: MasukanProyek) {
   const r = await jalankanAksi(async (p) => (await buatProyek(p, masukan)).id);

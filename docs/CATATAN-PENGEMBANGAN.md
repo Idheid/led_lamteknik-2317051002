@@ -1654,3 +1654,41 @@ per butir.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 157/157 lulus |
 | `npm run test:integrasi` | 94/94 lulus |
+
+
+### L4: tombol "Mulai LED periode berikutnya"
+
+- `syaratPeriodeBerikutnya` (`led/domain/periode.ts`): tombol tampil di Menu LED bila hasil akreditasi LED aktif sudah
+  dicatat (menunggu atau berlaku), LED aktif Layak diajukan, sudah diekspor final, atau akreditasi berakhir ≤ 18 bulan
+  lagi (`ambangPengingat` L2). Selain itu tombol tetap ada di Pengaturan LED dengan peringatan "LED aktif belum
+  selesai …".
+- `led/data/periode.ts`:
+  - `infoPeriodeBerikutnya` (Tim Prodi): LED aktif, syarat, dan instrumen aktif jenjang;
+  - `mulaiLedPeriodeBerikutnya`: instrumen dicek sebelum apa pun berubah. Dalam satu transaksi: periksa penyusunan
+    berjalan, arsipkan LED lama, buat LED baru. Bila ditolak, LED lama tetap aktif dan LED baru tidak ada. Prodi
+    diambil dari akun, jadi tidak ada cara menyentuh LED prodi lain. Dicatat `mulai_periode_berikutnya`.
+- `buatProyek` dipecah menjadi `instrumenWajibAktif` dan `dataLedBaru`, dipakai kedua jalur supaya isi LED baru
+  (nama otomatis, anggaran, batas pengajuan) sama.
+- Antarmuka:
+  - Menu LED menampilkan kartu **Mulai LED periode berikutnya** (alasan syarat dan instrumen yang dipakai). Isinya
+    sama dengan kartu Mulai LED (tahun pengajuan dan TS, nama otomatis) ditambah dialog konfirmasi: "{LED lama} akan
+    diarsipkan (tetap bisa dibuka dan diekspor). LED baru memakai instrumen {versi aktif}."
+  - Pengaturan LED (Beranda LED) punya bagian "LED periode berikutnya" yang membuka kartu itu
+    (`/led?periode=berikutnya`) dengan peringatan bila syarat belum terpenuhi.
+  - Pilihan bahan yang disalin ditambahkan di L5.
+- Uji:
+  - domain `periode.test.ts`;
+  - integrasi `periode-berikutnya.test.ts`: syarat menurut tanggal; Admin ditolak; penyusunan berjalan ditolak dan LED
+    lama tetap aktif; instrumen belum aktif ditolak; berhasil mengarsipkan yang lama dan membuat yang baru (tahun, TS,
+    satu LED aktif); LED prodi lain tidak tersentuh.
+- Uji browser:
+  - akun uji Tim Prodi Sipil baru dibuat untuk alur L4–L6, dengan sandi acak yang tidak ditulis di chat. Login
+    sekaligus menguji tombol mata di halaman login;
+  - Menu LED menampilkan kartu "Mulai LED periode berikutnya" karena LED uji Sipil sudah Layak diajukan;
+  - dialog konfirmasi berisi teks yang sesuai lalu dibatalkan. Penekanan sebenarnya diuji di alur L6.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 158/158 lulus |
+| `npm run test:integrasi` | 95/95 lulus |

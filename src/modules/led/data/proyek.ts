@@ -56,29 +56,42 @@ export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
   if (aktif) {
     throw new GalatPengguna(`${prodi.nama} masih punya LED aktif (${aktif.nama}, pengajuan ${aktif.tahunPengajuan}). Arsipkan LED itu dulu sebelum membuat LED periode berikutnya.`);
   }
-  const versi = await instrumenAktifUntuk(prodi.jenjang);
-  if (!versi) {
-    throw new GalatPengguna(`Instrumen jenjang ${namaJenjang(prodi.jenjang)} belum aktif. Unggah dan aktifkan instrumennya di menu Instrumen.`);
-  }
-  // revisi 31 Okt 2026: TS dipilih Tim Prodi dari dua pilihan; kosong = (P−1)/P. Bisa diubah di Pengaturan LED
-  const tsTahunMulai = data.tsTahunMulai ?? tsDariTahunPengajuan(data.tahunPengajuan);
-  const proyek = await prisma.proyekLED.create({
-    data: {
-      prodiId: prodi.id,
-      versiId: versi.id,
-      jenjang: prodi.jenjang,
-      // perbaikan 1 Nov 2026 (P5): kartu Mulai LED tidak punya isian nama; nama otomatis, bisa diubah di Pengaturan LED
-      nama: data.nama ?? namaLedOtomatis(prodi.nama, data.tahunPengajuan, tsTahunMulai),
-      tahunPengajuan: data.tahunPengajuan,
-      tsTahunMulai,
-      // salinan anggaran versi: bisa diubah per LED tanpa mengubah versi
-      anggaran: versi.anggaranBawaan as Prisma.InputJsonValue,
-      // revisi 22 Okt 2026: usulan awal batas pengajuan (6 bulan sebelum akreditasi berakhir), bisa diubah PJ
-      batasPengajuan: prodi.akreditasiBerlakuSampai ? usulanBatasPengajuan(prodi.akreditasiBerlakuSampai) : null,
-    },
-  });
+  const versi = await instrumenWajibAktif(prodi.jenjang);
+  const proyek = await prisma.proyekLED.create({ data: dataLedBaru(prodi, versi, data) });
   await catatAktivitas(p, "buat", "proyek", proyek.id, { nama: proyek.nama, prodi: prodi.nama, versi: versi.kode });
   return proyek;
+}
+
+/** Instrumen aktif jenjang prodi; ditolak dengan pesan jelas bila belum ada. */
+export async function instrumenWajibAktif(jenjang: string) {
+  const versi = await instrumenAktifUntuk(jenjang);
+  if (!versi) {
+    throw new GalatPengguna(`Instrumen jenjang ${namaJenjang(jenjang)} belum aktif. Unggah dan aktifkan instrumennya di menu Instrumen.`);
+  }
+  return versi;
+}
+
+/** Isi LED baru (dipakai Mulai LED dan Mulai LED periode berikutnya). */
+export function dataLedBaru(
+  prodi: { id: string; nama: string; jenjang: string; akreditasiBerlakuSampai: Date | null },
+  versi: { id: string; anggaranBawaan: unknown },
+  data: { nama?: string | null; tahunPengajuan: number; tsTahunMulai?: number | null },
+) {
+  // revisi 31 Okt 2026: TS dipilih Tim Prodi dari dua pilihan; kosong = (P−1)/P. Bisa diubah di Pengaturan LED
+  const tsTahunMulai = data.tsTahunMulai ?? tsDariTahunPengajuan(data.tahunPengajuan);
+  return {
+    prodiId: prodi.id,
+    versiId: versi.id,
+    jenjang: prodi.jenjang,
+    // perbaikan 1 Nov 2026 (P5): kartu Mulai LED tidak punya isian nama; nama otomatis, bisa diubah di Pengaturan LED
+    nama: data.nama ?? namaLedOtomatis(prodi.nama, data.tahunPengajuan, tsTahunMulai),
+    tahunPengajuan: data.tahunPengajuan,
+    tsTahunMulai,
+    // salinan anggaran versi: bisa diubah per LED tanpa mengubah versi
+    anggaran: versi.anggaranBawaan as Prisma.InputJsonValue,
+    // revisi 22 Okt 2026: usulan awal batas pengajuan (6 bulan sebelum akreditasi berakhir), bisa diubah PJ
+    batasPengajuan: prodi.akreditasiBerlakuSampai ? usulanBatasPengajuan(prodi.akreditasiBerlakuSampai) : null,
+  };
 }
 
 /**

@@ -15,6 +15,9 @@ import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormMulaiLed } from "./form-mulai-led";
+import { CalendarClock } from "lucide-react";
+import { infoPeriodeBerikutnya } from "@/modules/led/data/periode";
+import { teksKonfirmasiPeriode } from "@/modules/led/domain/periode";
 
 export const metadata: Metadata = { title: "LED prodi" };
 
@@ -23,8 +26,11 @@ export const metadata: Metadata = { title: "LED prodi" };
  * aktif, kartu "Mulai LED {prodi}" berisi tahun pengajuan dan TS saja (perbaikan 1 Nov 2026, P5; dulu halaman /led/baru).
  * Semua akun Tim Prodi satu prodi melihat LED yang sama.
  */
-export default async function HalamanLedProdi() {
+export default async function HalamanLedProdi({ searchParams }: PageProps<"/led">) {
   const p = await wajibTimProdi();
+  // L4: kartu Mulai LED periode berikutnya (dari Pengaturan LED lewat ?periode=berikutnya)
+  const { periode: mintaPeriode } = (await searchParams) as { periode?: string };
+  const berikut = await infoPeriodeBerikutnya(p);
   const [proyek, prodi] = await Promise.all([daftarProyek(p), ambilProdi(p, p.prodiId)]);
   const aktif = proyek.filter((x) => !x.diarsipkanPada);
   const arsip = proyek.filter((x) => x.diarsipkanPada);
@@ -33,6 +39,8 @@ export default async function HalamanLedProdi() {
   const tahunIni = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date()));
   // TS bawaan dihitung dari usulan batas pengajuan (6 bulan sebelum akreditasi berakhir), atau hari ini bila belum ada
   const tanggalAcuan = prodi?.akreditasiBerlakuSampai ? usulanBatasPengajuan(prodi.akreditasiBerlakuSampai) : new Date();
+  // tahun usulan periode berikutnya: tahun berakhirnya akreditasi (pengajuan sebelum berakhir), atau tahun ini
+  const tahunBerikut = prodi?.akreditasiBerlakuSampai ? Math.max(tahunIni, tanggalAcuan.getUTCFullYear()) : tahunIni;
   const alasan = prodi && aktif.length === 0 && !(await instrumenAktifUntuk(prodi.jenjang))
     ? `Instrumen ${namaJenjang(prodi.jenjang)} belum aktif. Hubungi Admin UPPS.`
     : null;
@@ -74,6 +82,25 @@ export default async function HalamanLedProdi() {
             />
           ))}
         </div>
+      )}
+      {berikut && prodi && (berikut.syarat.tampilDiMenu || mintaPeriode === "berikutnya") && (
+        <Card id="periode-berikutnya" className="max-w-3xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg"><CalendarClock className="size-5 text-primary" aria-hidden />Mulai LED periode berikutnya</CardTitle>
+            <CardDescription>
+              {berikut.syarat.tampilDiMenu ? berikut.syarat.alasan : `Perhatian: ${berikut.syarat.alasan}`}{" "}
+              {berikut.versi ? `LED baru memakai instrumen ${berikut.versi.nama}.` : ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FormMulaiLed
+              prodi={{ nama: prodi.nama, alasan: berikut.versi ? null : `Instrumen ${namaJenjang(prodi.jenjang)} belum aktif. Hubungi Admin UPPS.` }}
+              tahunUsulan={tahunBerikut}
+              tanggalAcuan={tanggalAcuan.toISOString()}
+              berikutnya={{ konfirmasi: teksKonfirmasiPeriode(berikut.lama.nama, berikut.versi?.nama ?? "-") }}
+            />
+          </CardContent>
+        </Card>
       )}
       {arsip.length > 0 && (
         <section className="flex flex-col gap-2" aria-label="LED diarsipkan">
