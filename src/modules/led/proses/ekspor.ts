@@ -12,7 +12,9 @@ import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { bacaDokumen, teksDokumen, type DokTiptap } from "@/modules/led/domain/narasi";
 import { hitungKata } from "@/modules/bersama/domain/teks";
 import { aktifkanPerbaruiField, siapkanDokumen, type LaporanTemplate, type SubTemplate } from "@/modules/led/ekspor/template";
-import { isiDataProyek, type AnggotaTim, type DataEkspor } from "@/modules/led/ekspor/isi-data";
+import { isiDataProyek, PERINGATAN_LOGO, type AnggotaTim, type DataEkspor } from "@/modules/led/ekspor/isi-data";
+import { sisipkanLogo } from "@/modules/led/ekspor/logo";
+import { berkasLogo } from "@/modules/led/data/logo";
 import { dokumenKeWord, konteksBaru, patchDaftar, patchIsi } from "@/modules/led/ekspor/word";
 import { hitungHalamanDocx } from "@/modules/led/ekspor/halaman";
 import { tandaiDraf } from "@/modules/led/ekspor/xml";
@@ -154,6 +156,18 @@ export async function bangunDocx(proyekId: string, opsi: { jenis?: JenisEkspor }
   };
   const docXml = await zip.file("word/document.xml")!.async("string");
   const terisi = isiDataProyek(docXml, data);
+  // D8: logo perguruan tinggi (menu LED, Logo sampul LED) menggantikan kotak "Logo Perguruan Tinggi"
+  const logo = await berkasLogo();
+  const relsLama = await zip.file("word/_rels/document.xml.rels")?.async("string");
+  const ctLama = await zip.file("[Content_Types].xml")?.async("string");
+  const dgnLogo = logo && relsLama && ctLama ? sisipkanLogo(terisi.xml, relsLama, ctLama, logo.info) : null;
+  if (dgnLogo && logo) {
+    terisi.xml = dgnLogo.document;
+    terisi.peringatan = terisi.peringatan.filter((x) => x !== PERINGATAN_LOGO);
+    zip.file("word/_rels/document.xml.rels", dgnLogo.rels);
+    zip.file("[Content_Types].xml", dgnLogo.contentTypes);
+    zip.file(dgnLogo.media, logo.isi);
+  }
   zip.file("word/document.xml", terisi.xml);
   const disiapkan = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 

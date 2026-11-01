@@ -18,6 +18,8 @@ import { prosesDokumen } from "@/modules/led/proses/dokumen";
 import { prosesTugasGenerate, urutanSubBagian } from "@/modules/led/proses/generate";
 import { prosesEkspor } from "@/modules/led/proses/ekspor";
 import { teksElemen, pecahBody } from "@/modules/led/ekspor/xml";
+import { deflateSync, crc32 } from "node:zlib";
+import { hapusLogo, simpanLogo } from "@/modules/led/data/logo";
 import { bersihkanDb, buatAdmin, imporSeed, buatTimProdi, siapkanFakultas, siapkanProdi } from "./bantu";
 
 const TEMPLATE = process.env.TEMPLATE_LEDPS_PATH ? resolve(process.cwd(), process.env.TEMPLATE_LEDPS_PATH) : "";
@@ -25,6 +27,21 @@ const lewati = !TEMPLATE || !existsSync(TEMPLATE) ? "TEMPLATE_LEDPS_PATH tidak t
 
 // PNG 2×1 piksel
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAEUlEQVR42mNk+M9QzwAEjDAGACCCAgL+1tZqAAAAAElFTkSuQmCC", "base64");
+
+/** PNG polos berukuran lebar × tinggi (untuk logo sampul D8). */
+function pngPolos(lebar: number, tinggi: number): Buffer {
+  const potong = (jenis: string, data: Buffer) => {
+    const kepala = Buffer.alloc(4); kepala.writeUInt32BE(data.length);
+    const isi = Buffer.concat([Buffer.from(jenis, "ascii"), data]);
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(isi));
+    return Buffer.concat([kepala, isi, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(lebar, 0); ihdr.writeUInt32BE(tinggi, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const baris = Buffer.alloc(tinggi * (1 + lebar * 3), 0x40);
+  for (let y = 0; y < tinggi; y++) baris[y * (1 + lebar * 3)] = 0;
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), potong("IHDR", ihdr), potong("IDAT", deflateSync(baris)), potong("IEND", Buffer.alloc(0))]);
+}
 
 let pj: Pengguna;
 let pjLain: Pengguna;
@@ -172,6 +189,14 @@ test("F-22 pemeriksaan sebelum ekspor menolak bagian belum selesai, penanda belu
 });
 
 test("F-22/F-23/F-24 berkas Word: instruksi, catatan, dan kotak isian hilang; data proyek terisi; tabel dan gambar bernomor; field daftar", { skip: lewati }, async () => {
+  // D8: logo sampul LED diunggah Admin UPPS; Tim Prodi ditolak; berkas bukan gambar dan gambar terlalu kecil ditolak
+  await assert.rejects(simpanLogo(pj, { nama: "logo.png", isi: pngPolos(200, 200) }), GalatAkses);
+  await assert.rejects(simpanLogo(admin, { nama: "logo.gif", isi: Buffer.from("GIF89a") }), GalatPengguna);
+  await assert.rejects(simpanLogo(admin, { nama: "kecil.png", isi: PNG }), GalatPengguna);
+  await simpanLogo(admin, { nama: "logo-lama.png", isi: pngPolos(150, 150) });
+  const logo = await simpanLogo(admin, { nama: "logo-universitas.png", isi: pngPolos(240, 200) });
+  assert.equal(logo.lebar, 240);
+  assert.equal(await prisma.logoSampul.count(), 1, "logo lama diganti");
   const e = await mulaiEkspor(pj, proyekId);
   assert.equal(e.status, "antre");
   await assert.rejects(mulaiEkspor(pj, proyekId), GalatPengguna, "satu ekspor berjalan per proyek");
@@ -197,6 +222,11 @@ test("F-22/F-23/F-24 berkas Word: instruksi, catatan, dan kotak isian hilang; da
   assert.ok(teks.includes("UNIVERSITAS CONTOH") && teks.includes("BANDAR LAMPUNG"));
   assert.ok(teks.includes("Perguruan Tinggi: Universitas Contoh"));
   assert.ok(teks.includes("SK Pendirian Uji 1"), "D7: SK pendirian PT dari identitas institusi");
+  assert.ok(doc.includes('r:embed="rIdLogoSampul"') && zip.file("word/media/logo-sampul.png"), "D8: logo di halaman muka");
+  assert.ok(!/Logo\s*Perguruan\s*Tinggi/.test(teks), "D8: kotak logo template diganti");
+  assert.ok(!(x.pemeriksaan as { peringatan?: string[] } | null)?.peringatan?.some((g) => /Logo/.test(g)), "D8: tanpa peringatan logo");
+  await hapusLogo(admin);
+  assert.equal(await prisma.logoSampul.count(), 0);
   assert.ok(teks.includes("Dr. Ani Lestari") && teks.includes("Citra Dewi"), "tim penyusun dan Tabel 2.1/2.2 terisi");
   assert.ok(teks.includes("Program studi menjalankan kebijakan secara terencana"));
   assert.ok(teks.includes("Tabel 2.3. Unit kerja UPPS"), "tabel bernomor per bab, setelah Tabel 2.1 dan 2.2 template");

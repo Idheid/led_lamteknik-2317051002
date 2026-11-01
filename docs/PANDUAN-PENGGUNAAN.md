@@ -48,7 +48,8 @@ UPPS:
 
 - **Bersama (LED & LKPS)**: Dashboard akreditasi, Identitas institusi, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
   akun, Kunci API dan model AI.
-- **LED** (tombol LED): **Pantau LED prodi** (beranda LED: satu kartu per prodi berisi progres narasi, jadwal, status
+- **LED** (tombol LED): **Logo sampul LED** (unggah logo perguruan tinggi PNG/JPEG, minimal 100 × 100 piksel, maksimal
+  2 MB; saat ekspor Word, kotak "Logo Perguruan Tinggi" di halaman muka diganti logo ini untuk semua prodi), **Pantau LED prodi** (beranda LED: satu kartu per prodi berisi progres narasi, jadwal, status
   review, dan reviewer LPMPP; klik kartu untuk membaca LED prodi hanya baca, atau Penilaian, Tugaskan reviewer, Catat
   hasil), Basis Pengetahuan fakultas.
 - **LKPS** (tombol LKPS): Kelengkapan LKPS prodi.

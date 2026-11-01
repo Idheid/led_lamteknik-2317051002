@@ -538,3 +538,16 @@ model SidikJariInstrumen {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// D8 (desain form 2, 2 Nov 2026): logo perguruan tinggi di halaman muka LED (khusus LED; satu baris "utama").
+// Diunggah Admin UPPS di menu LED; ekspor mengganti bentuk "Logo Perguruan Tinggi" di template dengan gambar ini.
+model LogoSampul {
+  id        String   @id @default("utama")
+  lokasi    String
+  nama      String
+  jenis     String   // png | jpeg
+  lebar     Int
+  tinggi    Int
+  ukuran    Int
+  updatedAt DateTime @updatedAt
+}

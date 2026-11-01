@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookOpenCheck, Building2, FileSpreadsheet, FileText, FolderOpen, Home, KeyRound, Landmark, Layers, LayoutDashboard,
+  BookOpenCheck, Building2, FileSpreadsheet, FileText, FolderOpen, Home, ImageIcon, KeyRound, Landmark, Layers, LayoutDashboard,
   ListChecks, ScrollText, Settings2, UserCog, Users, Activity, ClipboardCheck, MessageSquareText, ArrowLeft, type LucideIcon,
 } from "lucide-react";
 import {
@@ -17,6 +17,7 @@ export const IKON = {
   instrumen: BookOpenCheck,
   prodi: Building2,
   institusi: Landmark,
+  gambar: ImageIcon,
   akun: UserCog,
   kriteria: ListChecks,
   bab: FileText,

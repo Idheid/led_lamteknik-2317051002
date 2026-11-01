@@ -31,6 +31,9 @@ export interface DataEkspor {
 
 const KOSONG = '–';
 
+/** D8: dihapus dari daftar peringatan bila logo dari menu Logo sampul LED berhasil disisipkan. */
+export const PERINGATAN_LOGO = 'Logo perguruan tinggi belum diunggah Admin UPPS (menu LED, Logo sampul LED); kotak "Logo Perguruan Tinggi" di halaman muka perlu diganti manual di Word.';
+
 /** Label baris identitas pengusul (teks sebelum titik dua, dinormalkan) → kunci nilai. */
 const LABEL_IDENTITAS: [string, keyof DataEkspor['identitas'] | 'perguruanTinggi' | 'upps' | 'jenisProgram' | 'namaProdi'][] = [
   ['perguruantinggi', 'perguruanTinggi'],
@@ -157,7 +160,7 @@ export function isiDataProyek(documentXml: string, d: DataEkspor): HasilIsiData 
       else if (n.startsWith('catatankelengkapanisian')) e.xml = setelTeks(e.xml, '');
     }
     if (elemen.slice(iMuka, iIdentitas).some((e) => /Logo Perguruan Tinggi/.test(e.xml))) {
-      peringatan.push('Kotak "Logo Perguruan Tinggi" di halaman muka perlu diganti logo asli secara manual di Word.');
+      peringatan.push(PERINGATAN_LOGO);
     }
   }
 

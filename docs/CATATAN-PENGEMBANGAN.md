@@ -2045,3 +2045,30 @@ dan telepon, jadi teks identitas tetap fitur bersama.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 166/166 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
+
+### D8: Logo sampul LED (khusus LED)
+
+Logo hanya dipakai halaman muka LED (LKPS berupa tabel Excel tanpa sampul), jadi menunya di grup LED Admin UPPS.
+
+- Model `LogoSampul` di `led.prisma` (satu baris "utama": lokasi, nama, jenis, lebar, tinggi, ukuran), migrasi
+  `20261102170000_logo_sampul`. Berkas di `uploads/logo/`; logo lama dihapus saat diganti.
+- `led/data/logo.ts`: `simpanLogo` (Admin; PNG/JPEG dicek dari isi berkas, ≥ 100 × 100 piksel, ≤ 2 MB), `hapusLogo`,
+  `berkasLogo` (untuk ekspor), `logoDataUrl` (pratinjau). Rute `POST/DELETE /api/led/logo-sampul`.
+- Halaman **Logo sampul LED** `/led/logo-sampul` (menu LED Admin, ikon `gambar`): unggah/ganti/hapus dengan konfirmasi,
+  pratinjau halaman muka (logo, UPPS, perguruan tinggi).
+- `led/ekspor/logo.ts` (murni): `infoGambar` membaca jenis dan ukuran PNG/JPEG; `cariBentukLogo` menemukan
+  `mc:AlternateContent` terluar yang memuat tulisan "Logo Perguruan Tinggi" (cadangan: `w:drawing`/`w:pict`);
+  `sisipkanLogo` menggantinya dengan `wp:anchor` gambar pada posisi yang sama (muat di kotak asal, rasio tetap, digeser
+  ke tengah), menambah relasi `rIdLogoSampul` dan tipe isi png/jpeg. Ekspor memanggilnya setelah `isiDataProyek` dan
+  menghapus peringatan logo (`PERINGATAN_LOGO`) bila berhasil.
+- Uji: `tests/unit/logo-sampul.test.ts` (5: PNG/JPEG/bukan gambar; tiga template fikstur; template tanpa kotak logo).
+  Uji integrasi ekspor: Tim Prodi ditolak, GIF dan PNG 2 × 1 ditolak, logo diganti (satu baris), Word memuat
+  `rIdLogoSampul` dan `word/media/logo-sampul.png`, tulisan kotak logo hilang, lalu logo dihapus. Hasil ekspor uji
+  dirender LibreOffice ke PDF: logo tampil di tengah halaman muka di atas judul.
+- Halaman Ekspor: langkah ganti logo manual hanya bila logo belum diunggah.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 171/171 lulus |
+| `npm run test:integrasi` | 98/98 lulus |

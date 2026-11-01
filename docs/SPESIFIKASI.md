@@ -130,7 +130,8 @@ langsung mengalihkan ke beranda peran. Tombol **LKPS | LED** di kepala halaman m
 - Admin UPPS:
   - Bersama: Dashboard akreditasi `/dashboard`, Identitas institusi `/pengaturan/institusi`, Program studi, Instrumen LAM Teknik, Penugasan reviewer LPMPP, Kelola
     akun, Kunci API dan model AI;
-  - LED: Pantau LED prodi `/led/pantau` (beranda tombol LED), Basis Pengetahuan fakultas;
+  - LED: Pantau LED prodi `/led/pantau` (beranda tombol LED), Basis Pengetahuan fakultas, Logo sampul LED
+    `/led/logo-sampul`;
   - LKPS: Kelengkapan LKPS prodi (`/lkps`).
 - Tim Prodi:
   - Bersama: Identitas prodi;
@@ -146,6 +147,7 @@ Membuka alamat milik peran lain diarahkan ke beranda peran.
 | --- | --- | --- |
 | Halaman awal `/` | Langsung ke beranda peran (Dashboard akreditasi, LED prodi, LED ditugaskan) | Semua |
 | Kelola akun | Tambah akun di halaman sendiri `/admin/akun/tambah` (Tim Prodi wajib memilih prodi; satu prodi boleh beberapa akun), kolom program studi; menu baris: Ubah nama, Ubah peran (sesi akun dicabut, tercatat di log; admin tidak bisa mengubah peran sendiri; minimal satu Admin UPPS aktif), pindah prodi, atur ulang sandi, nonaktifkan, hapus; status cadangan terakhir | Admin UPPS |
+| Logo sampul LED (`/led/logo-sampul`, modul LED) | Unggah/ganti/hapus logo perguruan tinggi (PNG/JPEG, ≥ 100 × 100 piksel, ≤ 2 MB), pratinjau halaman muka; ekspor Word mengganti bentuk "Logo Perguruan Tinggi" template dengan gambar ini (ukuran muat di kotak asal, rasio tetap, di tengah) | Admin UPPS |
 | Identitas institusi (`/pengaturan/institusi`) | Perguruan tinggi, UPPS, status PT (pilihan sheet Menu LKPS), alamat, kota, kode pos, telepon, SK pendirian PT (nomor, tanggal, pejabat); dipakai identitas pengusul LED dan sheet Menu LKPS | Admin UPPS |
 | Program studi | Baris ringkas institusi (tautan ke Identitas institusi), 16 prodi FT Unila (bisa ditambah), urut akreditasi berakhir, jumlah akun Tim Prodi; per prodi: Riwayat akreditasi (Konfirmasi/Tolak catatan Tim Prodi), Catat hasil akreditasi (isi dari PDF SK tanpa AI atau Baca dengan AI), alasan koreksi wajib bila data akreditasi diubah langsung | Admin UPPS |
 | Kunci API (tab Kunci, Model Gemini, Log) | Kunci utama fakultas dan kunci cadangan dalam satu halaman, model narasi/cadangan/embedding, pemakaian token | Admin UPPS |

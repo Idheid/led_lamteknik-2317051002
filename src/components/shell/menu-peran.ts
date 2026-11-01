@@ -42,6 +42,7 @@ export const MENU_LED_ADMIN: GrupNav = {
   item: [
     { judul: "Pantau LED prodi", href: "/led/pantau", ikon: "proyek" },
     { judul: "Basis Pengetahuan fakultas", href: "/led/dokumen-bersama", ikon: "dokumen" },
+    { judul: "Logo sampul LED", href: "/led/logo-sampul", ikon: "gambar" },
   ],
 };
 

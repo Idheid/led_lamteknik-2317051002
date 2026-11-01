@@ -387,7 +387,8 @@ Dikerjakan dari `docs/RENCANA-REVISI-31OKT.md` (Tahap 0–9, branch `revisi-31ok
   `/admin/kunci-api?tab=kunci|model|pemakaian`; PJ di `/led/*` (menu di
   `src/modules/led/komponen/shell-led.tsx`). Identitas institusi: model `Fakultas` (`src/modules/bersama/data/organisasi.ts`, halaman
   `/pengaturan/institusi`): perguruan tinggi, UPPS, status PT, alamat, kota, kode pos, telepon, SK pendirian PT (D7;
-  kunci SK pendirian dan kota di identitas prodi hanya cadangan data lama).
+  kunci SK pendirian dan kota di identitas prodi hanya cadangan data lama). Logo sampul (khusus LED): model `LogoSampul`
+  (led.prisma), `led/data/logo.ts`, penyisipan di `led/ekspor/logo.ts` (D8).
 - LED per periode: `tahunPengajuan`, `labelPeriode`, `tsDariTahunPengajuan` (`src/modules/bersama/domain/tahun-akademik.ts`),
   `instrumenAktifUntuk(jenjang)` dan `buatProyek` (`src/modules/led/data/proyek.ts`).
 - Satu sub-bagian satu halaman: `/led/[id]/bagian/[kode]` (ringkasan) dan `/led/[id]/bagian/[kode]/[sub]`;

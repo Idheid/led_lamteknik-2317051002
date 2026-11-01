@@ -51,7 +51,7 @@ export default async function HalamanEkspor({ params }: PageProps<"/led/[proyekI
           "Untuk ekspor final, selesaikan daftar pemeriksaan: kriteria ditandai selesai, tidak ada penanda [BELUM ADA BUKTI], tabel dan gambar berjudul, tim penyusun terisi, setiap dokumen yang dirujuk punya tautan bukti, dan status review Layak diajukan.",
           "Klik Ekspor final. Berkas dibuat di server; halaman boleh ditinggal.",
           "Unduh berkas, buka di Microsoft Word, lalu pilih Yes/Ya saat diminta memperbarui field supaya daftar isi, tabel, dan gambar terisi.",
-          "Ganti kotak \"Logo Perguruan Tinggi\" di halaman muka dengan logo asli, periksa sekali lagi, lalu simpan.",
+          "Logo perguruan tinggi disisipkan otomatis bila sudah diunggah Admin UPPS; bila belum, ganti kotak \"Logo Perguruan Tinggi\" di halaman muka secara manual, periksa sekali lagi, lalu simpan.",
         ]}
       />
 
