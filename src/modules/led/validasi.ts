@@ -87,13 +87,16 @@ export type MasukanButir = z.input<typeof skemaButir>;
 // revisi 31 Okt 2026: prodi tidak lagi dipilih (LED selalu untuk prodi akun Tim Prodi); TS dipilih dari dua pilihan
 // pilihanTs(tahun pengajuan). TS kosong = (P−1)/P.
 export const skemaProyek = z.object({
-  nama: teksWajib("Nama LED", 200),
+  // perbaikan 1 Nov 2026 (P5): kosong = nama otomatis "LED {prodi} {tahun} (TS {tahun akademik})"
+  nama: teksOpsional(200),
   tahunPengajuan: z.coerce.number().int().min(2000, "Tahun pengajuan tidak masuk akal.").max(2100, "Tahun pengajuan tidak masuk akal."),
   tsTahunMulai: z.coerce.number().int().optional(),
 }).refine((x) => x.tsTahunMulai === undefined || pilihanTs(x.tahunPengajuan).some((p) => p.tsTahunMulai === x.tsTahunMulai), {
   path: ["tsTahunMulai"],
   message: "Pilih salah satu TS yang ditawarkan untuk tahun pengajuan ini.",
 });
+/** Ubah nama LED di Pengaturan LED: nama wajib diisi. */
+export const skemaNamaProyek = teksWajib("Nama LED", 200);
 export const skemaTahunTs = z.coerce.number().int().min(2000, "Tahun TS tidak masuk akal.").max(2100, "Tahun TS tidak masuk akal.");
 export type MasukanProyek = z.input<typeof skemaProyek>;
 

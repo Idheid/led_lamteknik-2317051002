@@ -2,7 +2,7 @@
 
 Penyusun draf Laporan Evaluasi Diri LAM Teknik (skripsi Adrianne Julian). Rute di `src/app/led/`:
 
-- `src/app/led/(tim-prodi)/` Tim Prodi: `/led` (LED prodi), `/led/baru`, `/led/identitas-prodi`, `/led/[proyekId]/...`.
+- `src/app/led/(tim-prodi)/` Tim Prodi: `/led` (LED prodi + kartu Mulai LED; `/led/baru` diarahkan ke sana), `/led/identitas-prodi`, `/led/[proyekId]/...`.
 - `src/app/led/(admin)/` Admin UPPS: `/led/pantau`, `/led/instrumen`, `/led/dokumen-bersama`. Grup rute hanya memisahkan
   pemeriksaan peran (revisi 31 Okt 2026); alamatnya tetap `/led/...`.
 - `src/app/led/asesor/` asesor: `/led/asesor`, `/led/asesor/[proyekId]/...`. Admin UPPS memakai

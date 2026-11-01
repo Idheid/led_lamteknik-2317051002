@@ -1129,3 +1129,34 @@ pecahan bisa ditolak; kini memakai toleransi pembulatan dan diberi uji domain.
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 125/125 lulus |
 | `npm run test:integrasi` | 75/75 lulus |
+
+### P5: LED baru, nama mengikuti tahun dan formulir disederhanakan
+
+- Penyebab temuan: nama otomatis hanya mengikuti TS, dan TS tidak dipilih ulang bila TS lama masih ada di daftar tahun
+  baru (2027 → 2028: TS 2026/2027 ada di keduanya). Sekarang setiap kali tahun pengajuan diganti, TS bawaan tahun itu
+  (`tsBawaan`) **selalu** dipilih ulang, lalu nama mengikuti. Logikanya fungsi murni `isianSetelahGantiTahun` dan
+  `namaLedOtomatis` di `src/modules/bersama/domain/tahun-akademik.ts`. Format nama:
+  **"LED {prodi} {tahun pengajuan} (TS {tahun akademik})"**, misalnya "LED Teknik Sipil 2027 (TS 2026/2027)".
+- Disederhanakan: Tim Prodi yang belum punya LED aktif langsung melihat kartu **"Mulai LED {prodi}"** di `/led`
+  (`form-mulai-led.tsx`, menggantikan `form-proyek-baru.tsx`) berisi tahun pengajuan dan dua pilihan TS saja, tanpa
+  isian nama. Pratinjau "Nama LED: … Bisa diubah nanti di Pengaturan LED." tampil di bawahnya. Bila instrumen jenjang
+  belum aktif, alasannya tampil dan tombol Mulai LED nonaktif. `/led/baru` diarahkan ke `/led`; menu pemilih LED
+  "Mulai LED baru" menuju `/led`.
+- `skemaProyek.nama` kini opsional; `buatProyek` tanpa nama (atau nama kosong) memakai `namaLedOtomatis`. Ubah nama di
+  Pengaturan LED tetap wajib diisi (`skemaNamaProyek`).
+- Uji: belum ada perangkat uji komponen (tidak ada jsdom/testing-library), jadi logika formulir saat tahun diganti
+  dipisah menjadi fungsi murni dan diuji di uji domain `tahun-akademik.test.ts` (kasus temuan 2027 → 2028, TS bawaan
+  selalu dipilih ulang). Uji integrasi baru di `akses.test.ts`: `buatProyek` tanpa nama → "LED Teknik Sipil 2027 (TS
+  2025/2026)", nama kosong → nama otomatis, nama diisi → dipakai apa adanya.
+- Diperiksa di browser: akun uji Tim Prodi sementara dipindah ke S1 Teknik Elektro (belum punya LED) lewat Ubah peran;
+  `/led/baru` diarahkan ke `/led`; kartu "Mulai LED Sarjana Teknik Elektro" tanpa isian nama; tahun 2027 → nama "LED
+  Teknik Elektro 2027 (TS 2025/2026)", pilih TS 2026/2027 lalu ganti ke 2028 → TS bawaan 2026/2027 dipilih ulang dan
+  nama "LED Teknik Elektro 2028 (TS 2026/2027)", kembali ke 2026 → TS 2025/2026. Mulai LED membuat LED bernama "LED
+  Teknik Elektro 2026 (TS 2025/2026)"; nama berhasil diubah di Pengaturan LED. LED uji itu lalu dihapus lewat Hapus
+  proyek dan akun dikembalikan ke S1 Teknik Informatika. Isian tahun diberi `max-w-32` (sebelumnya melebar penuh).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 127/127 lulus |
+| `npm run test:integrasi` | 76/76 lulus |

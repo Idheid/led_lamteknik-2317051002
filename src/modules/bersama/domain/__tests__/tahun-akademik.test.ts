@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   formatTahunAkademik, parseTahunAkademik, tsDariTanggalPengajuan, petaTS, gantiLabelTS, tahunMulaiDariLabel, selisihDariLabel,
-  pilihanTs, tsBawaan, labelTsPengajuan,
+  pilihanTs, tsBawaan, labelTsPengajuan, namaLedOtomatis, isianSetelahGantiTahun,
 } from '../tahun-akademik.ts';
 
 test('format dan parse tahun akademik', () => {
@@ -63,4 +63,23 @@ test('Revisi 31 Okt 2026: TS bawaan dari tanggal acuan, dibatasi ke dua pilihan'
 
 test('Revisi 31 Okt 2026: label kartu LED memakai TS dan tahun pengajuan', () => {
   assert.equal(labelTsPengajuan(2026, 2027), 'TS 2026/2027 · pengajuan 2027');
+});
+
+test('Perbaikan 1 Nov 2026 (P5): nama LED otomatis memuat tahun pengajuan dan TS', () => {
+  assert.equal(namaLedOtomatis('Teknik Sipil', 2027, 2026), 'LED Teknik Sipil 2027 (TS 2026/2027)');
+});
+
+test('Perbaikan 1 Nov 2026 (P5): tahun pengajuan diganti -> TS bawaan dipilih ulang dan nama ikut berubah', () => {
+  const acuan = new Date('2027-10-01T00:00:00Z');
+  const awal = isianSetelahGantiTahun('Teknik Sipil', 2027, acuan);
+  assert.deepEqual(awal, { tsTahunMulai: 2026, nama: 'LED Teknik Sipil 2027 (TS 2026/2027)' });
+  // kasus temuan: 2027 -> 2028, TS 2026/2027 ada di kedua daftar; nama tetap harus mengikuti tahun baru
+  const ganti = isianSetelahGantiTahun('Teknik Sipil', 2028, acuan);
+  assert.deepEqual(ganti, { tsTahunMulai: 2026, nama: 'LED Teknik Sipil 2028 (TS 2026/2027)' });
+  assert.notEqual(ganti.nama, awal.nama);
+  // TS bawaan selalu dipilih ulang dari tanggal acuan, apa pun TS sebelumnya
+  const maret = new Date('2027-03-01T00:00:00Z');
+  assert.equal(isianSetelahGantiTahun('Teknik Sipil', 2027, maret).tsTahunMulai, 2025);
+  assert.equal(isianSetelahGantiTahun('Teknik Sipil', 2029, maret).tsTahunMulai, 2027);
+  assert.equal(isianSetelahGantiTahun('Teknik Sipil', 2029, maret).nama, 'LED Teknik Sipil 2029 (TS 2027/2028)');
 });

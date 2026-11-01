@@ -6,8 +6,8 @@ import { hapusBerkas } from "@/modules/bersama/penyimpanan";
 import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { usulanBatasPengajuan } from "@/modules/led/domain/kesiapan";
-import { tsDariTahunPengajuan } from "@/modules/bersama/domain/tahun-akademik";
-import { skemaJawabanForm, skemaProyek, skemaTahunTs, type MasukanProyek } from "@/modules/led/validasi";
+import { namaLedOtomatis, tsDariTahunPengajuan } from "@/modules/bersama/domain/tahun-akademik";
+import { skemaJawabanForm, skemaNamaProyek, skemaProyek, skemaTahunTs, type MasukanProyek } from "@/modules/led/validasi";
 
 /**
  * F-07 LED (ProyekLED). Satu LED = satu pengajuan akreditasi satu prodi yang berlaku 5 tahun; satu prodi hanya boleh
@@ -60,15 +60,17 @@ export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
   if (!versi) {
     throw new GalatPengguna(`Instrumen jenjang ${namaJenjang(prodi.jenjang)} belum aktif. Unggah dan aktifkan instrumennya di menu Instrumen.`);
   }
+  // revisi 31 Okt 2026: TS dipilih Tim Prodi dari dua pilihan; kosong = (P−1)/P. Bisa diubah di Pengaturan LED
+  const tsTahunMulai = data.tsTahunMulai ?? tsDariTahunPengajuan(data.tahunPengajuan);
   const proyek = await prisma.proyekLED.create({
     data: {
       prodiId: prodi.id,
       versiId: versi.id,
       jenjang: prodi.jenjang,
-      nama: data.nama,
+      // perbaikan 1 Nov 2026 (P5): kartu Mulai LED tidak punya isian nama; nama otomatis, bisa diubah di Pengaturan LED
+      nama: data.nama ?? namaLedOtomatis(prodi.nama, data.tahunPengajuan, tsTahunMulai),
       tahunPengajuan: data.tahunPengajuan,
-      // revisi 31 Okt 2026: TS dipilih Tim Prodi dari dua pilihan; kosong = (P−1)/P. Bisa diubah di Pengaturan LED
-      tsTahunMulai: data.tsTahunMulai ?? tsDariTahunPengajuan(data.tahunPengajuan),
+      tsTahunMulai,
       // salinan anggaran versi: bisa diubah per LED tanpa mengubah versi
       anggaran: versi.anggaranBawaan as Prisma.InputJsonValue,
       // revisi 22 Okt 2026: usulan awal batas pengajuan (6 bulan sebelum akreditasi berakhir), bisa diubah PJ
@@ -117,7 +119,7 @@ export async function ambilProyekUbah(p: Pengguna, proyekId: string) {
 
 export async function ubahNamaProyek(p: Pengguna, proyekId: string, nama: string) {
   const proyek = await ambilProyekUbah(p, proyekId);
-  const baru = skemaProyek.shape.nama.parse(nama);
+  const baru = skemaNamaProyek.parse(nama);
   await prisma.proyekLED.update({ where: { id: proyek.id }, data: { nama: baru } });
   await catatAktivitas(p, "ubah_nama", "proyek", proyek.id, { lama: proyek.nama, baru });
 }

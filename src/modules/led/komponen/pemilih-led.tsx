@@ -42,7 +42,7 @@ export function PemilihLed({ aktif, pilihan }: { aktif: Led | null; pilihan: (Le
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild><Link href="/led"><Layers aria-hidden />Semua LED</Link></DropdownMenuItem>
-          <DropdownMenuItem asChild><Link href="/led/baru"><Plus aria-hidden />Buat LED baru</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href="/led"><Plus aria-hidden />Mulai LED baru</Link></DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

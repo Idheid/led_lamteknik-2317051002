@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Rocket } from "lucide-react";
 import { wajibTimProdi } from "@/modules/bersama/sesi";
-import { daftarProyek } from "@/modules/led/data/proyek";
+import { daftarProyek, instrumenAktifUntuk } from "@/modules/led/data/proyek";
 import { ambilProdi } from "@/modules/bersama/data/organisasi";
 import { kesiapanSemua } from "@/modules/led/data/kesiapan";
 import { KartuLed } from "@/modules/led/komponen/kesiapan";
+import { usulanBatasPengajuan } from "@/modules/led/domain/kesiapan";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { labelTsPengajuan } from "@/modules/bersama/domain/tahun-akademik";
 import { ShellMenuLed } from "@/modules/led/komponen/shell-led";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormMulaiLed } from "./form-mulai-led";
 
 export const metadata: Metadata = { title: "LED prodi" };
 
 /**
  * LED prodi Tim Prodi (revisi 31 Okt 2026): LED aktif sebagai kartu besar dan LED arsip di bawahnya. Bila belum ada LED
- * aktif, tombol besar "Buat LED". Semua akun Tim Prodi satu prodi melihat LED yang sama.
+ * aktif, kartu "Mulai LED {prodi}" berisi tahun pengajuan dan TS saja (perbaikan 1 Nov 2026, P5; dulu halaman /led/baru).
+ * Semua akun Tim Prodi satu prodi melihat LED yang sama.
  */
 export default async function HalamanLedProdi() {
   const p = await wajibTimProdi();
@@ -27,6 +30,12 @@ export default async function HalamanLedProdi() {
   const arsip = proyek.filter((x) => x.diarsipkanPada);
   const kesiapan = await kesiapanSemua(p, aktif.map((x) => x.id));
   const namaProdi = prodi ? `${namaJenjang(prodi.jenjang)} ${prodi.nama}` : "Program studi";
+  const tahunIni = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date()));
+  // TS bawaan dihitung dari usulan batas pengajuan (6 bulan sebelum akreditasi berakhir), atau hari ini bila belum ada
+  const tanggalAcuan = prodi?.akreditasiBerlakuSampai ? usulanBatasPengajuan(prodi.akreditasiBerlakuSampai) : new Date();
+  const alasan = prodi && aktif.length === 0 && !(await instrumenAktifUntuk(prodi.jenjang))
+    ? `Instrumen ${namaJenjang(prodi.jenjang)} belum aktif. Hubungi Admin UPPS.`
+    : null;
 
   return (
     <ShellMenuLed pengguna={p}>
@@ -35,16 +44,23 @@ export default async function HalamanLedProdi() {
         kunci="tim-led-prodi"
         fungsi="LED program studi Anda. Satu LED = satu pengajuan akreditasi (berlaku 5 tahun). Semua akun Tim Prodi prodi ini menyusun LED yang sama."
         langkah={[
-          "Klik Buat LED: isi tahun pengajuan, pilih TS (tahun data LKPS), dan periksa nama LED. Instrumen dipilih otomatis menurut jenjang prodi.",
+          "Di kartu Mulai LED, isi tahun pengajuan dan pilih TS (tahun data LKPS), lalu klik Mulai LED. Nama LED dibuat otomatis dan bisa diubah di Pengaturan LED; instrumen dipilih otomatis menurut jenjang prodi.",
           "Buka kartu LED, unggah LKPS dan dokumen, lalu susun narasi per kriteria.",
           "Bila kuota kunci API habis atau instrumen belum aktif, hubungi Admin UPPS.",
         ]}
       />
-      {aktif.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed p-10 text-center">
-          <p className="text-muted-foreground">{namaProdi} belum punya LED aktif.</p>
-          <Button asChild size="lg" className="mt-4 h-12 px-8 text-base"><Link href="/led/baru"><Plus aria-hidden />Buat LED</Link></Button>
-        </div>
+      {aktif.length === 0 && prodi ? (
+        <Card className="max-w-3xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg"><Rocket className="size-5 text-primary" aria-hidden />Mulai LED {namaProdi}</CardTitle>
+            <CardDescription>
+              {alasan ?? "Satu LED = satu pengajuan akreditasi. Pilih TS sesuai data LKPS yang dipakai; instrumen dipilih otomatis menurut jenjang prodi."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FormMulaiLed prodi={{ nama: prodi.nama, alasan }} tahunUsulan={tahunIni} tanggalAcuan={tanggalAcuan.toISOString()} />
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4 xl:grid-cols-2">
           {aktif.map((x) => (

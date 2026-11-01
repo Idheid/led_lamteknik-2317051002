@@ -109,6 +109,24 @@ export function tsBawaan(tahunPengajuan: number, tanggal: Date, bulanMulai: numb
   return Math.min(tahunPengajuan - 1, Math.max(tahunPengajuan - 2, ts));
 }
 
+/**
+ * Nama LED otomatis (perbaikan 1 Nov 2026, P5): "LED Teknik Sipil 2027 (TS 2026/2027)". Dipakai bila Tim Prodi tidak
+ * memberi nama; bisa diubah di Pengaturan LED.
+ */
+export function namaLedOtomatis(prodi: string, tahunPengajuan: number, tsTahunMulai: number): string {
+  return `LED ${prodi} ${tahunPengajuan} (TS ${formatTahunAkademik(tsTahunMulai)})`;
+}
+
+/**
+ * Isian kartu Mulai LED setelah tahun pengajuan diganti (perbaikan 1 Nov 2026, P5): TS bawaan tahun itu selalu dipilih
+ * ulang, lalu nama otomatis mengikuti tahun dan TS. Dulu TS lama dipertahankan bila masih ada di daftar tahun baru
+ * (2027 → 2028: TS 2026/2027 ada di keduanya), sehingga nama tidak ikut berubah.
+ */
+export function isianSetelahGantiTahun(prodi: string, tahunPengajuan: number, tanggal: Date): { tsTahunMulai: number; nama: string } {
+  const tsTahunMulai = tsBawaan(tahunPengajuan, tanggal);
+  return { tsTahunMulai, nama: namaLedOtomatis(prodi, tahunPengajuan, tsTahunMulai) };
+}
+
 /** Label LED di kartu dan judul (revisi 31 Okt 2026): "TS 2026/2027 · pengajuan 2027". */
 export function labelTsPengajuan(tsTahunMulai: number, tahunPengajuan: number): string {
   return `TS ${formatTahunAkademik(tsTahunMulai)} · pengajuan ${tahunPengajuan}`;

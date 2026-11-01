@@ -179,3 +179,18 @@ test("F-07/UI sidebar C.1–C.7 sesuai versi; C.3 Sarjana = 19 IKU + 4 bersama; 
   const lagi = await halamanBagian(timTi, proyek.id, "C.3");
   assert.equal(lagi?.jawaban["C.3-LB"], "Jawaban uji");
 });
+
+test("Perbaikan 1 Nov P5: buatProyek tanpa nama memakai nama otomatis LED {prodi} {tahun} (TS {tahun akademik})", async () => {
+  const lama = await prisma.proyekLED.findFirstOrThrow({ where: { prodiId: timSipil.prodiId!, diarsipkanPada: null } });
+  await aturArsipProyek(timSipil, lama.id, true);
+  const baru = await buatProyek(timSipil, { tahunPengajuan: 2027, tsTahunMulai: 2025 });
+  assert.equal(baru.nama, "LED Teknik Sipil 2027 (TS 2025/2026)");
+  assert.equal(baru.tsTahunMulai, 2025);
+  // nama kosong juga memakai nama otomatis; nama yang diisi tetap dipakai apa adanya
+  await aturArsipProyek(timSipil, baru.id, true);
+  const kosong = await buatProyek(timSipil, { nama: "  ", tahunPengajuan: 2028 });
+  assert.equal(kosong.nama, "LED Teknik Sipil 2028 (TS 2027/2028)");
+  await aturArsipProyek(timSipil, kosong.id, true);
+  const bernama = await buatProyek(timSipil, { nama: "LED Sipil Akreditasi Ulang", tahunPengajuan: 2028 });
+  assert.equal(bernama.nama, "LED Sipil Akreditasi Ulang");
+});
