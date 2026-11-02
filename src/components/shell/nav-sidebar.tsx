@@ -3,19 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookOpenCheck, Building2, FileSpreadsheet, FileText, FolderOpen, Home, KeyRound, Layers, LayoutDashboard,
+  BookOpenCheck, Building2, FileSpreadsheet, FileText, FolderOpen, Home, ImageIcon, KeyRound, Landmark, Layers, LayoutDashboard,
   ListChecks, ScrollText, Settings2, UserCog, Users, Activity, ClipboardCheck, MessageSquareText, ArrowLeft, type LucideIcon,
 } from "lucide-react";
 import {
   SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import { cn } from "@/modules/bersama/utils";
 
 export const IKON = {
   beranda: Home,
   dasbor: LayoutDashboard,
   instrumen: BookOpenCheck,
   prodi: Building2,
+  institusi: Landmark,
+  gambar: ImageIcon,
   akun: UserCog,
   kriteria: ListChecks,
   bab: FileText,
@@ -71,7 +73,8 @@ export function NavSidebar({ grup }: { grup: GrupNav[] }) {
   const jalur = usePathname();
   return (
     <>
-      {grup.map((g) => (
+      {/* grup tanpa item (mis. menu LKPS admin yang belum ada) tidak ditampilkan */}
+      {grup.filter((g) => g.item.length > 0).map((g) => (
         <SidebarGroup key={g.label}>
           <SidebarGroupLabel>{g.label}</SidebarGroupLabel>
           <SidebarGroupContent>

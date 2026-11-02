@@ -44,6 +44,6 @@ tanpa LibreOffice jumlah halaman diperkirakan.
 - `docs/ONE-DATA-KEBUTUHAN.md` — daftar kebutuhan data untuk permintaan akses API One Data
 - `prisma/` — skema, migrasi, seed; `data/instrumen/` — data awal instrumen LAM Teknik 2025 (Sarjana; juga kerangka
   bawaan bila belum ada instrumen); `tests/fikstur/instrumen/` — template, matriks Sarjana, dan pedoman penilaian resmi
-- `src/lib/domain/` — logika inti teruji; `src/lib/data/` — akses data dengan pemeriksaan peran; `src/app/` — halaman
+- `src/modules/led/domain/` — logika inti teruji; `src/modules/led/data/` — akses data dengan pemeriksaan peran; `src/app/` — halaman
 
 Dokumen rencana: https://claude.ai/code/artifact/ba67e45c-545f-4cd6-a0ee-1011eaf55dd5

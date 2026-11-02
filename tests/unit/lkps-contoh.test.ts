@@ -6,8 +6,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { bacaLembarXlsx, bacaLkpsDariLembar, bacaLkpsXlsx, nomorKolom } from "@/lib/lkps/baca-xlsx";
-import { hitungSemua, type HasilButirAngka } from "@/lib/domain/metrik-lkps";
+import { bacaLembarXlsx, bacaLkpsDariLembar, bacaLkpsXlsx, nomorKolom } from "@/modules/led/data-lkps/baca-xlsx";
+import { hitungSemua, type HasilButirAngka } from "@/modules/led/domain/metrik-lkps";
 
 const FIKSTUR = resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx");
 const k = { tsTahunMulai: 2025 };

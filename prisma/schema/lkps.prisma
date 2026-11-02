@@ -1,0 +1,10 @@
+// Skema modul LKPS (dikerjakan Ghalib). Masih kosong: model tabel LKPS ditambahkan di berkas ini.
+//
+// Aturan supaya mudah digabung dengan modul LED:
+// - Pakai model bersama di bersama.prisma: Prodi (kunci prodi, termasuk kodePddikti), User, Fakultas.
+//   Contoh relasi: prodiId String; prodi Prodi @relation(fields: [prodiId], references: [id]); lalu tambahkan
+//   field balik (misalnya `lkps LaporanLKPS[]`) di model Prodi.
+// - Beri nama model berawalan Lkps (misalnya LkpsLaporan, LkpsBaris) supaya tidak bentrok dengan model LED
+//   (BerkasLKPS dan TabelLKPS di led.prisma adalah data LKPS yang diunggah ke LED sebagai sumber narasi).
+// - Simpan "ID sinkron" One Data di setiap baris yang ditarik (rencana revisi 22 Okt 2026).
+// - Satu basis data untuk seluruh website; migrasi tetap di prisma/migrations.

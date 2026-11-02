@@ -2,21 +2,21 @@ import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { Document, Packer, Paragraph } from "docx";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { aturArsipProyek, buatProyek, daftarProyek, hapusProyek, simpanJawaban, ubahNamaProyek } from "@/lib/data/proyek";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { aturArsipProyek, buatProyek, daftarProyek, hapusProyek, simpanJawaban, ubahNamaProyek } from "@/modules/led/data/proyek";
 import {
   berkasDokumen, daftarDokumen, daftarDokumenBersama, hapusDokumen, ringkasanBahan, unggahDokumen, unggahDokumenBersama,
-} from "@/lib/data/dokumen";
-import { cariPotongan } from "@/lib/data/pencarian";
-import { mulaiGenerate } from "@/lib/data/generate";
-import { prosesDokumen } from "@/lib/proses/dokumen";
-import { susunKonteks } from "@/lib/proses/generate";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+} from "@/modules/led/data/dokumen";
+import { cariPotongan } from "@/modules/led/data/pencarian";
+import { mulaiGenerate } from "@/modules/led/data/generate";
+import { prosesDokumen } from "@/modules/led/proses/dokumen";
+import { susunKonteks } from "@/modules/led/proses/generate";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 let admin: Pengguna;
 let pj: Pengguna;
+let pjSipil: Pengguna;
 let proyekA: string;
 let proyekB: string;
 let dokBersama: string;
@@ -28,14 +28,15 @@ async function docx(paragraf: string[]): Promise<Buffer> {
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
-  const ti = await simpanProdi(pj, { nama: "Teknik Informatika", jenjang: "S1", kodePddikti: "1", identitas: {} });
-  const sipil = await simpanProdi(pj, { nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "2", identitas: {} });
-  proyekA = (await buatProyek(pj, { prodiId: ti.id, nama: "LED TI 2026", tahunPengajuan: 2026 })).id;
-  proyekB = (await buatProyek(pj, { prodiId: sipil.id, nama: "LED Sipil 2026", tahunPengajuan: 2026 })).id;
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
+  ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Informatika", jenjang: "S1", kodePddikti: "1", identitas: {} }));
+  ({ tim: pjSipil } = await siapkanProdi(admin, { nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "2", identitas: {} }));
+  proyekA = (await buatProyek(pj, { nama: "LED TI 2026", tahunPengajuan: 2026 })).id;
+  proyekB = (await buatProyek(pjSipil, { nama: "LED Sipil 2026", tahunPengajuan: 2026 })).id;
 
-  const d = await unggahDokumenBersama(pj, {
+  // revisi 31 Okt 2026 (B6): Basis Pengetahuan fakultas diunggah Admin UPPS
+  const d = await unggahDokumenBersama(admin, {
     nama: "renstra-fakultas.docx",
     isi: await docx([
       "Renstra Fakultas Teknik 2025 menetapkan visi fakultas sebagai pusat rekayasa unggul dan sasaran mutu laboratorium terakreditasi.",
@@ -47,12 +48,13 @@ before(async () => {
 });
 after(() => prisma.$disconnect());
 
-test("U-10 dokumen bersama fakultas: diunggah PJ sekali, dipakai semua LED, kode sumber U", async () => {
-  await assert.rejects(unggahDokumenBersama(admin, { nama: "x.docx", isi: await docx(["x"]) }), GalatAkses, "admin tidak mengurus dokumen");
+test("U-10 dokumen bersama fakultas: diunggah Admin UPPS sekali, dipakai semua LED, kode sumber U", async () => {
+  await assert.rejects(unggahDokumenBersama(pj, { nama: "x.docx", isi: await docx(["x"]) }), GalatAkses, "Tim Prodi hanya melihat dokumen fakultas");
   assert.equal((await daftarDokumenBersama(pj))[0].status, "siap");
+  assert.equal((await daftarDokumenBersama(admin))[0].status, "siap");
 
-  for (const proyekId of [proyekA, proyekB]) {
-    const r = await cariPotongan(pj, proyekId, "renstra fakultas visi sasaran mutu laboratorium");
+  for (const [tim, proyekId] of [[pj, proyekA], [pjSipil, proyekB]] as const) {
+    const r = await cariPotongan(tim, proyekId, "renstra fakultas visi sasaran mutu laboratorium");
     assert.ok(r.hasil.some((h) => h.bersama && h.dokumenId === dokBersama), "setiap LED menemukan dokumen bersama");
   }
 
@@ -65,14 +67,17 @@ test("U-10 dokumen bersama fakultas: diunggah PJ sekali, dipakai semua LED, kode
   assert.match(k.legenda.U1, /^Bahan bersama/);
   assert.ok(k.rujukan.sumberSah.includes("U1"), "kode U sah di pemeriksaan sumber");
   // dokumen LED A tidak terlihat dari LED B
-  assert.ok(!(await cariPotongan(pj, proyekB, "notulen tinjauan visi keilmuan")).hasil.some((h) => h.dokumenId === dp.id));
+  assert.ok(!(await cariPotongan(pjSipil, proyekB, "notulen tinjauan visi keilmuan")).hasil.some((h) => h.dokumenId === dp.id));
+  // Tim Prodi prodi lain tidak bisa membuka LED A
+  await assert.rejects(cariPotongan(pjSipil, proyekA, "notulen"), GalatAkses);
 
-  const daftar = await daftarDokumen(pj, proyekB);
+  const daftar = await daftarDokumen(pjSipil, proyekB);
   assert.ok(daftar.find((x) => x.id === dokBersama)?.bersama);
-  assert.equal((await ringkasanBahan(pj, proyekB)).bersama, 1);
+  assert.equal((await ringkasanBahan(pjSipil, proyekB)).bersama, 1);
   await berkasDokumen(pj, dokBersama);
-  await assert.rejects(berkasDokumen(admin, dokBersama), GalatAkses);
-  await assert.rejects(hapusDokumen(admin, dokBersama), GalatAkses);
+  await berkasDokumen(admin, dokBersama);
+  await assert.rejects(hapusDokumen(pj, dokBersama), GalatAkses, "Tim Prodi tidak menghapus dokumen fakultas");
+  await assert.rejects(hapusDokumen(pjSipil, dp.id), GalatAkses, "dokumen LED prodi lain");
 });
 
 test("LED: ubah nama, arsip (hanya baca), aktifkan kembali, hapus dengan konfirmasi nama; dokumen bersama tidak ikut terhapus", async () => {

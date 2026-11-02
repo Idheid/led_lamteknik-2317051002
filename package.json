@@ -9,14 +9,15 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "npm run test:unit && npm run test:integrasi",
-    "test:unit": "tsx --test \"src/lib/domain/__tests__/*.test.ts\" \"tests/unit/*.test.ts\"",
+    "test:unit": "tsx --test \"src/modules/*/domain/__tests__/*.test.ts\" \"tests/unit/*.test.ts\"",
     "test:integrasi": "tsx scripts/siapkan-db-uji.ts && tsx --test --test-concurrency=1 \"tests/integrasi/*.test.ts\"",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate",
     "worker": "tsx src/worker/index.ts",
-    "cadangan": "tsx scripts/cadangan.ts"
+    "cadangan": "tsx scripts/cadangan.ts",
+    "pengingat": "tsx scripts/pengingat-akreditasi.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.87",

@@ -1,19 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { jalankanAksi } from "@/lib/aksi";
-import * as kunciApi from "@/lib/data/kunci-api";
+import { jalankanAksi } from "@/modules/bersama/aksi";
+import * as kunciApi from "@/modules/bersama/data/kunci-api";
 
-/** Aksi kunci API (PJ: kunci fakultas; admin: kunci cadangan). Tidak terikat proyek. */
+/** Aksi kunci API (Admin UPPS: kunci utama fakultas dan kunci cadangan). Tidak terikat proyek. */
 
 function segarkan() {
-  revalidatePath("/proyek", "layout");
+  revalidatePath("/led", "layout");
   revalidatePath("/admin", "layout");
 }
 
-export async function aksiTambahKunci(label: string, kunci: string) {
+export async function aksiTambahKunci(label: string, kunci: string, jenis: kunciApi.JenisKunci = "utama") {
   const r = await jalankanAksi(async (p) => {
-    const k = await kunciApi.tambahKunci(p, { label, kunci });
+    const k = await kunciApi.tambahKunci(p, { label, kunci, jenis });
     return { dokumen: k.diantre, tugas: k.tugasDilanjutkan };
   });
   segarkan();

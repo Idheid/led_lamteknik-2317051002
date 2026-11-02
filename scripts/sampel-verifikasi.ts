@@ -11,9 +11,9 @@
  */
 import "dotenv/config";
 import { readFileSync, writeFileSync } from "node:fs";
-import { prisma } from "@/lib/db";
-import { bacaDokumen, type RujukanPeriksa } from "@/lib/domain/narasi";
-import { periksaKalimat, type LabelKalimat } from "@/lib/domain/verifikasi";
+import { prisma } from "@/modules/bersama/db";
+import { bacaDokumen, type RujukanPeriksa } from "@/modules/led/domain/narasi";
+import { periksaKalimat, type LabelKalimat } from "@/modules/led/domain/verifikasi";
 
 const LABEL: LabelKalimat[] = ["sesuai", "sebagian", "tidak_didukung"];
 

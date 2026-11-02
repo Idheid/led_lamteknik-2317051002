@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { FileText } from "lucide-react";
-import { ambilPengguna } from "@/lib/sesi";
-import { berandaPeran } from "@/lib/peran";
+import { ambilPengguna } from "@/modules/bersama/sesi";
+import { berandaPeran } from "@/modules/bersama/peran";
 import { FormLogin } from "./form-login";
 import { FormAdminPertama } from "./form-admin-pertama";
-import { perluAdminPertama } from "@/lib/data/pemasangan";
+import { perluAdminPertama } from "@/modules/bersama/data/pemasangan";
 
 export const metadata: Metadata = { title: "Masuk" };
 
@@ -22,8 +22,8 @@ export default async function HalamanLogin({ searchParams }: PageProps<"/login">
           <FileText className="size-5" aria-hidden />
         </div>
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Penyusun LED LAM Teknik</h1>
-          <p className="text-sm text-muted-foreground">Draf Laporan Evaluasi Diri untuk akreditasi program studi</p>
+          <h1 className="text-xl font-semibold tracking-tight">Akreditasi LAM Teknik</h1>
+          <p className="text-sm text-muted-foreground">LKPS dan LED untuk akreditasi program studi</p>
         </div>
       </div>
       {pertama ? <FormAdminPertama /> : <FormLogin tujuan={typeof ke === "string" ? ke : undefined} />}

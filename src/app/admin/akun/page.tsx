@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
-import { wajibSuperAdmin } from "@/lib/sesi";
-import { daftarAkun } from "@/lib/data/organisasi";
-import { statusCadangan } from "@/lib/data/cadangan";
-import { LABEL_PERAN, type Peran } from "@/lib/peran";
+import { wajibAdmin } from "@/modules/bersama/sesi";
+import { daftarAkun, daftarProdi } from "@/modules/bersama/data/organisasi";
+import { namaJenjang } from "@/modules/bersama/domain/jenjang";
+import { statusCadangan } from "@/modules/bersama/data/cadangan";
+import { LABEL_PERAN, type Peran } from "@/modules/bersama/peran";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AksiBarisAkun, DialogTambahAkun } from "./komponen";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AksiBarisAkun } from "./komponen";
 
 export const metadata: Metadata = { title: "Kelola akun" };
 
@@ -42,26 +46,36 @@ function StatusCadangan({ status }: { status: Awaited<ReturnType<typeof statusCa
   );
 }
 
-export default async function HalamanAkun() {
-  const p = await wajibSuperAdmin();
-  const [akun, cadangan] = await Promise.all([daftarAkun(p), statusCadangan(p)]);
+export default async function HalamanAkun({ searchParams }: PageProps<"/admin/akun">) {
+  const p = await wajibAdmin();
+  const [semuaAkun, cadangan, daftar] = await Promise.all([daftarAkun(p), statusCadangan(p), daftarProdi(p)]);
+  const prodi = daftar.map((x) => ({ id: x.id, label: `${namaJenjang(x.jenjang)} ${x.nama}` }));
+  // L3: saringan prodi dari Pantau LED (?prodi=...)
+  const { prodi: saring } = (await searchParams) as { prodi?: string };
+  const prodiSaring = saring ? prodi.find((x) => x.id === saring) : undefined;
+  const akun = prodiSaring ? semuaAkun.filter((a) => a.prodi?.id === prodiSaring.id) : semuaAkun;
   return (
     <>
       <JudulHalaman
         judul="Kelola akun"
-        aksi={<DialogTambahAkun />}
+        aksi={<Button asChild size="lg"><Link href="/admin/akun/tambah"><Plus aria-hidden />Tambah akun</Link></Button>}
       />
       <Petunjuk
         kunci="admin-akun"
-        fungsi="Admin mengelola akun. PJ (penanggung jawab) menyusun semua LED fakultas; asesor mereview LED yang ditugaskan; admin mengurus akun, penugasan asesor, dan kunci API. LED dan kunci API milik fakultas, jadi tetap ada walaupun akun diganti."
+        fungsi="Admin UPPS mengelola akun. Tim Prodi menyusun LED program studinya (satu prodi boleh beberapa akun); asesor mereview LED yang ditugaskan; Admin UPPS mengurus akun, program studi, instrumen, kunci API, dan penugasan asesor. LED dan kunci API milik prodi dan fakultas, jadi tetap ada walaupun akun diganti."
         langkah={[
-          "Klik Tambah akun, pilih peran (PJ, Asesor, atau Admin), lalu isi nama, email, dan kata sandi awal.",
+          "Klik Tambah akun, pilih peran (Tim Prodi, Asesor, atau Admin UPPS), lalu isi nama, email, dan kata sandi awal. Akun Tim Prodi wajib memilih program studi.",
           "Berikan kata sandi sementara; pengguna wajib menggantinya saat login pertama.",
-          "Saat petugas berganti: buat akun PJ pengganti, lalu nonaktifkan akun lama.",
+          "Saat anggota tim berganti: buat akun Tim Prodi pengganti, lalu nonaktifkan akun lama. Akun yang pindah prodi: menu baris, Pindah program studi.",
           "Atur ulang kata sandi bila pengguna lupa. Akun sendiri tidak bisa dinonaktifkan atau dihapus.",
         ]}
       />
       <StatusCadangan status={cadangan} />
+      {prodiSaring && (
+        <p className="text-sm">
+          Akun {prodiSaring.label} saja. <Link className="text-primary hover:underline" href="/admin/akun">Tampilkan semua akun</Link>
+        </p>
+      )}
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">
           <Table>
@@ -70,8 +84,10 @@ export default async function HalamanAkun() {
                 <TableHead className="pl-4">Nama</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Peran</TableHead>
+                <TableHead>Program studi</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Dibuat</TableHead>
+                <TableHead>Login terakhir</TableHead>
                 <TableHead className="w-12 pr-4" />
               </TableRow>
             </TableHeader>
@@ -81,6 +97,7 @@ export default async function HalamanAkun() {
                   <TableCell className="pl-4 font-medium">{a.name}</TableCell>
                   <TableCell>{a.email}</TableCell>
                   <TableCell>{LABEL_PERAN[a.role as Peran]}</TableCell>
+                  <TableCell className="text-muted-foreground">{a.prodi ? `${namaJenjang(a.prodi.jenjang)} ${a.prodi.nama}` : "-"}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {a.banned ? <Badge variant="destructive">Nonaktif</Badge> : <Badge variant="secondary">Aktif</Badge>}
@@ -89,8 +106,9 @@ export default async function HalamanAkun() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{fmtTanggal.format(a.createdAt)}</TableCell>
+                  <TableCell className="text-muted-foreground">{a.loginTerakhir ? fmtTanggal.format(a.loginTerakhir) : "belum pernah"}</TableCell>
                   <TableCell className="pr-4 text-right">
-                    {a.id !== p.id && <AksiBarisAkun id={a.id} nama={a.name} email={a.email} aktif={!a.banned} />}
+                    {a.id !== p.id && <AksiBarisAkun id={a.id} nama={a.name} email={a.email} aktif={!a.banned} prodiId={a.role === "TIM_PRODI" ? a.prodi?.id ?? null : undefined} prodi={prodi} />}
                   </TableCell>
                 </TableRow>
               ))}

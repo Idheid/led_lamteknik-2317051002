@@ -1,6 +1,6 @@
 /**
  * Diimpor PERTAMA oleh setiap berkas uji integrasi: arahkan DATABASE_URL ke basis data uji sebelum modul
- * @/lib/db dimuat, matikan antrean (uji memanggil fungsi proses langsung), pakai embedding uji deterministik,
+ * @/modules/bersama/db dimuat, matikan antrean (uji memanggil fungsi proses langsung), pakai embedding uji deterministik,
  * dan simpan unggahan di folder sementara.
  */
 import "dotenv/config";

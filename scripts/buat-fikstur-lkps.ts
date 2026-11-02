@@ -7,8 +7,8 @@
 import "dotenv/config";
 import { resolve } from "node:path";
 import ExcelJS from "exceljs";
-import { barisNomor, labelBlok, lembarDariWorksheet } from "../src/lib/lkps/baca-xlsx";
-import { pilihBlokJenjang } from "../src/lib/lkps/struktur";
+import { barisNomor, labelBlok, lembarDariWorksheet } from "../src/modules/led/data-lkps/baca-xlsx";
+import { pilihBlokJenjang } from "../src/modules/led/data-lkps/struktur";
 import { BERLABEL, DAFTAR, MENU, type Nilai } from "../tests/fikstur/data-lkps-contoh";
 
 export const TEMPLATE_LKPS_BAWAAN =

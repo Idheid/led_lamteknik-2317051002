@@ -4,22 +4,21 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { MockLanguageModelV4 } from "ai/test";
-import { prisma } from "@/lib/db";
-import { GalatAkses, type Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek, simpanJawaban } from "@/lib/data/proyek";
-import { unggahLkps } from "@/lib/data/lkps";
-import { tambahKunci } from "@/lib/data/kunci-api";
-import { simpanPengaturan } from "@/lib/data/pengaturan";
-import { drafBagian, mulaiGenerate, simpanSuntingan } from "@/lib/data/generate";
-import { periksaDenganAi } from "@/lib/data/verifikasi";
-import { konsistensiProyek, simpanAlasanKonsistensi } from "@/lib/data/konsistensi";
-import { periksaEkspor } from "@/lib/data/ekspor";
-import { aturModelUji } from "@/lib/llm/narasi";
-import { prosesBerkasLkps } from "@/lib/proses/lkps";
-import { prosesTugasGenerate } from "@/lib/proses/generate";
-import type { DokTiptap } from "@/lib/domain/narasi";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, type Pengguna } from "@/modules/bersama/akses";
+import { buatProyek, simpanJawaban } from "@/modules/led/data/proyek";
+import { unggahLkps } from "@/modules/led/data/lkps";
+import { tambahKunci } from "@/modules/bersama/data/kunci-api";
+import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
+import { drafBagian, mulaiGenerate, simpanSuntingan } from "@/modules/led/data/generate";
+import { periksaDenganAi } from "@/modules/led/data/verifikasi";
+import { konsistensiProyek, simpanAlasanKonsistensi } from "@/modules/led/data/konsistensi";
+import { periksaEkspor } from "@/modules/led/data/ekspor";
+import { aturModelUji } from "@/modules/bersama/llm/narasi";
+import { prosesBerkasLkps } from "@/modules/led/proses/lkps";
+import { prosesTugasGenerate } from "@/modules/led/proses/generate";
+import type { DokTiptap } from "@/modules/led/domain/narasi";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /** Revisi 22 Okt 2026 tahap 5: verifikasi per kalimat (otomatis dan dengan AI) dan konsistensi angka antar kriteria. */
 
@@ -59,12 +58,12 @@ function keluaran(pengguna: string) {
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
-  const prodi = await simpanProdi(pj, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
-  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED Uji", tahunPengajuan: 2026 })).id;
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
+  ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} }));
+  proyekId = (await buatProyek(pj, { nama: "LED Uji", tahunPengajuan: 2026 })).id;
   await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: [], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
-  await tambahKunci(pj, { label: "Kunci", kunci: "AIzaSyKunciVerifikasi0000000000000000001" });
+  await tambahKunci(admin, { label: "Kunci", kunci: "AIzaSyKunciVerifikasi0000000000000000001" });
   aturModelUji((_k, kode) => new MockLanguageModelV4({
     modelId: kode,
     doGenerate: async (opsi) => ({

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
-import { wajibLogin } from "@/lib/sesi";
+import { wajibLogin } from "@/modules/bersama/sesi";
 import { ShellPeran } from "@/components/shell/shell-peran";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

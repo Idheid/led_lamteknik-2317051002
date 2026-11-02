@@ -3,27 +3,29 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { prisma } from "@/lib/db";
-import { unggahLkps } from "@/lib/data/lkps";
-import { prosesBerkasLkps } from "@/lib/proses/lkps";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { buatAkunAsesor, simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek } from "@/lib/data/proyek";
-import { drafBagian, simpanSuntingan } from "@/lib/data/generate";
-import { periksaEkspor } from "@/lib/data/ekspor";
-import { kesiapanLed } from "@/lib/data/kesiapan";
-import {
-  ajukanReview, balasCatatan, bandingkanCatatan, buatCatatan, daftarCatatan, daftarPemberitahuan, daftarPenugasan, hapusCatatan,
-  jumlahCatatanPerSub, ledAsesor, penilaianProyek, perbaikanMenunggu, putuskanReview, ringkasReview, simpanSkor, tandaiDibaca, tugaskanAsesor, ubahStatusCatatan,
-} from "@/lib/data/review";
-import { buatJangkar, teksPolos } from "@/lib/domain/review";
-import type { DokTiptap } from "@/lib/domain/narasi";
-import { bersihkanDb, buatSuperAdmin, imporSeed, penggunaDari, siapkanPj } from "./bantu";
+import { prisma } from "@/modules/bersama/db";
+import { unggahLkps } from "@/modules/led/data/lkps";
+import { prosesBerkasLkps } from "@/modules/led/proses/lkps";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { buatAkunAsesor } from "@/modules/bersama/data/organisasi";
+import { buatProyek } from "@/modules/led/data/proyek";
+import { drafBagian, simpanSuntingan } from "@/modules/led/data/generate";
+import { periksaEkspor } from "@/modules/led/data/ekspor";
+import { kesiapanLed } from "@/modules/led/data/kesiapan";
+import { ajukanReview, balasCatatan, bandingkanCatatan, buatCatatan, daftarCatatan, daftarPenugasan, hapusCatatan, jumlahCatatanPerSub, ledAsesor, penilaianProyek, perbaikanMenunggu, putuskanReview, ringkasReview, simpanSkor, tugaskanAsesor, ubahStatusCatatan } from "@/modules/led/data/review";
+import { daftarPemberitahuan, tandaiDibaca } from "@/modules/bersama/data/pemberitahuan";
+import { buatJangkar, teksPolos } from "@/modules/led/domain/review";
+import type { DokTiptap } from "@/modules/led/domain/narasi";
+import { bersihkanDb, buatAdmin, buatTimProdi, imporSeed, penggunaDari, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /** Revisi 22 Okt 2026 tahap 7: peran asesor, catatan revisi berjangkar, alur Sudah diperbaiki/Terima, skor, keputusan. */
 
 let admin: Pengguna;
 let pj: Pengguna;
+/** Akun Tim Prodi kedua di prodi yang sama (revisi 31 Okt 2026). */
+let pj2: Pengguna;
+/** Tim Prodi prodi lain. */
+let pjLain: Pengguna;
 let asesor: Pengguna;
 let asesorLain: Pengguna;
 let proyekId: string;
@@ -42,15 +44,17 @@ function jangkarDari(doc: DokTiptap, kalimat: string) {
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
   asesor = await penggunaDari((await buatAkunAsesor(admin, { nama: "Asesor Satu", email: "asesor@uji.test", kataSandi: "SandiAsesor#1" })).id);
   asesorLain = await penggunaDari((await buatAkunAsesor(admin, { nama: "Asesor Dua", email: "asesor2@uji.test", kataSandi: "SandiAsesor#2" })).id);
   assert.equal(asesor.peran, "ASESOR");
-  const prodi = await simpanProdi(pj, { nama: "Teknik Review", jenjang: "S1", kodePddikti: "33333", identitas: {} });
-  const prodi2 = await simpanProdi(pj, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "44444", identitas: {} });
-  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED Review", tahunPengajuan: 2026 })).id;
-  proyekLain = (await buatProyek(pj, { prodiId: prodi2.id, nama: "LED Lain", tahunPengajuan: 2026 })).id;
+  const { prodi, tim } = await siapkanProdi(admin, { nama: "Teknik Review", jenjang: "S1", kodePddikti: "33333", identitas: {} });
+  pj = tim;
+  pj2 = await buatTimProdi(admin, prodi.id, "tim2.review@uji.test", "Tim Prodi Kedua");
+  ({ tim: pjLain } = await siapkanProdi(admin, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "44444", identitas: {} }));
+  proyekId = (await buatProyek(pj, { nama: "LED Review", tahunPengajuan: 2026 })).id;
+  proyekLain = (await buatProyek(pjLain, { nama: "LED Lain", tahunPengajuan: 2026 })).id;
   await simpanSuntingan(pj, proyekId, SUB, AWAL);
 });
 
@@ -96,7 +100,10 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   assert.deepEqual([lihat.catatan[0].status, lihat.catatan[0].ditemukan, lihat.catatan[0].asesor], ["terbuka", true, "Asesor Satu"]);
   const lonceng = await daftarPemberitahuan(pj);
   assert.equal(lonceng.belumDibaca, 2, "catatan baru + catatan salah blok");
-  assert.match(lonceng.daftar[1].tautan!, new RegExp(`/proyek/${proyekId}/bagian/C\\.1/${SUB}#catatan-${c.id}`));
+  // revisi 31 Okt 2026: pemberitahuan sampai ke semua akun Tim Prodi prodi itu, bukan ke Tim Prodi prodi lain
+  assert.equal((await daftarPemberitahuan(pj2)).belumDibaca, 2, "akun Tim Prodi kedua di prodi yang sama");
+  assert.equal((await daftarPemberitahuan(pjLain)).belumDibaca, 0, "Tim Prodi prodi lain tidak diberi tahu");
+  assert.match(lonceng.daftar[1].tautan!, new RegExp(`/led/${proyekId}/bagian/C\\.1/${SUB}#catatan-${c.id}`));
   await tandaiDibaca(pj, null);
   assert.equal((await daftarPemberitahuan(pj)).belumDibaca, 0);
   assert.deepEqual(await jumlahCatatanPerSub(pj, proyekId), { [SUB]: { terbuka: 1, diperbaiki: 0 } });
@@ -105,7 +112,7 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   const r = await ringkasReview(pj, proyekId);
   assert.equal(r.bagianPerlu.length, 1);
   assert.deepEqual([r.bagianPerlu[0].subBagianKode, r.bagianPerlu[0].terbuka, r.bagianPerlu[0].diperbaiki], [SUB, 1, 0]);
-  assert.equal(r.bagianPerlu[0].href, `/proyek/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
+  assert.equal(r.bagianPerlu[0].href, `/led/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
 
   // PJ mengubah kalimat lain: sorotan tetap menempel
   await simpanSuntingan(pj, proyekId, SUB, dok("Visi keilmuan dirumuskan bersama alumni dan industri. Visi ditinjau setiap lima tahun.", "Strategi pencapaian visi disusun dalam Renstra."));
@@ -122,7 +129,7 @@ test("Catatan revisi: hanya saat Direview, berjangkar, muncul di PJ dengan pembe
   const masuk = await perbaikanMenunggu(asesor, proyekId);
   assert.equal(masuk.length, 1);
   assert.deepEqual([masuk[0].id, masuk[0].pesanPj, masuk[0].teks], [c.id, "Sudah ditambah SK peninjauan.", j.teks]);
-  assert.equal(masuk[0].href, `/asesor/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
+  assert.equal(masuk[0].href, `/led/asesor/${proyekId}/bagian/C.1/${SUB}#catatan-${c.id}`);
   await assert.rejects(perbaikanMenunggu(pj, proyekId), GalatAkses);
   assert.match((await daftarPemberitahuan(asesor)).daftar[0].pesan, /sudah diperbaiki/);
 
@@ -179,9 +186,9 @@ test("Penilaian akhir: skor 0-4 per butir, nilai akhir dan perkiraan status, Lay
 });
 
 test("Butir angka dengan LKPS: skor sistem jadi acuan; skor berbeda wajib beralasan", async () => {
-  const b = await unggahLkps(pj, proyekLain, { nama: "lkps.xlsx", isi: readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx")) });
+  const b = await unggahLkps(pjLain, proyekLain, { nama: "lkps.xlsx", isi: readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx")) });
   await prosesBerkasLkps(b.id);
-  await ajukanReview(pj, proyekLain);
+  await ajukanReview(pjLain, proyekLain);
   const n = await penilaianProyek(asesorLain, proyekLain);
   const angka = n.butir.find((x) => x.jenis === "angka" && x.skorSistem !== null)!;
   assert.ok(angka, "ada butir angka yang skornya dihitung dari LKPS");
@@ -190,4 +197,18 @@ test("Butir angka dengan LKPS: skor sistem jadi acuan; skor berbeda wajib berala
   await assert.rejects(simpanSkor(asesorLain, proyekLain, { butirKode: angka.kode, skor: lain }), /berbeda dari hitungan sistem/);
   const s = await simpanSkor(asesorLain, proyekLain, { butirKode: angka.kode, skor: lain, alasan: "Data TS-2 belum diverifikasi." });
   assert.deepEqual([s?.skor, s?.skorSistem, s?.alasan], [lain, angka.skorSistem, "Data TS-2 belum diverifikasi."]);
+});
+
+test("Revisi 31 Okt tahap 2: Admin UPPS membaca catatan dan penilaian semua LED tanpa bisa membalas, menerima, atau menilai", async () => {
+  const { catatan } = await daftarCatatan(admin, proyekId);
+  assert.ok(catatan.length > 0, "admin melihat catatan asesor");
+  assert.ok((await penilaianProyek(admin, proyekId)).butir.length > 0);
+  await jumlahCatatanPerSub(admin, proyekId);
+  await assert.rejects(balasCatatan(admin, catatan[0].id, "Balasan admin"), GalatAkses);
+  await assert.rejects(ubahStatusCatatan(admin, catatan[0].id, "diterima"), GalatAkses);
+  await assert.rejects(buatCatatan(admin, proyekId, { subBagianKode: SUB, ...jangkarDari(AWAL, "Renstra"), isi: "x" }), GalatAkses);
+  await assert.rejects(simpanSkor(admin, proyekId, { butirKode: "1", skor: 3 }), GalatAkses);
+  await assert.rejects(perbaikanMenunggu(admin, proyekId), GalatAkses);
+  // Tim Prodi prodi lain tetap ditolak
+  await assert.rejects(daftarCatatan(pjLain, proyekId), GalatAkses);
 });

@@ -6,12 +6,11 @@ import { mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
-import { prisma } from "@/lib/db";
-import { GalatAkses, type Pengguna } from "@/lib/akses";
-import { statusCadangan } from "@/lib/data/cadangan";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatCadangan, folderCadangan, koneksiDb, namaFolder, pecahPerintah, pulihkanCadangan } from "@/lib/proses/cadangan";
-import { bersihkanDb, buatSuperAdmin, siapkanPj } from "./bantu";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, type Pengguna } from "@/modules/bersama/akses";
+import { statusCadangan } from "@/modules/bersama/data/cadangan";
+import { buatCadangan, folderCadangan, koneksiDb, namaFolder, pecahPerintah, pulihkanCadangan } from "@/modules/bersama/proses/cadangan";
+import { bersihkanDb, buatAdmin, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /**
  * Revisi 22 Okt 2026 tahap 6: cadangan harian basis data + unggahan, sisakan N terakhir, status untuk admin, dan
@@ -33,9 +32,9 @@ let pj: Pengguna;
 before(async () => {
   await bersihkanDb();
   await prisma.cadangan.deleteMany();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
-  await simpanProdi(pj, { nama: "Teknik Cadangan", jenjang: "S1", kodePddikti: "22222", identitas: {} });
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
+  ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Cadangan", jenjang: "S1", kodePddikti: "22222", identitas: {} }));
   process.env.CADANGAN_DIR = await mkdtemp(join(tmpdir(), "led-cadangan-"));
   await mkdir(join(process.env.UPLOAD_DIR!, "dokumen"), { recursive: true });
   await writeFile(join(process.env.UPLOAD_DIR!, "dokumen", "renstra.pdf"), "%PDF-1.4 isi uji");

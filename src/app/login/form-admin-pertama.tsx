@@ -6,12 +6,13 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { authClient } from "@/lib/auth-client";
-import { skemaAkunSuperAdmin, type MasukanAkunSuperAdmin } from "@/lib/validasi";
+import { authClient } from "@/modules/bersama/auth-client";
+import { skemaAkun, type MasukanAkun } from "@/modules/bersama/validasi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputSandi } from "@/components/input-sandi";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { aksiBuatAdminPertama } from "./aksi";
 
@@ -19,12 +20,12 @@ import { aksiBuatAdminPertama } from "./aksi";
 export function FormAdminPertama() {
   const router = useRouter();
   const [galat, setGalat] = useState<string | null>(null);
-  const form = useForm<MasukanAkunSuperAdmin>({
-    resolver: zodResolver(skemaAkunSuperAdmin),
+  const form = useForm<MasukanAkun>({
+    resolver: zodResolver(skemaAkun),
     defaultValues: { nama: "", email: "", kataSandi: "" },
   });
 
-  async function kirim(nilai: MasukanAkunSuperAdmin) {
+  async function kirim(nilai: MasukanAkun) {
     setGalat(null);
     const r = await aksiBuatAdminPertama(nilai);
     if (!r.ok) {
@@ -32,7 +33,7 @@ export function FormAdminPertama() {
       return;
     }
     await authClient.signIn.email({ email: nilai.email.trim().toLowerCase(), password: nilai.kataSandi });
-    toast.success("Akun admin dibuat. Selanjutnya buat akun PJ di Kelola akun.");
+    toast.success("Akun Admin UPPS dibuat. Selanjutnya buat akun Tim Prodi dan asesor di Kelola akun.");
     router.replace("/admin/akun");
     router.refresh();
   }
@@ -41,7 +42,7 @@ export function FormAdminPertama() {
     <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle>Buat akun admin pertama</CardTitle>
-        <CardDescription>Website baru dipasang dan belum punya admin. Akun ini dipakai untuk membuat akun PJ dan asesor.</CardDescription>
+        <CardDescription>Website baru dipasang dan belum punya admin. Akun ini (Admin UPPS) dipakai untuk membuat akun Tim Prodi dan asesor.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(kirim)} noValidate>
@@ -79,7 +80,7 @@ export function FormAdminPertama() {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="admin-sandi">Kata sandi</FieldLabel>
-                  <Input {...field} id="admin-sandi" type="password" autoComplete="new-password" aria-invalid={fieldState.invalid} />
+                  <InputSandi {...field} id="admin-sandi" autoComplete="new-password" aria-invalid={fieldState.invalid} />
                   <FieldDescription>Minimal 8 karakter. Simpan baik-baik.</FieldDescription>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>

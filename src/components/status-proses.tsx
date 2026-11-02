@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { STATUS_BERJALAN } from "@/lib/tampil";
+import { cn } from "@/modules/bersama/utils";
+import { STATUS_BERJALAN } from "@/modules/bersama/tampil";
 
 const GAYA: Record<string, { label: string; kelas: string }> = {
   diunggah: { label: "Menunggu antrean", kelas: "bg-muted text-muted-foreground" },

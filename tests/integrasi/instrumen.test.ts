@@ -1,15 +1,14 @@
 import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna } from "@/lib/akses";
-import { imporInstrumen } from "@/lib/data/impor-instrumen";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna } from "@/modules/bersama/akses";
+import { imporInstrumen } from "@/modules/led/data/impor-instrumen";
 import {
   ambilVersi, aturAktifVersi, daftarVersi, hapusButir, hapusVersi, salinVersi, simpanButir, simpanSubBagian,
-} from "@/lib/data/instrumen";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek, halamanBagian } from "@/lib/data/proyek";
-import { bacaSeed, bersihkanDb, buatSuperAdmin, imporSeed, penggunaDari, siapkanPj } from "./bantu";
+} from "@/modules/led/data/instrumen";
+import { buatProyek, halamanBagian } from "@/modules/led/data/proyek";
+import { bacaSeed, bersihkanDb, buatAdmin, imporSeed, penggunaDari, siapkanFakultas, siapkanProdi } from "./bantu";
 
 before(bersihkanDb);
 after(() => prisma.$disconnect());
@@ -38,27 +37,25 @@ test("F-06 seed: 1 versi, 14 bagian, 125 sub-bagian, 72 butir Sarjana, bobot 100
 });
 
 test("F-03/F-04/F-05 salin versi lalu tambah butir: proyek lama tetap memakai versi lamanya", async () => {
-  const admin = await buatSuperAdmin();
+  const admin = await buatAdmin();
   const versi = await prisma.versiInstrumen.findFirstOrThrow({ where: { kode: "LAMTEKNIK-2025-PASCA" } });
-  const pjAwal = await siapkanPj(admin);
-  const prodi = await simpanProdi(pjAwal, { nama: "Teknik Uji", jenjang: "S1", kodePddikti: "99999", identitas: {} });
-  const akun = { id: pjAwal.id };
-  const pj = await penggunaDari(akun.id);
-  const proyek = await buatProyek(pj, { prodiId: prodi.id, nama: "LED 2026", tahunPengajuan: 2026 });
+  await siapkanFakultas(admin);
+  const { tim: pj } = await siapkanProdi(admin, { nama: "Teknik Uji", jenjang: "S1", kodePddikti: "99999", identitas: {} });
+  const proyek = await buatProyek(pj, { nama: "LED 2026", tahunPengajuan: 2026 });
   assert.equal(proyek.versiId, versi.id);
 
   // versi yang dipakai proyek terkunci: tidak bisa dihapus atau diubah
-  await assert.rejects(hapusVersi(pj, versi.id), GalatPengguna);
+  await assert.rejects(hapusVersi(admin, versi.id), GalatPengguna);
   const subC3 = await prisma.subBagian.findFirstOrThrow({ where: { kode: "C.3-IKU-a.01", bagian: { versiId: versi.id } } });
   const masukanButir = {
     jenjang: "S1" as const, kode: "99", no: 99, sub: "", urutan: 99, bagianKode: "C.3", elemen: "Elemen uji",
     indikator: "Indikator uji", bobot: 1, jenis: "narasi" as const, tabelLkps: [], deskriptorSkor4: "(1) Unsur uji.",
     unsurSkor4: ["Unsur uji"], pertanyaanPemandu: "", dokumenPendukung: ["Dokumen uji"], subBagianIds: [subC3.id], catatan: "",
   };
-  await assert.rejects(simpanButir(pj, versi.id, masukanButir), GalatPengguna);
+  await assert.rejects(simpanButir(admin, versi.id, masukanButir), GalatPengguna);
 
   // salin: isi sama, nonaktif, kode unik
-  const salinan = await salinVersi(pj, versi.id);
+  const salinan = await salinVersi(admin, versi.id);
   assert.equal(salinan.aktif, false);
   assert.equal(salinan.kode, "LAMTEKNIK-2025-PASCA-SALINAN");
   assert.equal(salinan.disalinDariId, versi.id);
@@ -75,7 +72,7 @@ test("F-03/F-04/F-05 salin versi lalu tambah butir: proyek lama tetap memakai ve
 
   // tambah satu butir di salinan
   const subSalinan = await prisma.subBagian.findFirstOrThrow({ where: { kode: "C.3-IKU-a.01", bagian: { versiId: salinan.id } } });
-  const baru = await simpanButir(pj, salinan.id, { ...masukanButir, subBagianIds: [subSalinan.id] });
+  const baru = await simpanButir(admin, salinan.id, { ...masukanButir, subBagianIds: [subSalinan.id] });
   assert.equal(await prisma.butirPenilaian.count({ where: { versiId: salinan.id, jenjang: "S1" } }), 73);
   assert.equal(await prisma.butirPenilaian.count({ where: { versiId: versi.id, jenjang: "S1" } }), 72);
 
@@ -88,24 +85,24 @@ test("F-03/F-04/F-05 salin versi lalu tambah butir: proyek lama tetap memakai ve
 
   // sub-bagian baru di salinan; hapus butir; aktifkan salinan
   const c1 = await prisma.bagian.findFirstOrThrow({ where: { versiId: salinan.id, kode: "C.1" } });
-  await simpanSubBagian(pj, c1.id, {
+  await simpanSubBagian(admin, c1.id, {
     kode: "C.1-UJI", label: "9", judul: "Sub-bagian uji", grup: "", tipe: "narasi", urutan: 99,
     varian: [{ instruksi: "Instruksi uji", jenjang: ["S1"], catatanTemplate: "" }], berlakuUntuk: ["S1"], catatan: "",
   });
-  await hapusButir(pj, baru.id);
-  await aturAktifVersi(pj, salinan.id, true);
-  assert.equal((await daftarVersi(pj)).length, 2);
-  assert.equal((await ambilVersi(pj, versi.id))?.terkunci, true);
+  await hapusButir(admin, baru.id);
+  await aturAktifVersi(admin, salinan.id, true);
+  assert.equal((await daftarVersi(admin)).length, 2);
+  assert.equal((await ambilVersi(admin, versi.id))?.terkunci, true);
 
   // salinan yang belum dipakai proyek boleh dihapus
-  const salinan2 = await salinVersi(pj, versi.id);
+  const salinan2 = await salinVersi(admin, versi.id);
   assert.equal(salinan2.kode, "LAMTEKNIK-2025-PASCA-SALINAN-2");
-  await hapusVersi(pj, salinan2.id);
+  await hapusVersi(admin, salinan2.id);
 });
 
-test("F-03 pengelolaan instrumen oleh PJ fakultas; admin ditolak (revisi 19 Okt 2026)", async () => {
-  const admin = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { email: "admin@uji.test" } })).id);
+test("F-03 pengelolaan instrumen oleh Admin UPPS; Tim Prodi ditolak (revisi 31 Okt 2026)", async () => {
+  const tim = await penggunaDari((await prisma.user.findFirstOrThrow({ where: { role: "TIM_PRODI" } })).id);
   const versi = await prisma.versiInstrumen.findFirstOrThrow({ where: { kode: "LAMTEKNIK-2025-PASCA" } });
-  await assert.rejects(daftarVersi(admin), GalatAkses);
-  await assert.rejects(salinVersi(admin, versi.id), GalatAkses);
+  await assert.rejects(daftarVersi(tim), GalatAkses);
+  await assert.rejects(salinVersi(tim, versi.id), GalatAkses);
 });

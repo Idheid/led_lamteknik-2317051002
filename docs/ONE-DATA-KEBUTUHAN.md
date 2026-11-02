@@ -2,7 +2,7 @@
 
 Revisi 22 Oktober 2026, saran 4 dan 5. Sesuai arahan Pak Tris ("Tris 5" bagian 1), akses API diminta seperlunya:
 hanya data di bawah, bukan seluruh daftar API. Dokumen ini disusun dari kolom template LKPS LAM Teknik 2025
-(`src/lib/lkps/kolom-template.json`). Status: **menunggu persetujuan daftar dan akses API**. Selama itu unggah Excel LKPS
+(`src/modules/led/data-lkps/kolom-template.json`). Status: **menunggu persetujuan daftar dan akses API**. Selama itu unggah Excel LKPS
 dan isian manual tetap dipakai.
 
 Koordinasikan dengan Ghalib (sistem LKPS) supaya penarikan data, ID sinkron, dan persentase LKPS tidak dibuat dua kali.

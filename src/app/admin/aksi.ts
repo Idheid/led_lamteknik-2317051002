@@ -1,16 +1,34 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { jalankanAksi } from "@/lib/aksi";
-import * as org from "@/lib/data/organisasi";
-import * as pengaturan from "@/lib/data/pengaturan";
-import type { MasukanAkun, MasukanAkunSuperAdmin } from "@/lib/validasi";
+import { jalankanAksi } from "@/modules/bersama/aksi";
+import * as org from "@/modules/bersama/data/organisasi";
+import * as pengaturan from "@/modules/bersama/data/pengaturan";
+import type { MasukanAkun, MasukanAkunTimProdi, MasukanUbahPeranAkun } from "@/modules/bersama/validasi";
 
-// ---------------------------------------------------------------- Akun (admin)
+// ---------------------------------------------------------------- Akun (Admin UPPS)
 
-export async function aksiBuatAkun(masukan: MasukanAkun) {
-  const r = await jalankanAksi(async (p) => (await org.buatAkunPenanggungJawab(p, masukan)).id);
+export async function aksiBuatTimProdi(masukan: MasukanAkunTimProdi) {
+  const r = await jalankanAksi(async (p) => (await org.buatAkunTimProdi(p, masukan)).id);
   revalidatePath("/admin", "layout");
+  return r;
+}
+
+export async function aksiUbahNamaAkun(userId: string, nama: string) {
+  const r = await jalankanAksi((p) => org.ubahNamaAkun(p, userId, nama).then(() => null));
+  revalidatePath("/admin/akun");
+  return r;
+}
+
+export async function aksiUbahPeranAkun(userId: string, masukan: MasukanUbahPeranAkun) {
+  const r = await jalankanAksi((p) => org.ubahPeranAkun(p, userId, masukan).then(() => null));
+  revalidatePath("/admin", "layout");
+  return r;
+}
+
+export async function aksiPindahProdi(userId: string, prodiId: string) {
+  const r = await jalankanAksi((p) => org.pindahProdiAkun(p, userId, prodiId).then(() => null));
+  revalidatePath("/admin/akun");
   return r;
 }
 
@@ -20,8 +38,8 @@ export async function aksiBuatAsesor(masukan: MasukanAkun) {
   return r;
 }
 
-export async function aksiBuatSuperAdmin(masukan: MasukanAkunSuperAdmin) {
-  const r = await jalankanAksi(async (p) => (await org.buatAkunSuperAdmin(p, masukan)).id);
+export async function aksiBuatAdmin(masukan: MasukanAkun) {
+  const r = await jalankanAksi(async (p) => (await org.buatAkunAdmin(p, masukan)).id);
   revalidatePath("/admin", "layout");
   return r;
 }

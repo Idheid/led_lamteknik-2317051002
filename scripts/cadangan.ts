@@ -11,8 +11,8 @@ import "dotenv/config";
 import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { Client } from "pg";
-import { prisma } from "@/lib/db";
-import { buatCadangan, folderCadangan, pulihkanCadangan } from "@/lib/proses/cadangan";
+import { prisma } from "@/modules/bersama/db";
+import { buatCadangan, folderCadangan, pulihkanCadangan } from "@/modules/bersama/proses/cadangan";
 
 function opsi(argumen: string[], nama: string): string | undefined {
   const i = argumen.indexOf(nama);

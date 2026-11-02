@@ -1,14 +1,13 @@
 import "./siapan";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { prisma } from "@/lib/db";
-import { GalatAkses, type Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek } from "@/lib/data/proyek";
-import { potonganDokumen, unggahDokumen } from "@/lib/data/dokumen";
-import { cariPotongan, kueriSubBagian } from "@/lib/data/pencarian";
-import { prosesDokumen } from "@/lib/proses/dokumen";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, type Pengguna } from "@/modules/bersama/akses";
+import { buatProyek } from "@/modules/led/data/proyek";
+import { potonganDokumen, unggahDokumen } from "@/modules/led/data/dokumen";
+import { cariPotongan, kueriSubBagian } from "@/modules/led/data/pencarian";
+import { prosesDokumen } from "@/modules/led/proses/dokumen";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /** Revisi 22 Okt 2026 tahap 8: Basis Pengetahuan (lihat potongan, uji cari dengan kueri generate). */
 
@@ -25,10 +24,10 @@ const TEKS = [
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
-  const prodi = await simpanProdi(pj, { nama: "Teknik Uji", jenjang: "S1", kodePddikti: "55555", identitas: {} });
-  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED BP", tahunPengajuan: 2026 })).id;
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
+  ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Uji", jenjang: "S1", kodePddikti: "55555", identitas: {} }));
+  proyekId = (await buatProyek(pj, { nama: "LED BP", tahunPengajuan: 2026 })).id;
   const d = await unggahDokumen(pj, proyekId, { nama: "renstra.docx", isi: await docx(TEKS) });
   dokumenId = d.id;
   await prosesDokumen(d.id);
@@ -44,7 +43,7 @@ async function docx(teks: string): Promise<Buffer> {
   return Packer.toBuffer(doc);
 }
 
-test("Lihat potongan: teks setiap potongan berurutan dan status embedding; admin ditolak", async () => {
+test("Lihat potongan: teks setiap potongan berurutan dan status embedding; Admin UPPS hanya membaca; Tim Prodi lain ditolak", async () => {
   const p = await potonganDokumen(pj, dokumenId);
   const d = await prisma.dokumen.findUniqueOrThrow({ where: { id: dokumenId } });
   assert.equal(d.status, "siap");
@@ -53,7 +52,10 @@ test("Lihat potongan: teks setiap potongan berurutan dan status embedding; admin
   assert.deepEqual(p.potongan.map((x) => x.urutan), p.potongan.map((_, i) => i));
   assert.ok(p.potongan.every((x) => x.terindeks && x.teks.length > 0));
   assert.match(p.potongan[0].teks, /Visi keilmuan/);
-  await assert.rejects(potonganDokumen(admin, dokumenId), GalatAkses);
+  // revisi 31 Okt 2026: Admin UPPS membaca semua LED; Tim Prodi prodi lain ditolak
+  assert.equal((await potonganDokumen(admin, dokumenId)).potongan.length, p.potongan.length);
+  const { tim: lain } = await siapkanProdi(admin, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "66666", identitas: {} });
+  await assert.rejects(potonganDokumen(lain, dokumenId), GalatAkses);
 });
 
 test("Uji cari: kueri generate sub-bagian memakai judul, instruksi, dan butir; hasil paling banyak 8 dengan skor menurun", async () => {

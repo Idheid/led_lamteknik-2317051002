@@ -1,12 +1,12 @@
 "use server";
 
 import { ZodError } from "zod";
-import { GalatPengguna } from "@/lib/akses";
-import { buatAdminPertama } from "@/lib/data/pemasangan";
-import { pesanGalatZod, type MasukanAkunSuperAdmin } from "@/lib/validasi";
+import { GalatPengguna } from "@/modules/bersama/akses";
+import { buatAdminPertama } from "@/modules/bersama/data/pemasangan";
+import { pesanGalatZod, type MasukanAkun } from "@/modules/bersama/validasi";
 
 /** Buat admin pertama (tanpa sesi; hanya berhasil bila belum ada admin sama sekali). */
-export async function aksiBuatAdminPertama(masukan: MasukanAkunSuperAdmin): Promise<{ ok: true } | { ok: false; pesan: string }> {
+export async function aksiBuatAdminPertama(masukan: MasukanAkun): Promise<{ ok: true } | { ok: false; pesan: string }> {
   try {
     await buatAdminPertama(masukan);
     return { ok: true };

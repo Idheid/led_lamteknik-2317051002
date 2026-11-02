@@ -3,17 +3,17 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { daftarProdi, simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek } from "@/lib/data/proyek";
-import { unggahLkps } from "@/lib/data/lkps";
-import { simpanTimPenyusun } from "@/lib/data/ekspor";
-import { kesiapanLed, kesiapanSemua, simpanJadwal } from "@/lib/data/kesiapan";
-import { prosesBerkasLkps } from "@/lib/proses/lkps";
-import { susunKonteks } from "@/lib/proses/generate";
-import { tambahBulan, tanggalIso } from "@/lib/domain/kesiapan";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { daftarProdi, simpanProdi } from "@/modules/bersama/data/organisasi";
+import { buatProyek } from "@/modules/led/data/proyek";
+import { unggahLkps } from "@/modules/led/data/lkps";
+import { simpanTimPenyusun } from "@/modules/led/data/ekspor";
+import { kesiapanLed, kesiapanSemua, simpanJadwal } from "@/modules/led/data/kesiapan";
+import { prosesBerkasLkps } from "@/modules/led/proses/lkps";
+import { susunKonteks } from "@/modules/led/proses/generate";
+import { tambahBulan, tanggalIso } from "@/modules/led/domain/kesiapan";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /** Revisi 22 Okt 2026 tahap 2: deadline, kesiapan, persentase LKPS, jadwal kerja mundur. */
 
@@ -25,19 +25,21 @@ const bulanLagi = (n: number) => tanggalIso(tambahBulan(new Date(Date.UTC(hariIn
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
 });
 after(() => prisma.$disconnect());
 
 test("Prodi paling dekat berakhir tampil paling atas; kesiapan, tanda warna, dan tonggak yang terlewat", async () => {
-  const jauh = await simpanProdi(pj, { nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "1", identitas: {}, akreditasiBerlakuSampai: bulanLagi(20) });
-  const dekat = await simpanProdi(pj, { nama: "Teknik Elektro", jenjang: "S1", kodePddikti: "2", identitas: {}, akreditasiBerlakuSampai: bulanLagi(5) });
-  const tanpaLed = await simpanProdi(pj, { nama: "Teknik Kimia", jenjang: "S1", kodePddikti: "3", identitas: {}, akreditasiBerlakuSampai: bulanLagi(10) });
-  assert.deepEqual((await daftarProdi(pj)).map((x) => x.id), [dekat.id, tanpaLed.id, jauh.id], "urut menurut akreditasi berakhir");
+  const { prodi: jauh, tim: timSipil } = await siapkanProdi(admin, { nama: "Teknik Sipil", jenjang: "S1", kodePddikti: "1", identitas: {}, akreditasiBerlakuSampai: bulanLagi(20) });
+  const { prodi: dekat, tim } = await siapkanProdi(admin, { nama: "Teknik Elektro", jenjang: "S1", kodePddikti: "2", identitas: {}, akreditasiBerlakuSampai: bulanLagi(5) });
+  pj = tim;
+  const tanpaLed = await simpanProdi(admin, { nama: "Teknik Kimia", jenjang: "S1", kodePddikti: "3", identitas: {}, akreditasiBerlakuSampai: bulanLagi(10) });
+  assert.deepEqual((await daftarProdi(admin)).map((x) => x.id), [dekat.id, tanpaLed.id, jauh.id], "urut menurut akreditasi berakhir");
+  assert.deepEqual((await daftarProdi(pj)).map((x) => x.id), [dekat.id], "Tim Prodi hanya melihat prodinya");
 
-  const ledDekat = await buatProyek(pj, { prodiId: dekat.id, nama: "LED Elektro", tahunPengajuan: 2026 });
-  const ledJauh = await buatProyek(pj, { prodiId: jauh.id, nama: "LED Sipil", tahunPengajuan: 2026 });
+  const ledDekat = await buatProyek(pj, { nama: "LED Elektro", tahunPengajuan: 2026 });
+  const ledJauh = await buatProyek(timSipil, { nama: "LED Sipil", tahunPengajuan: 2026 });
   // usulan awal batas pengajuan: 6 bulan sebelum akreditasi berakhir (prodi dekat: sudah lewat sebulan)
   assert.equal(tanggalIso(ledDekat.batasPengajuan!), bulanLagi(-1));
 
@@ -49,8 +51,8 @@ test("Prodi paling dekat berakhir tampil paling atas; kesiapan, tanda warna, dan
   assert.ok(k.sub.total > 90, `sub-bagian berlaku untuk S1: ${k.sub.total}`);
   assert.ok(k.tonggak.every((t) => t.status === "terlewat"), "semua tonggak sudah lewat tanggal dan belum tercapai");
   assert.equal((await kesiapanLed(ledJauh.id)).warna, null);
-  assert.equal((await kesiapanSemua(pj, [ledDekat.id, ledJauh.id])).size, 2);
-  await assert.rejects(kesiapanSemua(admin, [ledDekat.id]), GalatAkses);
+  assert.equal((await kesiapanSemua(admin, [ledDekat.id, ledJauh.id])).size, 2, "Admin UPPS memantau semua LED");
+  assert.deepEqual([...(await kesiapanSemua(pj, [ledDekat.id, ledJauh.id])).keys()], [ledDekat.id], "Tim Prodi hanya LED prodinya");
 
   // LKPS contoh: persentase terisi dihitung dari kolom wajib
   const b = await unggahLkps(pj, ledDekat.id, { nama: "lkps.xlsx", isi: readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx")) });

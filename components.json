@@ -14,9 +14,9 @@
   "rtl": false,
   "aliases": {
     "components": "@/components",
-    "utils": "@/lib/utils",
+    "utils": "@/modules/bersama/utils",
     "ui": "@/components/ui",
-    "lib": "@/lib",
+    "lib": "@/modules/bersama",
     "hooks": "@/hooks"
   },
   "menuColor": "default",

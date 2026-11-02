@@ -2,7 +2,7 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAksi } from "@/components/aksi-klien";
-import { aksiTugaskanAsesor } from "@/app/review/aksi";
+import { aksiTugaskanAsesor } from "@/app/led/aksi-review";
 
 const KOSONG = "__kosong__";
 

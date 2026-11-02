@@ -13,16 +13,16 @@ import {
 import { IkonSibuk, TombolKonfirmasi, useAksi } from "@/components/aksi-klien";
 import { aksiHapusKunci, aksiTambahKunci, aksiUjiKunci } from "@/app/aksi-kunci";
 
-export function FormKunci({ kembaliKe }: { kembaliKe?: string }) {
+export function FormKunci({ kembaliKe, jenis = "utama" }: { kembaliKe?: string; jenis?: "utama" | "cadangan" }) {
   const router = useRouter();
   const { sibuk, jalankan } = useAksi();
-  const [label, setLabel] = useState("Kunci utama");
+  const [label, setLabel] = useState(jenis === "cadangan" ? "Kunci cadangan" : "Kunci utama");
   const [kunci, setKunci] = useState("");
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        jalankan(() => aksiTambahKunci(label, kunci), {
+        jalankan(() => aksiTambahKunci(label, kunci, jenis), {
           lalu: ({ dokumen, tugas }) => {
             setKunci("");
             const lanjut = [dokumen ? `${dokumen} dokumen diproses ulang` : "", tugas ? `${tugas} penyusunan dilanjutkan` : ""].filter(Boolean).join(", ");

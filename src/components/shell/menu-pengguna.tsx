@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, KeyRound, LogOut } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/modules/bersama/auth-client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,

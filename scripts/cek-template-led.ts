@@ -7,8 +7,8 @@ import "dotenv/config";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import JSZip from "jszip";
-import { aktifkanPerbaruiField, siapkanDokumen, type SubTemplate } from "../src/lib/ekspor/template";
-import { berlakuUntukJenjang } from "../src/lib/domain/instrumen";
+import { aktifkanPerbaruiField, siapkanDokumen, type SubTemplate } from "../src/modules/led/ekspor/template";
+import { berlakuUntukJenjang } from "../src/modules/led/domain/instrumen";
 
 const jenjang = process.argv[2] ?? "S1";
 const keluaran = process.argv[3];

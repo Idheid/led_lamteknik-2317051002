@@ -5,19 +5,18 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { Document, Packer, Paragraph } from "docx";
-import { prisma } from "@/lib/db";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/lib/akses";
-import { simpanProdi } from "@/lib/data/organisasi";
-import { buatProyek, ubahTsProyek } from "@/lib/data/proyek";
-import { lkpsAktif, metrikProyek, simpanKoreksiTabel, unggahLkps } from "@/lib/data/lkps";
-import { berkasDokumen, daftarDokumen, simpulGambar, ubahDokumen, unggahDokumen } from "@/lib/data/dokumen";
-import { cariPotongan } from "@/lib/data/pencarian";
-import { daftarKunci, tambahKunci } from "@/lib/data/kunci-api";
-import { simpanPengaturan } from "@/lib/data/pengaturan";
-import { prosesBerkasLkps } from "@/lib/proses/lkps";
-import { prosesDokumen } from "@/lib/proses/dokumen";
-import { hashBerkas } from "@/lib/penyimpanan";
-import { bersihkanDb, buatSuperAdmin, imporSeed, siapkanPj } from "./bantu";
+import { prisma } from "@/modules/bersama/db";
+import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { buatProyek, ubahTsProyek } from "@/modules/led/data/proyek";
+import { lkpsAktif, metrikProyek, simpanKoreksiTabel, unggahLkps } from "@/modules/led/data/lkps";
+import { berkasDokumen, daftarDokumen, simpulGambar, ubahDokumen, unggahDokumen } from "@/modules/led/data/dokumen";
+import { cariPotongan } from "@/modules/led/data/pencarian";
+import { daftarKunci, tambahKunci } from "@/modules/bersama/data/kunci-api";
+import { simpanPengaturan } from "@/modules/bersama/data/pengaturan";
+import { prosesBerkasLkps } from "@/modules/led/proses/lkps";
+import { prosesDokumen } from "@/modules/led/proses/dokumen";
+import { hashBerkas } from "@/modules/bersama/penyimpanan";
+import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 const XLSX = readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.xlsx"));
 const PDF_LKPS = readFileSync(resolve(process.cwd(), "tests/fikstur/lkps-contoh-s1.pdf"));
@@ -51,12 +50,13 @@ const renstra = (i: number) => `Rencana strategis fakultas menetapkan sasaran mu
 before(async () => {
   await bersihkanDb();
   await imporSeed();
-  admin = await buatSuperAdmin();
-  pj = await siapkanPj(admin);
+  admin = await buatAdmin();
+  await siapkanFakultas(admin);
   // revisi 19 Okt 2026: tidak ada PJ per prodi; pembatasan akses diuji dengan akun admin
-  pjLain = admin;
-  const prodi = await simpanProdi(pj, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} });
-  proyekId = (await buatProyek(pj, { prodiId: prodi.id, nama: "LED Uji", tahunPengajuan: 2026 })).id;
+  // revisi 31 Okt 2026: "pengguna lain" = Tim Prodi prodi lain (Admin UPPS kini boleh membaca semua LED)
+  ({ tim: pjLain } = await siapkanProdi(admin, { nama: "Teknik Lain", jenjang: "S1", kodePddikti: "22222", identitas: {} }));
+  ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} }));
+  proyekId = (await buatProyek(pj, { nama: "LED Uji", tahunPengajuan: 2026 })).id;
 });
 after(() => prisma.$disconnect());
 
@@ -188,7 +188,7 @@ test("F-12 gambar disimpan utuh dan siap disisipkan ke narasi beserta judulnya",
   const simpul = simpulGambar(dokumen);
   assert.equal(simpul.type, "image");
   assert.equal(simpul.attrs.title, "Struktur organisasi UPPS");
-  assert.equal(simpul.attrs.src, `/api/dokumen/${g.id}/berkas`);
+  assert.equal(simpul.attrs.src, `/api/led/dokumen/${g.id}/berkas`);
   await assert.rejects(berkasDokumen(pjLain, g.id), GalatAkses);
 });
 
@@ -202,17 +202,18 @@ test("F-11 tanpa kunci API dokumen menunggu kunci; kunci baru disimpan terenkrip
     assert.match(x.pesan ?? "", /kunci API/i);
 
     const kunciAsli = "AIzaSyUJI_KUNCI_PALSU_1234567890abcd";
-    const k = await tambahKunci(pj, { label: "Kunci uji", kunci: kunciAsli });
+    const k = await tambahKunci(admin, { label: "Kunci uji", kunci: kunciAsli });
     assert.equal(k.akhiran, "abcd");
     assert.ok(k.diantre >= 1);
     x = await prisma.dokumen.findUniqueOrThrow({ where: { id: d.id } });
     assert.equal(x.status, "diunggah");
     const tersimpan = await prisma.kunciAPI.findUniqueOrThrow({ where: { id: k.id } });
     assert.ok(!tersimpan.kunciTerenkripsi.includes(kunciAsli), "kunci tidak tersimpan sebagai teks biasa");
-    const daftar = await daftarKunci(pj);
+    const daftar = await daftarKunci(admin);
     assert.equal(daftar.length, 1);
+    await assert.rejects(daftarKunci(pj), GalatAkses, "Tim Prodi hanya melihat status kunci");
     assert.ok(!JSON.stringify(daftar).includes(kunciAsli), "daftar kunci tidak memuat isi kunci");
-    assert.equal((await daftarKunci(pjLain)).length, 0, "kunci fakultas tidak tampil di daftar kunci cadangan admin");
+    assert.equal((await daftarKunci(admin, "cadangan")).length, 0, "kunci utama fakultas tidak tampil di daftar kunci cadangan");
   } finally {
     process.env.EMBEDDING_PENYEDIA = "uji";
   }
