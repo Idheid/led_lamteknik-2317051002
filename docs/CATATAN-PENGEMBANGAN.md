@@ -2516,3 +2516,35 @@ bagian, 1 perbaikan, 1 periksa ulang).
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 210/210 lulus |
 | `npm run test:integrasi` | 130/130 lulus |
+
+### T10: rumus butir angka semua jenjang (R1 selesai, ⏸ sebelum implementasi)
+
+- **R1, inventaris** (`docs/rumus/RUMUS-<JENJANG>.md`, 9 jenjang): dibuat oleh `scripts/bandingkan-matriks.ts` dari
+  10 PDF Matriks Penilaian LED dan LKPS 2025 (Pasca Terakreditasi Pertama dan Unggul). Baris butir disusun dari posisi
+  teks PDF (`susunMatriks`, tanpa AI, `scripts/baca-matriks.ts` untuk teks utuh), dicocokkan ke butir Sarjana dengan
+  indikator paling mirip (Jaccard kata), dan deskriptor skor 4–0 dibandingkan setelah dinormalkan. Deskriptor disalin
+  apa adanya dengan nomor halaman; tidak ada ambang yang ditebak.
+
+  | Jenjang | Butir berpadanan | Deskriptor sama persis | Padanan lemah (< 0,6) | Berangka tanpa padanan | Butir Sarjana tanpa padanan | Sel kosong di teks PDF |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | D3 | 25 | 0 | 41 | 17, 26, 27, 28, 34 | 19, 23, 35, 36, 41, 47 | 68 |
+  | Sarjana Terapan (D4) | 32 | 1 | 47 | 17, 29, 30, 31, 37 | – | 81 |
+  | Magister (S2) | 26 | 2 | 22, 25 | 15, 27 | 18, 19, 27, 40, 49, 51 | 55 |
+  | Profesi Insinyur (PPI) | 22 | 0 | 9, 11, 21, 25, 28–31, 34, 39, 40 | 17, 24, 26, 32, 41 | 19, 28, 35, 36, 37, 41, 43, 46, 47 | 55 |
+  | D1 | 26 | 0 | 34, 41 | 17, 26, 27, 28 | 19, 23, 35, 41, 47 | 66 |
+  | D2 | 25 | 0 | 41 | 17, 26, 27, 28, 34 | 19, 23, 35, 36, 41, 47 | 64 |
+  | Magister Terapan | 25 | 1 | 22, 43, 45 | 15, 27, 28, 34, 37, 46 | 18, 19, 27, 37, 40, 45, 49, 51 | 69 |
+  | Doktor (S3) | 24 | 0 | 22, 32, 35 | 15 | 18, 19, 27, 35, 40, 49–52 | 47 |
+  | Doktor Terapan | 25 | 1 | 22, 43 | 15, 27, 34 | 18, 19, 27, 40, 49–52 | 62 |
+
+  Temuan: hampir semua butir berbeda deskriptornya dari Sarjana, tidak hanya ambang tetapi juga bentuk rumus
+  (contoh D3 butir 23: NDTPS ≥ 9 dan faktor A berbeda; butir 25: skor = 2 + 4 × PGBLKL, Sarjana 2 + 20 × PGBLKL / 7)
+  dan tabel LKPS (D3 publikasi memakai 4.e, luaran mahasiswa 6.e.4). "Sel kosong di teks PDF" terjadi karena satu
+  deskriptor sering membentang beberapa kolom skor (mis. kolom 3 memuat aturan skor 3 dan 2), jadi pembagian per kolom
+  harus dibaca dari PDF.
+- **R2, persiapan:** snapshot regresi Sarjana dibuat sebelum refaktor (`scripts/snapshot-rumus-sarjana.ts` →
+  `tests/fikstur/rumus/regresi-sarjana.json`, 33 butir × TS 2024 dan 2025) dan dijaga `tests/unit/regresi-rumus-sarjana.test.ts`.
+- **⏸ Berhenti di sini sesuai rencana** ("Setelah R1 setiap jenjang, tunjukkan ringkasan dan tunggu lanjut sebelum
+  implementasi"). Ini titik keputusan nyata: (1) padanan lemah dan sel kosong perlu dicek ke PDF, (2) butir berangka
+  tanpa padanan perlu diputuskan: dihitung otomatis (data ada di LKPS) atau manual dengan alasan, (3) karena bentuk rumus
+  berbeda, R2 akan memisahkan fungsi metrik bersama dari fungsi skor per jenjang (bukan sekadar tabel ambang).

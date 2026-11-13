@@ -1,0 +1,2675 @@
+[
+ {
+  "tsTahunMulai": 2024,
+  "butir": [
+   {
+    "butir": "6-I",
+    "judul": "Relevansi kerja sama",
+    "tabel": [
+     "2.a",
+     "4.a"
+    ],
+    "utama": "M-RK",
+    "metrik": [
+     {
+      "kode": "M-N1",
+      "nama": "Jumlah kerja sama pendidikan (sah)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-N2",
+      "nama": "Jumlah kerja sama penelitian (sah)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-N3",
+      "nama": "Jumlah kerja sama PkM (sah)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDTPS",
+      "nama": "Jumlah DTPS",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RK",
+      "nama": "Rasio kerja sama per DTPS",
+      "nilai": 0.75,
+      "satuan": "rasio",
+      "rumus": "RK = (N1 + N2 + N3) / NDTPS"
+     }
+    ],
+    "skor": 0.75,
+    "catatan": [
+     "Kerja sama dihitung sah bila masa berlakunya beririsan dengan 4 tahun sampai akhir TS dan bukti terisi (rumus template)."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "6-II",
+    "judul": "Kerja sama tingkat internasional, nasional, wilayah",
+    "tabel": [
+     "2.a"
+    ],
+    "utama": "M-NI",
+    "metrik": [
+     {
+      "kode": "M-NI",
+      "nama": "Kerja sama tingkat internasional",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NN",
+      "nama": "Kerja sama tingkat nasional",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NW",
+      "nama": "Kerja sama tingkat wilayah/lokal",
+      "nilai": 3,
+      "satuan": "angka"
+     }
+    ],
+    "skor": 3.75,
+    "catatan": [
+     "Faktor a = 2, b = 6, c = 8."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "9",
+    "judul": "Biaya operasional pendidikan",
+    "tabel": [
+     "2.b",
+     "6.a"
+    ],
+    "utama": "M-BOP",
+    "metrik": [
+     {
+      "kode": "M-BOP_TS2",
+      "nama": "Dana operasional pendidikan per mahasiswa TS-2",
+      "nilai": 5000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-BOP_TS1",
+      "nama": "Dana operasional pendidikan per mahasiswa TS-1",
+      "nilai": 5000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-BOP_TS",
+      "nama": "Dana operasional pendidikan per mahasiswa TS",
+      "nilai": 5000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-BOP",
+      "nama": "Rata-rata dana operasional pendidikan per mahasiswa per tahun",
+      "nilai": 5000000,
+      "satuan": "rupiah",
+      "rumus": "BOP = rata-rata (jumlah biaya operasional pendidikan a–f kolom Program Studi / jumlah mahasiswa aktif) TS-2 s.d. TS"
+     }
+    ],
+    "skor": 1,
+    "catatan": [
+     "Asumsi: memakai kolom Program Studi Tabel 2.b baris 1.a–1.f (tanpa biaya kemahasiswaan) dibagi mahasiswa aktif Tabel 6.a tahun yang sama."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "10",
+    "judul": "Dana penelitian DTPS",
+    "tabel": [
+     "2.b",
+     "4.a"
+    ],
+    "utama": "M-DPD",
+    "metrik": [
+     {
+      "kode": "M-DANA_PENELITIAN",
+      "nama": "Rata-rata dana penelitian program studi per tahun",
+      "nilai": 150000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-DPD",
+      "nama": "Rata-rata dana penelitian per DTPS per tahun",
+      "nilai": 12500000,
+      "satuan": "rupiah",
+      "rumus": "DPD = rata-rata dana penelitian per tahun / NDTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Asumsi: rata-rata per tahun dibagi NDTPS (matriks menulis \"dana penelitian DTPS/tahun\")."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "11",
+    "judul": "Dana PkM DTPS",
+    "tabel": [
+     "2.b",
+     "4.a"
+    ],
+    "utama": "M-DPkMD",
+    "metrik": [
+     {
+      "kode": "M-DANA_PKM",
+      "nama": "Rata-rata dana PkM program studi per tahun",
+      "nilai": 36000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-DPkMD",
+      "nama": "Rata-rata dana PkM per DTPS per tahun",
+      "nilai": 3000000,
+      "satuan": "rupiah",
+      "rumus": "DPkMD = rata-rata dana PkM per tahun / NDTPS"
+     }
+    ],
+    "skor": 2.4,
+    "catatan": [
+     "Asumsi: rata-rata per tahun dibagi NDTPS."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "18",
+    "judul": "Pembelajaran praktikum, praktik, praktik lapangan",
+    "tabel": [
+     "3.a.1"
+    ],
+    "utama": "M-PJP",
+    "metrik": [
+     {
+      "kode": "M-SKS_KULIAH",
+      "nama": "Jumlah sks kuliah/responsi/tutorial",
+      "nilai": 100,
+      "satuan": "sks"
+     },
+     {
+      "kode": "M-SKS_SEMINAR",
+      "nama": "Jumlah sks seminar",
+      "nilai": 4,
+      "satuan": "sks"
+     },
+     {
+      "kode": "M-SKS_PRAKTIK",
+      "nama": "Jumlah sks praktikum/praktik/praktik lapangan",
+      "nilai": 40,
+      "satuan": "sks"
+     },
+     {
+      "kode": "M-JP",
+      "nama": "Jam pembelajaran praktik",
+      "nilai": 2000,
+      "satuan": "angka",
+      "rumus": "JP = sks praktik × 50"
+     },
+     {
+      "kode": "M-JB",
+      "nama": "Jam pembelajaran total",
+      "nilai": 7200,
+      "satuan": "angka",
+      "rumus": "JB = (sks kuliah + seminar + praktik) × 50"
+     },
+     {
+      "kode": "M-PJP",
+      "nama": "Persentase jam praktik",
+      "nilai": 0.2777777777777778,
+      "satuan": "persen",
+      "rumus": "PJP = JP / JB × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "19",
+    "judul": "Mata kuliah basic sciences dan matematika",
+    "tabel": [
+     "3.a.4"
+    ],
+    "utama": "M-SKS_BASIC",
+    "metrik": [
+     {
+      "kode": "M-SKS_BASIC",
+      "nama": "Jumlah sks basic sciences dan matematika",
+      "nilai": 26,
+      "satuan": "sks"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "23",
+    "judul": "Penelitian DTPS yang melibatkan mahasiswa",
+    "tabel": [
+     "6.h.1",
+     "3.b"
+    ],
+    "utama": "M-PPDMhs",
+    "metrik": [
+     {
+      "kode": "M-NPMhs",
+      "nama": "Judul penelitian DTPS yang melibatkan mahasiswa",
+      "nilai": 7,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NPD",
+      "nama": "Judul penelitian DTPS 3 tahun terakhir",
+      "nilai": 38,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PPDMhs",
+      "nama": "Persentase penelitian yang melibatkan mahasiswa",
+      "nilai": 0.18421052631578946,
+      "satuan": "persen",
+      "rumus": "PPDMhs = NPMhs / NPD × 100%"
+     }
+    ],
+    "skor": 2.1052631578947367,
+    "catatan": [
+     "NPD diambil dari jumlah judul Tabel 3.b; judul di 6.h.1 dihitung sekali walau melibatkan beberapa mahasiswa."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "25",
+    "judul": "PkM DTPS yang melibatkan mahasiswa",
+    "tabel": [
+     "6.i",
+     "3.c"
+    ],
+    "utama": "M-PKDMhs",
+    "metrik": [
+     {
+      "kode": "M-NPKMhs",
+      "nama": "Judul PkM DTPS yang melibatkan mahasiswa",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NPKD",
+      "nama": "Judul PkM DTPS 3 tahun terakhir",
+      "nilai": 33,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PKDMhs",
+      "nama": "Persentase PkM yang melibatkan mahasiswa",
+      "nilai": 0.15151515151515152,
+      "satuan": "persen",
+      "rumus": "PKDMhs = NPKMhs / NPKD × 100%"
+     }
+    ],
+    "skor": 1.9090909090909092,
+    "catatan": [
+     "NPKD diambil dari jumlah judul Tabel 3.c."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "26",
+    "judul": "Kecukupan jumlah DTPS",
+    "tabel": [
+     "4.a"
+    ],
+    "utama": "M-NDTPS",
+    "metrik": [
+     {
+      "kode": "M-NDTPS",
+      "nama": "Jumlah DTPS",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDT",
+      "nama": "Jumlah dosen tetap",
+      "nilai": 13,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDTT",
+      "nama": "Jumlah dosen tidak tetap",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PDTT",
+      "nama": "Persentase dosen tidak tetap",
+      "nilai": 0.13333333333333333,
+      "satuan": "persen",
+      "rumus": "PDTT = NDTT / (NDT + NDTT) × 100%"
+     }
+    ],
+    "skor": 3.777777777777778,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "27",
+    "judul": "Kualifikasi akademik DTPS",
+    "tabel": [
+     "4.a"
+    ],
+    "utama": "M-PDS3",
+    "metrik": [
+     {
+      "kode": "M-NDS3",
+      "nama": "Jumlah DTPS berpendidikan doktor",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDTPS",
+      "nama": "Jumlah DTPS",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PDS3",
+      "nama": "Persentase DTPS doktor",
+      "nilai": 0.4166666666666667,
+      "satuan": "persen",
+      "rumus": "PDS3 = NDS3 / NDTPS × 100%"
+     }
+    ],
+    "skor": 3.666666666666667,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "28",
+    "judul": "Jabatan akademik DTPS",
+    "tabel": [
+     "4.a"
+    ],
+    "utama": "M-PGBLKL",
+    "metrik": [
+     {
+      "kode": "M-NDGB",
+      "nama": "DTPS Guru Besar",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDLK",
+      "nama": "DTPS Lektor Kepala",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDL",
+      "nama": "DTPS Lektor",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PGBLKL",
+      "nama": "Persentase DTPS Guru Besar, Lektor Kepala, Lektor",
+      "nilai": 0.75,
+      "satuan": "persen",
+      "rumus": "PGBLKL = (NDGB + NDLK + NDL) / NDTPS × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "30",
+    "judul": "Rerata beban kerja DTPS",
+    "tabel": [
+     "4.c"
+    ],
+    "utama": "M-RBK",
+    "metrik": [
+     {
+      "kode": "M-RBK",
+      "nama": "Rerata beban kerja DTPS per semester",
+      "nilai": 15.333333333333334,
+      "satuan": "sks",
+      "rumus": "RBK = rata-rata (jumlah BK per tahun / 2) DTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "31",
+    "judul": "Kegiatan Penelitian DTPS",
+    "tabel": [
+     "3.b",
+     "4.a"
+    ],
+    "utama": "M-31-RI",
+    "metrik": [
+     {
+      "kode": "M-31_NI",
+      "nama": "Judul Penelitian DTPS sumber dana luar negeri",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-31_NN",
+      "nama": "Judul Penelitian DTPS sumber dana dalam negeri",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-31_NW",
+      "nama": "Judul Penelitian DTPS sumber dana PT/mandiri",
+      "nilai": 24,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-31-RI",
+      "nama": "Rasio sumber luar negeri per DTPS per tahun",
+      "nilai": 0.05555555555555555,
+      "satuan": "rasio",
+      "rumus": "RI = NI / 3 / NDTPS"
+     },
+     {
+      "kode": "M-31-RN",
+      "nama": "Rasio sumber dalam negeri per DTPS per tahun",
+      "nilai": 0.3333333333333333,
+      "satuan": "rasio",
+      "rumus": "RN = NN / 3 / NDTPS"
+     },
+     {
+      "kode": "M-31-RW",
+      "nama": "Rasio sumber PT/mandiri per DTPS per tahun",
+      "nilai": 0.6666666666666666,
+      "satuan": "rasio",
+      "rumus": "RW = NW / 3 / NDTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Faktor a = 0,05; b = 0,3; c = 1."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "32",
+    "judul": "Kegiatan PkM DTPS",
+    "tabel": [
+     "3.c",
+     "4.a"
+    ],
+    "utama": "M-32-RI",
+    "metrik": [
+     {
+      "kode": "M-32_NI",
+      "nama": "Judul PkM DTPS sumber dana luar negeri",
+      "nilai": 0,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-32_NN",
+      "nama": "Judul PkM DTPS sumber dana dalam negeri",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-32_NW",
+      "nama": "Judul PkM DTPS sumber dana PT/mandiri",
+      "nilai": 27,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-32-RI",
+      "nama": "Rasio sumber luar negeri per DTPS per tahun",
+      "nilai": 0,
+      "satuan": "rasio",
+      "rumus": "RI = NI / 3 / NDTPS"
+     },
+     {
+      "kode": "M-32-RN",
+      "nama": "Rasio sumber dalam negeri per DTPS per tahun",
+      "nilai": 0.16666666666666666,
+      "satuan": "rasio",
+      "rumus": "RN = NN / 3 / NDTPS"
+     },
+     {
+      "kode": "M-32-RW",
+      "nama": "Rasio sumber PT/mandiri per DTPS per tahun",
+      "nilai": 0.75,
+      "satuan": "rasio",
+      "rumus": "RW = NW / 3 / NDTPS"
+     }
+    ],
+    "skor": 2.7083333333333335,
+    "catatan": [
+     "Faktor a = 0,05; b = 0,3; c = 1."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "33",
+    "judul": "Publikasi ilmiah DTPS",
+    "tabel": [
+     "4.d",
+     "4.a"
+    ],
+    "utama": "M-33-RI",
+    "metrik": [
+     {
+      "kode": "M-NA1",
+      "nama": "Publikasi NA1",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NA2",
+      "nama": "Publikasi NA2",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NA3",
+      "nama": "Publikasi NA3",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NA4",
+      "nama": "Publikasi NA4",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NB1",
+      "nama": "Publikasi NB1",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NB2",
+      "nama": "Publikasi NB2",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NB3",
+      "nama": "Publikasi NB3",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-33-RI",
+      "nama": "Rasio publikasi internasional bereputasi per DTPS",
+      "nilai": 1,
+      "satuan": "rasio",
+      "rumus": "RI = (NA4 + NB3) / NDTPS"
+     },
+     {
+      "kode": "M-33-RN",
+      "nama": "Rasio publikasi nasional terakreditasi/internasional per DTPS",
+      "nilai": 1.5,
+      "satuan": "rasio",
+      "rumus": "RN = (NA2 + NA3 + NB2) / NDTPS"
+     },
+     {
+      "kode": "M-33-RW",
+      "nama": "Rasio publikasi nasional/wilayah per DTPS",
+      "nilai": 1,
+      "satuan": "rasio",
+      "rumus": "RW = (NA1 + NB1) / NDTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Faktor a = 0,5; b = 1; c = 2."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "34",
+    "judul": "Luaran penelitian dan PkM DTPS",
+    "tabel": [
+     "4.f",
+     "4.a"
+    ],
+    "utama": "M-RLP",
+    "metrik": [
+     {
+      "kode": "M-NPaten",
+      "nama": "Paten dan paten sederhana",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NHKI",
+      "nama": "HKI (hak cipta, desain, dll.)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NTTG",
+      "nama": "Teknologi tepat guna dan produk",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NBC",
+      "nama": "Buku ber-ISBN dan book chapter",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RLP",
+      "nama": "Rasio luaran per DTPS",
+      "nilai": 1,
+      "satuan": "rasio",
+      "rumus": "RLP = (3 × NPaten + 2 × (NTTG + NBC) + NHKI) / NDTPS"
+     }
+    ],
+    "skor": 2.6666666666666665,
+    "catatan": [
+     "4 luaran bertanggal di luar 3 tahun terakhir tidak dihitung."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "35",
+    "judul": "DTPS penulis pertama/korespondensi karya bereputasi",
+    "tabel": [
+     "4.h",
+     "4.a"
+    ],
+    "utama": "M-PKDTPS",
+    "metrik": [
+     {
+      "kode": "M-NKDTPS",
+      "nama": "DTPS dengan karya ilmiah bereputasi sebagai penulis pertama/korespondensi",
+      "nilai": 7,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PKDTPS",
+      "nama": "Persentase DTPS penulis pertama/korespondensi",
+      "nilai": 0.5833333333333334,
+      "satuan": "persen",
+      "rumus": "PKDTPS = NKDTPS / NDTPS × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "36",
+    "judul": "Karya ilmiah bereputasi DTPS yang disitasi",
+    "tabel": [
+     "4.i",
+     "4.a"
+    ],
+    "utama": "M-PKIB",
+    "metrik": [
+     {
+      "kode": "M-KIB",
+      "nama": "Karya ilmiah bereputasi yang disitasi",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PKIB",
+      "nama": "Persentase karya ilmiah bereputasi disitasi per DTPS",
+      "nilai": 0.3333333333333333,
+      "satuan": "persen",
+      "rumus": "PKIB = KIB / NDTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "37",
+    "judul": "DTPS dengan pengakuan/rekognisi",
+    "tabel": [
+     "4.j",
+     "4.a"
+    ],
+    "utama": "M-PRDTPS",
+    "metrik": [
+     {
+      "kode": "M-NRDTPS",
+      "nama": "DTPS yang memiliki rekognisi 3 tahun terakhir",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PRDTPS",
+      "nama": "Persentase DTPS dengan rekognisi",
+      "nilai": 0.3333333333333333,
+      "satuan": "persen",
+      "rumus": "PRDTPS = NRDTPS / NDTPS"
+     }
+    ],
+    "skor": 3.333333333333333,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "40",
+    "judul": "Rasio mahasiswa terhadap DTPS",
+    "tabel": [
+     "6.a",
+     "4.a"
+    ],
+    "utama": "M-RMD",
+    "metrik": [
+     {
+      "kode": "M-NM",
+      "nama": "Jumlah mahasiswa saat TS",
+      "nilai": 350,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDTPS",
+      "nama": "Jumlah DTPS",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RMD",
+      "nama": "Rasio mahasiswa per DTPS",
+      "nilai": 29.166666666666668,
+      "satuan": "rasio",
+      "rumus": "RMD = NM / NDTPS"
+     }
+    ],
+    "skor": 2.75,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "41",
+    "judul": "Persentase mahasiswa asing",
+    "tabel": [
+     "6.a"
+    ],
+    "utama": "M-PMA",
+    "metrik": [
+     {
+      "kode": "M-NMA",
+      "nama": "Mahasiswa asing saat TS (penuh dan paruh waktu)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PMA",
+      "nama": "Persentase mahasiswa asing",
+      "nilai": 0.008571428571428572,
+      "satuan": "persen",
+      "rumus": "PMA = NMA / NM × 100%"
+     }
+    ],
+    "skor": 3.7142857142857144,
+    "catatan": [
+     "Asumsi: mahasiswa asing penuh waktu dan paruh waktu saat TS pada baris prodi yang diakreditasi."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "42",
+    "judul": "Rata-rata IPK lulusan",
+    "tabel": [
+     "6.b"
+    ],
+    "utama": "M-RIPK",
+    "metrik": [
+     {
+      "kode": "M-NL_IPK",
+      "nama": "Jumlah lulusan TS-2 s.d. TS",
+      "nilai": 270,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RIPK",
+      "nama": "Rata-rata IPK lulusan 3 tahun terakhir",
+      "nilai": 3.3537037037037036,
+      "satuan": "angka",
+      "rumus": "RIPK = Σ(jumlah lulusan × rata-rata IPK) / Σ jumlah lulusan"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Rata-rata tertimbang jumlah lulusan per tahun."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "43-I",
+    "judul": "Prestasi akademik mahasiswa",
+    "tabel": [
+     "6.c.1",
+     "6.a"
+    ],
+    "utama": "M-43-I_RI",
+    "metrik": [
+     {
+      "kode": "M-43-I_NI",
+      "nama": "Prestasi akademik mahasiswa tingkat internasional",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-I_NN",
+      "nama": "Prestasi akademik mahasiswa tingkat nasional",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-I_NW",
+      "nama": "Prestasi akademik mahasiswa tingkat wilayah/lokal",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-I_RI",
+      "nama": "Rasio internasional per mahasiswa",
+      "nilai": 0.002857142857142857,
+      "satuan": "persen",
+      "rumus": "RI = NI / NM"
+     },
+     {
+      "kode": "M-43-I_RN",
+      "nama": "Rasio nasional per mahasiswa",
+      "nilai": 0.011428571428571429,
+      "satuan": "persen",
+      "rumus": "RN = NN / NM"
+     },
+     {
+      "kode": "M-43-I_RW",
+      "nama": "Rasio wilayah per mahasiswa",
+      "nilai": 0.011428571428571429,
+      "satuan": "persen",
+      "rumus": "RW = NW / NM"
+     }
+    ],
+    "skor": 3.75,
+    "catatan": [
+     "Faktor a = 0,2%; b = 2%; c = 4%.",
+     "2 prestasi di luar 5 tahun terakhir tidak dihitung."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "43-II",
+    "judul": "Prestasi nonakademik mahasiswa",
+    "tabel": [
+     "6.c.2",
+     "6.a"
+    ],
+    "utama": "M-43-II_RI",
+    "metrik": [
+     {
+      "kode": "M-43-II_NI",
+      "nama": "Prestasi nonakademik mahasiswa tingkat internasional",
+      "nilai": 0,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-II_NN",
+      "nama": "Prestasi nonakademik mahasiswa tingkat nasional",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-II_NW",
+      "nama": "Prestasi nonakademik mahasiswa tingkat wilayah/lokal",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-II_RI",
+      "nama": "Rasio internasional per mahasiswa",
+      "nilai": 0,
+      "satuan": "persen",
+      "rumus": "RI = NI / NM"
+     },
+     {
+      "kode": "M-43-II_RN",
+      "nama": "Rasio nasional per mahasiswa",
+      "nilai": 0.008571428571428572,
+      "satuan": "persen",
+      "rumus": "RN = NN / NM"
+     },
+     {
+      "kode": "M-43-II_RW",
+      "nama": "Rasio wilayah per mahasiswa",
+      "nilai": 0.014285714285714285,
+      "satuan": "persen",
+      "rumus": "RW = NW / NM"
+     }
+    ],
+    "skor": 1.989795918367347,
+    "catatan": [
+     "Faktor a = 0,2%; b = 2%; c = 4%.",
+     "1 prestasi di luar 5 tahun terakhir tidak dihitung."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "44",
+    "judul": "Rata-rata masa studi lulusan",
+    "tabel": [
+     "6.d"
+    ],
+    "utama": "M-MS",
+    "metrik": [
+     {
+      "kode": "M-NLULUS_6D",
+      "nama": "Jumlah lulusan pada Tabel 6.d",
+      "nilai": 200,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MS",
+      "nama": "Rata-rata masa studi lulusan",
+      "nilai": 4.63125,
+      "satuan": "tahun",
+      "rumus": "MS = Σ(lulusan × titik tengah masa studi) / Σ lulusan"
+     }
+    ],
+    "skor": 3.8875,
+    "catatan": [
+     "Asumsi: masa studi tiap lulusan didekati titik tengah kelompok 6.d (4; 5; 6; 7,25 tahun)."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "45",
+    "judul": "Persentase kelulusan tepat waktu",
+    "tabel": [
+     "6.d"
+    ],
+    "utama": "M-PTW",
+    "metrik": [
+     {
+      "kode": "M-MASUK_TS3",
+      "nama": "Mahasiswa masuk TS-3 (a)",
+      "nilai": 100,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-LULUS_TW",
+      "nama": "Lulus 3,5 < MS ≤ 4,5 dari angkatan TS-3 (b)",
+      "nilai": 55,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PTW",
+      "nama": "Persentase kelulusan tepat waktu",
+      "nilai": 0.55,
+      "satuan": "persen",
+      "rumus": "PTW = b / a × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "46",
+    "judul": "Publikasi ilmiah mahasiswa",
+    "tabel": [
+     "6.e.1",
+     "6.a"
+    ],
+    "utama": "M-46-RI",
+    "metrik": [
+     {
+      "kode": "M-MHS_NA1",
+      "nama": "Publikasi mahasiswa NA1",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NA2",
+      "nama": "Publikasi mahasiswa NA2",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NA3",
+      "nama": "Publikasi mahasiswa NA3",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NA4",
+      "nama": "Publikasi mahasiswa NA4",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NB1",
+      "nama": "Publikasi mahasiswa NB1",
+      "nilai": 10,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NB2",
+      "nama": "Publikasi mahasiswa NB2",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NB3",
+      "nama": "Publikasi mahasiswa NB3",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-46-RI",
+      "nama": "Rasio publikasi internasional bereputasi per mahasiswa",
+      "nilai": 0.008571428571428572,
+      "satuan": "rasio",
+      "rumus": "RI = (NA4 + NB3) / NM"
+     },
+     {
+      "kode": "M-46-RN",
+      "nama": "Rasio publikasi nasional terakreditasi/internasional per mahasiswa",
+      "nilai": 0.017142857142857144,
+      "satuan": "rasio",
+      "rumus": "RN = (NA2 + NA3 + NB2) / NM"
+     },
+     {
+      "kode": "M-46-RW",
+      "nama": "Rasio publikasi nasional/wilayah per mahasiswa",
+      "nilai": 0.045714285714285714,
+      "satuan": "rasio",
+      "rumus": "RW = (NA1 + NB1) / NM"
+     }
+    ],
+    "skor": 3.326413994169097,
+    "catatan": [
+     "Faktor a = 0,01; b = 0,1; c = 0,5."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "47",
+    "judul": "Luaran penelitian dan PkM mahasiswa",
+    "tabel": [
+     "6.e.3"
+    ],
+    "utama": "M-NLP",
+    "metrik": [
+     {
+      "kode": "M-MHS_NPaten",
+      "nama": "Paten mahasiswa",
+      "nilai": 0,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NHKI",
+      "nama": "HKI mahasiswa",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NTTG",
+      "nama": "TTG/produk mahasiswa",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NBC",
+      "nama": "Buku/book chapter mahasiswa",
+      "nilai": 0,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NLP",
+      "nama": "Skor luaran mahasiswa",
+      "nilai": 4,
+      "satuan": "angka",
+      "rumus": "NLP = 3 × NPaten + 2 × (NTTG + NBC) + NHKI"
+     }
+    ],
+    "skor": 2.8,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "49",
+    "judul": "Waktu tunggu lulusan",
+    "tabel": [
+     "6.f.1"
+    ],
+    "utama": "M-WT",
+    "metrik": [
+     {
+      "kode": "M-RESPONDEN_WT",
+      "nama": "Persentase lulusan terlacak",
+      "nilai": 0.5,
+      "satuan": "persen"
+     },
+     {
+      "kode": "M-WT_KURANG3",
+      "nama": "Lulusan dengan WT < 3 bulan",
+      "nilai": 55,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-WT_3_18",
+      "nama": "Lulusan dengan 3 ≤ WT ≤ 18 bulan",
+      "nilai": 25,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-WT_LEBIH18",
+      "nama": "Lulusan dengan WT > 18 bulan",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-WT",
+      "nama": "Perkiraan rata-rata waktu tunggu",
+      "nilai": 5.117647058823529,
+      "satuan": "bulan"
+     }
+    ],
+    "skor": 3.5764705882352943,
+    "catatan": [
+     "Asumsi: WT didekati titik tengah kelompok (1,5; 10,5 bulan) dan 18 bulan untuk WT > 18 bulan."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "50",
+    "judul": "Kesesuaian bidang kerja lulusan",
+    "tabel": [
+     "6.f.2"
+    ],
+    "utama": "M-KBK",
+    "metrik": [
+     {
+      "kode": "M-RESPONDEN_KBK",
+      "nama": "Persentase lulusan terlacak",
+      "nilai": 0.5,
+      "satuan": "persen"
+     },
+     {
+      "kode": "M-KBK",
+      "nama": "Kesesuaian bidang kerja",
+      "nilai": 0.8941176470588236,
+      "satuan": "persen",
+      "rumus": "KBK = (sedang + tinggi) / (rendah + sedang + tinggi) × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Asumsi: KBK = lulusan dengan kesesuaian sedang dan tinggi dibagi lulusan terlacak yang dinilai."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "51",
+    "judul": "Tempat kerja lulusan",
+    "tabel": [
+     "6.g.1"
+    ],
+    "utama": "M-51-RI",
+    "metrik": [
+     {
+      "kode": "M-NL",
+      "nama": "Jumlah lulusan TS-2 s.d. TS-1",
+      "nilai": 170,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RESPONDEN_TK",
+      "nama": "Persentase lulusan terlacak",
+      "nilai": 0.5,
+      "satuan": "persen"
+     },
+     {
+      "kode": "M-51-RI",
+      "nama": "Persentase lulusan bekerja tingkat multinasional/internasional",
+      "nilai": 0.058823529411764705,
+      "satuan": "persen",
+      "rumus": "RI = NI / NL × 100%"
+     },
+     {
+      "kode": "M-51-RN",
+      "nama": "Persentase lulusan bekerja tingkat nasional/wirausaha berizin",
+      "nilai": 0.21176470588235294,
+      "satuan": "persen",
+      "rumus": "RN = NN / NL × 100%"
+     },
+     {
+      "kode": "M-51-RW",
+      "nama": "Persentase lulusan bekerja tingkat wilayah/lokal",
+      "nilai": 0.22941176470588234,
+      "satuan": "persen",
+      "rumus": "RW = NW / NL × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Faktor a = 5%, b = 20%, c = 90%."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "52",
+    "judul": "Kepuasan pengguna lulusan",
+    "tabel": [
+     "6.g.2"
+    ],
+    "utama": "M-TK",
+    "metrik": [
+     {
+      "kode": "M-TK1",
+      "nama": "Tingkat kepuasan: Etika",
+      "nilai": 3.5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK2",
+      "nama": "Tingkat kepuasan: Keahlian pada bidang ilmu (kompetensi utama)",
+      "nilai": 3.4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK3",
+      "nama": "Tingkat kepuasan: Kemampuan berbahasa asing",
+      "nilai": 2.7,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK4",
+      "nama": "Tingkat kepuasan: Penggunaan teknologi informasi",
+      "nilai": 3.4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK5",
+      "nama": "Tingkat kepuasan: Kemampuan berkomunikasi",
+      "nilai": 3.2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK6",
+      "nama": "Tingkat kepuasan: Kerjasama tim",
+      "nilai": 3.5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK7",
+      "nama": "Tingkat kepuasan: Pengembangan diri",
+      "nilai": 3.3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK",
+      "nama": "Rata-rata tingkat kepuasan 7 aspek",
+      "nilai": 3.285714285714286,
+      "satuan": "angka",
+      "rumus": "Skor = ΣTKi / 7; TKi = 4a + 3b + 2c + d (persentase)"
+     }
+    ],
+    "skor": 3.285714285714286,
+    "catatan": [],
+    "lengkap": true
+   }
+  ]
+ },
+ {
+  "tsTahunMulai": 2025,
+  "butir": [
+   {
+    "butir": "6-I",
+    "judul": "Relevansi kerja sama",
+    "tabel": [
+     "2.a",
+     "4.a"
+    ],
+    "utama": "M-RK",
+    "metrik": [
+     {
+      "kode": "M-N1",
+      "nama": "Jumlah kerja sama pendidikan (sah)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-N2",
+      "nama": "Jumlah kerja sama penelitian (sah)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-N3",
+      "nama": "Jumlah kerja sama PkM (sah)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDTPS",
+      "nama": "Jumlah DTPS",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RK",
+      "nama": "Rasio kerja sama per DTPS",
+      "nilai": 0.75,
+      "satuan": "rasio",
+      "rumus": "RK = (N1 + N2 + N3) / NDTPS"
+     }
+    ],
+    "skor": 0.75,
+    "catatan": [
+     "Kerja sama dihitung sah bila masa berlakunya beririsan dengan 4 tahun sampai akhir TS dan bukti terisi (rumus template)."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "6-II",
+    "judul": "Kerja sama tingkat internasional, nasional, wilayah",
+    "tabel": [
+     "2.a"
+    ],
+    "utama": "M-NI",
+    "metrik": [
+     {
+      "kode": "M-NI",
+      "nama": "Kerja sama tingkat internasional",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NN",
+      "nama": "Kerja sama tingkat nasional",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NW",
+      "nama": "Kerja sama tingkat wilayah/lokal",
+      "nilai": 3,
+      "satuan": "angka"
+     }
+    ],
+    "skor": 3.75,
+    "catatan": [
+     "Faktor a = 2, b = 6, c = 8."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "9",
+    "judul": "Biaya operasional pendidikan",
+    "tabel": [
+     "2.b",
+     "6.a"
+    ],
+    "utama": "M-BOP",
+    "metrik": [
+     {
+      "kode": "M-BOP_TS2",
+      "nama": "Dana operasional pendidikan per mahasiswa TS-2",
+      "nilai": 5000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-BOP_TS1",
+      "nama": "Dana operasional pendidikan per mahasiswa TS-1",
+      "nilai": 5000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-BOP_TS",
+      "nama": "Dana operasional pendidikan per mahasiswa TS",
+      "nilai": 5000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-BOP",
+      "nama": "Rata-rata dana operasional pendidikan per mahasiswa per tahun",
+      "nilai": 5000000,
+      "satuan": "rupiah",
+      "rumus": "BOP = rata-rata (jumlah biaya operasional pendidikan a–f kolom Program Studi / jumlah mahasiswa aktif) TS-2 s.d. TS"
+     }
+    ],
+    "skor": 1,
+    "catatan": [
+     "Asumsi: memakai kolom Program Studi Tabel 2.b baris 1.a–1.f (tanpa biaya kemahasiswaan) dibagi mahasiswa aktif Tabel 6.a tahun yang sama."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "10",
+    "judul": "Dana penelitian DTPS",
+    "tabel": [
+     "2.b",
+     "4.a"
+    ],
+    "utama": "M-DPD",
+    "metrik": [
+     {
+      "kode": "M-DANA_PENELITIAN",
+      "nama": "Rata-rata dana penelitian program studi per tahun",
+      "nilai": 150000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-DPD",
+      "nama": "Rata-rata dana penelitian per DTPS per tahun",
+      "nilai": 12500000,
+      "satuan": "rupiah",
+      "rumus": "DPD = rata-rata dana penelitian per tahun / NDTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Asumsi: rata-rata per tahun dibagi NDTPS (matriks menulis \"dana penelitian DTPS/tahun\")."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "11",
+    "judul": "Dana PkM DTPS",
+    "tabel": [
+     "2.b",
+     "4.a"
+    ],
+    "utama": "M-DPkMD",
+    "metrik": [
+     {
+      "kode": "M-DANA_PKM",
+      "nama": "Rata-rata dana PkM program studi per tahun",
+      "nilai": 36000000,
+      "satuan": "rupiah"
+     },
+     {
+      "kode": "M-DPkMD",
+      "nama": "Rata-rata dana PkM per DTPS per tahun",
+      "nilai": 3000000,
+      "satuan": "rupiah",
+      "rumus": "DPkMD = rata-rata dana PkM per tahun / NDTPS"
+     }
+    ],
+    "skor": 2.4,
+    "catatan": [
+     "Asumsi: rata-rata per tahun dibagi NDTPS."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "18",
+    "judul": "Pembelajaran praktikum, praktik, praktik lapangan",
+    "tabel": [
+     "3.a.1"
+    ],
+    "utama": "M-PJP",
+    "metrik": [
+     {
+      "kode": "M-SKS_KULIAH",
+      "nama": "Jumlah sks kuliah/responsi/tutorial",
+      "nilai": 100,
+      "satuan": "sks"
+     },
+     {
+      "kode": "M-SKS_SEMINAR",
+      "nama": "Jumlah sks seminar",
+      "nilai": 4,
+      "satuan": "sks"
+     },
+     {
+      "kode": "M-SKS_PRAKTIK",
+      "nama": "Jumlah sks praktikum/praktik/praktik lapangan",
+      "nilai": 40,
+      "satuan": "sks"
+     },
+     {
+      "kode": "M-JP",
+      "nama": "Jam pembelajaran praktik",
+      "nilai": 2000,
+      "satuan": "angka",
+      "rumus": "JP = sks praktik × 50"
+     },
+     {
+      "kode": "M-JB",
+      "nama": "Jam pembelajaran total",
+      "nilai": 7200,
+      "satuan": "angka",
+      "rumus": "JB = (sks kuliah + seminar + praktik) × 50"
+     },
+     {
+      "kode": "M-PJP",
+      "nama": "Persentase jam praktik",
+      "nilai": 0.2777777777777778,
+      "satuan": "persen",
+      "rumus": "PJP = JP / JB × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "19",
+    "judul": "Mata kuliah basic sciences dan matematika",
+    "tabel": [
+     "3.a.4"
+    ],
+    "utama": "M-SKS_BASIC",
+    "metrik": [
+     {
+      "kode": "M-SKS_BASIC",
+      "nama": "Jumlah sks basic sciences dan matematika",
+      "nilai": 26,
+      "satuan": "sks"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "23",
+    "judul": "Penelitian DTPS yang melibatkan mahasiswa",
+    "tabel": [
+     "6.h.1",
+     "3.b"
+    ],
+    "utama": "M-PPDMhs",
+    "metrik": [
+     {
+      "kode": "M-NPMhs",
+      "nama": "Judul penelitian DTPS yang melibatkan mahasiswa",
+      "nilai": 10,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NPD",
+      "nama": "Judul penelitian DTPS 3 tahun terakhir",
+      "nilai": 38,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PPDMhs",
+      "nama": "Persentase penelitian yang melibatkan mahasiswa",
+      "nilai": 0.2631578947368421,
+      "satuan": "persen",
+      "rumus": "PPDMhs = NPMhs / NPD × 100%"
+     }
+    ],
+    "skor": 2.5789473684210527,
+    "catatan": [
+     "NPD diambil dari jumlah judul Tabel 3.b; judul di 6.h.1 dihitung sekali walau melibatkan beberapa mahasiswa."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "25",
+    "judul": "PkM DTPS yang melibatkan mahasiswa",
+    "tabel": [
+     "6.i",
+     "3.c"
+    ],
+    "utama": "M-PKDMhs",
+    "metrik": [
+     {
+      "kode": "M-NPKMhs",
+      "nama": "Judul PkM DTPS yang melibatkan mahasiswa",
+      "nilai": 8,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NPKD",
+      "nama": "Judul PkM DTPS 3 tahun terakhir",
+      "nilai": 33,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PKDMhs",
+      "nama": "Persentase PkM yang melibatkan mahasiswa",
+      "nilai": 0.24242424242424243,
+      "satuan": "persen",
+      "rumus": "PKDMhs = NPKMhs / NPKD × 100%"
+     }
+    ],
+    "skor": 2.4545454545454546,
+    "catatan": [
+     "NPKD diambil dari jumlah judul Tabel 3.c."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "26",
+    "judul": "Kecukupan jumlah DTPS",
+    "tabel": [
+     "4.a"
+    ],
+    "utama": "M-NDTPS",
+    "metrik": [
+     {
+      "kode": "M-NDTPS",
+      "nama": "Jumlah DTPS",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDT",
+      "nama": "Jumlah dosen tetap",
+      "nilai": 13,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDTT",
+      "nama": "Jumlah dosen tidak tetap",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PDTT",
+      "nama": "Persentase dosen tidak tetap",
+      "nilai": 0.13333333333333333,
+      "satuan": "persen",
+      "rumus": "PDTT = NDTT / (NDT + NDTT) × 100%"
+     }
+    ],
+    "skor": 3.777777777777778,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "27",
+    "judul": "Kualifikasi akademik DTPS",
+    "tabel": [
+     "4.a"
+    ],
+    "utama": "M-PDS3",
+    "metrik": [
+     {
+      "kode": "M-NDS3",
+      "nama": "Jumlah DTPS berpendidikan doktor",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDTPS",
+      "nama": "Jumlah DTPS",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PDS3",
+      "nama": "Persentase DTPS doktor",
+      "nilai": 0.4166666666666667,
+      "satuan": "persen",
+      "rumus": "PDS3 = NDS3 / NDTPS × 100%"
+     }
+    ],
+    "skor": 3.666666666666667,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "28",
+    "judul": "Jabatan akademik DTPS",
+    "tabel": [
+     "4.a"
+    ],
+    "utama": "M-PGBLKL",
+    "metrik": [
+     {
+      "kode": "M-NDGB",
+      "nama": "DTPS Guru Besar",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDLK",
+      "nama": "DTPS Lektor Kepala",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDL",
+      "nama": "DTPS Lektor",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PGBLKL",
+      "nama": "Persentase DTPS Guru Besar, Lektor Kepala, Lektor",
+      "nilai": 0.75,
+      "satuan": "persen",
+      "rumus": "PGBLKL = (NDGB + NDLK + NDL) / NDTPS × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "30",
+    "judul": "Rerata beban kerja DTPS",
+    "tabel": [
+     "4.c"
+    ],
+    "utama": "M-RBK",
+    "metrik": [
+     {
+      "kode": "M-RBK",
+      "nama": "Rerata beban kerja DTPS per semester",
+      "nilai": 15.333333333333334,
+      "satuan": "sks",
+      "rumus": "RBK = rata-rata (jumlah BK per tahun / 2) DTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "31",
+    "judul": "Kegiatan Penelitian DTPS",
+    "tabel": [
+     "3.b",
+     "4.a"
+    ],
+    "utama": "M-31-RI",
+    "metrik": [
+     {
+      "kode": "M-31_NI",
+      "nama": "Judul Penelitian DTPS sumber dana luar negeri",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-31_NN",
+      "nama": "Judul Penelitian DTPS sumber dana dalam negeri",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-31_NW",
+      "nama": "Judul Penelitian DTPS sumber dana PT/mandiri",
+      "nilai": 24,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-31-RI",
+      "nama": "Rasio sumber luar negeri per DTPS per tahun",
+      "nilai": 0.05555555555555555,
+      "satuan": "rasio",
+      "rumus": "RI = NI / 3 / NDTPS"
+     },
+     {
+      "kode": "M-31-RN",
+      "nama": "Rasio sumber dalam negeri per DTPS per tahun",
+      "nilai": 0.3333333333333333,
+      "satuan": "rasio",
+      "rumus": "RN = NN / 3 / NDTPS"
+     },
+     {
+      "kode": "M-31-RW",
+      "nama": "Rasio sumber PT/mandiri per DTPS per tahun",
+      "nilai": 0.6666666666666666,
+      "satuan": "rasio",
+      "rumus": "RW = NW / 3 / NDTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Faktor a = 0,05; b = 0,3; c = 1."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "32",
+    "judul": "Kegiatan PkM DTPS",
+    "tabel": [
+     "3.c",
+     "4.a"
+    ],
+    "utama": "M-32-RI",
+    "metrik": [
+     {
+      "kode": "M-32_NI",
+      "nama": "Judul PkM DTPS sumber dana luar negeri",
+      "nilai": 0,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-32_NN",
+      "nama": "Judul PkM DTPS sumber dana dalam negeri",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-32_NW",
+      "nama": "Judul PkM DTPS sumber dana PT/mandiri",
+      "nilai": 27,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-32-RI",
+      "nama": "Rasio sumber luar negeri per DTPS per tahun",
+      "nilai": 0,
+      "satuan": "rasio",
+      "rumus": "RI = NI / 3 / NDTPS"
+     },
+     {
+      "kode": "M-32-RN",
+      "nama": "Rasio sumber dalam negeri per DTPS per tahun",
+      "nilai": 0.16666666666666666,
+      "satuan": "rasio",
+      "rumus": "RN = NN / 3 / NDTPS"
+     },
+     {
+      "kode": "M-32-RW",
+      "nama": "Rasio sumber PT/mandiri per DTPS per tahun",
+      "nilai": 0.75,
+      "satuan": "rasio",
+      "rumus": "RW = NW / 3 / NDTPS"
+     }
+    ],
+    "skor": 2.7083333333333335,
+    "catatan": [
+     "Faktor a = 0,05; b = 0,3; c = 1."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "33",
+    "judul": "Publikasi ilmiah DTPS",
+    "tabel": [
+     "4.d",
+     "4.a"
+    ],
+    "utama": "M-33-RI",
+    "metrik": [
+     {
+      "kode": "M-NA1",
+      "nama": "Publikasi NA1",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NA2",
+      "nama": "Publikasi NA2",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NA3",
+      "nama": "Publikasi NA3",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NA4",
+      "nama": "Publikasi NA4",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NB1",
+      "nama": "Publikasi NB1",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NB2",
+      "nama": "Publikasi NB2",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NB3",
+      "nama": "Publikasi NB3",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-33-RI",
+      "nama": "Rasio publikasi internasional bereputasi per DTPS",
+      "nilai": 1,
+      "satuan": "rasio",
+      "rumus": "RI = (NA4 + NB3) / NDTPS"
+     },
+     {
+      "kode": "M-33-RN",
+      "nama": "Rasio publikasi nasional terakreditasi/internasional per DTPS",
+      "nilai": 1.5,
+      "satuan": "rasio",
+      "rumus": "RN = (NA2 + NA3 + NB2) / NDTPS"
+     },
+     {
+      "kode": "M-33-RW",
+      "nama": "Rasio publikasi nasional/wilayah per DTPS",
+      "nilai": 1,
+      "satuan": "rasio",
+      "rumus": "RW = (NA1 + NB1) / NDTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Faktor a = 0,5; b = 1; c = 2."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "34",
+    "judul": "Luaran penelitian dan PkM DTPS",
+    "tabel": [
+     "4.f",
+     "4.a"
+    ],
+    "utama": "M-RLP",
+    "metrik": [
+     {
+      "kode": "M-NPaten",
+      "nama": "Paten dan paten sederhana",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NHKI",
+      "nama": "HKI (hak cipta, desain, dll.)",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NTTG",
+      "nama": "Teknologi tepat guna dan produk",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NBC",
+      "nama": "Buku ber-ISBN dan book chapter",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RLP",
+      "nama": "Rasio luaran per DTPS",
+      "nilai": 1.4166666666666667,
+      "satuan": "rasio",
+      "rumus": "RLP = (3 × NPaten + 2 × (NTTG + NBC) + NHKI) / NDTPS"
+     }
+    ],
+    "skor": 2.9444444444444446,
+    "catatan": [
+     "1 luaran bertanggal di luar 3 tahun terakhir tidak dihitung."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "35",
+    "judul": "DTPS penulis pertama/korespondensi karya bereputasi",
+    "tabel": [
+     "4.h",
+     "4.a"
+    ],
+    "utama": "M-PKDTPS",
+    "metrik": [
+     {
+      "kode": "M-NKDTPS",
+      "nama": "DTPS dengan karya ilmiah bereputasi sebagai penulis pertama/korespondensi",
+      "nilai": 7,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PKDTPS",
+      "nama": "Persentase DTPS penulis pertama/korespondensi",
+      "nilai": 0.5833333333333334,
+      "satuan": "persen",
+      "rumus": "PKDTPS = NKDTPS / NDTPS × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "36",
+    "judul": "Karya ilmiah bereputasi DTPS yang disitasi",
+    "tabel": [
+     "4.i",
+     "4.a"
+    ],
+    "utama": "M-PKIB",
+    "metrik": [
+     {
+      "kode": "M-KIB",
+      "nama": "Karya ilmiah bereputasi yang disitasi",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PKIB",
+      "nama": "Persentase karya ilmiah bereputasi disitasi per DTPS",
+      "nilai": 0.3333333333333333,
+      "satuan": "persen",
+      "rumus": "PKIB = KIB / NDTPS"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "37",
+    "judul": "DTPS dengan pengakuan/rekognisi",
+    "tabel": [
+     "4.j",
+     "4.a"
+    ],
+    "utama": "M-PRDTPS",
+    "metrik": [
+     {
+      "kode": "M-NRDTPS",
+      "nama": "DTPS yang memiliki rekognisi 3 tahun terakhir",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PRDTPS",
+      "nama": "Persentase DTPS dengan rekognisi",
+      "nilai": 0.3333333333333333,
+      "satuan": "persen",
+      "rumus": "PRDTPS = NRDTPS / NDTPS"
+     }
+    ],
+    "skor": 3.333333333333333,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "40",
+    "judul": "Rasio mahasiswa terhadap DTPS",
+    "tabel": [
+     "6.a",
+     "4.a"
+    ],
+    "utama": "M-RMD",
+    "metrik": [
+     {
+      "kode": "M-NM",
+      "nama": "Jumlah mahasiswa saat TS",
+      "nilai": 350,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NDTPS",
+      "nama": "Jumlah DTPS",
+      "nilai": 12,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RMD",
+      "nama": "Rasio mahasiswa per DTPS",
+      "nilai": 29.166666666666668,
+      "satuan": "rasio",
+      "rumus": "RMD = NM / NDTPS"
+     }
+    ],
+    "skor": 2.75,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "41",
+    "judul": "Persentase mahasiswa asing",
+    "tabel": [
+     "6.a"
+    ],
+    "utama": "M-PMA",
+    "metrik": [
+     {
+      "kode": "M-NMA",
+      "nama": "Mahasiswa asing saat TS (penuh dan paruh waktu)",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PMA",
+      "nama": "Persentase mahasiswa asing",
+      "nilai": 0.008571428571428572,
+      "satuan": "persen",
+      "rumus": "PMA = NMA / NM × 100%"
+     }
+    ],
+    "skor": 3.7142857142857144,
+    "catatan": [
+     "Asumsi: mahasiswa asing penuh waktu dan paruh waktu saat TS pada baris prodi yang diakreditasi."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "42",
+    "judul": "Rata-rata IPK lulusan",
+    "tabel": [
+     "6.b"
+    ],
+    "utama": "M-RIPK",
+    "metrik": [
+     {
+      "kode": "M-NL_IPK",
+      "nama": "Jumlah lulusan TS-2 s.d. TS",
+      "nilai": 270,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RIPK",
+      "nama": "Rata-rata IPK lulusan 3 tahun terakhir",
+      "nilai": 3.3537037037037036,
+      "satuan": "angka",
+      "rumus": "RIPK = Σ(jumlah lulusan × rata-rata IPK) / Σ jumlah lulusan"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Rata-rata tertimbang jumlah lulusan per tahun."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "43-I",
+    "judul": "Prestasi akademik mahasiswa",
+    "tabel": [
+     "6.c.1",
+     "6.a"
+    ],
+    "utama": "M-43-I_RI",
+    "metrik": [
+     {
+      "kode": "M-43-I_NI",
+      "nama": "Prestasi akademik mahasiswa tingkat internasional",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-I_NN",
+      "nama": "Prestasi akademik mahasiswa tingkat nasional",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-I_NW",
+      "nama": "Prestasi akademik mahasiswa tingkat wilayah/lokal",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-I_RI",
+      "nama": "Rasio internasional per mahasiswa",
+      "nilai": 0.002857142857142857,
+      "satuan": "persen",
+      "rumus": "RI = NI / NM"
+     },
+     {
+      "kode": "M-43-I_RN",
+      "nama": "Rasio nasional per mahasiswa",
+      "nilai": 0.014285714285714285,
+      "satuan": "persen",
+      "rumus": "RN = NN / NM"
+     },
+     {
+      "kode": "M-43-I_RW",
+      "nama": "Rasio wilayah per mahasiswa",
+      "nilai": 0.011428571428571429,
+      "satuan": "persen",
+      "rumus": "RW = NW / NM"
+     }
+    ],
+    "skor": 3.75,
+    "catatan": [
+     "Faktor a = 0,2%; b = 2%; c = 4%.",
+     "1 prestasi di luar 5 tahun terakhir tidak dihitung."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "43-II",
+    "judul": "Prestasi nonakademik mahasiswa",
+    "tabel": [
+     "6.c.2",
+     "6.a"
+    ],
+    "utama": "M-43-II_RI",
+    "metrik": [
+     {
+      "kode": "M-43-II_NI",
+      "nama": "Prestasi nonakademik mahasiswa tingkat internasional",
+      "nilai": 0,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-II_NN",
+      "nama": "Prestasi nonakademik mahasiswa tingkat nasional",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-II_NW",
+      "nama": "Prestasi nonakademik mahasiswa tingkat wilayah/lokal",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-43-II_RI",
+      "nama": "Rasio internasional per mahasiswa",
+      "nilai": 0,
+      "satuan": "persen",
+      "rumus": "RI = NI / NM"
+     },
+     {
+      "kode": "M-43-II_RN",
+      "nama": "Rasio nasional per mahasiswa",
+      "nilai": 0.008571428571428572,
+      "satuan": "persen",
+      "rumus": "RN = NN / NM"
+     },
+     {
+      "kode": "M-43-II_RW",
+      "nama": "Rasio wilayah per mahasiswa",
+      "nilai": 0.017142857142857144,
+      "satuan": "persen",
+      "rumus": "RW = NW / NM"
+     }
+    ],
+    "skor": 2.066326530612245,
+    "catatan": [
+     "Faktor a = 0,2%; b = 2%; c = 4%."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "44",
+    "judul": "Rata-rata masa studi lulusan",
+    "tabel": [
+     "6.d"
+    ],
+    "utama": "M-MS",
+    "metrik": [
+     {
+      "kode": "M-NLULUS_6D",
+      "nama": "Jumlah lulusan pada Tabel 6.d",
+      "nilai": 200,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MS",
+      "nama": "Rata-rata masa studi lulusan",
+      "nilai": 4.63125,
+      "satuan": "tahun",
+      "rumus": "MS = Σ(lulusan × titik tengah masa studi) / Σ lulusan"
+     }
+    ],
+    "skor": 3.8875,
+    "catatan": [
+     "Asumsi: masa studi tiap lulusan didekati titik tengah kelompok 6.d (4; 5; 6; 7,25 tahun)."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "45",
+    "judul": "Persentase kelulusan tepat waktu",
+    "tabel": [
+     "6.d"
+    ],
+    "utama": "M-PTW",
+    "metrik": [
+     {
+      "kode": "M-MASUK_TS3",
+      "nama": "Mahasiswa masuk TS-3 (a)",
+      "nilai": 100,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-LULUS_TW",
+      "nama": "Lulus 3,5 < MS ≤ 4,5 dari angkatan TS-3 (b)",
+      "nilai": 55,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-PTW",
+      "nama": "Persentase kelulusan tepat waktu",
+      "nilai": 0.55,
+      "satuan": "persen",
+      "rumus": "PTW = b / a × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "46",
+    "judul": "Publikasi ilmiah mahasiswa",
+    "tabel": [
+     "6.e.1",
+     "6.a"
+    ],
+    "utama": "M-46-RI",
+    "metrik": [
+     {
+      "kode": "M-MHS_NA1",
+      "nama": "Publikasi mahasiswa NA1",
+      "nilai": 6,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NA2",
+      "nama": "Publikasi mahasiswa NA2",
+      "nilai": 4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NA3",
+      "nama": "Publikasi mahasiswa NA3",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NA4",
+      "nama": "Publikasi mahasiswa NA4",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NB1",
+      "nama": "Publikasi mahasiswa NB1",
+      "nilai": 10,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NB2",
+      "nama": "Publikasi mahasiswa NB2",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NB3",
+      "nama": "Publikasi mahasiswa NB3",
+      "nilai": 2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-46-RI",
+      "nama": "Rasio publikasi internasional bereputasi per mahasiswa",
+      "nilai": 0.008571428571428572,
+      "satuan": "rasio",
+      "rumus": "RI = (NA4 + NB3) / NM"
+     },
+     {
+      "kode": "M-46-RN",
+      "nama": "Rasio publikasi nasional terakreditasi/internasional per mahasiswa",
+      "nilai": 0.017142857142857144,
+      "satuan": "rasio",
+      "rumus": "RN = (NA2 + NA3 + NB2) / NM"
+     },
+     {
+      "kode": "M-46-RW",
+      "nama": "Rasio publikasi nasional/wilayah per mahasiswa",
+      "nilai": 0.045714285714285714,
+      "satuan": "rasio",
+      "rumus": "RW = (NA1 + NB1) / NM"
+     }
+    ],
+    "skor": 3.326413994169097,
+    "catatan": [
+     "Faktor a = 0,01; b = 0,1; c = 0,5."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "47",
+    "judul": "Luaran penelitian dan PkM mahasiswa",
+    "tabel": [
+     "6.e.3"
+    ],
+    "utama": "M-NLP",
+    "metrik": [
+     {
+      "kode": "M-MHS_NPaten",
+      "nama": "Paten mahasiswa",
+      "nilai": 0,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NHKI",
+      "nama": "HKI mahasiswa",
+      "nilai": 3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NTTG",
+      "nama": "TTG/produk mahasiswa",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-MHS_NBC",
+      "nama": "Buku/book chapter mahasiswa",
+      "nilai": 1,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-NLP",
+      "nama": "Skor luaran mahasiswa",
+      "nilai": 7,
+      "satuan": "angka",
+      "rumus": "NLP = 3 × NPaten + 2 × (NTTG + NBC) + NHKI"
+     }
+    ],
+    "skor": 3.4000000000000004,
+    "catatan": [],
+    "lengkap": true
+   },
+   {
+    "butir": "49",
+    "judul": "Waktu tunggu lulusan",
+    "tabel": [
+     "6.f.1"
+    ],
+    "utama": "M-WT",
+    "metrik": [
+     {
+      "kode": "M-RESPONDEN_WT",
+      "nama": "Persentase lulusan terlacak",
+      "nilai": 0.5,
+      "satuan": "persen"
+     },
+     {
+      "kode": "M-WT_KURANG3",
+      "nama": "Lulusan dengan WT < 3 bulan",
+      "nilai": 55,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-WT_3_18",
+      "nama": "Lulusan dengan 3 ≤ WT ≤ 18 bulan",
+      "nilai": 25,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-WT_LEBIH18",
+      "nama": "Lulusan dengan WT > 18 bulan",
+      "nilai": 5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-WT",
+      "nama": "Perkiraan rata-rata waktu tunggu",
+      "nilai": 5.117647058823529,
+      "satuan": "bulan"
+     }
+    ],
+    "skor": 3.5764705882352943,
+    "catatan": [
+     "Asumsi: WT didekati titik tengah kelompok (1,5; 10,5 bulan) dan 18 bulan untuk WT > 18 bulan."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "50",
+    "judul": "Kesesuaian bidang kerja lulusan",
+    "tabel": [
+     "6.f.2"
+    ],
+    "utama": "M-KBK",
+    "metrik": [
+     {
+      "kode": "M-RESPONDEN_KBK",
+      "nama": "Persentase lulusan terlacak",
+      "nilai": 0.5,
+      "satuan": "persen"
+     },
+     {
+      "kode": "M-KBK",
+      "nama": "Kesesuaian bidang kerja",
+      "nilai": 0.8941176470588236,
+      "satuan": "persen",
+      "rumus": "KBK = (sedang + tinggi) / (rendah + sedang + tinggi) × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Asumsi: KBK = lulusan dengan kesesuaian sedang dan tinggi dibagi lulusan terlacak yang dinilai."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "51",
+    "judul": "Tempat kerja lulusan",
+    "tabel": [
+     "6.g.1"
+    ],
+    "utama": "M-51-RI",
+    "metrik": [
+     {
+      "kode": "M-NL",
+      "nama": "Jumlah lulusan TS-2 s.d. TS-1",
+      "nilai": 170,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-RESPONDEN_TK",
+      "nama": "Persentase lulusan terlacak",
+      "nilai": 0.5,
+      "satuan": "persen"
+     },
+     {
+      "kode": "M-51-RI",
+      "nama": "Persentase lulusan bekerja tingkat multinasional/internasional",
+      "nilai": 0.058823529411764705,
+      "satuan": "persen",
+      "rumus": "RI = NI / NL × 100%"
+     },
+     {
+      "kode": "M-51-RN",
+      "nama": "Persentase lulusan bekerja tingkat nasional/wirausaha berizin",
+      "nilai": 0.21176470588235294,
+      "satuan": "persen",
+      "rumus": "RN = NN / NL × 100%"
+     },
+     {
+      "kode": "M-51-RW",
+      "nama": "Persentase lulusan bekerja tingkat wilayah/lokal",
+      "nilai": 0.22941176470588234,
+      "satuan": "persen",
+      "rumus": "RW = NW / NL × 100%"
+     }
+    ],
+    "skor": 4,
+    "catatan": [
+     "Faktor a = 5%, b = 20%, c = 90%."
+    ],
+    "lengkap": true
+   },
+   {
+    "butir": "52",
+    "judul": "Kepuasan pengguna lulusan",
+    "tabel": [
+     "6.g.2"
+    ],
+    "utama": "M-TK",
+    "metrik": [
+     {
+      "kode": "M-TK1",
+      "nama": "Tingkat kepuasan: Etika",
+      "nilai": 3.5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK2",
+      "nama": "Tingkat kepuasan: Keahlian pada bidang ilmu (kompetensi utama)",
+      "nilai": 3.4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK3",
+      "nama": "Tingkat kepuasan: Kemampuan berbahasa asing",
+      "nilai": 2.7,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK4",
+      "nama": "Tingkat kepuasan: Penggunaan teknologi informasi",
+      "nilai": 3.4,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK5",
+      "nama": "Tingkat kepuasan: Kemampuan berkomunikasi",
+      "nilai": 3.2,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK6",
+      "nama": "Tingkat kepuasan: Kerjasama tim",
+      "nilai": 3.5,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK7",
+      "nama": "Tingkat kepuasan: Pengembangan diri",
+      "nilai": 3.3,
+      "satuan": "angka"
+     },
+     {
+      "kode": "M-TK",
+      "nama": "Rata-rata tingkat kepuasan 7 aspek",
+      "nilai": 3.285714285714286,
+      "satuan": "angka",
+      "rumus": "Skor = ΣTKi / 7; TKi = 4a + 3b + 2c + d (persentase)"
+     }
+    ],
+    "skor": 3.285714285714286,
+    "catatan": [],
+    "lengkap": true
+   }
+  ]
+ }
+]
