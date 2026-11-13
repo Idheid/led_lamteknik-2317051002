@@ -5,7 +5,8 @@ import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { nilaiButirAngka, type NilaiButir } from "@/modules/led/domain/butir-angka";
-import { hitungButir, type TabelMetrik } from "@/modules/led/domain/metrik-lkps";
+import type { TabelMetrik } from "@/modules/led/domain/metrik-lkps";
+import { alasanTanpaRumus, hitungRumus } from "@/modules/led/domain/rumus";
 
 /**
  * Nilai butir angka satu LED (revisi 19 Okt 2026): rumus lama lewat kodeRumus butir, atau nilai manual PJ.
@@ -30,7 +31,8 @@ export async function nilaiButirUntukProyek(proyek: { id: string; versiId: strin
   const daftar = nilaiButirAngka({
     butir,
     adaLkps: Boolean(berkas),
-    hitung: (kode) => hitungButir(kode, tabel, konteks),
+    hitung: (kode) => hitungRumus(kode, tabel, konteks),
+    alasanTanpaRumus: (kode) => alasanTanpaRumus(proyek.jenjang, kode),
     manual: new Map(manual.map((m) => [m.butirKode, { nilai: m.nilai, keterangan: m.keterangan }])),
   });
   return { daftar, adaLkps: Boolean(berkas), perluDicek: (berkas?.tabel ?? []).some((t) => t.perluDicek) };

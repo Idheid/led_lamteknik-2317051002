@@ -2548,3 +2548,36 @@ bagian, 1 perbaikan, 1 periksa ulang).
   implementasi"). Ini titik keputusan nyata: (1) padanan lemah dan sel kosong perlu dicek ke PDF, (2) butir berangka
   tanpa padanan perlu diputuskan: dihitung otomatis (data ada di LKPS) atau manual dengan alasan, (3) karena bentuk rumus
   berbeda, R2 akan memisahkan fungsi metrik bersama dari fungsi skor per jenjang (bukan sekadar tabel ambang).
+
+### T10 R2–R5: rumus D3, Sarjana Terapan, Magister
+
+- Setelah "lanjut": dokumen inventaris diganti nama mengikuti kode jenjang sistem (`RUMUS-STR.md`, `RUMUS-S2TR.md`,
+  `RUMUS-S3TR.md`; kode jenjang Sarjana Terapan di aplikasi adalah `STr`, bukan D4).
+- **R2, kerangka** (`src/modules/led/domain/rumus/`): rumus Sarjana di `metrik-lkps.ts` tidak diubah (snapshot regresi
+  tetap identik). Rumus jenjang lain = kode baru `<JENJANG>-<butir>` (mis. `D3-23`, `STr-43`, `S2-26`):
+  - `bersama.ts`: `dariSarjana(jenjang, butir, dasar, skor)` memakai metrik butir Sarjana padanan sebagai pustaka
+    bersama lalu menerapkan fungsi skor jenjang (tanpa `skor` = deskriptor sama dengan Sarjana);
+  - `vokasi.ts`: metrik yang tidak ada di Sarjana (sertifikasi DTPS 4.a kolom 11, dosen industri 3.a.1 + 4.a,
+    publikasi + pagelaran 4.e/6.e.2 dengan NC, produk/jasa diadopsi 4.g/6.e.4);
+  - metrik khusus jenjang bila kolom tabel LKPS-nya berbeda (6.d dan 6.f.1 D3, 6.d dan 6.h.2 Magister, prestasi
+    Magister 3 tahun);
+  - `index.ts`: `hitungRumus` (dipakai `nilaiButirUntukProyek`), `katalogRumusJenjang`, `kodeRumusButir`,
+    `alasanTanpaRumus`. Kecocokan tata kolom setiap tabel yang dipakai dicek terhadap `kolom-template.json`.
+- **R3**: `d3.ts` (30 rumus), `str.ts` (37), `s2.ts` (27); uji `tests/unit/rumus-d3.test.ts`, `rumus-str.test.ts`,
+  `rumus-s2.test.ts`; hitungan tangan dan tabel "Asumsi perlu dikonfirmasi" di `docs/uji/hitungan-manual-{d3,str,s2}.md`.
+  Butir berdeskriptor kualitatif (D3 17/28, STr 17/31, S2 15/27) bukan butir angka sehingga tidak diberi rumus.
+- **R4**: ekstraksi instrumen memberi AI katalog rumus jenjang yang diekstrak (bukan katalog Sarjana); Admin tetap
+  mengonfirmasi. Impor seed mengisi `kodeRumus` per jenjang lewat `kodeRumusButir` (seed resmi saat ini hanya S1).
+  `periksaKodeRumus` menerima kode jenjang. Halaman cek instrumen menampilkan "Butir angka tanpa rumus: n" beserta
+  alasan. Percobaan mengisi `kodeRumus` secara deterministik dari nomor butir saat ekstraksi dibatalkan: penomoran
+  matriks versi berikutnya bisa berbeda, dan uji alur penuh mengandalkan usulan AI yang dikonfirmasi Admin.
+- **R5**: Data LKPS menandai "Dihitung otomatis · rumus <kode>"; butir tanpa rumus menampilkan alasan dari
+  `alasanTanpaRumus` (jenjang tanpa rumus khusus: "rumus otomatis jenjang ini belum dibuat"). Nilai manual tetap ada.
+- Belum: PPI, D1, D2, Magister Terapan, Doktor, Doktor Terapan (urutan rencana). Jenjang itu sementara memakai katalog
+  Sarjana untuk usulan AI dan nilai manual.
+
+| Pemeriksaan (D3, STr, S2) | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 230/230 lulus (termasuk regresi Sarjana identik) |
+| `npm run test:integrasi` | 130/130 lulus |

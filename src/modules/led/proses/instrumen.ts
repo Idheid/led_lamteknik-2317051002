@@ -13,7 +13,7 @@ import {
   butirTanpaAi, gabungButir, promptEkstraksi, type ButirAi, type ButirDraf, type RumusPilihan, type SubPilihan,
 } from "@/modules/led/domain/ekstraksi-instrumen";
 import { kelompokBaris, susunMatriks } from "@/modules/led/domain/matriks";
-import { katalogRumus } from "@/modules/led/domain/metrik-lkps";
+import { katalogRumusJenjang } from "@/modules/led/domain/rumus";
 import { berlakuUntukJenjang } from "@/modules/led/domain/instrumen";
 import { bacaPemetaan, petakanSubBagian, uraiTemplate, type SubRujukan } from "@/modules/led/domain/template-led";
 import { bacaHalamanPdf } from "@/modules/led/instrumen/pdf";
@@ -213,7 +213,8 @@ export async function prosesEkstraksiInstrumen(versiId: string): Promise<string>
       include: { bagian: { select: { kode: true } } },
     })).filter((s) => s.bagian.kode !== "AWAL" && berlakuUntukJenjang(s, jenjang))
       .map((s) => ({ kode: s.kode, bagianKode: s.bagian.kode, judul: s.judul, grup: s.grup }));
-    const rumus: RumusPilihan[] = katalogRumus().map((r) => ({ kode: r.kode, judul: r.judul, rumus: r.rumus }));
+    // Rencana 10 Nov T10: katalog rumus jenjang yang diekstrak (Admin tetap mengonfirmasi)
+    const rumus: RumusPilihan[] = katalogRumusJenjang(jenjang).map((r) => ({ kode: r.kode, judul: r.judul, rumus: r.rumus }));
     const bobot = info.bobot ?? [];
     // halaman PDF tiap nomor butir untuk halaman cek (PDF di samping tabel)
     const halamanButir = Object.fromEntries(baris.map((b) => [b.no, b.halaman]));

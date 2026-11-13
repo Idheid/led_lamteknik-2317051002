@@ -4,7 +4,7 @@ import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import { wajibAdmin } from "@/modules/bersama/sesi";
 import { GalatPengguna } from "@/modules/bersama/akses";
 import { dataCekInstrumen } from "@/modules/led/data/unggah-instrumen";
-import { katalogRumus } from "@/modules/led/domain/metrik-lkps";
+import { alasanTanpaRumus, katalogRumusJenjang } from "@/modules/led/domain/rumus";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { formatAngka } from "@/modules/bersama/domain/teks";
 import { JudulHalaman } from "@/components/judul-halaman";
@@ -38,6 +38,8 @@ export default async function HalamanCekInstrumen({ params }: PageProps<"/led/in
     kodeRumus: b.kodeRumus, subBagianIds: b.subBagian.map((x) => x.subBagian.id), dikonfirmasi: b.dikonfirmasi, usulanAi: b.usulanAi, catatan: b.catatan,
   }));
   const ekstraksiSelesai = !info || info.status === "selesai";
+  // Rencana 10 Nov T10 (R4): butir angka tanpa rumus otomatis beserta alasannya
+  const tanpaRumus = butir.filter((b) => b.jenis === "angka" && !b.kodeRumus);
   const bisa = !terkunci && ekstraksiSelesai && cek.galat.length === 0;
   return (
     <>
@@ -76,6 +78,15 @@ export default async function HalamanCekInstrumen({ params }: PageProps<"/led/in
             {cek.galat.map((g) => (
               <li key={g} className="flex gap-2"><CircleAlert className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />{g}</li>
             ))}
+            {tanpaRumus.length > 0 && (
+              <li className="flex gap-2 text-muted-foreground">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <span>
+                  Butir angka tanpa rumus: {tanpaRumus.length}.{" "}
+                  {tanpaRumus.map((b) => `${b.kode} (${alasanTanpaRumus(jenjang, b.kode)})`).join("; ")}.
+                </span>
+              </li>
+            )}
             {cek.peringatan.map((g) => (
               <li key={g} className="flex gap-2 text-muted-foreground"><TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />{g}</li>
             ))}
@@ -87,7 +98,7 @@ export default async function HalamanCekInstrumen({ params }: PageProps<"/led/in
         jenjang={jenjang}
         butir={tampil}
         sub={sub.filter((s) => s.tipe !== "data" && s.tipe !== "otomatis").map((s) => ({ id: s.id, kode: s.kode, judul: s.judul, bagianKode: s.bagianKode }))}
-        rumus={katalogRumus().map((r) => ({ kode: r.kode, judul: r.judul, rumus: r.rumus }))}
+        rumus={katalogRumusJenjang(jenjang).map((r) => ({ kode: r.kode, judul: r.judul, rumus: r.rumus }))}
         bagian={bagian.map((b) => b.kode).filter((k) => k !== "AWAL")}
         halamanButir={info?.halamanButir ?? {}}
         adaMatriks={Boolean(versi.matriksLokasi)}

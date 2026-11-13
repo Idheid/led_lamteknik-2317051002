@@ -4,7 +4,7 @@ import { GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/a
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { kodeSalinan } from "@/modules/led/domain/instrumen";
 import { periksaTahunAktif } from "@/modules/led/domain/periksa-berkas-instrumen";
-import { BUTIR_ANGKA_SARJANA } from "@/modules/led/domain/metrik-lkps";
+import { rumusAda } from "@/modules/led/domain/rumus";
 import { skemaBagianUbah, skemaButir, skemaSubBagian, skemaVersiUbah, type MasukanButir, type MasukanSubBagian } from "@/modules/led/validasi";
 
 /**
@@ -42,7 +42,7 @@ export async function tahunAktifJenjang(jenjang: string, kecuali?: string): Prom
 export function periksaKodeRumus(kode: string | null | undefined): string | null | undefined {
   if (kode === undefined) return undefined;
   if (!kode) return null;
-  if (!BUTIR_ANGKA_SARJANA.includes(kode)) throw new GalatPengguna(`Rumus ${kode} tidak dikenal.`);
+  if (!rumusAda(kode)) throw new GalatPengguna(`Rumus ${kode} tidak dikenal.`);
   return kode;
 }
 

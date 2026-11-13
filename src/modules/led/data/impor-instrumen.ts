@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BUTIR_ANGKA_SARJANA } from "@/modules/led/domain/metrik-lkps";
+import { kodeRumusButir } from "@/modules/led/domain/rumus";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 /**
@@ -165,7 +165,8 @@ export async function imporInstrumen(
           unsurSkor4: b.unsurSkor4,
           // pertanyaan pemandu buatan sendiri tidak dipakai lagi (pertanyaan = instruksi resmi template)
           pertanyaanPemandu: null,
-          kodeRumus: b.jenjang === "S1" && b.jenis === "angka" && BUTIR_ANGKA_SARJANA.includes(b.kode) ? b.kode : null,
+          // Rencana 10 Nov T10: rumus otomatis per jenjang (S1 = kode Sarjana, D3 = "D3-<butir>", ...)
+          kodeRumus: b.jenis === "angka" ? kodeRumusButir(b.jenjang).get(b.kode) ?? null : null,
           catatan: b.catatan ?? null,
         })),
         select: { id: true, kode: true, jenjang: true },

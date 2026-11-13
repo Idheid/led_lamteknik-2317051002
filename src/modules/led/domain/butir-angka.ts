@@ -38,6 +38,8 @@ export function nilaiButirAngka(m: {
   adaLkps: boolean;
   hitung: (kodeRumus: string) => HasilButirAngka | null;
   manual: Map<string, NilaiManualButir>;
+  /** Rencana 10 Nov T10 (R5): alasan butir angka tanpa rumus untuk jenjang LED ini */
+  alasanTanpaRumus?: (butir: string) => string;
 }): NilaiButir[] {
   return m.butir.filter((b) => b.jenis === 'angka').map((b) => {
     const manual = m.manual.get(b.kode) ?? null;
@@ -49,7 +51,11 @@ export function nilaiButirAngka(m: {
     }
     let alasan: string;
     let perluManual = true;
-    if (!b.kodeRumus) alasan = 'Butir ini tidak punya rumus di sistem: isi nilai hasil hitung Anda sendiri.';
+    if (!b.kodeRumus) {
+      alasan = m.alasanTanpaRumus
+        ? `Tanpa rumus otomatis: ${m.alasanTanpaRumus(b.kode)}.`
+        : 'Butir ini tidak punya rumus di sistem: isi nilai hasil hitung Anda sendiri.';
+    }
     else if (!m.adaLkps) {
       alasan = 'Nilai dihitung otomatis setelah LKPS diunggah.';
       perluManual = Boolean(isiManual);

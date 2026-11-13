@@ -198,6 +198,7 @@ export default async function HalamanLkps({ params }: PageProps<"/led/[proyekId]
                         <TableCell className="pl-6">
                           <div className="font-mono text-xs text-muted-foreground">{h.butir}</div>
                           <div className="max-w-56 whitespace-normal text-sm">{h.judul}</div>
+                          <div className="text-xs text-muted-foreground">Dihitung otomatis · rumus {d.kodeRumus}</div>
                         </TableCell>
                         <TableCell className="max-w-64 whitespace-normal text-sm">{u?.nama}</TableCell>
                         <TableCell className="text-right font-medium tabular-nums">{u ? formatMetrik(u) : "—"}</TableCell>

@@ -798,3 +798,14 @@ export function katalogRumus(): RumusKatalog[] {
     return { kode, judul: h.judul, tabel: h.tabel, rumus: utama?.rumus ?? (utama ? `${utama.kode}: ${utama.nama}` : null) };
   });
 }
+
+// ------------------------------------------------------------------ pustaka bersama (Rencana 10 Nov T10 R2)
+
+export type { PetaTabel };
+
+/**
+ * Fungsi metrik dan pembantu yang dipakai bersama rumus jenjang lain (domain/rumus/*). Rumus Sarjana di atas tidak
+ * diubah (dijaga uji regresi snapshot); rumus jenjang memakai metrik dari butir Sarjana padanannya lalu menerapkan
+ * aturan skor jenjangnya sendiri.
+ */
+export const pustakaMetrik = { baris, teks, nol, bagi, batasi, hasil, m, sama, jumlahTigaTahun, hitungButirSarjana: (kode: string, t: PetaTabel, k: KonteksMetrik) => BUTIR[kode]?.(t, k) ?? null };
