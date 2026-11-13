@@ -7,6 +7,7 @@ import type { MasukanProyek, MasukanTimPenyusun } from "@/modules/led/validasi";
 import * as lkps from "@/modules/led/data/lkps";
 import * as dokumen from "@/modules/led/data/dokumen";
 import * as pencarian from "@/modules/led/data/pencarian";
+import type { KodeKonfigurasi } from "@/modules/led/domain/konfigurasi-pencarian";
 import * as generate from "@/modules/led/data/generate";
 import * as ekspor from "@/modules/led/data/ekspor";
 import { simpanNilaiManual } from "@/modules/led/data/nilai-butir";
@@ -111,11 +112,11 @@ export async function aksiSimpanKoreksiOcr(dokumenId: string, koreksi: { halaman
   return r;
 }
 
-export async function aksiCariDokumen(proyekId: string, kueri: string, subBagianKode: string | null) {
+export async function aksiCariDokumen(proyekId: string, kueri: string, subBagianKode: string | null, konfigurasi?: KodeKonfigurasi) {
   return jalankanAksi(async (p) => {
-    const q = kueri.trim().slice(0, 500);
-    if (q.length < 2) return { hasil: [], catatan: ["Ketik minimal 2 huruf."] };
-    return pencarian.cariPotongan(p, proyekId, q, { subBagianKode });
+    const q = kueri.trim().slice(0, 1500);
+    if (q.length < 2) return { hasil: [], catatan: ["Ketik minimal 2 huruf."], jejak: null };
+    return pencarian.cariPotongan(p, proyekId, q, { subBagianKode, konfigurasi });
   });
 }
 

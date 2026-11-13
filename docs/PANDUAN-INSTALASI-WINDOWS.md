@@ -60,7 +60,7 @@ buka folder proyek, lalu jalankan `claude`.
 
 ```powershell
 cd D:\Skripsi\led-lamteknik
-docker compose up -d          # menyalakan PostgreSQL + pgvector
+docker compose up -d --build  # menyalakan PostgreSQL + pgvector + pg_textsearch (image docker/db dibangun sekali)
 copy .env.example .env        # lalu isi nilainya
 npm install
 npm run db:migrate

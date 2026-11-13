@@ -2263,3 +2263,53 @@ Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 191/191 lulus |
 | `npm run test:integrasi` | 111/111 lulus |
+
+### T5: BM25 dengan `pg_textsearch`
+
+- Versi terpasang: **pg_textsearch 1.5.1** (rilis 2 Okt 2026, paket `pg-textsearch-v1.5.1-pg17-{amd64,arm64}.zip` berisi
+  `.deb` PostgreSQL 17; SHA-256 amd64 `ed4410e8…a9fb`, arm64 `e65f953e…fc3e`), **pgvector 0.8.7**, PostgreSQL 17.11.
+- Image `docker/db/Dockerfile` (`FROM pgvector/pgvector:pg17`, pasang `.deb` setelah cek checksum, `CMD postgres -c
+  shared_preload_libraries=pg_textsearch`), dipakai `docker-compose.yml` (pengembangan; basis data uji integrasi ada di
+  kontainer yang sama) dan `docker-compose.produksi.yml`. Kontainer dev dibuat ulang dengan volume yang sama; sebelumnya
+  basis data dicadangkan ke `cadangan/led_lamteknik-sebelum-T5-20261113.dump` (pg_dump). Data utuh (178 versi draf).
+- Migrasi `20261113130000_bm25_pg_textsearch`: `CREATE EXTENSION pg_textsearch`; `Potongan_teksIndeks_bm25_idx` =
+  `USING bm25 ("teksIndeks") WITH (text_config = 'simple')`, k1 1,2 dan b 0,75 bawaan.
+- Sintaks dicocokkan dengan README v1.5.1 (sama dengan rencana): `ORDER BY kolom <@> to_bm25query(kueri, indeks)`, skor
+  negatif (lebih kecil lebih relevan). **Perbedaan yang dicatat:** README menyebut nama indeks eksplisit wajib untuk
+  *prepared statement*, dan Prisma `$queryRaw` selalu memakai *prepared statement*, jadi semua kueri memakai
+  `to_bm25query(teks, 'Potongan_teksIndeks_bm25_idx')`. Filter proyek/sub-bagian/model berjalan sebagai *post-filter*
+  (README: didukung, batch skor membesar sampai LIMIT terisi). Baris tanpa kata cocok (skor 0) dibuang.
+- **Konfigurasi `simple`, bukan `indonesian`.** Dicek ulang di PostgreSQL 17.11:
+  `to_tsvector('indonesian', 'pengembangan dikembangkan kependidikan pendidikan')` → `'embang' 'kembang' 'ndidik'
+  'didik'`: satu kata dasar ("kembang", "didik") dipenggal berbeda-beda, jadi kata yang sama tidak saling cocok.
+- `kueriBm25`: dibersihkan seperti `kueriKataKunci` (huruf/angka, ≥ 2 karakter, maks. 20 kata unik), dipisah spasi tanpa
+  OR buatan. `ts_rank` atas `teksTsv` tetap untuk `A-lama`.
+- `jalurBm25` (`data/pencarian.ts`); `jalankanJalur` memilih kolom vektor dan jalur kata kunci menurut konfigurasi.
+  **B-bm25 aktif** (embeddingKonteks + BM25, satu kueri gabungan) dan menjadi bawaan generate. Potongan lama tanpa
+  kepala tidak muncul di jalur B sampai "Indeks ulang potongan" (T4) dijalankan.
+- "Uji cari" (Basis Pengetahuan LED): pilih konfigurasi atau "Bandingkan berdampingan"; setiap hasil menampilkan
+  peringkat vektor dan peringkat kata kunci (ts_rank/BM25).
+- Ekspor data uji T2 kini membawa peringkat A-lama dan B-bm25.
+- Rencana cadangan (BM25 SQL dari tsvector) tidak diperlukan: ekstensi terpasang di image.
+- Uji `tests/integrasi/bm25.test.ts` (3). Fikstur 6 potongan, kueri "jumlah ndtps dan dosen yang":
+
+| Peringkat | ts_rank (A-lama) | BM25 (B-bm25) |
+|---|---|---|
+| 1 | Rapat dan kegiatan yang dihadiri dosen dan … | **Jumlah NDTPS program studi pada TS adalah 14 …** |
+| 2 | Sarana dan prasarana yang tersedia dan … | Rapat dan kegiatan yang dihadiri dosen dan … |
+| 3 | Penelitian dan pengabdian yang dilakukan … | Sarana dan prasarana yang tersedia dan … |
+| 4 | Kurikulum dan rencana pembelajaran … | Penelitian dan pengabdian yang dilakukan … |
+| 5 | Layanan kemahasiswaan dan beasiswa … | Kurikulum dan rencana pembelajaran … |
+| 6 | **Jumlah NDTPS program studi pada TS …** | Layanan kemahasiswaan dan beasiswa … |
+
+  Uji juga memastikan filter proyek, sub-bagian, dokumen bersama, dan model embedding berlaku di jalur BM25.
+  Catatan uji: menambah lima potongan lain yang memuat "NDTPS" menurunkan IDF kata itu sehingga urutan berubah, jadi uji
+  perbandingan dijalankan sebelum uji filter.
+- "Uji cari" dengan sub-bagian nyata belum bisa ditunjukkan: Basis Pengetahuan dev hanya berisi 2 potongan berembedding
+  uji (`uji-hash-768`), sedangkan model aktif `gemini-embedding-001`. Perlu unggah dokumen nyata dengan kunci API.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 191/191 lulus |
+| `npm run test:integrasi` | 114/114 lulus |

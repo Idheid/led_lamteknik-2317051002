@@ -31,8 +31,21 @@ export function kueriGenerate(judul: string, instruksi: string, butir: { indikat
   return [judul, instruksi.slice(0, 400), ...butir.flatMap((b) => [b.indikator, ...b.unsurSkor4])].join('. ').slice(0, 1500);
 }
 
+function kataKueri(kueri: string): string[] {
+  return [...new Set((kueri.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((k) => k.length >= 2))].slice(0, 20);
+}
+
 /** Kata kueri untuk to_tsquery PostgreSQL: hanya huruf/angka (aman dari sintaks tsquery), digabung OR. */
 export function kueriKataKunci(kueri: string): string | null {
-  const kata = [...new Set((kueri.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((k) => k.length >= 2))].slice(0, 20);
+  const kata = kataKueri(kueri);
   return kata.length ? kata.join(' | ') : null;
+}
+
+/**
+ * Rencana 10 Nov T5: kueri BM25 (pg_textsearch). Dibersihkan sama seperti kueriKataKunci (huruf/angka, ≥ 2 karakter,
+ * maks. 20 kata unik), dipisah spasi tanpa operator OR buatan; bobot kata ditentukan IDF BM25.
+ */
+export function kueriBm25(kueri: string): string | null {
+  const kata = kataKueri(kueri);
+  return kata.length ? kata.join(' ') : null;
 }

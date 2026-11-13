@@ -71,12 +71,13 @@ test("pool: 20 teratas setiap jalur + k teratas gabungan, tanpa duplikat, membaw
   assert.equal(pool[0].terbaik, 1);
 });
 
-test("konfigurasi: di T2 hanya A-lama aktif; nilai lingkungan tidak sah diabaikan", () => {
-  assert.deepEqual(konfigurasiAktif(), ["A-lama"]);
-  assert.equal(konfigurasiBawaan(undefined), "A-lama");
-  assert.equal(konfigurasiBawaan("B-bm25"), "A-lama", "B belum aktif");
-  assert.equal(konfigurasiBawaan("ngawur"), "A-lama");
-  assert.deepEqual(bacaDaftarKonfigurasi("A-lama, A-lama"), ["A-lama"]);
-  assert.throws(() => bacaDaftarKonfigurasi("B-bm25"), /belum aktif/);
+test("konfigurasi: setelah T5 A-lama dan B-bm25 aktif; nilai lingkungan tidak sah diabaikan", () => {
+  assert.deepEqual(konfigurasiAktif(), ["A-lama", "B-bm25"]);
+  assert.equal(konfigurasiBawaan(undefined), "B-bm25", "bawaan = konfigurasi aktif terakhir");
+  assert.equal(konfigurasiBawaan("A-lama"), "A-lama");
+  assert.equal(konfigurasiBawaan("C-unsur"), "B-bm25", "C belum aktif");
+  assert.equal(konfigurasiBawaan("ngawur"), "B-bm25");
+  assert.deepEqual(bacaDaftarKonfigurasi("A-lama, A-lama,B-bm25"), ["A-lama", "B-bm25"]);
+  assert.throws(() => bacaDaftarKonfigurasi("C-unsur"), /belum aktif/);
   assert.throws(() => bacaDaftarKonfigurasi("Z"), /tidak dikenal/);
 });

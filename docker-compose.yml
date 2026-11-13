@@ -1,8 +1,10 @@
-# PostgreSQL + pgvector untuk pengembangan lokal.
-# Jalankan: docker compose up -d   |   Hentikan: docker compose down   (data tetap di volume led_pgdata)
+# PostgreSQL 17 + pgvector + pg_textsearch (BM25) untuk pengembangan lokal (docker/db/Dockerfile).
+# Jalankan: docker compose up -d --build   |   Hentikan: docker compose down   (data tetap di volume led_pgdata)
 services:
   db:
-    image: pgvector/pgvector:pg17
+    build: ./docker/db
+    image: led-lamteknik-db:pg17-textsearch-1.5.1
+    command: ["postgres", "-c", "shared_preload_libraries=pg_textsearch"]
     container_name: led-lamteknik-db
     restart: unless-stopped
     environment:

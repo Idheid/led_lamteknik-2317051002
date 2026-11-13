@@ -1,7 +1,7 @@
 /**
  * Rencana 10 Nov T2: konfigurasi pencarian bernama, supaya setiap perubahan pencarian bisa diukur (rumusan masalah 2).
  * Konfigurasi lama tetap bisa dijalankan sampai evaluasi skripsi selesai. Konfigurasi baru diaktifkan di tahapnya:
- * B-bm25 di T4/T5, C-unsur di T6.
+ * B-bm25 di T5 (setelah kepala konteks T4), C-unsur di T6.
  */
 
 export type KodeKonfigurasi = 'A-lama' | 'B-bm25' | 'C-unsur';
@@ -27,7 +27,7 @@ export const KONFIGURASI_PENCARIAN: Record<KodeKonfigurasi, KonfigurasiPencarian
     keterangan: 'Vektor teks potongan + ts_rank atas teksTsv, satu kueri gabungan (pembanding).',
   },
   'B-bm25': {
-    kode: 'B-bm25', vektor: 'embeddingKonteks', kataKunci: 'bm25', kueri: 'gabungan', aktif: false, k: 8,
+    kode: 'B-bm25', vektor: 'embeddingKonteks', kataKunci: 'bm25', kueri: 'gabungan', aktif: true, k: 8,
     keterangan: 'Vektor potongan berkepala + BM25 atas teks berkepala, satu kueri gabungan (pembanding).',
   },
   'C-unsur': {

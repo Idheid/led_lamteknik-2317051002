@@ -9,34 +9,48 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { aksiCariDokumen, aksiKueriGenerate } from "@/app/led/(tim-prodi)/aksi";
 import type { HasilCari } from "@/modules/led/data/pencarian";
+import { KONFIGURASI_PENCARIAN, konfigurasiAktif, type KodeKonfigurasi } from "@/modules/led/domain/konfigurasi-pencarian";
+
+const AKTIF = konfigurasiAktif();
+type Pilihan = KodeKonfigurasi | "banding";
+
+interface HasilKonfigurasi {
+  konfigurasi: KodeKonfigurasi;
+  hasil: HasilCari[];
+}
 
 /**
  * Uji cari (revisi 22 Okt 2026): 8 potongan yang akan diberikan ke AI beserta skor gabungan (RRF) dan peringkat
  * vektor/kata kunci. "Pakai kueri generate" mengisi kueri persis seperti saat generate sub-bagian terpilih.
+ * Rencana 10 Nov T5: konfigurasi pencarian bisa dipilih, atau dibandingkan berdampingan (peringkat per jalur).
  */
 export function PanelCari({ proyekId, pilihan }: { proyekId: string; pilihan: { kode: string; label: string }[] }) {
   const [kueri, setKueri] = useState("");
   const [sub, setSub] = useState("semua");
-  const [hasil, setHasil] = useState<HasilCari[] | null>(null);
+  const [konf, setKonf] = useState<Pilihan>(AKTIF[AKTIF.length - 1]);
+  const [hasil, setHasil] = useState<HasilKonfigurasi[] | null>(null);
   const [catatan, setCatatan] = useState<string[]>([]);
   const [sibuk, mulai] = useTransition();
-  // kode sumber sama dengan saat generate: dokumen LED D1, D2, …; dokumen bersama fakultas U1, U2, …
-  const kode = (() => {
-    let d = 0;
-    let u = 0;
-    return (hasil ?? []).map((h) => (h.bersama ? `U${++u}` : `D${++d}`));
-  })();
 
-  function jalankan(q: string) {
-    mulai(async () => {
-      const r = await aksiCariDokumen(proyekId, q, sub === "semua" ? null : sub);
+  async function cari(q: string, subKode: string | null) {
+    const daftar = konf === "banding" ? AKTIF : [konf];
+    const keluar: HasilKonfigurasi[] = [];
+    const cat: string[] = [];
+    for (const k of daftar) {
+      const r = await aksiCariDokumen(proyekId, q, subKode, k);
       if (!r.ok) {
         toast.error(r.pesan);
         return;
       }
-      setHasil(r.data.hasil);
-      setCatatan(r.data.catatan);
-    });
+      keluar.push({ konfigurasi: k, hasil: r.data.hasil });
+      cat.push(...r.data.catatan.map((c) => (daftar.length > 1 ? `${k}: ${c}` : c)));
+    }
+    setHasil(keluar);
+    setCatatan(cat);
+  }
+
+  function jalankan(q: string) {
+    mulai(() => cari(q, sub === "semua" ? null : sub));
   }
 
   function pakaiKueriGenerate() {
@@ -47,11 +61,7 @@ export function PanelCari({ proyekId, pilihan }: { proyekId: string; pilihan: { 
         return;
       }
       setKueri(r.data);
-      const c = await aksiCariDokumen(proyekId, r.data, sub);
-      if (c.ok) {
-        setHasil(c.data.hasil);
-        setCatatan(c.data.catatan);
-      }
+      await cari(r.data, sub);
     });
   }
 
@@ -73,6 +83,13 @@ export function PanelCari({ proyekId, pilihan }: { proyekId: string; pilihan: { 
               {pilihan.map((s) => <SelectItem key={s.kode} value={s.kode}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={konf} onValueChange={(v) => setKonf(v as Pilihan)}>
+            <SelectTrigger className="sm:w-56" aria-label="Konfigurasi pencarian"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {AKTIF.map((k) => <SelectItem key={k} value={k} title={KONFIGURASI_PENCARIAN[k].keterangan}>{k}</SelectItem>)}
+              {AKTIF.length > 1 && <SelectItem value="banding">Bandingkan berdampingan</SelectItem>}
+            </SelectContent>
+          </Select>
           <Button type="submit" disabled={sibuk || kueri.trim().length < 2}>
             {sibuk ? <Loader2 className="animate-spin" aria-hidden /> : <Search aria-hidden />}
             Cari
@@ -83,8 +100,26 @@ export function PanelCari({ proyekId, pilihan }: { proyekId: string; pilihan: { 
         </div>
       </form>
       {catatan.map((c, i) => <p key={i} className="text-xs text-amber-700 dark:text-amber-300">{c}</p>)}
-      {hasil && hasil.length === 0 && <p className="text-sm text-muted-foreground">Tidak ada potongan yang cocok.</p>}
-      {hasil && hasil.length > 0 && (
+      {hasil && (
+        <div className={hasil.length > 1 ? "grid gap-4 lg:grid-cols-2" : ""}>
+          {hasil.map((x) => <DaftarHasil key={x.konfigurasi} konfigurasi={x.konfigurasi} hasil={x.hasil} judul={hasil.length > 1} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DaftarHasil({ konfigurasi, hasil, judul }: { konfigurasi: KodeKonfigurasi; hasil: HasilCari[]; judul: boolean }) {
+  const k = KONFIGURASI_PENCARIAN[konfigurasi];
+  // kode sumber sama dengan saat generate: dokumen LED D1, D2, …; dokumen bersama fakultas U1, U2, …
+  let d = 0;
+  let u = 0;
+  const kode = hasil.map((h) => (h.bersama ? `U${++u}` : `D${++d}`));
+  return (
+    <div className="space-y-2">
+      {judul && <p className="text-sm font-medium">{konfigurasi} <span className="font-normal text-muted-foreground">({k.keterangan})</span></p>}
+      {hasil.length === 0 && <p className="text-sm text-muted-foreground">Tidak ada potongan yang cocok.</p>}
+      {hasil.length > 0 && (
         <ol className="space-y-2">
           {hasil.map((h, i) => (
             <li key={h.potonganId} className="rounded-lg border p-3 text-sm">
@@ -95,7 +130,7 @@ export function PanelCari({ proyekId, pilihan }: { proyekId: string; pilihan: { 
                 <span>potongan #{h.urutan + 1}</span>
                 <Badge variant="secondary" className="tabular-nums" title="Skor RRF = Σ 1/(60 + peringkat)">skor {h.skor.toFixed(4)}</Badge>
                 <Badge variant="outline">vektor #{h.peringkatVektor ?? "–"}</Badge>
-                <Badge variant="outline">kata kunci #{h.peringkatKataKunci ?? "–"}</Badge>
+                <Badge variant="outline">{k.kataKunci === "bm25" ? "BM25" : "ts_rank"} #{h.peringkatKataKunci ?? "–"}</Badge>
                 {h.bersama && <Badge variant="outline">bersama fakultas</Badge>}
               </div>
               <p className="line-clamp-4 whitespace-pre-line">{h.teks}</p>

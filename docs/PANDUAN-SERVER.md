@@ -40,6 +40,13 @@ Melihat log: `docker compose -f docker-compose.produksi.yml logs -f web worker`.
 Di Linux, folder cadangan harus bisa ditulis pengguna `node` di kontainer (uid 1000):
 `sudo chown 1000:1000 /mnt/cadangan-led`.
 
+### Basis data: PostgreSQL 17 + pgvector + pg_textsearch
+
+Layanan `db` dibangun dari `docker/db/Dockerfile`: image `pgvector/pgvector:pg17` ditambah ekstensi BM25
+`pg_textsearch` 1.5.1 (paket `.deb` rilis resmi Tiger Data, versi dan checksum SHA-256 dipatok untuk amd64 dan arm64)
+dan `shared_preload_libraries = 'pg_textsearch'`. Perintah `up -d --build` di langkah 3 ikut membangunnya. Data di
+volume `pgdata` tetap saat image diganti; cadangkan dulu (bagian 4) sebelum memperbarui versi ekstensi.
+
 ### OCR untuk PDF hasil pindai
 
 Halaman PDF tanpa teks di Basis Pengetahuan dan PDF SK pada Catat hasil akreditasi dibaca dengan OCR lokal (tanpa AI,

@@ -16,7 +16,10 @@ x-aplikasi: &aplikasi
 
 services:
   db:
-    image: pgvector/pgvector:pg17
+    # Rencana 10 Nov T5: PostgreSQL 17 + pgvector + pg_textsearch (BM25)
+    build: ./docker/db
+    image: led-lamteknik-db:pg17-textsearch-1.5.1
+    command: ["postgres", "-c", "shared_preload_libraries=pg_textsearch"]
     restart: unless-stopped
     environment:
       POSTGRES_USER: led

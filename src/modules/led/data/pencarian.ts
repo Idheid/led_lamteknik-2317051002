@@ -2,7 +2,7 @@ import { prisma } from "@/modules/bersama/db";
 import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyek } from "@/modules/led/data/proyek";
 import { modelEmbeddingAktif, penyediaEmbedding } from "@/modules/bersama/data/kunci-api";
-import { gabungRRF, kueriGenerate, kueriKataKunci } from "@/modules/led/domain/rrf";
+import { gabungRRF, kueriBm25, kueriGenerate, kueriKataKunci } from "@/modules/led/domain/rrf";
 import { bacaVarian, varianUntukJenjang } from "@/modules/led/domain/instrumen";
 import { gantiLabelTS } from "@/modules/bersama/domain/tahun-akademik";
 import { literalVektor } from "@/modules/bersama/llm/embedding";
@@ -103,6 +103,32 @@ export async function jalurTsRank(l: LingkupCari, kueri: string, n: number): Pro
   return baris.map((b) => b.id);
 }
 
+/** Nama indeks BM25 pg_textsearch (migrasi 20261113130000); wajib eksplisit untuk prepared statement Prisma. */
+export const INDEKS_BM25 = "Potongan_teksIndeks_bm25_idx";
+
+/**
+ * Jalur kata kunci konfigurasi B dan C (Rencana 10 Nov T5): BM25 pg_textsearch atas `teksIndeks` (kepala + teks).
+ * Skor `<@>` negatif (lebih kecil = lebih relevan); potongan tanpa kata yang cocok (skor 0) dibuang.
+ */
+export async function jalurBm25(l: LingkupCari, kueri: string, n: number): Promise<string[]> {
+  const q = kueriBm25(kueri);
+  if (!q) return [];
+  const baris = await prisma.$queryRaw<Baris[]>`
+    SELECT s."id" FROM (
+      SELECT pt."id", pt."teksIndeks" <@> to_bm25query(${q}, ${INDEKS_BM25}) AS "skor"
+      FROM "Potongan" pt
+      JOIN "Dokumen" d ON d."id" = pt."dokumenId"
+      WHERE (d."proyekId" = ${l.proyekId} OR d."proyekId" IS NULL) AND d."status" = 'siap' AND pt."modelEmbedding" = ${l.model}
+        AND pt."teksIndeks" IS NOT NULL
+        AND (${l.subBagianKode}::text IS NULL OR d."subBagianKode" = ${l.subBagianKode} OR d."subBagianKode" IS NULL)
+      ORDER BY pt."teksIndeks" <@> to_bm25query(${q}, ${INDEKS_BM25}), pt."id"
+      LIMIT ${n}
+    ) s
+    WHERE s."skor" < 0
+    ORDER BY s."skor", s."id"`;
+  return baris.map((b) => b.id);
+}
+
 export interface HasilJalur {
   /** id potongan per jalur, terurut dari peringkat 1 */
   vektor: string[];
@@ -124,11 +150,11 @@ export async function jalankanJalur(
   let vektor: string[] = [];
   try {
     const v = vektorKueri ? await vektorKueri() : await (await penyediaEmbedding()).penyedia.embedKueri(kueri);
-    vektor = await jalurVektor(l, v, n);
+    vektor = konf.vektor === "embeddingKonteks" ? await jalurVektorKonteks(l, v, n) : await jalurVektor(l, v, n);
   } catch (e) {
     catatan.push(`Pencarian vektor dilewati: ${e instanceof Error ? e.message : String(e)}`);
   }
-  const kataKunci = await jalurTsRank(l, kueri, n);
+  const kataKunci = konf.kataKunci === "bm25" ? await jalurBm25(l, kueri, n) : await jalurTsRank(l, kueri, n);
   return { vektor, kataKunci, catatan };
 }
 
