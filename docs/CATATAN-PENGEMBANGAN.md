@@ -2149,3 +2149,43 @@ Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 175/175 lulus |
 | `npm run test:integrasi` | 101/101 lulus |
+
+### T2: data uji pencarian dan konfigurasi tercatat (rumusan masalah 2)
+
+- `domain/konfigurasi-pencarian.ts`: `KONFIGURASI_PENCARIAN` A-lama (aktif, k 8), B-bm25 (k 8) dan C-unsur (k 10), keduanya
+  belum aktif. `konfigurasiBawaan` membaca `PENCARIAN_KONFIGURASI` (nilai tidak sah atau belum aktif diabaikan, bawaan =
+  konfigurasi aktif paling akhir).
+- `data/pencarian.ts` ditulis ulang per jalur: `jalurVektor` (kolom `embedding`), `jalurTsRank` (`teksTsv`),
+  `jalankanJalur` (per konfigurasi, vektor kueri bisa disuntikkan), `kandidatDariJalur` (RRF, k teratas masuk
+  konteks). `cariPotongan` kini mengembalikan `jejak`: konfigurasi, kueri, k, dan semua kandidat gabungan beserta
+  peringkat vektor, kata kunci, gabungan, skor RRF, dan `masukKonteks`. Hasil dan prompt tidak berubah (urutan jalur
+  vektor kini diberi pemecah seri `id`, sama seperti jalur kata kunci).
+- Migrasi `20261113100000_versi_draf_pencarian`: kolom `VersiDraf.pencarian` (JSONB); generate menyimpan jejaknya.
+- Ekspor CSV (`data/uji-pencarian.ts`): Tim Prodi `GET /api/led/proyek/[id]/uji-pencarian` (tombol "Unduh data uji
+  pencarian" di Basis Pengetahuan LED), Admin UPPS LED mana pun atau `GET /api/led/uji-pencarian` (semua LED, tombol di
+  Basis Pengetahuan fakultas). Reviewer ditolak.
+  - Per sub-bagian yang berdraf: kueri tersimpan di versi aktif (versi lama tanpa jejak memakai kueri generate)
+    dijalankan ulang untuk setiap konfigurasi aktif.
+  - Pool (`domain/pool-pencarian.ts`): 20 teratas setiap jalur **ditambah k teratas gabungan**. Tambahan ini perlu
+    karena RRF bisa menaikkan potongan yang peringkatnya di bawah 20 di kedua jalur ke k teratas (contoh di uji unit:
+    peringkat 25 di kedua jalur).
+  - Kolom sesuai rencana ditambah `led_id` (kunci untuk menjalankan ulang pencarian di skrip). `masuk_konteks` dari
+    jejak versi aktif; versi lama tanpa jejak memakai k teratas A-lama (perkiraan). `relevan` dan `catatan` kosong.
+    BOM UTF-8 supaya Excel membaca huruf Indonesia.
+  - Satu-satunya panggilan AI: embedding kueri, satu kali per teks kueri per ekspor.
+- `scripts/hitung-retrieval.ts`: `--csv`, `--konfigurasi`, `--k` (bawaan 1,3,5; k sistem tiap konfigurasi selalu ikut),
+  `--keluaran`, `--dari-csv`. Bawaan menjalankan ulang pencarian dengan kueri tersimpan; `--dari-csv` memakai peringkat
+  saat ekspor. Menulis `ringkasan-retrieval.csv` dan `tabel-retrieval.md`.
+  - precision@k = relevan di k teratas / k; recall@k = relevan di k teratas / semua berlabel relevan di pool.
+  - Baris tanpa label dilewati dan dihitung (tidak relevan bila muncul di k teratas); sub-bagian tanpa label tidak
+    dinilai; sub-bagian tanpa potongan relevan tidak ikut rata-rata recall; rata-rata makro.
+  - Nilai `relevan` selain 1/0/ya/tidak/kosong ditolak supaya salah ketik terlihat.
+- Uji: `tests/unit/retrieval.test.ts` (5; fikstur `tests/fikstur/retrieval/label-contoh.csv` cocok dengan
+  `docs/uji/hitungan-manual-retrieval.md`), `tests/integrasi/uji-pencarian.test.ts` (3: jejak di versi, isi CSV tanpa
+  panggilan LLM, akses).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 180/180 lulus |
+| `npm run test:integrasi` | 104/104 lulus |

@@ -12,7 +12,7 @@ import { PemantauProses } from "@/components/status-proses";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { TabelDokumen } from "@/modules/led/komponen/basis-pengetahuan/tabel-dokumen";
 
 export const metadata: Metadata = { title: "Basis Pengetahuan fakultas" };
@@ -27,7 +27,15 @@ export default async function HalamanDokumenBersama() {
       <JudulHalaman
         judul="Basis Pengetahuan fakultas"
         deskripsi="Dokumen bersama untuk semua LED"
-        aksi={<Button asChild size="lg"><Link href="/led/dokumen-bersama/tambah"><Plus aria-hidden />Tambah dokumen</Link></Button>}
+        aksi={
+          <div className="flex flex-wrap gap-2">
+            {/* Rencana 10 Nov T2: data uji pencarian semua LED untuk dilabel manusia */}
+            <Button asChild size="lg" variant="outline">
+              <a href="/api/led/uji-pencarian" download><Download aria-hidden />Unduh data uji pencarian (semua LED)</a>
+            </Button>
+            <Button asChild size="lg"><Link href="/led/dokumen-bersama/tambah"><Plus aria-hidden />Tambah dokumen</Link></Button>
+          </div>
+        }
       />
       <Petunjuk
         kunci="pj-dokumen-bersama"

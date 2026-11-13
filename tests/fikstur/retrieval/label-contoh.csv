@@ -1,0 +1,13 @@
+led,led_id,sub_bagian,judul_sub_bagian,butir,unsur,kueri,potongan_id,dokumen,halaman,peringkat_per_konfigurasi,masuk_konteks,cuplikan,relevan,catatan
+LED Uji,L1,C.1-LB,Latar belakang,1,,kueri satu,p1,Renstra,1,"{""A-lama"":{""v"":1,""k"":2,""g"":1}}",1,teks p1,1,
+LED Uji,L1,C.1-LB,Latar belakang,1,,kueri satu,p2,Renstra,2,"{""A-lama"":{""v"":3,""k"":null,""g"":2}}",1,teks p2,0,
+LED Uji,L1,C.1-LB,Latar belakang,1,,kueri satu,p3,SK Dekan,1,"{""A-lama"":{""v"":null,""k"":1,""g"":3}}",1,teks p3,1,
+LED Uji,L1,C.1-LB,Latar belakang,1,,kueri satu,p4,SK Dekan,2,"{""A-lama"":{""v"":2,""k"":null,""g"":4}}",1,teks p4,0,
+LED Uji,L1,C.1-LB,Latar belakang,1,,kueri satu,p5,Notulen,1,"{""A-lama"":{""v"":4,""k"":null,""g"":5}}",1,teks p5,,belum dibaca
+LED Uji,L1,C.1-LB,Latar belakang,1,,kueri satu,p6,Notulen,2,"{""A-lama"":{""v"":null,""k"":3,""g"":6}}",1,teks p6,ya,
+LED Uji,L1,C.1-LB,Latar belakang,1,,kueri satu,p7,Laporan,4,"{""A-lama"":{""v"":9,""k"":12,""g"":9}}",0,teks p7,1,"relevan, di luar k sistem"
+LED Uji,L1,C.2-LB,Tata pamong,2,,kueri dua,q1,Statuta,1,"{""A-lama"":{""v"":1,""k"":1,""g"":1}}",1,teks q1,0,
+LED Uji,L1,C.2-LB,Tata pamong,2,,kueri dua,q2,Statuta,2,"{""A-lama"":{""v"":2,""k"":null,""g"":2}}",1,teks q2,0,
+LED Uji,L1,C.2-LB,Tata pamong,2,,kueri dua,q3,Statuta,3,"{""A-lama"":{""v"":null,""k"":2,""g"":3}}",1,teks q3,tidak,
+LED Uji,L1,C.3-LB,Mahasiswa,3,,kueri tiga,r1,Pedoman,1,"{""A-lama"":{""v"":1,""k"":1,""g"":1}}",1,teks r1,,
+LED Uji,L1,C.3-LB,Mahasiswa,3,,kueri tiga,r2,Pedoman,2,"{""A-lama"":{""v"":2,""k"":2,""g"":2}}",1,teks r2,,

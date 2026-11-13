@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TabelDokumen } from "@/modules/led/komponen/basis-pengetahuan/tabel-dokumen";
 import { PanelCari } from "./panel-cari";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 
 export const metadata: Metadata = { title: "Basis Pengetahuan" };
 
@@ -49,9 +49,15 @@ export default async function HalamanBasisPengetahuan({ params, searchParams }: 
         deskripsi={`${siap.length} dokumen siap dicari · ${potongan.toLocaleString("id-ID")} potongan`}
         remah={[{ label: "Beranda LED", href: `/led/${proyekId}` }, { label: "Basis Pengetahuan" }]}
         aksi={
-          <Button asChild size="lg">
-            <Link href={`${dasar}/tambah`}><Plus aria-hidden />Tambah dokumen</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {/* Rencana 10 Nov T2: CSV untuk dilabel manusia (precision/recall pencarian) */}
+            <Button asChild size="lg" variant="outline">
+              <a href={`/api/led/proyek/${proyekId}/uji-pencarian`} download><Download aria-hidden />Unduh data uji pencarian</a>
+            </Button>
+            <Button asChild size="lg">
+              <Link href={`${dasar}/tambah`}><Plus aria-hidden />Tambah dokumen</Link>
+            </Button>
+          </div>
         }
       />
       <Petunjuk

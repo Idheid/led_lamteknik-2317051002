@@ -391,6 +391,7 @@ model VersiDraf {
   dokumenKurang String[]
   pemeriksaan Json?      // hasil cek panjang, angka, sumber
   model       String?
+  pencarian   Json?      // Rencana 10 Nov T2: konfigurasi, kueri, k, kandidat beserta peringkat per jalur
   keluaranMentah Json?
   jumlahKata  Int        @default(0)
   dibuatOlehId String?

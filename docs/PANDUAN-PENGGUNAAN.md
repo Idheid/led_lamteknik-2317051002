@@ -264,6 +264,8 @@ kunci API hanya menampilkan status; bila kunci habis, hubungi Admin UPPS.
    yang belum ada. Tabel dari PDF wajib dicek. Tabel **Metrik butir angka** menunjukkan sumber nilai tiap butir angka.
 2. **Basis Pengetahuan**: tab **Dokumen LED ini** (Tambah dokumen, kaitkan ke sub-bagian, tahun terbit, tautan bukti)
    dan **Dokumen bersama fakultas** (hanya baca). **Uji cari** memeriksa apakah bukti sudah terbaca sebelum generate.
+   **Unduh data uji pencarian** menghasilkan CSV potongan kandidat setiap sub-bagian yang sudah berdraf, untuk diberi
+   label relevan (1) atau tidak (0) oleh manusia; Admin UPPS mengunduh semua LED dari Basis Pengetahuan fakultas.
 3. **Tim penyusun**: dosen (urutan pertama = ketua) dan tenaga kependidikan; mengisi halaman identitas tim dan Tabel 2.1
    dan 2.2. Nama dan nomor induk tidak dikirim ke Gemini.
 

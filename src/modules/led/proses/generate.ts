@@ -6,6 +6,7 @@ import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { GalatTanpaKunci } from "@/modules/bersama/data/kunci-api";
 import { cariPotongan } from "@/modules/led/data/pencarian";
 import { kueriGenerate } from "@/modules/led/domain/rrf";
+import type { JejakPencarian } from "@/modules/led/domain/konfigurasi-pencarian";
 import type { KolomLkps, BarisLkps } from "@/modules/led/data-lkps/jenis";
 import { formatMetrik } from "@/modules/led/tampil";
 import { hitungAnggaran } from "@/modules/led/domain/anggaran";
@@ -194,6 +195,8 @@ interface KonteksLengkap {
   legenda: Record<string, string>;
   catatan: string[];
   sub: { id: string; kode: string; bagianKode: string };
+  /** Rencana 10 Nov T2: jejak pencarian (konfigurasi, kueri, kandidat) disimpan di VersiDraf.pencarian */
+  pencarian: JejakPencarian;
 }
 
 /** Susun konteks prompt satu sub-bagian. Data pribadi disamarkan sebelum masuk konteks. */
@@ -374,7 +377,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
     sumberSah: [...kodeSumberSah(konteks)],
     teksSumber: teksSumberKonteks(konteks),
   };
-  return { konteks, rujukan, tabelSistem, legenda, catatan, sub: { id: s.id, kode: s.kode, bagianKode: s.bagian.kode } };
+  return { konteks, rujukan, tabelSistem, legenda, catatan, sub: { id: s.id, kode: s.kode, bagianKode: s.bagian.kode }, pencarian: cari.jejak };
 }
 
 /** Generate satu sub-bagian dan simpan sebagai versi baru. */
@@ -416,6 +419,7 @@ export async function generateSubBagian(
         dokumenKurang: hasil.keluaran.dokumenKurang,
         pemeriksaan: { ...pemeriksaan, rujukan: k.rujukan, catatanSistem: k.catatan } as unknown as Prisma.InputJsonValue,
         model: hasil.model,
+        pencarian: k.pencarian as unknown as Prisma.InputJsonValue,
         keluaranMentah: {
           keluaran: hasil.keluaran,
           pemakaian: { tokenMasuk: hasil.tokenMasuk, tokenKeluar: hasil.tokenKeluar, durasiMs: hasil.durasiMs },
