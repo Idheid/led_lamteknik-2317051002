@@ -1,5 +1,5 @@
 import { bagi, baris, batasi, dariSarjana, hasil, m, nol, sama, skorAmbang, skorTigaTingkat, teks, type RumusJenjang } from './bersama.ts';
-import { dosenIndustri, produkDiadopsi, publikasiPagelaran, sertifikasiDtps } from './vokasi.ts';
+import { dosenIndustri, produkDiadopsi, publikasiPagelaran, sertifikasiDtps, waktuTungguDipesan } from './vokasi.ts';
 
 /**
  * Rencana 10 Nov T10 (R3): rumus butir angka Diploma Tiga (D3), dari Matriks Penilaian LED dan LKPS Diploma III 2025
@@ -138,31 +138,7 @@ export const RUMUS_D3: RumusJenjang[] = [
     },
   },
   // hlm. 28–29: WT < 3 → 4; 3 ≤ WT ≤ 6 → (18 − WT) / 3; WT > 6 → 0 (Tabel 6.f.1 D3)
-  {
-    kode: `${J}-45`, jenjang: J, butir: '45', dasar: null, judul: 'Waktu tunggu lulusan',
-    hitung: (t) => {
-      const isi = baris(t, '6f1').filter((b) => /^TS-[12]$/i.test(teks(b.sel.A)));
-      const jl = isi.reduce((s, b) => s + nol(b.sel.B), 0);
-      const terlacak = isi.reduce((s, b) => s + nol(b.sel.C), 0);
-      const pesan = isi.reduce((s, b) => s + nol(b.sel.D), 0);
-      const k3 = isi.reduce((s, b) => s + nol(b.sel.E), 0);
-      const k6 = isi.reduce((s, b) => s + nol(b.sel.F), 0);
-      const l6 = isi.reduce((s, b) => s + nol(b.sel.G), 0);
-      const n = pesan + k3 + k6 + l6;
-      const WT = n ? (pesan * 0 + k3 * 1.5 + k6 * 4.5 + l6 * 9) / n : null;
-      const responden = bagi(terlacak, jl);
-      const catatan = ['Asumsi: lulusan dipesan sebelum lulus WT = 0; titik tengah kelompok 1,5 dan 4,5 bulan; WT > 6 bulan = 9 bulan.'];
-      if (responden !== null && responden < 0.3) catatan.push('Responden lulusan kurang dari 30%.');
-      return hasil('45', 'Waktu tunggu lulusan', ['6.f.1'], 'WT', [
-        m('RESPONDEN_WT', 'Persentase lulusan terlacak', responden, 'persen'),
-        m('WT_DIPESAN', 'Lulusan dipesan sebelum lulus', pesan, 'angka'),
-        m('WT_KURANG3', 'Lulusan dengan WT < 3 bulan', k3, 'angka'),
-        m('WT_3_6', 'Lulusan dengan 3 ≤ WT ≤ 6 bulan', k6, 'angka'),
-        m('WT_LEBIH6', 'Lulusan dengan WT > 6 bulan', l6, 'angka'),
-        m('WT', 'Perkiraan rata-rata waktu tunggu', WT, 'bulan'),
-      ], WT === null ? null : batasi(WT < 3 ? 4 : WT <= 6 ? (18 - WT) / 3 : 0), catatan);
-    },
-  },
+  waktuTungguDipesan(J, '45', (wt) => (wt < 3 ? 4 : wt <= 6 ? (18 - wt) / 3 : 0)),
   // hlm. 29: KBK ≥ 80% → 4; < 80% → 5 × KBK
   dariSarjana(J, '46', '50', (v) => ({ skor: skorAmbang(v.KBK, 0.8, (p) => 5 * p) })),
   // hlm. 29–30: tempat kerja (a = 5%, b = 20%, c = 90%) dan kepuasan pengguna sama dengan Sarjana

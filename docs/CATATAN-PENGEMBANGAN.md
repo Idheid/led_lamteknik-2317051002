@@ -2573,11 +2573,28 @@ bagian, 1 perbaikan, 1 periksa ulang).
   matriks versi berikutnya bisa berbeda, dan uji alur penuh mengandalkan usulan AI yang dikonfirmasi Admin.
 - **R5**: Data LKPS menandai "Dihitung otomatis · rumus <kode>"; butir tanpa rumus menampilkan alasan dari
   `alasanTanpaRumus` (jenjang tanpa rumus khusus: "rumus otomatis jenjang ini belum dibuat"). Nilai manual tetap ada.
-- Belum: PPI, D1, D2, Magister Terapan, Doktor, Doktor Terapan (urutan rencana). Jenjang itu sementara memakai katalog
+- Belum (saat commit D3/STr/S2): PPI, D1, D2, Magister Terapan, Doktor, Doktor Terapan (urutan rencana). Jenjang itu sementara memakai katalog
   Sarjana untuk usulan AI dan nilai manual.
 
 | Pemeriksaan (D3, STr, S2) | Hasil |
 | --- | --- |
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 230/230 lulus (termasuk regresi Sarjana identik) |
+| `npm run test:integrasi` | 130/130 lulus |
+
+### T10 R3: rumus PPI
+
+- `rumus/ppi.ts` (25 rumus) dengan metrik khusus PPI: praktik di industri (Tabel 3.a.2 jam teori/praktik), rasio
+  dosen PSPPI terhadap dosen industri, kualifikasi IPU + STRI (Tabel 4.a kolom 13–14), pembimbing lapangan (Tabel 4.k),
+  rasio mahasiswa per (DTPS + dosen industri), masa studi dalam semester (6.d PPI), tepat waktu dan keberhasilan studi,
+  RK berbobot. Waktu tunggu dengan kolom "dipesan sebelum lulus" dipindah ke `vokasi.ts` (`waktuTungguDipesan`,
+  dipakai D3 dan PPI).
+- **Butir 44 tetap manual** (`MANUAL_PPI`): matriks merujuk Tabel 6.f.2 tetapi template LKPS 2025 tidak memuat
+  tabel itu untuk PPI; alasan tampil di halaman cek instrumen dan Data LKPS.
+- Uji `tests/unit/rumus-ppi.test.ts` (4); hitungan tangan dan asumsi di `docs/uji/hitungan-manual-ppi.md`.
+
+| Pemeriksaan (PPI) | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 234/234 lulus |
 | `npm run test:integrasi` | 130/130 lulus |

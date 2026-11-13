@@ -1,5 +1,5 @@
 import {
-  bagi, baris, hasil, m, nol, sama, skorAmbang, skorTigaTingkat, tercentang, terisi, teks, variabelDosen, variabelMahasiswa,
+  bagi, baris, batasi, hasil, m, nol, sama, skorAmbang, skorTigaTingkat, tercentang, terisi, teks, variabelDosen, variabelMahasiswa,
   type RumusJenjang,
 } from './bersama.ts';
 
@@ -103,6 +103,35 @@ export function produkDiadopsi(J: string, butir: string, o: { sheet: '4g' | '6e4
         m('NAPJ', o.sheet === '4g' ? 'Produk/jasa DTPS yang diadopsi' : 'Produk/jasa karya mahasiswa yang diadopsi', NAPJ, 'angka'),
         ...(o.perDtps ? [m('NDTPS', 'Jumlah DTPS', NDTPS, 'angka'), m('RS', 'Rasio produk/jasa per DTPS', RS, 'rasio', 'RS = NAPJ / NDTPS')] : []),
       ], o.skor(o.perDtps ? RS : NAPJ), [`Tabel ${tabel[0]} tidak memuat tahun; semua baris dianggap dalam 3 tahun terakhir (asumsi).`]);
+    },
+  };
+}
+
+/**
+ * Waktu tunggu dari Tabel 6.f.1 berkolom "dipesan sebelum lulus" (D1–D3, PPI): D dipesan, E WT < 3, F 3 ≤ WT ≤ 6,
+ * G WT > 6 bulan, lulusan TS-2 s.d. TS-1. WT didekati 0; 1,5; 4,5; 9 bulan.
+ */
+export function waktuTungguDipesan(J: string, butir: string, skor: (wt: number) => number): RumusJenjang {
+  const judul = 'Waktu tunggu lulusan';
+  return {
+    kode: `${J}-${butir}`, jenjang: J, butir, dasar: null, judul,
+    hitung: (t) => {
+      const isi = baris(t, '6f1').filter((b) => /^TS-[12]$/i.test(teks(b.sel.A)));
+      const jumlah = (c: string) => isi.reduce((s, b) => s + nol(b.sel[c]), 0);
+      const [jl, terlacak, pesan, k3, k6, l6] = ['B', 'C', 'D', 'E', 'F', 'G'].map(jumlah);
+      const n = pesan + k3 + k6 + l6;
+      const WT = n ? (k3 * 1.5 + k6 * 4.5 + l6 * 9) / n : null;
+      const responden = bagi(terlacak, jl);
+      const catatan = ['Asumsi: lulusan dipesan sebelum lulus WT = 0; titik tengah kelompok 1,5 dan 4,5 bulan; WT > 6 bulan = 9 bulan.'];
+      if (responden !== null && responden < 0.3) catatan.push('Responden lulusan kurang dari 30%.');
+      return hasil(butir, judul, ['6.f.1'], 'WT', [
+        m('RESPONDEN_WT', 'Persentase lulusan terlacak', responden, 'persen'),
+        m('WT_DIPESAN', 'Lulusan dipesan sebelum lulus', pesan, 'angka'),
+        m('WT_KURANG3', 'Lulusan dengan WT < 3 bulan', k3, 'angka'),
+        m('WT_3_6', 'Lulusan dengan 3 ≤ WT ≤ 6 bulan', k6, 'angka'),
+        m('WT_LEBIH6', 'Lulusan dengan WT > 6 bulan', l6, 'angka'),
+        m('WT', 'Perkiraan rata-rata waktu tunggu', WT, 'bulan'),
+      ], WT === null ? null : batasi(skor(WT)), catatan);
     },
   };
 }
