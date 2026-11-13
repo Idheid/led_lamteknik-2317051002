@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { prisma } from "@/modules/bersama/db";
 import { modelEmbeddingAktif, penyediaEmbedding } from "@/modules/bersama/data/kunci-api";
-import { jalankanJalur } from "@/modules/led/data/pencarian";
+import { jalankanJalur, jalankanUnsur, kueriUnsurSubBagian } from "@/modules/led/data/pencarian";
 import { bacaCsvObjek, tulisCsv } from "@/modules/led/domain/csv";
 import { KONFIGURASI_PENCARIAN, bacaDaftarKonfigurasi, konfigurasiAktif } from "@/modules/led/domain/konfigurasi-pencarian";
 import {
@@ -12,6 +12,7 @@ import {
   type PeringkatKonfigurasi,
 } from "@/modules/led/domain/metrik-retrieval";
 import { urutanGabungan } from "@/modules/led/domain/pool-pencarian";
+import { urutanSistemUnsur } from "@/modules/led/domain/kueri-unsur";
 
 /**
  * Rencana 10 Nov T2: hitung precision@k dan recall@k dari CSV data uji yang sudah dilabel manusia.
@@ -54,6 +55,11 @@ async function utama() {
     for (const [kunci, g] of kelompok) {
       if (!vektor.has(g.kueri)) vektor.set(g.kueri, penyedia.embedKueri(g.kueri));
       for (const konf of konfigurasi) {
+        if (KONFIGURASI_PENCARIAN[konf].kueri === "unsur") {
+          const u = await jalankanUnsur({ proyekId: g.ledId, subBagianKode: g.sub, model }, await kueriUnsurSubBagian(g.ledId, g.sub), { k: KONFIGURASI_PENCARIAN[konf].k });
+          peringkat[konf][kunci] = urutanSistemUnsur(u.pilih);
+          continue;
+        }
         const j = await jalankanJalur({ proyekId: g.ledId, subBagianKode: g.sub, model }, konf, g.kueri, 30, () => vektor.get(g.kueri)!);
         peringkat[konf][kunci] = urutanGabungan(j);
       }

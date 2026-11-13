@@ -1,11 +1,13 @@
 import { prisma } from "@/modules/bersama/db";
 import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyek } from "@/modules/led/data/proyek";
-import { modelEmbeddingAktif, penyediaEmbedding } from "@/modules/bersama/data/kunci-api";
+import { modelEmbeddingAktif } from "@/modules/bersama/data/kunci-api";
 import { gabungRRF, kueriBm25, kueriGenerate, kueriKataKunci } from "@/modules/led/domain/rrf";
 import { bacaVarian, varianUntukJenjang } from "@/modules/led/domain/instrumen";
 import { gantiLabelTS } from "@/modules/bersama/domain/tahun-akademik";
 import { literalVektor } from "@/modules/bersama/llm/embedding";
+import { vektorKueri } from "@/modules/led/data/vektor-kueri";
+import { kueriPerUnsur, pilihPerUnsur, type HasilKueri, type InfoPotongan, type KueriUnsur } from "@/modules/led/domain/kueri-unsur";
 import {
   KONFIGURASI_PENCARIAN, konfigurasiBawaan,
   type JejakPencarian, type KandidatPencarian, type KodeKonfigurasi,
@@ -88,6 +90,19 @@ export async function jalurVektorKonteks(l: LingkupCari, vektorKueri: number[], 
   return baris.map((b) => b.id);
 }
 
+/** Seperti jalurVektorKonteks, beserta jarak kosinus (untuk ambang relevansi C-unsur). */
+export async function jalurVektorKonteksJarak(l: LingkupCari, vektorKueri: number[], n: number): Promise<{ id: string; jarak: number }[]> {
+  const v = literalVektor(vektorKueri);
+  return prisma.$queryRaw<{ id: string; jarak: number }[]>`
+    SELECT pt."id", (pt."embeddingKonteks" <=> ${v}::vector) AS "jarak" FROM "Potongan" pt
+    JOIN "Dokumen" d ON d."id" = pt."dokumenId"
+    WHERE (d."proyekId" = ${l.proyekId} OR d."proyekId" IS NULL) AND d."status" = 'siap' AND pt."modelEmbedding" = ${l.model}
+      AND pt."embeddingKonteks" IS NOT NULL
+      AND (${l.subBagianKode}::text IS NULL OR d."subBagianKode" = ${l.subBagianKode} OR d."subBagianKode" IS NULL)
+    ORDER BY pt."embeddingKonteks" <=> ${v}::vector, pt."id"
+    LIMIT ${n}`;
+}
+
 /** Jalur kata kunci konfigurasi A: ts_rank atas `teksTsv`. */
 export async function jalurTsRank(l: LingkupCari, kueri: string, n: number): Promise<string[]> {
   const q = kueriKataKunci(kueri);
@@ -129,6 +144,10 @@ export async function jalurBm25(l: LingkupCari, kueri: string, n: number): Promi
   return baris.map((b) => b.id);
 }
 
+async function vektorTersimpan(teks: string[], model: string): Promise<Map<string, number[]>> {
+  return (await vektorKueri(teks, { model })).vektor;
+}
+
 export interface HasilJalur {
   /** id potongan per jalur, terurut dari peringkat 1 */
   vektor: string[];
@@ -149,7 +168,8 @@ export async function jalankanJalur(
   const catatan: string[] = [];
   let vektor: string[] = [];
   try {
-    const v = vektorKueri ? await vektorKueri() : await (await penyediaEmbedding()).penyedia.embedKueri(kueri);
+    // Rencana 10 Nov T6/T9: vektor kueri dibaca dari EmbeddingKueri (dibuat sekali bila belum ada)
+    const v = vektorKueri ? await vektorKueri() : (await vektorTersimpan([kueri], l.model)).get(kueri)!;
     vektor = konf.vektor === "embeddingKonteks" ? await jalurVektorKonteks(l, v, n) : await jalurVektor(l, v, n);
   } catch (e) {
     catatan.push(`Pencarian vektor dilewati: ${e instanceof Error ? e.message : String(e)}`);
@@ -184,11 +204,138 @@ export async function kueriSubBagian(p: Pengguna, proyekId: string, subBagianKod
   return kueriGenerate(s.judul, instruksi, s.butir.map((r) => r.butir).sort((a, b) => a.urutan - b.urutan));
 }
 
+/** k bawaan konfigurasi C (PENCARIAN_K, bawaan 10). */
+export function kUnsur(): number {
+  const n = Number(process.env.PENCARIAN_K);
+  return Number.isInteger(n) && n > 0 ? n : KONFIGURASI_PENCARIAN["C-unsur"].k;
+}
+
+/** Ambang kosinus relevansi (PENCARIAN_AMBANG_KOSINUS); 0 = mati (bawaan sampai dikalibrasi dari label T2). */
+export function ambangKosinus(): number {
+  const n = Number(process.env.PENCARIAN_AMBANG_KOSINUS ?? 0);
+  return Number.isFinite(n) && n > 0 && n < 1 ? n : 0;
+}
+
+/**
+ * Inti konfigurasi C-unsur tanpa pemeriksaan akses (dipakai generate lewat cariPotonganUnsur, ekspor data uji, dan
+ * skrip hitung): jalur setiap kueri dan pemilihan potongannya.
+ */
+export async function jalankanUnsur(l: LingkupCari, kueri: KueriUnsur[], opsi: OpsiCariUnsur & { k: number }) {
+  const n = opsi.kandidat ?? 30;
+  const ambang = opsi.ambang ?? ambangKosinus();
+  const catatan: string[] = [];
+  let vektor = new Map<string, number[]>();
+  try {
+    vektor = (await vektorKueri(kueri.map((q) => q.teks), { model: l.model })).vektor;
+  } catch (e) {
+    catatan.push(`Pencarian vektor dilewati: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  const hasilKueri: HasilKueri[] = [];
+  for (const q of kueri) {
+    const v = vektor.get(q.teks);
+    const vek = v ? await jalurVektorKonteksJarak(l, v, n) : [];
+    hasilKueri.push({
+      kueri: q,
+      vektor: vek.filter((x) => ambang === 0 || 1 - x.jarak >= ambang).map((x) => x.id),
+      kataKunci: await jalurBm25(l, q.teks, n),
+    });
+  }
+  const ids = [...new Set(hasilKueri.flatMap((h) => [...h.vektor, ...h.kataKunci]))];
+  const info = new Map<string, InfoPotongan>((ids.length === 0 ? [] : await prisma.potongan.findMany({
+    where: { id: { in: ids } }, select: { id: true, urutan: true, dokumenId: true },
+  })).map((x) => [x.id, { dokumenId: x.dokumenId, urutan: x.urutan }]));
+  const pilih = pilihPerUnsur(hasilKueri, info, { k: opsi.k, maksPerDokumen: opsi.maksPerDokumen ?? 3 });
+  return { hasilKueri, pilih, catatan };
+}
+
+/** Kueri C-unsur satu sub-bagian dari instrumen LED (tanpa pemeriksaan akses; untuk ekspor dan skrip). */
+export async function kueriUnsurSubBagian(proyekId: string, subBagianKode: string): Promise<KueriUnsur[]> {
+  const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId } });
+  const s = await prisma.subBagian.findFirst({
+    where: { kode: subBagianKode, bagian: { versiId: proyek.versiId } },
+    include: { butir: { where: { butir: { jenjang: proyek.jenjang } }, include: { butir: true } } },
+  });
+  if (!s) throw new GalatPengguna("Sub-bagian tidak ada di LED ini.");
+  const instruksi = gantiLabelTS(varianUntukJenjang(bacaVarian(s.varian), proyek.jenjang)?.instruksi ?? "", proyek.tsTahunMulai);
+  return kueriPerUnsur(s.judul, instruksi, s.butir.map((r) => r.butir).sort((a, b) => a.urutan - b.urutan));
+}
+
+export interface OpsiCariUnsur {
+  subBagianKode?: string | null;
+  k?: number;
+  kandidat?: number;
+  maksPerDokumen?: number;
+  ambang?: number;
+}
+
+/**
+ * Rencana 10 Nov T6, konfigurasi C-unsur: kueri umum + kueri per unsur skor 4; setiap kueri vektor (embeddingKonteks)
+ * 30 teratas + BM25 30 teratas → RRF, semua kueri digabung RRF lagi; setiap unsur berkandidat dijamin 1 (bila ada 2)
+ * potongan, paling banyak 3 per dokumen, potongan bertumpang tindih dilewati. Unsur tanpa kandidat (atau semua
+ * kandidat vektornya di bawah ambang kosinus) dilaporkan sebagai "unsur tanpa bukti" (pra-cek, 0 token).
+ */
+export async function cariPotonganUnsur(p: Pengguna, proyekId: string, kueri: KueriUnsur[], opsi: OpsiCariUnsur = {}) {
+  const proyek = await ambilProyek(p, proyekId);
+  const k = opsi.k ?? kUnsur();
+  const lingkup: LingkupCari = { proyekId: proyek.id, subBagianKode: opsi.subBagianKode ?? null, model: await modelEmbeddingAktif() };
+  const { hasilKueri, pilih, catatan } = await jalankanUnsur(lingkup, kueri, { ...opsi, k });
+  const semuaId = [...new Set(hasilKueri.flatMap((h) => [...h.vektor, ...h.kataKunci]))];
+  const potongan = semuaId.length === 0 ? [] : await prisma.potongan.findMany({
+    where: { id: { in: semuaId } },
+    select: { id: true, teks: true, halaman: true, urutan: true, dokumen: { select: { id: true, namaBerkas: true, judul: true, subBagianKode: true, proyekId: true } } },
+  });
+  const peta = new Map(potongan.map((x) => [x.id, x]));
+  const info = new Map<string, InfoPotongan>(potongan.map((x) => [x.id, { dokumenId: x.dokumen.id, urutan: x.urutan }]));
+  const kueriPeta = new Map(kueri.map((q) => [q.kunci, q]));
+  const asalTerpilih = new Map(pilih.terpilih.map((t) => [t.id, t.asal]));
+  const terbaik = (id: string, jalur: "vektor" | "kataKunci") => {
+    const posisi = hasilKueri.map((h) => h[jalur].indexOf(id)).filter((i) => i >= 0);
+    return posisi.length ? Math.min(...posisi) + 1 : null;
+  };
+  const kandidat: KandidatPencarian[] = pilih.global.map((g, i) => {
+    let asal = asalTerpilih.get(g.id);
+    if (!asal) {
+      let posisi = Infinity;
+      for (const [kunci, urutan] of pilih.perKueri) {
+        const j = urutan.indexOf(g.id);
+        if (j >= 0 && j < posisi) { posisi = j; asal = kunci; }
+      }
+    }
+    return {
+      potonganId: g.id, dokumenId: info.get(g.id)?.dokumenId ?? "", peringkatVektor: terbaik(g.id, "vektor"),
+      peringkatKataKunci: terbaik(g.id, "kataKunci"), peringkatGabungan: i + 1, skorRrf: Number(g.skor.toFixed(6)),
+      unsur: kueriPeta.get(asal ?? "")?.unsur ?? null, masukKonteks: asalTerpilih.has(g.id),
+    };
+  });
+  const jejak: JejakPencarian = { konfigurasi: "C-unsur", kueri: kueri.map((q) => q.teks), k, kandidat };
+  const skor = new Map(pilih.global.map((g) => [g.id, g.skor]));
+  const hasil: HasilCari[] = pilih.terpilih.flatMap((t) => {
+    const x = peta.get(t.id);
+    if (!x) return [];
+    return [{
+      potonganId: x.id, dokumenId: x.dokumen.id, namaBerkas: x.dokumen.namaBerkas, judul: x.dokumen.judul,
+      subBagianKode: x.dokumen.subBagianKode, halaman: x.halaman, urutan: x.urutan, teks: x.teks,
+      skor: Number((skor.get(t.id) ?? 0).toFixed(6)), peringkatVektor: terbaik(t.id, "vektor"),
+      peringkatKataKunci: terbaik(t.id, "kataKunci"), bersama: x.dokumen.proyekId === null,
+    }];
+  });
+  const unsurTanpaBukti = kueri.filter((q) => q.unsur !== null && !pilih.unsurBerkandidat.has(q.kunci))
+    .map((q) => ({ butir: q.butir!, unsur: q.unsur! }));
+  return { hasil, catatan, jejak, unsurTanpaBukti };
+}
+
 export async function cariPotongan(p: Pengguna, proyekId: string, kueri: string, opsi: OpsiCari = {}) {
   const proyek = await ambilProyek(p, proyekId);
   const k = opsi.k ?? 8;
   const kandidat = opsi.kandidat ?? 30;
   const konfigurasi = opsi.konfigurasi ?? konfigurasiBawaan(process.env.PENCARIAN_KONFIGURASI);
+  if (konfigurasi === "C-unsur") {
+    // teks bebas (Uji cari): satu kueri umum dengan batas per dokumen
+    const r = await cariPotonganUnsur(p, proyekId, [{ kunci: "umum", butir: null, unsur: null, teks: kueri }], {
+      subBagianKode: opsi.subBagianKode, k: opsi.k, kandidat: opsi.kandidat,
+    });
+    return { hasil: r.hasil, catatan: r.catatan, jejak: r.jejak };
+  }
   const lingkup: LingkupCari = { proyekId: proyek.id, subBagianKode: opsi.subBagianKode ?? null, model: await modelEmbeddingAktif() };
   const jalur = await jalankanJalur(lingkup, konfigurasi, kueri, kandidat);
   const semuaId = [...new Set([...jalur.vektor, ...jalur.kataKunci])];

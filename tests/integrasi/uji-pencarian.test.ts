@@ -15,7 +15,7 @@ import { generateSubBagian } from "@/modules/led/proses/generate";
 import { eksporDataUjiPencarian, KEPALA_CSV_UJI } from "@/modules/led/data/uji-pencarian";
 import { bacaCsvObjek } from "@/modules/led/domain/csv";
 import { hitungRetrieval, labelDariCsv, peringkatDariCsv } from "@/modules/led/domain/metrik-retrieval";
-import { konfigurasiBawaan, type JejakPencarian } from "@/modules/led/domain/konfigurasi-pencarian";
+import { KONFIGURASI_PENCARIAN, konfigurasiBawaan, type JejakPencarian } from "@/modules/led/domain/konfigurasi-pencarian";
 import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas, siapkanProdi } from "./bantu";
 
 /** Rencana 10 Nov T2: jejak pencarian di versi draf, ekspor data uji pencarian, dan batas aksesnya. */
@@ -74,12 +74,13 @@ test("versi draf menyimpan jejak pencarian: konfigurasi, kueri, k, kandidat dan 
   const v = await prisma.versiDraf.findFirstOrThrow({ where: { bagianDraf: { proyekId, subBagian: { kode: SUB } } }, orderBy: { nomor: "desc" } });
   const j = v.pencarian as unknown as JejakPencarian;
   assert.equal(j.konfigurasi, konfigurasiBawaan(process.env.PENCARIAN_KONFIGURASI), "konfigurasi bawaan (B-bm25 setelah T5)");
-  assert.equal(j.kueri.length, 1);
+  // C-unsur: kueri umum + satu per unsur skor 4; A/B: satu kueri gabungan
+  assert.ok(j.kueri.length >= 1);
   assert.ok(j.kueri[0].length > 10);
-  assert.equal(j.k, 8);
+  assert.equal(j.k, KONFIGURASI_PENCARIAN[j.konfigurasi].k);
   assert.ok(j.kandidat.length > 0);
   const masuk = j.kandidat.filter((c) => c.masukKonteks);
-  assert.ok(masuk.length > 0 && masuk.length <= 8);
+  assert.ok(masuk.length > 0 && masuk.length <= j.k);
   assert.deepEqual(j.kandidat.map((c) => c.peringkatGabungan), j.kandidat.map((_, i) => i + 1));
   for (const c of j.kandidat) assert.ok(c.peringkatVektor !== null || c.peringkatKataKunci !== null);
   // potongan yang masuk konteks sama dengan sumber dokumen D1, D2, ... di legenda versi
@@ -106,7 +107,7 @@ test("ekspor CSV data uji: pool per sub-bagian, kolom label kosong, masuk kontek
   assert.deepEqual(new Set(baris.filter((b) => b.masuk_konteks === "1").map((b) => b.potongan_id)), masuk);
   for (const b of baris) {
     const p = JSON.parse(b.peringkat_per_konfigurasi);
-    assert.ok("A-lama" in p && "B-bm25" in p, "peringkat setiap konfigurasi aktif");
+    assert.ok("A-lama" in p && "B-bm25" in p && "C-unsur" in p, "peringkat setiap konfigurasi aktif");
   }
 
   // label buatan uji (di dunia nyata diisi manusia) → skrip hitung membaca CSV yang sama

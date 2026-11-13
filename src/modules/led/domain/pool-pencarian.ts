@@ -12,6 +12,8 @@ export interface JalurKonfigurasi {
   kataKunci: string[];
   /** k sistem konfigurasi ini */
   k: number;
+  /** urutan gabungan yang sudah dihitung (C-unsur: RRF semua kueri); kosong = RRF vektor + kata kunci */
+  gabungan?: string[];
 }
 
 export interface PeringkatPool {
@@ -37,7 +39,7 @@ export function susunPool(perKonfigurasi: Record<string, JalurKonfigurasi>, nPer
   const masuk = new Set<string>();
   const gabungan: Record<string, string[]> = {};
   for (const [konf, j] of Object.entries(perKonfigurasi)) {
-    gabungan[konf] = urutanGabungan(j);
+    gabungan[konf] = j.gabungan ?? urutanGabungan(j);
     for (const id of [...j.vektor.slice(0, nPerJalur), ...j.kataKunci.slice(0, nPerJalur), ...gabungan[konf].slice(0, j.k)]) masuk.add(id);
   }
   const posisi = (daftar: string[], id: string) => { const i = daftar.indexOf(id); return i < 0 ? null : i + 1; };

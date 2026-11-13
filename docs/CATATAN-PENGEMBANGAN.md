@@ -2313,3 +2313,42 @@ Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 191/191 lulus |
 | `npm run test:integrasi` | 114/114 lulus |
+
+### T6: kueri per unsur skor 4, batas per dokumen, dan pra-cek bukti
+
+- `domain/kueri-unsur.ts`: `kueriPerUnsur` (kueri umum = judul + 400 karakter instruksi; satu kueri per unsur skor 4 =
+  `{indikator}. {unsur}`); `pilihPerUnsur`: RRF (k = 60) vektor + BM25 per kueri, lalu RRF semua kueri; putaran 1
+  menjamin 1 potongan per unsur berkandidat (boleh melebihi k bila unsur sangat banyak), putaran 2 menambah 1 lagi bila
+  ada ruang, sisa ruang diisi dari peringkat gabungan; paling banyak 3 potongan per dokumen; potongan bersebelahan
+  (urutan ± 1, karena pemotongan bertumpang tindih ± 15%) dengan potongan terpilih di dokumen yang sama dilewati.
+  `urutanSistemUnsur` = terpilih lalu sisa gabungan (dipakai evaluasi supaya "k sistem teratas" = konteks generate).
+- `data/pencarian.ts`: `jalankanUnsur` (inti tanpa cek akses, dipakai generate, ekspor data uji, dan skrip hitung),
+  `cariPotonganUnsur`, `kueriUnsurSubBagian`, `jalurVektorKonteksJarak` (jarak kosinus untuk ambang). Teks bebas di
+  "Uji cari" dengan C = satu kueri umum dengan batas per dokumen.
+- **C-unsur aktif dan menjadi bawaan generate**; `PENCARIAN_K` bawaan 10. Perkiraan kenaikan token dibanding k = 8:
+  2 potongan × ± 250–300 token (potongan 800–1.200 karakter) ≈ +500–600 token masukan per sub-bagian; angka
+  sebenarnya diukur di T11 dari `LogPemakaian`.
+- Tabel `EmbeddingKueri` (migrasi `20261113140000_embedding_kueri`, `data/vektor-kueri.ts`): hash SHA-256 (teks kueri
+  dirapikan + model + `RETRIEVAL_QUERY`) unik; kueri yang belum ada di-embedding sekaligus (`embedKueriBanyak`, batch 100)
+  lalu disimpan; generate dan jalur A/B (`jalankanJalur`) membaca dari tabel. Penyedia uji kini menghitung panggilan
+  (`hitunganEmbeddingUji`).
+- Pra-cek bukti (0 token): unsur tanpa kandidat sama sekali, atau semua kandidat vektornya di bawah
+  `PENCARIAN_AMBANG_KOSINUS` (bawaan 0 = mati), masuk prompt sebagai blok "UNSUR TANPA BUKTI". Bila **semua** unsur tanpa
+  bukti dan tidak ada J, M, maupun T, AI tidak dipanggil: draf deterministik `[BELUM ADA BUKTI: unsur] (butir n)` per
+  unsur + "Dokumen yang diharapkan …" (`DokumenDiharapkan` sub-bagian/butir), model versi `tanpa AI`.
+- Cara kalibrasi ambang (setelah label T2 ada): untuk setiap baris berlabel, hitung kemiripan kosinus kueri unsur dan
+  potongan (`1 - (embeddingKonteks <=> vektor kueri)`); pilih ambang tertinggi yang masih mempertahankan ≥ 95% potongan
+  berlabel relevan, lalu isi `PENCARIAN_AMBANG_KOSINUS`. Dengan ambang 0, jalur vektor selalu punya kandidat bila ada
+  dokumen, jadi "tanpa bukti" hanya terjadi bila Basis Pengetahuan kosong untuk sub-bagian itu.
+- Ekspor data uji dan `scripts/hitung-retrieval.ts`: konfigurasi C dijalankan ulang dengan kueri per unsur dari
+  instrumen; kolom `unsur` diisi unsur asal potongan terpilih.
+- Uji lama yang memeriksa narasi AI tiruan pada LED tanpa dokumen (`alur-penuh`, `kecepatan`) kini dijalankan dengan
+  `PENCARIAN_KONFIGURASI=B-bm25`, karena dengan C sub-bagian tanpa bukti disusun tanpa AI (perilaku yang dimaksud).
+- Uji: `tests/unit/kueri-unsur.test.ts` (5), `tests/integrasi/unsur-bukti.test.ts` (4: tanpa bukti tidak memanggil LLM,
+  setiap unsur mendapat potongan dan batas per dokumen, generate kedua 0 embedding kueri, A/B tetap kueriGenerate).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 196/196 lulus |
+| `npm run test:integrasi` | 118/118 lulus |

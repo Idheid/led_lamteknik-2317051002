@@ -87,9 +87,9 @@ test("cariPotongan: konfigurasi A dan B berjalan berdampingan dengan jejak masin
   const kk = (j: typeof a.jejak, kunci: string) => j.kandidat.find((c) => c.potonganId === id[kunci])?.peringkatKataKunci ?? 99;
   assert.ok(kk(b.jejak, "fikstur#1") < kk(b.jejak, "fikstur#0"), "B: NDTPS di atas 'Rapat dan kegiatan …'");
   assert.ok(kk(a.jejak, "fikstur#1") > kk(a.jejak, "fikstur#0"), "A: sebaliknya");
-  // bawaan generate: konfigurasi aktif terakhir
+  // bawaan generate: konfigurasi aktif terakhir (C-unsur setelah T6)
   const bawaan = await cariPotongan(pj, proyekId, KUERI);
-  assert.equal(bawaan.jejak.konfigurasi, "B-bm25");
+  assert.equal(bawaan.jejak.konfigurasi, "C-unsur");
 });
 
 test("jalur BM25 menghormati filter proyek, sub-bagian, dokumen bersama, dan model embedding", async () => {

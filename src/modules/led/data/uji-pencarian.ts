@@ -2,11 +2,12 @@ import { prisma } from "@/modules/bersama/db";
 import { GalatPengguna, pastikanAdmin, pastikanPeran, type Pengguna } from "@/modules/bersama/akses";
 import { modelEmbeddingAktif, penyediaEmbedding } from "@/modules/bersama/data/kunci-api";
 import { ambilProyek } from "@/modules/led/data/proyek";
-import { jalankanJalur, kueriSubBagian, type LingkupCari } from "@/modules/led/data/pencarian";
+import { jalankanJalur, jalankanUnsur, kueriSubBagian, kueriUnsurSubBagian, type LingkupCari } from "@/modules/led/data/pencarian";
 import {
   KONFIGURASI_PENCARIAN, konfigurasiAktif, type JejakPencarian, type KodeKonfigurasi,
 } from "@/modules/led/domain/konfigurasi-pencarian";
 import { susunPool, type JalurKonfigurasi } from "@/modules/led/domain/pool-pencarian";
+import { urutanSistemUnsur } from "@/modules/led/domain/kueri-unsur";
 import { tulisCsv } from "@/modules/led/domain/csv";
 
 /**
@@ -87,7 +88,22 @@ export async function eksporDataUjiPencarian(p: Pengguna, proyekId: string | nul
       const kueri = jejak?.kueri?.[0] ?? (await kueriSubBagian(p, proyek.id, sub.kode));
       const lingkup: LingkupCari = { proyekId: proyek.id, subBagianKode: sub.kode, model };
       const perKonfigurasi: Record<string, JalurKonfigurasi> = {};
+      const unsurAsal = new Map<string, string>();
       for (const konf of konfigurasi) {
+        if (KONFIGURASI_PENCARIAN[konf].kueri === "unsur") {
+          // C-unsur: kueri umum + per unsur dari instrumen; jalur = gabungan kandidat semua kueri (peringkat terbaik)
+          const kueriUnsur = await kueriUnsurSubBagian(proyek.id, sub.kode);
+          const u = await jalankanUnsur(lingkup, kueriUnsur, { k: KONFIGURASI_PENCARIAN[konf].k, kandidat: N_KANDIDAT });
+          const terbaik = (jalur: "vektor" | "kataKunci") => {
+            const posisi = new Map<string, number>();
+            for (const h of u.hasilKueri) h[jalur].forEach((id, i) => posisi.set(id, Math.min(posisi.get(id) ?? Infinity, i)));
+            return [...posisi.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])).map(([id]) => id);
+          };
+          perKonfigurasi[konf] = { vektor: terbaik("vektor"), kataKunci: terbaik("kataKunci"), k: u.pilih.terpilih.length, gabungan: urutanSistemUnsur(u.pilih) };
+          const teksUnsur = new Map(kueriUnsur.map((q) => [q.kunci, q.unsur ?? ""]));
+          for (const t of u.pilih.terpilih) unsurAsal.set(t.id, teksUnsur.get(t.asal) ?? "");
+          continue;
+        }
         const j = await jalankanJalur(lingkup, konf, kueri, N_KANDIDAT, vektorKueri(kueri));
         perKonfigurasi[konf] = { vektor: j.vektor, kataKunci: j.kataKunci, k: KONFIGURASI_PENCARIAN[konf].k };
       }
@@ -106,7 +122,7 @@ export async function eksporDataUjiPencarian(p: Pengguna, proyekId: string | nul
         if (!pt) continue;
         const masuk = jejak ? dipakai.has(x.potonganId) : (x.peringkat["A-lama"]?.g ?? Infinity) <= KONFIGURASI_PENCARIAN["A-lama"].k;
         baris.push([
-          proyek.nama, proyek.id, sub.kode, sub.judul, butir, "", kueri, x.potonganId, pt.dokumen.judul ?? pt.dokumen.namaBerkas,
+          proyek.nama, proyek.id, sub.kode, sub.judul, butir, unsurAsal.get(x.potonganId) ?? "", kueri, x.potonganId, pt.dokumen.judul ?? pt.dokumen.namaBerkas,
           pt.halaman ?? "", peringkatRingkas(x.peringkat), masuk ? 1 : 0, cuplikan(pt.teks), "", "",
         ]);
       }

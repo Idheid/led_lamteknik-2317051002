@@ -55,6 +55,8 @@ export interface KonteksSubBagian {
   potongan: PotonganKonteks[];
   /** Untuk analisis faktor dan SWOT: ringkasan hasil IKU kriteria yang sama. */
   ringkasanIku?: string | null;
+  /** Rencana 10 Nov T6: unsur skor 4 yang menurut pra-cek sistem tidak punya potongan bukti sama sekali. */
+  unsurTanpaBukti?: { butir: string; unsur: string }[];
   targetKata: number;
 }
 
@@ -105,6 +107,9 @@ export function susunPengguna(k: KonteksSubBagian): string {
     blok('TABEL LKPS', tabel),
     blok('POTONGAN DOKUMEN', potongan),
     blok('RINGKASAN INDIKATOR KINERJA KRITERIA INI', k.ringkasanIku),
+    blok('UNSUR TANPA BUKTI (pra-cek sistem: tidak ada potongan dokumen yang relevan)', (k.unsurTanpaBukti ?? [])
+      .map((u) => `- Butir ${u.butir}: ${u.unsur}. Kecuali didukung JAWABAN PENYUSUN, METRIK, atau TABEL, beri status "belum_ada_bukti" dan penanda ${PENANDA_BELUM_ADA_BUKTI} ${u.unsur}].`)
+      .join('\n')),
     blok('PANJANG', `Sekitar ${k.targetKata} kata (boleh selisih 15%).`),
   ].filter(Boolean).join('\n\n');
 }

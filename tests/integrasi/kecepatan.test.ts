@@ -1,4 +1,7 @@
 import "./siapan";
+// Rencana 10 Nov T6: uji ini memeriksa alur/kecepatan generate oleh AI tiruan; LED ujinya tidak punya dokumen bukti,
+// jadi dengan C-unsur (bawaan) sub-bagian tanpa bukti disusun tanpa AI. Perilaku C diuji di unsur-bukti.test.ts.
+process.env.PENCARIAN_KONFIGURASI = "B-bm25";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { simulateReadableStream } from "ai";

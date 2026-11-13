@@ -576,3 +576,18 @@ model TugasIndeksUlang {
   createdAt   DateTime  @default(now())
   selesaiPada DateTime?
 }
+
+// Rencana 10 Nov T6/T9: vektor kueri pencarian disimpan dan dipakai ulang (generate tidak membuat embedding kueri bila
+// sudah ada). hash = SHA-256 dari teks kueri yang dirapikan + model + taskType.
+model EmbeddingKueri {
+  id         String   @id @default(cuid())
+  hash       String   @unique
+  model      String
+  taskType   String
+  dimensi    Int
+  teks       String
+  vektor     Unsupported("vector(768)")
+  dibuatPada DateTime @default(now())
+
+  @@index([model])
+}

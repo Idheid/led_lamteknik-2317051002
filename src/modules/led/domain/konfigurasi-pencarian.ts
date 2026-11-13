@@ -31,7 +31,7 @@ export const KONFIGURASI_PENCARIAN: Record<KodeKonfigurasi, KonfigurasiPencarian
     keterangan: 'Vektor potongan berkepala + BM25 atas teks berkepala, satu kueri gabungan (pembanding).',
   },
   'C-unsur': {
-    kode: 'C-unsur', vektor: 'embeddingKonteks', kataKunci: 'bm25', kueri: 'unsur', aktif: false, k: 10,
+    kode: 'C-unsur', vektor: 'embeddingKonteks', kataKunci: 'bm25', kueri: 'unsur', aktif: true, k: 10,
     keterangan: 'Seperti B, dengan kueri per unsur skor 4 dan batas per dokumen.',
   },
 };

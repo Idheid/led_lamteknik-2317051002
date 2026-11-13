@@ -17,7 +17,15 @@ export interface PenyediaEmbedding {
   model: string;
   embedDokumen(teks: string[]): Promise<number[][]>;
   embedKueri(teks: string): Promise<number[]>;
+  /** Rencana 10 Nov T6: banyak kueri dalam satu permintaan (RETRIEVAL_QUERY) */
+  embedKueriBanyak(teks: string[]): Promise<number[][]>;
 }
+
+/**
+ * Jumlah panggilan penyedia embedding uji (Rencana 10 Nov T6/T9): dipakai uji untuk memastikan generate tidak membuat
+ * embedding kueri bila vektornya sudah tersimpan.
+ */
+export const hitunganEmbeddingUji = { kueri: 0, dokumen: 0 };
 
 export function normalkan(v: number[]): number[] {
   const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
@@ -40,8 +48,18 @@ export function penyediaUji(): PenyediaEmbedding {
   if (process.env.NODE_ENV === "production") throw new Error("Embedding uji tidak boleh dipakai di produksi.");
   return {
     model: MODEL_UJI,
-    embedDokumen: async (teks) => teks.map(embeddingHash),
-    embedKueri: async (teks) => embeddingHash(teks),
+    embedDokumen: async (teks) => {
+      hitunganEmbeddingUji.dokumen++;
+      return teks.map(embeddingHash);
+    },
+    embedKueri: async (teks) => {
+      hitunganEmbeddingUji.kueri++;
+      return embeddingHash(teks);
+    },
+    embedKueriBanyak: async (teks) => {
+      hitunganEmbeddingUji.kueri++;
+      return teks.map(embeddingHash);
+    },
   };
 }
 
@@ -63,6 +81,7 @@ export function penyediaGemini(apiKey: string, model: string): PenyediaEmbedding
     model,
     embedDokumen: (teks) => panggil(teks, "RETRIEVAL_DOCUMENT"),
     embedKueri: async (teks) => (await panggil([teks], "RETRIEVAL_QUERY"))[0],
+    embedKueriBanyak: (teks) => panggil(teks, "RETRIEVAL_QUERY"),
   };
 }
 

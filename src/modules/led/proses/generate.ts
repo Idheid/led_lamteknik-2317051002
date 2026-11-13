@@ -4,7 +4,9 @@ import { Prisma } from "@/generated/prisma/client";
 import type { Pengguna } from "@/modules/bersama/akses";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { GalatTanpaKunci } from "@/modules/bersama/data/kunci-api";
-import { cariPotongan } from "@/modules/led/data/pencarian";
+import { cariPotongan, cariPotonganUnsur } from "@/modules/led/data/pencarian";
+import { drafTanpaBukti, kueriPerUnsur } from "@/modules/led/domain/kueri-unsur";
+import { konfigurasiBawaan } from "@/modules/led/domain/konfigurasi-pencarian";
 import { kueriGenerate } from "@/modules/led/domain/rrf";
 import type { JejakPencarian } from "@/modules/led/domain/konfigurasi-pencarian";
 import type { KolomLkps, BarisLkps } from "@/modules/led/data-lkps/jenis";
@@ -276,9 +278,12 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   });
   if (kodeTabel.size > 0 && !berkas) catatan.push("LKPS belum diunggah: tabel dan metrik tidak tersedia.");
 
-  // potongan dokumen (RAG)
-  const kueri = kueriGenerate(s.judul, instruksi, butir);
-  const cari = await cariPotongan(penggunaSistem(proyek.prodiId), proyekId, kueri, { subBagianKode, k: 8 });
+  // potongan dokumen (RAG). Rencana 10 Nov T6: konfigurasi C-unsur (bawaan) memakai kueri per unsur skor 4 dan
+  // pra-cek bukti; konfigurasi A/B tetap satu kueri gabungan (kueriGenerate)
+  const konfigurasi = konfigurasiBawaan(process.env.PENCARIAN_KONFIGURASI);
+  const cari = konfigurasi === "C-unsur"
+    ? await cariPotonganUnsur(penggunaSistem(proyek.prodiId), proyekId, kueriPerUnsur(s.judul, instruksi, butir), { subBagianKode })
+    : { ...(await cariPotongan(penggunaSistem(proyek.prodiId), proyekId, kueriGenerate(s.judul, instruksi, butir), { subBagianKode, k: 8, konfigurasi })), unsurTanpaBukti: [] };
   catatan.push(...cari.catatan);
   // dokumen proyek D1, D2, ...; bahan bersama UPPS (U-10) U1, U2, ... supaya penyusun tahu bukti berasal dari fakultas
   let nD = 0;
@@ -353,6 +358,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
     potongan,
     ringkasanIku,
     targetKata: target,
+    unsurTanpaBukti: cari.unsurTanpaBukti.map((u) => ({ butir: u.butir, unsur: gantiLabelTS(u.unsur, ts) })),
   };
 
   const tabelSistem: TabelSistem[] = [
@@ -380,6 +386,39 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   return { konteks, rujukan, tabelSistem, legenda, catatan, sub: { id: s.id, kode: s.kode, bagianKode: s.bagian.kode }, pencarian: cari.jejak };
 }
 
+/** Label model versi draf yang disusun tanpa memanggil AI (Rencana 10 Nov T6). */
+export const MODEL_TANPA_AI = "tanpa AI";
+
+/**
+ * Rencana 10 Nov T6: bila semua unsur skor 4 tanpa bukti (pra-cek pencarian) dan tidak ada J, M, maupun T, AI tidak
+ * dipanggil. Draf deterministik berisi penanda [BELUM ADA BUKTI: unsur] per unsur dan daftar dokumen yang diharapkan.
+ */
+async function drafTanpaAi(k: KonteksLengkap) {
+  const c = k.konteks;
+  const semuaUnsur = c.butir.flatMap((b) => b.unsurSkor4.map((u) => ({ butir: b.kode, unsur: u })));
+  const tanpa = c.unsurTanpaBukti ?? [];
+  if (semuaUnsur.length === 0 || tanpa.length < semuaUnsur.length) return null;
+  if (c.jawabanForm?.trim() || c.metrik.length > 0 || c.tabel.length > 0) return null;
+  const diharapkan = await prisma.dokumenDiharapkan.findMany({
+    where: { OR: [{ subBagianId: k.sub.id }, { butir: { kode: { in: c.butir.map((b) => b.kode) } } }] },
+    orderBy: { urutan: "asc" },
+    select: { nama: true },
+  });
+  const dokumen = [...new Set(diharapkan.map((d) => d.nama))];
+  return {
+    keluaran: {
+      paragraf: drafTanpaBukti(semuaUnsur, dokumen),
+      unsur: semuaUnsur.map((u) => ({ ...u, status: "belum_ada_bukti" as const })),
+      dokumenKurang: dokumen,
+      catatanUntukPenyusun: "Disusun tanpa AI: tidak ada bukti untuk unsur skor 4 sub-bagian ini. Unggah dokumen yang diharapkan atau isi Jawaban penyusun, lalu generate ulang.",
+    },
+    model: MODEL_TANPA_AI,
+    tokenMasuk: 0,
+    tokenKeluar: 0,
+    durasiMs: 0,
+  };
+}
+
 /** Generate satu sub-bagian dan simpan sebagai versi baru. */
 export async function generateSubBagian(
   proyekId: string,
@@ -388,7 +427,8 @@ export async function generateSubBagian(
 ) {
   const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId } });
   const k = await susunKonteks(proyekId, subBagianKode);
-  const hasil = await panggilNarasi({
+  const tanpaAi = await drafTanpaAi(k);
+  const hasil = tanpaAi ?? await panggilNarasi({
     prodiId: proyek.prodiId,
     proyekId,
     tugasId: opsi.tugasId,
