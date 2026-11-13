@@ -361,6 +361,12 @@ model Potongan {
   keyakinanOcr Int?  // rata-rata keyakinan OCR 0–100 halaman yang dicakup potongan
   modelEmbedding String
   embedding Unsupported("vector(768)")? // Gemini embedding dengan outputDimensionality 768; indeks HNSW lewat migrasi SQL
+  // Rencana 10 Nov T4: kepala konteks (tanpa AI) dan teks berkepala untuk embedding baru dan BM25 (T5).
+  // Kolom `embedding` lama dipertahankan sampai evaluasi skripsi selesai (konfigurasi A-lama).
+  kepala    String?
+  teksIndeks String?
+  versiKepala String?
+  embeddingKonteks Unsupported("vector(768)")?
   // tsvector untuk pencarian kata kunci: kolom terbangkitkan (GENERATED) dibuat lewat migrasi SQL
   teksTsv   Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(teks, ''::text))"))
 
@@ -556,4 +562,17 @@ model LogoSampul {
   tinggi    Int
   ukuran    Int
   updatedAt DateTime @updatedAt
+}
+
+// Rencana 10 Nov T4: tugas "Indeks ulang potongan" (kepala konteks + embeddingKonteks), ID potongan tetap.
+model TugasIndeksUlang {
+  id          String    @id @default(cuid())
+  status      String    @default("antre") // antre, berjalan, selesai, gagal
+  total       Int       @default(0)
+  selesai     Int       @default(0)
+  permintaan  Int       @default(0) // panggilan embedding yang dikirim
+  pesan       String?
+  dibuatOlehId String?
+  createdAt   DateTime  @default(now())
+  selesaiPada DateTime?
 }

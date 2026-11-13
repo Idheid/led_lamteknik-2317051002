@@ -19,6 +19,8 @@ export const ANTREAN = {
   skorRubrik: "skor-rubrik",
   // perbaikan 2 Nov 2026 (I4): usulan struktur template dari AI, hanya atas permintaan Admin
   strukturTemplate: "struktur-template",
+  // Rencana 10 Nov T4: kepala konteks + embeddingKonteks untuk potongan lama
+  indeksUlang: "indeks-ulang-potongan",
   // bersama (src/worker/bersama.ts)
   cadangan: "cadangan-harian",
   // L2 (2 Nov 2026): pengingat akreditasi berakhir 18/12/6 bulan, setiap hari

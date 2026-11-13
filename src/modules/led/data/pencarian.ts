@@ -74,6 +74,20 @@ export async function jalurVektor(l: LingkupCari, vektorKueri: number[], n: numb
   return baris.map((b) => b.id);
 }
 
+/** Jalur vektor konfigurasi B dan C (Rencana 10 Nov T4): kolom `embeddingKonteks` (kepala + teks potongan). */
+export async function jalurVektorKonteks(l: LingkupCari, vektorKueri: number[], n: number): Promise<string[]> {
+  const v = literalVektor(vektorKueri);
+  const baris = await prisma.$queryRaw<Baris[]>`
+    SELECT pt."id" FROM "Potongan" pt
+    JOIN "Dokumen" d ON d."id" = pt."dokumenId"
+    WHERE (d."proyekId" = ${l.proyekId} OR d."proyekId" IS NULL) AND d."status" = 'siap' AND pt."modelEmbedding" = ${l.model}
+      AND pt."embeddingKonteks" IS NOT NULL
+      AND (${l.subBagianKode}::text IS NULL OR d."subBagianKode" = ${l.subBagianKode} OR d."subBagianKode" IS NULL)
+    ORDER BY pt."embeddingKonteks" <=> ${v}::vector, pt."id"
+    LIMIT ${n}`;
+  return baris.map((b) => b.id);
+}
+
 /** Jalur kata kunci konfigurasi A: ts_rank atas `teksTsv`. */
 export async function jalurTsRank(l: LingkupCari, kueri: string, n: number): Promise<string[]> {
   const q = kueriKataKunci(kueri);

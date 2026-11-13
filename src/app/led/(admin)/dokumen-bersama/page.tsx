@@ -14,6 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Plus } from "lucide-react";
 import { TabelDokumen } from "@/modules/led/komponen/basis-pengetahuan/tabel-dokumen";
+import { statusIndeksUlang } from "@/modules/led/data/indeks-ulang";
+import { IndeksUlang } from "./indeks-ulang";
 
 export const metadata: Metadata = { title: "Basis Pengetahuan fakultas" };
 
@@ -54,6 +56,7 @@ export default async function HalamanDokumenBersama() {
           </AlertDescription>
         </Alert>
       )}
+      <IndeksUlang status={await statusIndeksUlang(p)} />
       <Card className="py-0">
         <CardContent className="overflow-x-auto px-0">
           <TabelDokumen dokumen={dokumen} namaSub={namaSub} proyekId="" bolehUbah />

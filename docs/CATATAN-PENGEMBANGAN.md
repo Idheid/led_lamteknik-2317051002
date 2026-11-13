@@ -2228,3 +2228,38 @@ Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 187/187 lulus |
 | `npm run test:integrasi` | 108/108 lulus |
+
+### T4: kepala konteks pada setiap potongan
+
+- `domain/kepala-potongan.ts` (tanpa AI): `susunKepala` → `Dokumen: {judul atau nama berkas} | Jenis: {nama dokumen
+  yang diharapkan instrumen, bila dikaitkan} | Hlm. {n} | Bagian: {judul bagian terdekat}`; bagian kosong dihilangkan.
+  `bagianTerdekat` mencari baris judul (BAB, Pasal, Bagian, Lampiran, bernomor "1.2 Tujuan"/"A. ...", atau baris pendek
+  berhuruf kapital ≥ 90%) di halaman yang sama sebelum potongan, termasuk baris pertama potongan; bila posisi potongan
+  tidak ditemukan atau tidak ada judul, dikosongkan. `VERSI_KEPALA` = `kepala-v1`.
+- Migrasi `20261113120000_kepala_potongan`: `Potongan.kepala`, `teksIndeks` (= kepala + "
+" + teks), `versiKepala`,
+  `embeddingKonteks vector(768)` + indeks HNSW `Potongan_embeddingKonteks_hnsw_idx` (`vector_cosine_ops`); tabel
+  `TugasIndeksUlang`. `teks` tidak berubah (tampilan, prompt, pencocokan kutipan T7).
+- Dokumen baru: `embedding` (teks saja, konfigurasi A-lama) dan `embeddingKonteks` (teksIndeks) dibuat dalam batch 100
+  yang sama (batch naik dari 50 ke 100). Vektor lama dengan teks/teksIndeks sama dipakai ulang.
+- **Kolom `embedding` lama dipertahankan** sampai evaluasi skripsi selesai, supaya `A-lama` tetap bisa dijalankan.
+  Catatan penghapusan sesudah evaluasi: hapus jalur `jalurVektor`, konfigurasi `A-lama`, kolom `Potongan.embedding`
+  beserta indeks `Potongan_embedding_hnsw_idx`, dan embedding teks saja di `prosesDokumen` (menghemat separuh
+  permintaan embedding dokumen).
+- "Indeks ulang potongan" (`proses/indeks-ulang.ts`, antrean `indeks-ulang-potongan`): potongan model aktif tanpa
+  kepala/versi lama/tanpa `embeddingKonteks` diperbarui **di tempat** (ID, teks, dan embedding lama tetap); teks halaman
+  untuk judul bagian dibaca ulang dari berkas tanpa AI (halaman OCR dari `halamanTeks`). Kartu di Basis Pengetahuan
+  fakultas (Admin UPPS) menampilkan jumlah potongan dan **perkiraan permintaan embedding** (⌈n/100⌉) sebelum dijalankan,
+  lalu progres.
+- `jalurVektorKonteks` (kolom `embeddingKonteks`) disiapkan untuk konfigurasi B/C (diaktifkan di T5).
+- Dev DB: 2 potongan lama menunggu indeks ulang (dijalankan Admin lewat tombolnya; 1 permintaan embedding).
+- Uji: `tests/unit/kepala-potongan.test.ts` (4: kepala, baris judul, bagian terdekat PDF/DOCX/OCR, ragu → kosong),
+  `tests/integrasi/kepala-potongan.test.ts` (3: kepala dokumen baru DOCX/PDF; kueri jenis dokumen ditemukan lewat
+  embeddingKonteks walau isi potongan tidak menyebutnya; indeks ulang dengan ID/teks/embedding tetap dan perkiraan
+  permintaan cocok).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 191/191 lulus |
+| `npm run test:integrasi` | 111/111 lulus |

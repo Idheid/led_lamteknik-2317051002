@@ -9,6 +9,7 @@ import { catatGalatKunci, GalatTanpaKunci, penyediaEmbedding } from "@/modules/b
 import type { Prisma } from "@/generated/prisma/client";
 import { halamanPindaian, ocrHalamanPdf, VERSI_OCR } from "@/modules/led/ekstraksi/ocr";
 import { gabungHalaman, keyakinanPotongan, type HalamanTeks } from "@/modules/led/domain/ocr";
+import { bagianTerdekat, namaDokumenKepala, susunKepala, teksIndeks, VERSI_KEPALA } from "@/modules/led/domain/kepala-potongan";
 
 /**
  * F-11: proses satu dokumen pendukung: ekstraksi teks (unpdf untuk PDF, mammoth untuk DOCX), pemotongan
@@ -19,9 +20,43 @@ import { gabungHalaman, keyakinanPotongan, type HalamanTeks } from "@/modules/le
  * halaman disimpan di Dokumen.halamanTeks supaya bisa dikoreksi tanpa OCR ulang, dan potongan diberi sumberTeks/keyakinan.
  * Potongan yang teksnya sama dengan potongan lama dokumen ini memakai ulang ID dan vektornya (label data uji T2
  * berbasis ID potongan; vektor yang sama tidak di-embedding ulang).
+ * Rencana 10 Nov T4: setiap potongan diberi kepala konteks (domain/kepala-potongan.ts); `embedding` dari teks saja
+ * (konfigurasi A-lama) dan `embeddingKonteks` dari kepala + teks. Keduanya dikirim dalam batch 100 yang sama.
  */
 
-const UKURAN_BATCH = 50;
+/** Kepala dan teks berkepala setiap potongan dokumen. */
+export function kepalaPotongan(
+  dok: { judul: string | null; namaBerkas: string; jenisDiharapkan: string | null },
+  halaman: string[],
+  potongan: { teks: string; halaman: number | null }[],
+): { kepala: string; teksIndeks: string }[] {
+  const nama = namaDokumenKepala(dok.judul, dok.namaBerkas);
+  return potongan.map((p) => {
+    const teksHalaman = p.halaman ? halaman[p.halaman - 1] : halaman.length === 1 ? halaman[0] : null;
+    const kepala = susunKepala({ dokumen: nama, jenis: dok.jenisDiharapkan, halaman: p.halaman, bagian: bagianTerdekat(teksHalaman, p.teks) });
+    return { kepala, teksIndeks: teksIndeks(kepala, p.teks) };
+  });
+}
+
+/** Embedding banyak teks dalam batch 100; mengembalikan literal vektor per teks (teks sama dikirim sekali). */
+export async function embedLiteral(
+  penyedia: { embedDokumen(t: string[]): Promise<number[][]> },
+  teks: string[],
+): Promise<{ peta: Map<string, string>; permintaan: number }> {
+  const unik = [...new Set(teks)];
+  const peta = new Map<string, string>();
+  let permintaan = 0;
+  for (let i = 0; i < unik.length; i += UKURAN_BATCH) {
+    const kelompok = unik.slice(i, i + UKURAN_BATCH);
+    const v = await penyedia.embedDokumen(kelompok);
+    permintaan++;
+    kelompok.forEach((t, j) => peta.set(t, literalVektor(v[j])));
+  }
+  return { peta, permintaan };
+}
+
+// Rencana 10 Nov T4: batch 100 teks per permintaan embedding (batas embedMany Gemini)
+const UKURAN_BATCH = 100;
 
 export async function ekstrakTeks(jenis: string, isi: Buffer): Promise<{ halaman: string[]; adaHalaman: boolean }> {
   if (jenis === "pdf") {
@@ -37,7 +72,7 @@ export async function ekstrakTeks(jenis: string, isi: Buffer): Promise<{ halaman
 }
 
 export async function prosesDokumen(dokumenId: string): Promise<void> {
-  const dok = await prisma.dokumen.findUnique({ where: { id: dokumenId }, });
+  const dok = await prisma.dokumen.findUnique({ where: { id: dokumenId }, include: { dokumenDiharapkan: { select: { nama: true } } } });
   if (!dok) return;
   if (dok.jenis === "gambar") {
     await prisma.dokumen.update({
@@ -87,19 +122,25 @@ export async function prosesDokumen(dokumenId: string): Promise<void> {
     const terpilih = await penyediaEmbedding();
     kunciId = terpilih.kunciId;
     const model = terpilih.penyedia.model;
+    const kepala = kepalaPotongan(
+      { judul: dok.judul, namaBerkas: dok.namaBerkas, jenisDiharapkan: dok.dokumenDiharapkan?.nama ?? null },
+      halaman,
+      potongan,
+    );
     // potongan lama dengan teks dan model sama: ID dan vektor dipakai ulang
-    const lamaPotongan = await prisma.$queryRaw<{ id: string; teks: string; vektor: string | null }[]>`
-      SELECT "id", "teks", "embedding"::text AS "vektor" FROM "Potongan"
+    const lamaPotongan = await prisma.$queryRaw<{ id: string; teks: string; teksIndeks: string | null; vektor: string | null; vektorKonteks: string | null }[]>`
+      SELECT "id", "teks", "teksIndeks", "embedding"::text AS "vektor", "embeddingKonteks"::text AS "vektorKonteks" FROM "Potongan"
       WHERE "dokumenId" = ${dokumenId} AND "modelEmbedding" = ${model}`;
     const pakaiUlang = new Map<string, { id: string; vektor: string }>();
-    for (const x of lamaPotongan) if (x.vektor && !pakaiUlang.has(x.teks)) pakaiUlang.set(x.teks, { id: x.id, vektor: x.vektor });
-    const baru = potongan.filter((p) => !pakaiUlang.has(p.teks));
-    const vektorBaru = new Map<string, string>();
-    for (let i = 0; i < baru.length; i += UKURAN_BATCH) {
-      const kelompok = baru.slice(i, i + UKURAN_BATCH);
-      const v = await terpilih.penyedia.embedDokumen(kelompok.map((p) => p.teks));
-      kelompok.forEach((p, j) => vektorBaru.set(p.teks, literalVektor(v[j])));
+    const konteksLama = new Map<string, string>();
+    for (const x of lamaPotongan) {
+      if (x.vektor && !pakaiUlang.has(x.teks)) pakaiUlang.set(x.teks, { id: x.id, vektor: x.vektor });
+      if (x.teksIndeks && x.vektorKonteks) konteksLama.set(x.teksIndeks, x.vektorKonteks);
     }
+    const { peta: vektorBaru } = await embedLiteral(terpilih.penyedia, [
+      ...potongan.filter((p) => !pakaiUlang.has(p.teks)).map((p) => p.teks),
+      ...kepala.filter((k) => !konteksLama.has(k.teksIndeks)).map((k) => k.teksIndeks),
+    ]);
     const dipakai = new Set<string>();
     await prisma.$transaction(async (tx) => {
       await tx.potongan.deleteMany({ where: { dokumenId } });
@@ -109,10 +150,13 @@ export async function prosesDokumen(dokumenId: string): Promise<void> {
         dipakai.add(id);
         const vektor = ulang?.vektor ?? vektorBaru.get(p.teks)!;
         const asal = halamanTeks ? keyakinanPotongan(p.halaman, potongan[i + 1]?.halaman ?? p.halaman, halamanTeks) : { sumber: "teks" as const, keyakinan: null };
+        const k = kepala[i];
+        const vektorKonteks = konteksLama.get(k.teksIndeks) ?? vektorBaru.get(k.teksIndeks)!;
         await tx.$executeRaw`
-          INSERT INTO "Potongan" ("id", "dokumenId", "urutan", "teks", "halaman", "sumberTeks", "keyakinanOcr", "modelEmbedding", "embedding")
+          INSERT INTO "Potongan" ("id", "dokumenId", "urutan", "teks", "halaman", "sumberTeks", "keyakinanOcr", "modelEmbedding", "embedding",
+                                  "kepala", "teksIndeks", "versiKepala", "embeddingKonteks")
           VALUES (${id}, ${dokumenId}, ${p.urutan}, ${p.teks}, ${p.halaman}, ${asal.sumber}, ${asal.keyakinan}, ${model},
-                  ${vektor}::vector)`;
+                  ${vektor}::vector, ${k.kepala}, ${k.teksIndeks}, ${VERSI_KEPALA}, ${vektorKonteks}::vector)`;
       }
       await tx.dokumen.update({
         where: { id: dokumenId },
