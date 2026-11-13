@@ -58,3 +58,19 @@ export function skorAmbang(nilai: number | null, ambang: number, f: (x: number) 
   if (nilai === null) return null;
   return batasi(nilai >= ambang ? 4 : f(nilai), min);
 }
+
+/**
+ * Pakai rumus jenjang lain dengan kode dan nomor butir baru (aturannya sama, nomor butirnya bergeser), mis. butir 29
+ * Magister Terapan = rumus `S2-28`.
+ */
+export function salinRumus(r: RumusJenjang, jenjang: string, butir: string): RumusJenjang {
+  return {
+    ...r, kode: `${jenjang}-${butir}`, jenjang, butir,
+    hitung: (t, k) => {
+      const h = r.hitung(t, k);
+      const awalan = new RegExp(`^M-(${h.butir}-)?`);
+      const metrik = h.metrik.map((x) => m(x.kode.replace(awalan, ''), x.nama, x.nilai, x.satuan, x.rumus));
+      return hasil(butir, h.judul, h.tabel, h.utama.replace(awalan, ''), metrik, h.skor, h.catatan);
+    },
+  };
+}

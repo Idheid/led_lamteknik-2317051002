@@ -2598,3 +2598,42 @@ bagian, 1 perbaikan, 1 periksa ulang).
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 234/234 lulus |
 | `npm run test:integrasi` | 130/130 lulus |
+
+### T10 R3: rumus D1 dan D2
+
+- Daftar rumus D3 menjadi `rumusDiploma(jenjang, ganti)`; `d1d2.ts` mengganti butir yang aturannya berbeda (18, 23, 24,
+  25, 27, 42, 43, 45, 47). Tata kolom tabel D1/D2 sama dengan D3 kecuali 6.d (dicek dari `kolom-template.json`).
+  `vokasi.ts` mendapat `masaStudi` dan `tepatWaktu` (kolom 6.d per jenjang).
+- Uji `tests/unit/rumus-d1d2.test.ts` (4), hitungan dan asumsi di `docs/uji/hitungan-manual-d1d2.md`.
+
+### T10 R3: rumus Magister Terapan
+
+- `s2tr.ts` (30 rumus): 21 butir memakai rumus Magister dengan nomor butir S2Tr (`salinRumus`, nomor butir bergeser,
+  mis. RBK S2Tr 29 = S2 28); butir khusus terapan memakai `vokasi.ts` (sertifikasi, publikasi + pagelaran 4.e/6.e.2,
+  produk/jasa 4.g/6.e.4). Tabel 6.d S2Tr sama dengan Magister.
+- Uji `tests/unit/rumus-s2tr.test.ts` (2), hitungan dan asumsi di `docs/uji/hitungan-manual-s2tr.md`.
+
+### T10 R3: rumus Doktor dan Doktor Terapan (semua jenjang selesai)
+
+- `s3.ts` (25 rumus) dan `s3tr.ts` (28 rumus; 20 memakai rumus Doktor dengan nomor bergeser). Template LKPS Doktor
+  tidak memuat 6.f.2/6.g.1/6.g.2 dan matriks Doktor juga tidak menilainya, jadi tidak ada butir manual karena tabel
+  hilang. `alasanTanpaRumus` kini selalu: "tidak ada padanan rumus di katalog jenjang ini" (semua jenjang punya katalog).
+- Uji `tests/unit/rumus-s3.test.ts` (4), termasuk uji ketahanan: setiap rumus dari 9 jenjang (262 rumus) berjalan pada
+  LKPS kosong dan data uji, nomor butir benar, skor dalam 0–4, metrik utama ada.
+- Kriteria selesai per jenjang terpenuhi: setiap butir angka di matriks berstatus "dihitung otomatis" (punya rumus
+  jenjang) atau "manual" dengan alasan (hanya PPI 44); butir berdeskriptor kualitatif bukan butir angka. Daftar asumsi
+  ada di `docs/uji/hitungan-manual-*.md` untuk dikonfirmasi.
+
+| Jenjang | Rumus | Manual |
+| --- | --- | --- |
+| D1 / D2 / D3 | 30 / 30 / 30 | – |
+| Sarjana Terapan | 37 | – |
+| Magister / Magister Terapan | 27 / 30 | – |
+| Doktor / Doktor Terapan | 25 / 28 | – |
+| PPI | 25 | 44 (Tabel 6.f.2 tidak ada di template LKPS PPI) |
+
+| Pemeriksaan (D1, D2, S2Tr, S3, S3Tr) | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 244/244 lulus |
+| `npm run test:integrasi` | 130/130 lulus (dijalankan sendiri; dua run bersamaan memakai basis data uji yang sama dan saling mengganggu) |

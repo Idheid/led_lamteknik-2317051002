@@ -7,7 +7,6 @@ import { dosenIndustri, produkDiadopsi, publikasiPagelaran, sertifikasiDtps, wak
  * angka). Asumsi yang perlu dikonfirmasi ditulis di `catatan` dan di docs/uji/hitungan-manual-d3.md.
  */
 
-const J = 'D3';
 
 /** Skor tiga tingkat dari metrik RI/RN/RW (berawalan, mis. "43-I_RI") hasil butir Sarjana. */
 function tigaTingkat(v: Record<string, number | null>, awalan: string, a: number, b: number, c: number): number | null {
@@ -18,12 +17,17 @@ function tigaTingkat(v: Record<string, number | null>, awalan: string, a: number
 /** hlm. 27: masa studi D3 dari Tabel 6.d D3 (C: 2,5 < MS ≤ 3,5; D: 3,5 < MS ≤ 6; E: MS ≤ 2,5). */
 const TENGAH_MS_D3: Record<string, number> = { E: 2.25, C: 3, D: 4.75 };
 
-export const RUMUS_D3: RumusJenjang[] = [
+/**
+ * Rumus Diploma (penomoran butir D1, D2, D3 sama). `ganti` mengganti rumus butir tertentu untuk jenjang yang aturannya
+ * berbeda dari D3 (lihat d1.ts, d2.ts).
+ */
+export function rumusDiploma(J: string, ganti: Record<string, RumusJenjang> = {}): RumusJenjang[] {
+  const daftar: RumusJenjang[] = [
   // hlm. 6: RK sama dengan Sarjana
   dariSarjana(J, '6-I', '6-I'),
   // hlm. 6–7: faktor a = 1, b = 4, c = 6
   dariSarjana(J, '6-II', '6-II', (v) => ({
-    skor: skorTigaTingkat(v.NI ?? 0, v.NN ?? 0, v.NW ?? 0, 1, 4, 6), catatan: ['Faktor a = 1, b = 4, c = 6 (matriks D3 hlm. 7).'],
+    skor: skorTigaTingkat(v.NI ?? 0, v.NN ?? 0, v.NW ?? 0, 1, 4, 6), catatan: ['Faktor a = 1, b = 4, c = 6 (matriks Diploma).'],
   })),
   // hlm. 8: BOP, DPD, DPkMD sama dengan Sarjana
   dariSarjana(J, '9', '9'),
@@ -84,11 +88,11 @@ export const RUMUS_D3: RumusJenjang[] = [
   // hlm. 26: prestasi akademik a = 0,05%, b = 1%, c = 2%; nonakademik a = 0,1%, b = 2%, c = 4%
   dariSarjana(J, '40-I', '43-I', (v) => ({
     skor: tigaTingkat(v, '43-I_', 0.0005, 0.01, 0.02),
-    catatan: ['Faktor a = 0,05%; b = 1%; c = 2% (matriks D3 hlm. 26).'],
+    catatan: ['Faktor a = 0,05%; b = 1%; c = 2% (matriks Diploma).'],
   })),
   dariSarjana(J, '40-II', '43-II', (v) => ({
     skor: tigaTingkat(v, '43-II_', 0.001, 0.02, 0.04),
-    catatan: ['Faktor a = 0,1%; b = 2%; c = 4% (matriks D3 hlm. 26).'],
+    catatan: ['Faktor a = 0,1%; b = 2%; c = 4% (matriks Diploma).'],
   })),
   // hlm. 27: produk/jasa karya mahasiswa diadopsi (Tabel 6.e.4): NAPJ ≥ 2 → 4; < 2 → 2 + NAPJ
   produkDiadopsi(J, '41', { sheet: '6e4', perDtps: false, skor: (n) => skorAmbang(n, 2, (x) => 2 + x, 2) }),
@@ -144,7 +148,11 @@ export const RUMUS_D3: RumusJenjang[] = [
   // hlm. 29–30: tempat kerja (a = 5%, b = 20%, c = 90%) dan kepuasan pengguna sama dengan Sarjana
   dariSarjana(J, '47', '51'),
   dariSarjana(J, '48', '52'),
-];
+  ];
+  return daftar.map((r) => ganti[r.butir] ?? r);
+}
+
+export const RUMUS_D3 = rumusDiploma('D3');
 
 /** Butir angka D3 tanpa rumus otomatis, dengan alasan (kriteria selesai R3). */
 export const MANUAL_D3: Record<string, string> = {};

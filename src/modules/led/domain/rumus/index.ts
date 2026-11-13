@@ -4,22 +4,24 @@ import { MANUAL_D3, RUMUS_D3 } from './d3.ts';
 import { MANUAL_STR, RUMUS_STR } from './str.ts';
 import { MANUAL_S2, RUMUS_S2 } from './s2.ts';
 import { MANUAL_PPI, RUMUS_PPI } from './ppi.ts';
+import { MANUAL_D1, MANUAL_D2, RUMUS_D1, RUMUS_D2 } from './d1d2.ts';
+import { MANUAL_S2TR, RUMUS_S2TR } from './s2tr.ts';
+import { MANUAL_S3, RUMUS_S3 } from './s3.ts';
+import { MANUAL_S3TR, RUMUS_S3TR } from './s3tr.ts';
 
 /**
  * Rencana 10 Nov T10: semua rumus butir angka. Kode Sarjana (mis. "26") tetap; kode jenjang lain berawalan jenjang
  * (mis. "D3-23"). Dipakai nilai butir LED (lewat `ButirPenilaian.kodeRumus`), katalog ekstraksi instrumen, dan seed.
  */
-export const RUMUS_JENJANG: Record<string, RumusJenjang[]> = { D3: RUMUS_D3, STr: RUMUS_STR, S2: RUMUS_S2, PPI: RUMUS_PPI };
+export const RUMUS_JENJANG: Record<string, RumusJenjang[]> = { D3: RUMUS_D3, STr: RUMUS_STR, S2: RUMUS_S2, PPI: RUMUS_PPI, D1: RUMUS_D1, D2: RUMUS_D2, S2Tr: RUMUS_S2TR, S3: RUMUS_S3, S3Tr: RUMUS_S3TR };
 
 /** Butir angka yang sengaja tetap manual, dengan alasan (data tidak ada di LKPS). */
-export const MANUAL_JENJANG: Record<string, Record<string, string>> = { D3: MANUAL_D3, STr: MANUAL_STR, S2: MANUAL_S2, PPI: MANUAL_PPI };
+export const MANUAL_JENJANG: Record<string, Record<string, string>> = { D3: MANUAL_D3, STr: MANUAL_STR, S2: MANUAL_S2, PPI: MANUAL_PPI, D1: MANUAL_D1, D2: MANUAL_D2, S2Tr: MANUAL_S2TR, S3: MANUAL_S3, S3Tr: MANUAL_S3TR };
 
 /** Alasan butir angka belum punya rumus otomatis (ditampilkan di halaman cek instrumen dan Data LKPS). */
 export function alasanTanpaRumus(jenjang: string, butir: string): string {
   return MANUAL_JENJANG[jenjang]?.[butir]
-    ?? (RUMUS_JENJANG[jenjang] || jenjang === 'S1'
-      ? 'tidak ada padanan rumus di katalog jenjang ini; isi nilai manual'
-      : 'rumus otomatis jenjang ini belum dibuat (Rencana 10 Nov T10); isi nilai manual');
+    ?? 'tidak ada padanan rumus di katalog jenjang ini; isi nilai manual';
 }
 
 const PETA = new Map(Object.values(RUMUS_JENJANG).flat().map((r) => [r.kode, r]));

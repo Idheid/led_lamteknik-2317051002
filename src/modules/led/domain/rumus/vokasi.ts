@@ -136,4 +136,46 @@ export function waktuTungguDipesan(J: string, butir: string, skor: (wt: number) 
   };
 }
 
+/** Rata-rata masa studi dari Tabel 6.d berkelompok (titik tengah per kolom). */
+export function masaStudi(J: string, butir: string, o: { tengah: Record<string, number>; skor: (ms: number) => number | null; asumsi: string }): RumusJenjang {
+  const judul = 'Rata-rata masa studi lulusan';
+  return {
+    kode: `${J}-${butir}`, jenjang: J, butir, dasar: null, judul,
+    hitung: (t) => {
+      const isi = baris(t, '6d').filter((b) => /^TS(-\d)?$/i.test(teks(b.sel.A)));
+      let n = 0;
+      let total = 0;
+      for (const b of isi) for (const [c, mid] of Object.entries(o.tengah)) {
+        n += nol(b.sel[c]);
+        total += nol(b.sel[c]) * mid;
+      }
+      const MS = n ? total / n : null;
+      const skor = MS === null ? null : o.skor(MS);
+      return hasil(butir, judul, ['6.d'], 'MS', [
+        m('NLULUS_6D', 'Jumlah lulusan pada Tabel 6.d', n, 'angka'),
+        m('MS', 'Rata-rata masa studi lulusan', MS, 'tahun', 'MS = Σ(lulusan × titik tengah masa studi) / Σ lulusan'),
+      ], skor === null ? null : batasi(skor), [o.asumsi]);
+    },
+  };
+}
+
+/** Persentase kelulusan tepat waktu satu angkatan Tabel 6.d: b = jumlah kolom tepat waktu, a = mahasiswa masuk. */
+export function tepatWaktu(J: string, butir: string, o: { angkatan: string; kolom: string[]; skor: (p: number) => number; asumsi: string }): RumusJenjang {
+  const judul = 'Persentase kelulusan tepat waktu';
+  return {
+    kode: `${J}-${butir}`, jenjang: J, butir, dasar: null, judul,
+    hitung: (t) => {
+      const b = baris(t, '6d').find((x) => sama(x.sel.A, o.angkatan));
+      const a = nol(b?.sel.B);
+      const lulus = o.kolom.reduce((s, c) => s + nol(b?.sel[c]), 0);
+      const PTW = b ? bagi(lulus, a) : null;
+      return hasil(butir, judul, ['6.d'], 'PTW', [
+        m('MASUK', `Mahasiswa masuk ${o.angkatan} (a)`, b ? a : null, 'angka'),
+        m('LULUS_TW', `Lulus tepat waktu dari angkatan ${o.angkatan} (b)`, b ? lulus : null, 'angka'),
+        m('PTW', 'Persentase kelulusan tepat waktu', PTW, 'persen', 'PTW = b / a × 100%'),
+      ], PTW === null ? null : batasi(o.skor(PTW)), [o.asumsi]);
+    },
+  };
+}
+
 export { skorAmbang };
