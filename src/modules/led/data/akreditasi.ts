@@ -11,6 +11,7 @@ import { bacaSk, labelArsipLed, samarkanAngkaPanjang, type UsulanSk } from "@/mo
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
 import { skemaHasilAkreditasi, type MasukanHasilAkreditasi } from "@/modules/bersama/validasi";
 import { teksPerHalaman } from "@/modules/led/instrumen/pdf";
+import { halamanPindaian, ocrHalamanPdf } from "@/modules/led/ekstraksi/ocr";
 import { panggilTerstruktur } from "@/modules/led/proses/llm-narasi";
 import { perkiraanToken } from "@/modules/led/domain/usulan-struktur";
 
@@ -158,8 +159,16 @@ function pastikanBolehBacaSk(p: Pengguna) {
 async function teksSk(isi: Buffer): Promise<string> {
   if (isi.subarray(0, 5).toString("latin1") !== "%PDF-") throw new GalatPengguna("SK harus berupa berkas PDF.");
   if (isi.length > UKURAN_SK) throw new GalatPengguna("PDF SK terlalu besar (maks. 20 MB).");
-  const teks = (await teksPerHalaman(isi)).slice(0, 6).join("\n");
-  if (teks.replace(/\s/g, "").length < 40) throw new GalatPengguna("Teks SK tidak terbaca (mungkin hasil pindai). Isi formulir secara manual.");
+  const halaman = (await teksPerHalaman(isi)).slice(0, 6);
+  // Rencana 10 Nov T3: halaman pindaian (maks. 3 halaman pertama) dibaca OCR lokal; tanpa AI dan tanpa token
+  const pindaian = halamanPindaian(halaman).slice(0, 3);
+  if (pindaian.length > 0) {
+    for (const h of await ocrHalamanPdf(isi, pindaian)) {
+      if (h.teks.replace(/\s/g, "").length > halaman[h.halaman - 1].replace(/\s/g, "").length) halaman[h.halaman - 1] = h.teks;
+    }
+  }
+  const teks = halaman.join("\n");
+  if (teks.replace(/\s/g, "").length < 40) throw new GalatPengguna("Teks SK tidak terbaca, termasuk dengan OCR. Isi formulir secara manual.");
   return teks;
 }
 

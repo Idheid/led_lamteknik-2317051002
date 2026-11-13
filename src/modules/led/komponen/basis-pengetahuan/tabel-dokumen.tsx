@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AksiDokumen } from "@/app/led/(tim-prodi)/[proyekId]/dokumen/aksi-dokumen";
 import { LihatPotongan } from "./lihat-potongan";
+import { TeksOcr } from "./teks-ocr";
+import type { HalamanTeks } from "@/modules/led/domain/ocr";
 
 export interface BarisDokumen {
   id: string;
@@ -20,6 +22,13 @@ export interface BarisDokumen {
   tahunTerbit: number | null;
   subBagianKode: string | null;
   dokumenDiharapkan: { nama: string } | null;
+  /** Rencana 10 Nov T3: teks per halaman bila ada halaman hasil OCR */
+  halamanTeks?: unknown;
+}
+
+function ringkasOcr(h: unknown): { jumlah: number; perluDicek: number } | null {
+  const ocr = ((h ?? []) as HalamanTeks[]).filter((x) => x.sumber === "ocr");
+  return ocr.length ? { jumlah: ocr.length, perluDicek: ocr.filter((x) => x.perluDicek).length } : null;
 }
 
 /**
@@ -58,7 +67,11 @@ export function TabelDokumen({ dokumen, namaSub, proyekId, bolehUbah }: {
               {d.judul && <div className="text-xs">Judul: {d.judul}</div>}
               {d.dokumenDiharapkan && <div className="text-xs text-muted-foreground">Memenuhi: {d.dokumenDiharapkan.nama}</div>}
               <div className="text-xs text-muted-foreground">{d.jenis.toUpperCase()} · {formatUkuran(d.ukuran)} · {fmtWaktu.format(d.createdAt)}</div>
-              {d.pesan && <div className="text-xs text-destructive">{d.pesan}</div>}
+              {d.pesan && <div className={d.status === "diproses" ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>{d.pesan}</div>}
+              {(() => {
+                const o = ringkasOcr(d.halamanTeks);
+                return o && <TeksOcr dokumenId={d.id} nama={d.namaBerkas} jumlah={o.jumlah} perluDicek={o.perluDicek} bolehUbah={bolehUbah} />;
+              })()}
             </TableCell>
             <TableCell className="max-w-56 whitespace-normal text-xs">
               {d.subBagianKode ? namaSub.get(d.subBagianKode) ?? d.subBagianKode : <span className="text-muted-foreground">Umum</span>}

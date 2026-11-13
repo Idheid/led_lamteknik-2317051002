@@ -338,6 +338,9 @@ model Dokumen {
   status      String    @default("diunggah") // diunggah, diproses, siap, gagal, menunggu_kunci
   pesan       String?
   jumlahPotongan Int    @default(0)
+  // Rencana 10 Nov T3: teks per halaman bila ada halaman hasil OCR ({halaman, teks, sumber, keyakinan, perluDicek, dikoreksi})
+  halamanTeks Json?
+  versiOcr    String?
   diunggahOlehId String?
   diprosesPada DateTime?
   potongan    Potongan[]
@@ -354,6 +357,8 @@ model Potongan {
   urutan    Int
   teks      String
   halaman   Int?
+  sumberTeks String  @default("teks") // teks (lapisan PDF/DOCX) atau ocr (Rencana 10 Nov T3)
+  keyakinanOcr Int?  // rata-rata keyakinan OCR 0–100 halaman yang dicakup potongan
   modelEmbedding String
   embedding Unsupported("vector(768)")? // Gemini embedding dengan outputDimensionality 768; indeks HNSW lewat migrasi SQL
   // tsvector untuk pencarian kata kunci: kolom terbangkitkan (GENERATED) dibuat lewat migrasi SQL

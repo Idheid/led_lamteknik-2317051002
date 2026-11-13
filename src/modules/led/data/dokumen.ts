@@ -5,6 +5,8 @@ import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { bacaBerkas, hapusBerkas, simpanBerkas } from "@/modules/bersama/penyimpanan";
+import type { Prisma } from "@/generated/prisma/client";
+import type { HalamanTeks } from "@/modules/led/domain/ocr";
 
 /**
  * F-10 dokumen pendukung per sub-bagian/butir (PDF, DOCX, gambar), F-12 gambar disimpan utuh.
@@ -251,6 +253,39 @@ export async function hapusDokumen(p: Pengguna, id: string) {
 export async function prosesUlangDokumen(p: Pengguna, id: string) {
   const d = await dokumenMilik(p, id);
   await prisma.dokumen.update({ where: { id: d.id }, data: { status: "diunggah", pesan: null } });
+  await kirimTugas(ANTREAN.dokumen, { dokumenId: d.id });
+}
+
+/** Rencana 10 Nov T3: teks per halaman dokumen yang punya halaman hasil OCR ("Lihat teks hasil OCR"). */
+export async function teksOcrDokumen(p: Pengguna, id: string) {
+  const d = await dokumenMilik(p, id, { baca: true });
+  const halaman = (d.halamanTeks ?? []) as unknown as HalamanTeks[];
+  return { versiOcr: d.versiOcr, halaman: halaman.filter((h) => h.sumber === "ocr") };
+}
+
+const skemaKoreksiOcr = z.array(z.object({
+  halaman: z.number().int().positive(),
+  teks: z.string().max(20_000, "Teks satu halaman terlalu panjang."),
+})).min(1, "Tidak ada koreksi.").max(500);
+
+/**
+ * Simpan koreksi teks OCR per halaman lalu proses ulang dokumen. Halaman terkoreksi tidak di-OCR ulang; potongan yang
+ * teksnya tidak berubah mempertahankan ID dan vektornya.
+ */
+export async function simpanKoreksiOcr(p: Pengguna, id: string, masukan: unknown) {
+  const d = await dokumenMilik(p, id);
+  const koreksi = skemaKoreksiOcr.parse(masukan);
+  const halaman = (d.halamanTeks ?? []) as unknown as HalamanTeks[];
+  const peta = new Map(koreksi.map((k) => [k.halaman, k.teks]));
+  for (const k of koreksi) {
+    if (!halaman.some((h) => h.halaman === k.halaman && h.sumber === "ocr")) throw new GalatPengguna(`Halaman ${k.halaman} bukan halaman hasil OCR.`);
+  }
+  const baru = halaman.map((h) => (peta.has(h.halaman) ? { ...h, teks: peta.get(h.halaman)!.trim(), dikoreksi: true, perluDicek: false } : h));
+  await prisma.dokumen.update({
+    where: { id: d.id },
+    data: { halamanTeks: baru as unknown as Prisma.InputJsonValue, status: "diunggah", pesan: null },
+  });
+  await catatAktivitas(p, "koreksi_ocr", "dokumen", d.id, { halaman: koreksi.map((k) => k.halaman) });
   await kirimTugas(ANTREAN.dokumen, { dokumenId: d.id });
 }
 

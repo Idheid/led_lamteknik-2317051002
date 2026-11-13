@@ -1,3 +1,4 @@
+import { tutupOcr } from "@/modules/led/ekstraksi/ocr";
 /**
  * Worker antrean (pg-boss) untuk seluruh website: satu proses mengerjakan antrean semua modul.
  * - bersama: cadangan harian (src/worker/bersama.ts)
@@ -29,6 +30,7 @@ async function main() {
   const berhenti = async () => {
     console.log("Worker berhenti...");
     await bos.stop({ graceful: true, timeout: 20_000 });
+    await tutupOcr();
     await prisma.$disconnect();
     process.exit(0);
   };

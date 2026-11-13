@@ -264,6 +264,10 @@ kunci API hanya menampilkan status; bila kunci habis, hubungi Admin UPPS.
    yang belum ada. Tabel dari PDF wajib dicek. Tabel **Metrik butir angka** menunjukkan sumber nilai tiap butir angka.
 2. **Basis Pengetahuan**: tab **Dokumen LED ini** (Tambah dokumen, kaitkan ke sub-bagian, tahun terbit, tautan bukti)
    dan **Dokumen bersama fakultas** (hanya baca). **Uji cari** memeriksa apakah bukti sudah terbaca sebelum generate.
+   PDF hasil pindai (SK bertanda tangan, notulen, sertifikat) dibaca dengan OCR lokal: status menampilkan "Membaca teks
+   pindaian (OCR): halaman x dari y". Setelah selesai, **Lihat teks hasil OCR** menampilkan teks per halaman; halaman
+   bertanda **perlu dicek** (keyakinan < 70%) sebaiknya dikoreksi, lalu **Simpan koreksi dan proses ulang**. LKPS tidak
+   dibaca dengan OCR: unggah Excel template atau PDF yang disimpan dari Excel.
    **Unduh data uji pencarian** menghasilkan CSV potongan kandidat setiap sub-bagian yang sudah berdraf, untuk diberi
    label relevan (1) atau tidak (0) oleh manusia; Admin UPPS mengunduh semua LED dari Basis Pengetahuan fakultas.
 3. **Tim penyusun**: dosen (urutan pertama = ketua) dan tenaga kependidikan; mengisi halaman identitas tim dan Tabel 2.1

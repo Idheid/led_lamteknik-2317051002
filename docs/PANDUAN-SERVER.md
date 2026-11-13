@@ -40,6 +40,21 @@ Melihat log: `docker compose -f docker-compose.produksi.yml logs -f web worker`.
 Di Linux, folder cadangan harus bisa ditulis pengguna `node` di kontainer (uid 1000):
 `sudo chown 1000:1000 /mnt/cadangan-led`.
 
+### OCR untuk PDF hasil pindai
+
+Halaman PDF tanpa teks di Basis Pengetahuan dan PDF SK pada Catat hasil akreditasi dibaca dengan OCR lokal (tanpa AI,
+data tidak keluar server). Semua kebutuhannya terpasang lewat `npm install`:
+
+- `tesseract.js` (WebAssembly, tanpa pustaka sistem);
+- data bahasa Indonesia dan Inggris dari paket `@tesseract.js-data/ind` dan `@tesseract.js-data/eng` (model
+  `best_int`). Saat OCR pertama kali berjalan, berkasnya disalin ke folder sementara sistem
+  (`OCR_TESSDATA_DIR` untuk folder lain); tidak ada unduhan dari internet saat aplikasi berjalan;
+- `@napi-rs/canvas` untuk merender halaman PDF (biner Linux amd64/arm64 ikut terpasang). Bila biner ini tidak bisa
+  dimuat (misalnya diblokir kebijakan keamanan Windows), OCR memakai gambar pindaian yang tertanam di halaman PDF.
+
+OCR berjalan di `worker`. Satu halaman A4 butuh sekitar 1–5 detik dan ± 300 MB memori selama pekerja OCR aktif; pekerja
+ditutup otomatis setelah 15 detik menganggur (`OCR_JEDA_TUTUP_MS`). LKPS tidak di-OCR.
+
 ## 2. HTTPS dan alamat login
 
 - Domain publik (`ALAMAT_SITUS="led.ft.unila.ac.id"`): Caddy mengambil sertifikat Let's Encrypt otomatis.

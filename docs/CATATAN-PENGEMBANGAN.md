@@ -2189,3 +2189,42 @@ Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 180/180 lulus |
 | `npm run test:integrasi` | 104/104 lulus |
+
+### T3: OCR lokal untuk PDF pindaian
+
+- Paket (dipatok persis): `tesseract.js` **7.0.0**, `@tesseract.js-data/ind` **1.0.0** dan `@tesseract.js-data/eng`
+  **1.0.0** (traineddata `4.0.0_best_int`), `@napi-rs/canvas` **1.1.1**; `unpdf` tetap 1.8.1. Versi OCR yang dicatat di
+  dokumen: `tesseract.js-7.0.0/ind+eng-best_int/v1`.
+- `domain/ocr.ts` (murni): halaman pindaian = < 50 huruf/angka; `gabungHalaman` (lapisan teks + OCR + koreksi lama;
+  hasil OCR hanya dipakai bila hurufnya lebih banyak dari lapisan teks, supaya halaman bertulisan pendek tanpa gambar
+  tidak tertimpa teks kosong, ditemukan lewat uji `unggah`); `keyakinanPotongan`.
+- `ekstraksi/ocr.ts`: render halaman `renderPageAsImage` (scale 2, `@napi-rs/canvas`); **cadangan** bila canvas native
+  tidak bisa dimuat: gambar terbesar yang tertanam di halaman (`extractImages`) diubah ke PNM (P5/P6) lalu dibaca
+  Tesseract. Alasan: di laptop pengembangan, Windows Application Control memblokir berkas native
+  `skia.win32-x64-msvc.node` (juga `_mupdf` PyMuPDF); pengaturan keamanan itu tidak diubah. Jadi di laptop OCR berjalan
+  lewat jalur cadangan; jalur canvas belum teruji di sini dan berlaku di server Linux. Traineddata disalin dari
+  `node_modules` ke folder sementara (`OCR_TESSDATA_DIR`), tanpa unduhan saat berjalan. Pekerja Tesseract dipakai ulang
+  dan ditutup otomatis setelah 15 detik menganggur; worker menutupnya saat berhenti.
+- Pemrosesan dokumen (`proses/dokumen.ts`): halaman pindaian di-OCR dengan progres per halaman di pesan dokumen
+  ("Membaca teks pindaian (OCR): halaman x dari y"); teks per halaman disimpan di `Dokumen.halamanTeks` (+ `versiOcr`);
+  potongan diberi `sumberTeks` (`teks`/`ocr`) dan `keyakinanOcr`; halaman < 70% "perlu dicek". Migrasi
+  `20261113110000_ocr_dokumen`.
+- **ID potongan stabil** (syarat label T2): saat diproses ulang, potongan yang teksnya sama dengan potongan lama dokumen
+  itu (model embedding sama) memakai ulang ID dan vektornya, jadi juga tidak di-embedding ulang.
+- "Lihat teks hasil OCR" di tabel Basis Pengetahuan (dialog per halaman, keyakinan, perlu dicek, koreksi →
+  `simpanKoreksiOcr` → proses ulang tanpa OCR ulang untuk halaman terkoreksi). Tim Prodi untuk dokumen LED-nya, Admin
+  UPPS untuk dokumen fakultas.
+- PDF SK (Catat hasil akreditasi): maksimal 3 halaman pindaian pertama di-OCR sebelum pola/AI membaca SK.
+- LKPS PDF tidak di-OCR; pesan galatnya kini menjelaskan alasannya dan memberi jalan keluar (Excel atau PDF dari Excel).
+- Fikstur `tests/fikstur/ocr/` (pindaian, campuran, kosong) dibuat `scripts/buat-fikstur-ocr.ts` (DOCX → PNG lewat
+  LibreOffice → halaman gambar PDF dengan pdf-lib).
+- **Tidak dikerjakan:** opsi lanjutan "Baca dengan AI" untuk halaman berkeyakinan rendah (rencana: bawaan mati). Koreksi
+  manual sudah tersedia; opsi ini bisa ditambahkan kemudian bila diperlukan.
+- Uji: `tests/unit/ocr.test.ts` (7), `tests/integrasi/ocr-dokumen.test.ts` (4: pindaian dicari, campuran, kosong,
+  koreksi + ID stabil). Hasil OCR fikstur: keyakinan 95%, kata kunci terbaca utuh.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 187/187 lulus |
+| `npm run test:integrasi` | 108/108 lulus |

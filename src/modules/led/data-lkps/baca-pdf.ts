@@ -293,7 +293,8 @@ export async function bacaLkpsPdf(berkas: Buffer | Uint8Array, jenjang: string):
     masalah.unshift({
       tingkat: "galat",
       sheet: null,
-      pesan: "Tidak ada tabel LKPS yang dikenali di PDF. Pastikan PDF berisi teks (bukan hasil pindai) dan dicetak dari template LKPS 2025.",
+      // Rencana 10 Nov T3: LKPS sengaja tidak di-OCR (tabel hasil OCR rawan salah kolom)
+      pesan: "Tidak ada tabel LKPS yang dikenali di PDF. PDF hasil pindai tidak dibaca dengan OCR karena tabel hasil OCR rawan salah kolom: unggah berkas Excel template LKPS 2025, atau PDF yang disimpan/dicetak langsung dari Excel tersebut.",
     });
   } else {
     masalah.unshift({

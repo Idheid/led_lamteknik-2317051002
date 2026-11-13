@@ -100,6 +100,17 @@ export async function aksiPotonganDokumen(dokumenId: string) {
   return jalankanAksi((p) => dokumen.potonganDokumen(p, dokumenId));
 }
 
+/** Rencana 10 Nov T3: lihat dan koreksi teks hasil OCR. */
+export async function aksiTeksOcr(dokumenId: string) {
+  return jalankanAksi((p) => dokumen.teksOcrDokumen(p, dokumenId));
+}
+
+export async function aksiSimpanKoreksiOcr(dokumenId: string, koreksi: { halaman: number; teks: string }[]) {
+  const r = await jalankanAksi((p) => dokumen.simpanKoreksiOcr(p, dokumenId, koreksi).then(() => null));
+  revalidatePath("/led", "layout");
+  return r;
+}
+
 export async function aksiCariDokumen(proyekId: string, kueri: string, subBagianKode: string | null) {
   return jalankanAksi(async (p) => {
     const q = kueri.trim().slice(0, 500);
