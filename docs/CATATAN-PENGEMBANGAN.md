@@ -2637,3 +2637,39 @@ bagian, 1 perbaikan, 1 periksa ulang).
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 244/244 lulus |
 | `npm run test:integrasi` | 130/130 lulus (dijalankan sendiri; dua run bersamaan memakai basis data uji yang sama dan saling mengganggu) |
+
+### T11: pengukuran akhir dan dokumentasi (⏸ ringkasan akhir)
+
+- **Retrieval:** belum ada CSV berlabel, jadi `docs/uji/hasil-retrieval.md` berisi langkah ekspor, pelabelan, perintah
+  `scripts/hitung-retrieval.ts` (dengan basis data atau `--dari-csv`), tabel kosong untuk A-lama/B-bm25/C-unsur, dan
+  batasan pool.
+- **Pemakaian:** `scripts/ringkas-pemakaian.ts` meringkas setiap Susun seluruh LED dari `TugasGenerate`, `LogPemakaian`,
+  dan `VersiDraf`: panggilan AI per jenis (narasi, periksa, perbaikan, periksa ulang, gabung), token masuk/keluar/cache,
+  durasi rata-rata, sub-bagian dilewati (sidik jari) dan tanpa AI, vektor kueri baru, dokumen yang memakai ulang hasil
+  pemrosesan, dan tabel mode tunggal vs gabung (persentase kalimat tidak didukung) bila keduanya ada. Hasil pada basis
+  data dev (`docs/uji/hasil-pemakaian.md`) hanya contoh format: satu Susun 31 Okt dengan model uji, sebelum T7–T9.
+  Embedding dokumen tidak dicatat di `LogPemakaian`; skrip memakai jumlah vektor kueri baru dan dokumen pakai ulang
+  sebagai gantinya.
+- **Mode gabung** belum dicoba dengan kunci asli; tabel perbandingan otomatis muncul di ringkasan setelah dicoba.
+- **Dokumentasi:** `docs/SPESIFIKASI.md` bagian 3 ditulis ulang (pengindeksan, tiga konfigurasi pencarian, generate
+  berbasis kutipan, pemeriksaan tiga langkah, kuota); `docs/PANDUAN-PENGGUNAAN.md` dan `docs/PANDUAN-SERVER.md` sudah
+  diperbarui di T3, T5, T8, T9 (kutipan bukti, lencana pemeriksaan, perkiraan kuota, image basis data, OCR, tier
+  berbayar); tabel perbedaan alur lama dan baru untuk Bab III/IV di `docs/PERBEDAAN-ALUR-RAG.md`.
+- Gangguan saat T11: Docker Desktop tidak menyalakan mesinnya (WSL `docker-desktop` berhenti). Ditangani seperti
+  13 Nov: matikan Docker, `wsl --shutdown`, ganti nama folder `Docker\run` dan `docker-secrets-engine`, nyalakan ulang.
+
+#### Yang perlu data asli (belum bisa dari basis data dev)
+
+| Pengukuran | Cara |
+| --- | --- |
+| precision@k, recall@k tiga konfigurasi | unggah dokumen asli, Susun, ekspor dan label CSV, `scripts/hitung-retrieval.ts` |
+| panggilan AI, token, detik per sub-bagian, % dilewati | Susun seluruh LED dengan kunci Gemini, lalu `scripts/ringkas-pemakaian.ts` |
+| contoh kriteria C.4 (titik henti T8/T9) | Susun C.4, lihat panel Verifikasi dan ringkasan pemakaian |
+| "Mulai periode berikutnya" 5 dokumen tanpa embedding ulang | jalankan pada LED berdokumen asli; kolom pakai ulang di ringkasan |
+| tunggal vs gabung | nyalakan mode gabung di Kunci API → Model Gemini, Susun ulang satu kriteria |
+
+| Pemeriksaan (T11) | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 244/244 lulus |
+| `npm run test:integrasi` | 130/130 lulus |

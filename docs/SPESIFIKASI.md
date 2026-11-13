@@ -48,27 +48,67 @@ model AI disebut; LKPS PDF per tabel. Rincian di `CATATAN-PENGEMBANGAN.md`.
 
 ## 3. Mesin penyusun (RAG)
 
-- Satu panggilan LLM = satu sub-bagian. Tombol "Generate kriteria" menjalankan semua sub-bagian kriteria itu berurutan
-  lewat antrean: IKU dulu, lalu latar belakang dan kebijakan, lalu analisis faktor (memakai ringkasan IKU), terakhir SWOT.
-- Konteks per panggilan (`KonteksSubBagian` di `src/modules/led/domain/prompt.ts`):
-  - instruksi sub-bagian sesuai jenjang;
-  - butir terkait: deskriptor dan unsur skor 4;
-  - Bahan dari prodi (untuk AI), isian per sub-bagian yang tidak ikut diekspor (sumber `J`, label "J = Bahan dari
-    prodi"; label blok di prompt tetap "JAWABAN PENYUSUN");
-  - metrik yang dihitung sistem dari LKPS (sumber `M-…`), label TS sudah diganti tahun nyata;
-  - tabel LKPS yang dirujuk butir, ringkas (sumber `T-…`);
-  - potongan dokumen hasil pencarian (sumber `D…`): disaring per proyek dan sub-bagian (plus dokumen umum), pencarian
-    gabungan vektor + kata kunci (reciprocal rank fusion), ambil 6–8 potongan teratas;
-  - target kata dari anggaran.
-- Keluaran terstruktur (`SKEMA_KELUARAN`): paragraf + sumber, status unsur, dokumen yang masih kurang, catatan.
-- Pemeriksaan otomatis setelah generate:
-  - panjang ±15% dari target (`statusPanjang`);
-  - angka di narasi harus ada di metrik/tabel/jawaban/potongan (`angkaTidakBerdasar`);
-  - setiap paragraf punya sumber yang dikenal; setiap unsur dilaporkan (`periksaKeluaran`).
-  Yang gagal ditandai; pengguna memilih menyunting atau generate ulang.
-- Unsur tanpa bukti ditulis dengan penanda `[BELUM ADA BUKTI: …]`; ekspor ditolak selama penanda masih ada.
-- Butir berjenis angka: tabel ringkas (dibuat sistem, bukan LLM) + 1–2 paragraf analisis.
-- Simpan nama model, tanggal, dan keluaran mentah di setiap versi hasil (untuk uji ulang).
+Alur sejak Rencana 10 November 2026 (rincian dan alasan di `docs/CATATAN-PENGEMBANGAN.md`, bagian "Rencana 10 November
+2026").
+
+### 3.1 Pengindeksan dokumen (sekali per berkas)
+
+- Ekstraksi teks: lapisan teks PDF (unpdf) atau DOCX (mammoth); halaman PDF tanpa teks dibaca OCR lokal (tesseract.js,
+  bahasa Indonesia + Inggris). Teks per halaman dan keyakinan OCR disimpan; Tim Prodi bisa mengoreksi teks OCR.
+- Pemotongan 800–1.200 karakter, tumpang tindih 15%. Setiap potongan diberi kepala konteks tanpa AI (nama dokumen, jenis,
+  halaman, judul bagian terdekat).
+- Embedding 768 dimensi dalam batch 100: `embedding` dari teks saja dan `embeddingKonteks` dari kepala + teks (HNSW).
+  Indeks BM25 (`pg_textsearch`) atas kepala + teks.
+- Berkas yang sama (hash SHA-256) dengan versi pemrosesan sama (aturan potong, kepala, OCR, model embedding) memakai
+  ulang potongan dan vektor tanpa ekstraksi, OCR, atau embedding ulang.
+
+### 3.2 Pencarian (konfigurasi `PENCARIAN_KONFIGURASI`, bawaan C-unsur)
+
+| Konfigurasi | Kueri | Jalur vektor | Jalur kata kunci | k |
+| --- | --- | --- | --- | --- |
+| A-lama | satu kueri gabungan sub-bagian | `embedding` | ts_rank | 8 |
+| B-bm25 | satu kueri gabungan sub-bagian | `embeddingKonteks` | BM25 | 8 |
+| C-unsur | satu kueri per unsur skor 4 | `embeddingKonteks` | BM25 | 10 |
+
+- Kedua jalur digabung dengan reciprocal rank fusion. C-unsur menjamin tiap unsur mendapat potongan, membatasi 3
+  potongan per dokumen, dan melewati potongan bertumpang tindih. Disaring per LED dan sub-bagian (plus dokumen umum dan
+  bahan bersama fakultas).
+- Vektor kueri disimpan di `EmbeddingKueri` dan disiapkan di muka per LED, jadi generate tidak memanggil embedding.
+- Jejak pencarian (konfigurasi, kueri, kandidat dan peringkat per jalur) disimpan di setiap versi draf dan bisa
+  diekspor ke CSV untuk dilabel (`scripts/hitung-retrieval.ts` menghitung precision@k dan recall@k).
+- Pra-cek bukti: bila semua unsur tanpa potongan dan tidak ada J/M/T, draf disusun tanpa AI berisi penanda
+  `[BELUM ADA BUKTI: …]` dan daftar dokumen yang diharapkan.
+
+### 3.3 Generate berbasis kutipan
+
+- Satu panggilan LLM = satu sub-bagian (mode gabung opsional: sampai 3 sub-bagian pendek). Konteks per panggilan
+  (`KonteksSubBagian`): identitas prodi dan TS, instruksi sub-bagian sesuai jenjang, butir terkait (deskriptor dan
+  unsur skor 4), Bahan dari prodi (`J`), metrik sistem (`M-…`), tabel LKPS (`T-…`), potongan dokumen (`D…`/`U…`),
+  unsur tanpa bukti, target kata. Data pribadi disamarkan sebelum dikirim.
+- AI lebih dulu memilih kutipan bukti (salinan persis dari potongan atau J), lalu menulis paragraf hanya dari kutipan,
+  metrik, dan tabel. Keluaran: `bukti`, `paragraf` (sumber + bukti), `unsur`, `dokumenKurang`.
+- Cek kode (0 token): kutipan harus ditemukan persis di sumbernya (dinormalkan); paragraf yang hanya bersandar pada
+  kutipan ditolak → tidak didukung; angka harus ada di kutipan/data yang dirujuk; unsur "terpenuhi" tanpa bukti sah
+  diturunkan dan diberi penanda.
+- Sidik jari konteks (SHA-256 masukan prompt) membuat Susun seluruh LED melewati sub-bagian yang tidak berubah.
+
+### 3.4 Pemeriksaan dan perbaikan
+
+- Langkah 1 (aturan, 0 token): panjang ±15%, angka, sumber, label per kalimat, ditambah hasil cek kutipan.
+- Langkah 2 (AI, satu panggilan per bagian): semua kalimat versi baru satu bagian diberi label sesuai/sebagian/tidak
+  didukung dengan masukan kutipan dan baris M/T/J (bukan potongan utuh).
+- Langkah 3 (perbaikan terarah, maksimal sekali): paragraf bermasalah ditulis ulang dari bukti sah menjadi versi
+  "Perbaikan otomatis"; kalimat yang berubah diperiksa ulang.
+- Gerbang ekspor final: penanda `[BELUM ADA BUKTI]` dan kalimat tidak didukung yang belum disunting atau dikonfirmasi
+  dengan alasan menahan ekspor final (ekspor DRAF tetap bisa).
+- Butir berjenis angka: tabel ringkas dan metrik dihitung sistem dari LKPS dengan rumus per jenjang (`domain/rumus`,
+  9 jenjang + Sarjana), bukan oleh LLM.
+- Simpan nama model, tanggal, keluaran mentah, jejak pencarian, sidik jari, dan hasil pemeriksaan di setiap versi.
+
+### 3.5 Kuota
+
+- Perkiraan sebelum Susun (permintaan, token, pemakaian sejak reset, jam reset WIB); jumlah paralel adaptif terhadap
+  batas per menit; label project Google pada kunci; `LogPemakaian` mencatat token masuk/keluar/cache per panggilan.
 
 ## 4. Anggaran halaman dan kata
 
