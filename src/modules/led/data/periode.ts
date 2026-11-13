@@ -165,6 +165,7 @@ export async function mulaiLedPeriodeBerikutnya(p: Pengguna, masukan: MasukanPro
     });
     // diproses ulang (pemotongan dan embedding) lewat antrean
     for (const d of hasil.dokumen) await kirimTugas(ANTREAN.dokumen, { dokumenId: d.id });
+    await kirimTugas(ANTREAN.siapkanKueri, { proyekId: hasil.baru.id }).catch(() => undefined);
     await catatAktivitas(p, "mulai_periode_berikutnya", "proyek", hasil.baru.id, {
       lama: hasil.lama.nama, baru: hasil.baru.nama, versi: versi.kode,
       tim: salin.tim, bahan: hasil.bahan.salin.length, bahanBelum: hasil.bahan.belum.length, dokumen: hasil.dokumen.length, narasiLalu: salin.narasiLalu,

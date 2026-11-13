@@ -16,6 +16,7 @@ interface Awal {
   modelCadangan: string[];
   modelEmbedding: string;
   pakaiCadanganAdmin: boolean;
+  gabungSubPendek: boolean;
 }
 
 /** Tombol muat ulang daftar model dari Google (models.list). */
@@ -212,6 +213,22 @@ export function FormModel({ awal, narasi, embedding }: { awal: Awal; narasi: Mod
           <div>
             <FieldLabel htmlFor="pakai-cadangan-admin">Izinkan LED memakai kunci cadangan admin</FieldLabel>
             <FieldDescription>Dipakai setelah semua kunci fakultas habis kuotanya.</FieldDescription>
+          </div>
+        </Field>
+
+        <Field orientation="horizontal">
+          <Switch
+            id="gabung-sub-pendek"
+            checked={n.gabungSubPendek}
+            onCheckedChange={(v) => setN({ ...n, gabungSubPendek: v })}
+          />
+          <div>
+            <FieldLabel htmlFor="gabung-sub-pendek">Gabungkan sub-bagian pendek dalam satu panggilan</FieldLabel>
+            <FieldDescription>
+              Mode hemat permintaan (uji coba): sampai 3 sub-bagian berurutan dengan target ≤ 250 kata dan total potongan ≤ 20
+              dikirim sekaligus. Indikator kinerja, analisis faktor, SWOT, dan bab penutup tidak digabung. Bandingkan hasilnya
+              dengan mode biasa sebelum dipakai untuk LED asli.
+            </FieldDescription>
           </div>
         </Field>
 

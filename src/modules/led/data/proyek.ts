@@ -59,6 +59,8 @@ export async function buatProyek(p: Pengguna, masukan: MasukanProyek) {
   const versi = await instrumenWajibAktif(prodi.jenjang);
   const proyek = await prisma.proyekLED.create({ data: dataLedBaru(prodi, versi, data) });
   await catatAktivitas(p, "buat", "proyek", proyek.id, { nama: proyek.nama, prodi: prodi.nama, versi: versi.kode });
+  // Rencana 10 Nov T9: vektor kueri disiapkan di muka (impor dinamis: menghindari impor melingkar)
+  await (await import("@/modules/led/proses/siapkan-kueri")).jadwalkanSiapkanKueri(proyek.id);
   return proyek;
 }
 

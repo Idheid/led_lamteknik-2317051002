@@ -15,4 +15,6 @@ process.env.EMBEDDING_PENYEDIA = "uji";
 // model tiruan di uji memakai doGenerate dan urutan panggilan tetap; uji aliran/paralel menyalakannya sendiri
 process.env.GENERATE_STREAM = "0";
 process.env.GENERATE_PARALEL = "1";
+// Rencana 10 Nov T9: paralel adaptif tidak naik di uji (urutan panggilan model tiruan tetap)
+process.env.GENERATE_PARALEL_MAKS = "1";
 process.env.UPLOAD_DIR = mkdtempSync(join(tmpdir(), "led-uji-"));

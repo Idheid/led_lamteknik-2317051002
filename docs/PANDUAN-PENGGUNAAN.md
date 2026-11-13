@@ -107,8 +107,12 @@ formulir prodi, isi **Alasan koreksi**; koreksi itu tercatat sebagai riwayat "Ko
   cadangan** dipakai setelah semua kunci utama habis (bila diizinkan di tab Model Gemini). Buat kunci di
   aistudio.google.com → *Get API key*, klik **Tambah kunci** pada daftar yang sesuai, lalu **Uji koneksi**. Kunci
   disimpan terenkripsi; hanya 4 karakter terakhir yang ditampilkan. Judul halaman menyebut model yang sedang dipakai.
+  Isi **Proyek Google** (nama project di AI Studio tempat kunci dibuat). Kuota Gemini dihitung per project, bukan per
+  kunci; bila dua kunci berlabel project sama, halaman menampilkan peringatan karena kunci kedua tidak menambah kuota.
 - **Model Gemini**: **Muat ulang daftar**, pilih model narasi, model cadangan, dan model embedding; **Uji model**.
   Nama model yang dipilih langsung tampil di tombol Generate, banner penyusunan, dan halaman awal.
+  **Gabungkan sub-bagian pendek dalam satu panggilan** (bawaan mati) mengirim sampai 3 sub-bagian pendek sekaligus untuk
+  menghemat jumlah permintaan; nyalakan hanya setelah membandingkan hasilnya dengan mode biasa.
 - **Log**: panggilan model, token, durasi, dan galat (`kuota_harian` = kuota kunci habis).
 - Tim Prodi tidak bisa mengelola kunci; saat kuota habis mereka melihat pesan "Hubungi Admin UPPS".
 
@@ -277,7 +281,9 @@ kunci API hanya menampilkan status; bila kunci habis, hubungi Admin UPPS.
 
 - **Susun seluruh LED** (Beranda): menyusun semua bagian berurutan, C.1–C.7, Bab II.A, II.B, III, I, IV, lalu kata
   pengantar dan ringkasan eksekutif paling akhir. Sub-bagian yang sudah ditandai **selesai** dilewati. Konfirmasi
-  menyebut jumlah sub-bagian. Banner di atas halaman menampilkan "Bagian 3 dari 12" dan model yang dipakai
+  menyebut jumlah sub-bagian dan perkiraan: berapa sub-bagian dikirim ke AI, dilewati (data dan instruksinya tidak
+  berubah sejak draf terakhir), atau disusun tanpa AI; perkiraan permintaan AI dan token; pemakaian sejak reset kuota; dan
+  jam reset kuota (WIB). Untuk menyusun ulang sub-bagian yang dilewati, pakai **Generate** di sub-bagian itu. Banner di atas halaman menampilkan "Bagian 3 dari 12" dan model yang dipakai
   ("Disusun dengan Google Gemini ..."). Bila kuota habis, penyusunan berhenti rapi dan lanjut setelah Admin UPPS menambah
   kunci atau kuota direset. **Batalkan** menghentikan seluruh rangkaian; draf yang sudah jadi tetap tersimpan.
 - Per kriteria: ringkasan kriteria → **Generate semua**, **Lanjutkan**, **Tandai selesai**.

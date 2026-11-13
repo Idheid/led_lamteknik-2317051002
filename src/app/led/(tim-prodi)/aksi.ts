@@ -14,6 +14,7 @@ import { simpanNilaiManual } from "@/modules/led/data/nilai-butir";
 import { simpanJadwal } from "@/modules/led/data/kesiapan";
 import { simpanTarget } from "@/modules/led/data/target-butir";
 import { konfirmasiKalimat, periksaDenganAi } from "@/modules/led/data/verifikasi";
+import { perkiraanSusun } from "@/modules/led/data/perkiraan-susun";
 import { simpanAlasanKonsistensi } from "@/modules/led/data/konsistensi";
 import { mulaiLedPeriodeBerikutnya, type MasukanSalin } from "@/modules/led/data/periode";
 
@@ -130,6 +131,11 @@ export async function aksiSusunSeluruh(proyekId: string) {
   });
   revalidatePath(`/led/${proyekId}`, "layout");
   return r;
+}
+
+/** Rencana 10 Nov T9: perkiraan permintaan AI, token, dan pemakaian hari ini sebelum Susun seluruh LED. */
+export async function aksiPerkiraanSusun(proyekId: string) {
+  return jalankanAksi((p) => perkiraanSusun(p, proyekId));
 }
 
 export async function aksiMulaiGenerate(proyekId: string, bagianKode: string, subBagianKode?: string | null) {

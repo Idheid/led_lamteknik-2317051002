@@ -10,6 +10,7 @@ import { prosesUsulanStruktur } from "@/modules/led/proses/struktur-template";
 import { prosesSkorRubrik } from "@/modules/led/proses/skor-rubrik";
 import { prosesIndeksUlang } from "@/modules/led/proses/indeks-ulang";
 import { prosesPeriksaBagian } from "@/modules/led/proses/periksa-bagian";
+import { prosesSiapkanKueri } from "@/modules/led/proses/siapkan-kueri";
 
 /**
  * Pengerja antrean modul LED: membaca LKPS yang diunggah ke LED, memproses dokumen Basis Pengetahuan (ekstraksi,
@@ -49,6 +50,10 @@ export async function daftarkanPengerjaLed(bos: PgBoss): Promise<void> {
     const { proyekId, bagianKode, segera } = tugas.data;
     const r = await prosesPeriksaBagian(proyekId, bagianKode, { segera: segera === "1" });
     console.log(`[periksa-bagian] ${proyekId} ${bagianKode} ${r.status} (${r.versi} versi, ${r.panggilanAi} panggilan AI, ${r.diperbaiki} diperbaiki)`);
+  });
+  await bos.work<{ proyekId: string }>(ANTREAN.siapkanKueri, { localConcurrency: 1 }, async ([tugas]) => {
+    const r = await prosesSiapkanKueri(tugas.data.proyekId);
+    console.log(`[siapkan-kueri] ${tugas.data.proyekId}: ${r.kueri} kueri, ${r.baru} baru, ${r.permintaan} permintaan embedding`);
   });
   await bos.work<{ proyekId: string }>(ANTREAN.skorRubrik, { localConcurrency: 1 }, async ([tugas]) => {
     console.log(`[skor-rubrik] ${tugas.data.proyekId}`);

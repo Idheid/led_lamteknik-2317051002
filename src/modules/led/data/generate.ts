@@ -6,7 +6,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { catatAktivitas } from "@/modules/bersama/data/log";
-import { ringkasanKunci } from "@/modules/bersama/data/kunci-api";
+import { pengaturanLlm, ringkasanKunci } from "@/modules/bersama/data/kunci-api";
 import { ambilProyek, ambilProyekUbah, pastikanBisaDiubah } from "@/modules/led/data/proyek";
 import {
   bacaDokumen, bandingkanTeks, paragrafBersumber, periksaDokumen, teksDokumen, type DokTiptap, type HasilPemeriksaan, type RujukanPeriksa,
@@ -98,6 +98,8 @@ export async function mulaiSusunSeluruh(p: Pengguna, proyekId: string) {
       pesan: tanpaKunci ? "Belum ada kunci API yang bisa dipakai. Hubungi Admin UPPS; penyusunan dimulai otomatis setelah kunci ditambahkan." : null,
     },
   });
+  // Rencana 10 Nov T9: kueri yang belum punya vektor disiapkan sekaligus (biasanya sudah ada sejak LED dibuat)
+  await kirimTugas(ANTREAN.siapkanKueri, { proyekId: proyek.id }).catch(() => undefined);
   if (!tanpaKunci) await kirimTugas(ANTREAN.generate, { tugasId: tugas.id });
   await catatAktivitas(p, "susun_seluruh", "proyek", proyek.id, { bagian: rencana.map((b) => b.kode), jumlah: rencana.reduce((a, b) => a + b.sub.length, 0) });
   return tugas;
@@ -223,6 +225,9 @@ export async function drafBagian(p: Pengguna, proyekId: string, bagianKode: stri
   });
   const idAktif = draf.map((d) => d.versiAktifId).filter((x): x is string => Boolean(x));
   const aktif = await prisma.versiDraf.findMany({ where: { id: { in: idAktif } } });
+  // Rencana 10 Nov T9: draf dari model cadangan diberi label jelas
+  const atur = await pengaturanLlm();
+  const dariCadangan = (m: string | null) => Boolean(m && m !== atur.modelNarasi && atur.modelCadangan.includes(m));
   return Object.fromEntries(draf.map((d) => {
     const v = aktif.find((x) => x.id === d.versiAktifId);
     return [d.subBagian.kode, {
@@ -239,6 +244,8 @@ export async function drafBagian(p: Pengguna, proyekId: string, bagianKode: stri
         pemeriksaan: tampilDenganMenahan(v.pemeriksaan, v.isi),
         catatanPenyusun: ((v.keluaranMentah as { keluaran?: KeluaranSubBagian } | null)?.keluaran?.catatanUntukPenyusun) ?? null,
         model: v.model,
+        dariCadangan: dariCadangan(v.model),
+        modeGenerate: v.modeGenerate,
         pemakaian: pemakaian(v.keluaranMentah),
         jumlahKata: v.jumlahKata,
         dibuat: v.createdAt.toISOString(),

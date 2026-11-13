@@ -505,6 +505,8 @@ export function PanelDraf({
             ? <>
               Versi {aktif.nomor} · {LABEL_ASAL[aktif.asal] ?? aktif.asal} · {waktu(aktif.dibuat)}
               {aktif.model && ` · ${aktif.model}`}
+              {aktif.dariCadangan && <Badge variant="outline" className={cn("ml-1.5", GAYA_LABEL.sebagian)}>Model cadangan</Badge>}
+              {aktif.modeGenerate === "gabung" && <Badge variant="outline" className="ml-1.5">Mode gabung</Badge>}
               {aktif.pemakaian && ` · ${formatAngka(aktif.pemakaian.tokenMasuk, 0)} token masuk, ${formatAngka(aktif.pemakaian.tokenKeluar, 0)} token keluar`}
             </>
             : "Narasi inilah yang masuk ke Word."}

@@ -341,6 +341,10 @@ model Dokumen {
   // Rencana 10 Nov T3: teks per halaman bila ada halaman hasil OCR ({halaman, teks, sumber, keyakinan, perluDicek, dikoreksi})
   halamanTeks Json?
   versiOcr    String?
+  // Rencana 10 Nov T9: versi pemotongan + kepala + OCR + model embedding; berkas sama (hash) dengan versi sama dipakai
+  // ulang potongan dan vektornya. dokumenSumberPakaiUlangId = jejak dokumen asal salinan (tanpa relasi: boleh terhapus)
+  versiPemrosesan String?
+  dokumenSumberPakaiUlangId String?
   diunggahOlehId String?
   diprosesPada DateTime?
   potongan    Potongan[]
@@ -348,6 +352,7 @@ model Dokumen {
   updatedAt   DateTime  @default(now()) @updatedAt
 
   @@index([proyekId, subBagianKode])
+  @@index([hash, versiPemrosesan])
 }
 
 model Potongan {
@@ -403,6 +408,10 @@ model VersiDraf {
   pemeriksaan Json?      // hasil cek panjang, angka, sumber
   model       String?
   pencarian   Json?      // Rencana 10 Nov T2: konfigurasi, kueri, k, kandidat beserta peringkat per jalur
+  // Rencana 10 Nov T9: sidik jari masukan prompt (SHA-256) untuk melewati sub-bagian yang tidak berubah saat Susun,
+  // dan mode generate ("tunggal" atau "gabung" = beberapa sub-bagian pendek dalam satu panggilan)
+  sidikJari   String?
+  modeGenerate String?
   keluaranMentah Json?
   jumlahKata  Int        @default(0)
   dibuatOlehId String?

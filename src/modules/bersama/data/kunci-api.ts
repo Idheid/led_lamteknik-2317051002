@@ -40,7 +40,11 @@ const skemaKunci = z.object({
     // format kunci Google bisa berubah ("AIza...", "AQ.xxx", ...): terima semua karakter ASCII yang terlihat;
     // keabsahan kunci dipastikan lewat Uji koneksi, bukan lewat pola
     .regex(/^[!-~]+$/, "Kunci API tidak boleh berisi spasi, baris baru, atau huruf non-ASCII. Salin ulang dari Google AI Studio."),
+  // Rencana 10 Nov T9: nama/ID project Google asal kunci (manual, opsional); kuota dihitung per project
+  proyekGoogle: z.string().trim().max(100, "Nama project Google terlalu panjang.").optional().transform((x) => x || null),
 });
+
+export { proyekGoogleGanda } from "@/modules/bersama/domain/kunci-api";
 
 /** Jenis kunci di antarmuka: utama (fakultas, dicoba lebih dulu) atau cadangan. */
 export type JenisKunci = "utama" | "cadangan";
@@ -58,13 +62,13 @@ export async function daftarKunci(p: Pengguna, jenis: JenisKunci = "utama") {
   const daftar = await prisma.kunciAPI.findMany({
     where: { pemilik },
     orderBy: [{ urutan: "asc" }, { createdAt: "asc" }],
-    select: { id: true, label: true, akhiran: true, status: true, habisSampai: true, createdAt: true, urutan: true },
+    select: { id: true, label: true, akhiran: true, status: true, habisSampai: true, createdAt: true, urutan: true, proyekGoogle: true },
   });
   const sekarang = new Date();
   return daftar.map((k) => ({ ...k, statusEfektif: statusEfektif({ ...k, pemilik, dibuatPada: k.createdAt } as KunciDomain, sekarang) }));
 }
 
-export async function tambahKunci(p: Pengguna, masukan: { label: string; kunci: string; jenis?: JenisKunci }) {
+export async function tambahKunci(p: Pengguna, masukan: { label: string; kunci: string; jenis?: JenisKunci; proyekGoogle?: string | null }) {
   pastikanAdmin(p);
   const { pemilik } = pemilikDari(masukan.jenis ?? "utama");
   const data = skemaKunci.parse(masukan);
@@ -72,6 +76,7 @@ export async function tambahKunci(p: Pengguna, masukan: { label: string; kunci: 
   const k = await prisma.kunciAPI.create({
     data: {
       label: data.label,
+      proyekGoogle: data.proyekGoogle,
       kunciTerenkripsi: enkripsi(data.kunci),
       akhiran: akhiranKunci(data.kunci),
       pemilik,

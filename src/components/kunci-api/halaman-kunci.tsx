@@ -1,6 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import type { Pengguna } from "@/modules/bersama/akses";
-import { daftarKunci, LABEL_JENIS_KUNCI, type JenisKunci } from "@/modules/bersama/data/kunci-api";
+import { daftarKunci, LABEL_JENIS_KUNCI, proyekGoogleGanda, type JenisKunci } from "@/modules/bersama/data/kunci-api";
 import { modelAiAktif } from "@/modules/bersama/data/pengaturan";
 import { pakaiPenyediaUji } from "@/modules/bersama/llm/embedding";
 import { fmtWaktu } from "@/modules/bersama/tampil";
@@ -50,6 +50,7 @@ function TabelKunci({ jenis, kunci }: { jenis: JenisKunci; kunci: BarisKunci[] }
               <TableRow>
                 <TableHead className="pl-4">Label</TableHead>
                 <TableHead>Kunci</TableHead>
+                <TableHead>Proyek Google</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ditambahkan</TableHead>
                 <TableHead className="w-12 pr-4" />
@@ -62,6 +63,7 @@ function TabelKunci({ jenis, kunci }: { jenis: JenisKunci; kunci: BarisKunci[] }
                   <TableRow key={k.id}>
                     <TableCell className="pl-4 font-medium">{k.label}</TableCell>
                     <TableCell className="font-mono text-xs">••••{k.akhiran}</TableCell>
+                    <TableCell className="text-xs">{k.proyekGoogle ?? <span className="text-muted-foreground">belum diisi</span>}</TableCell>
                     <TableCell>
                       <Badge variant={s.varian}>{s.label}</Badge>
                       {k.statusEfektif === "kuota_habis" && k.habisSampai && (
@@ -105,6 +107,15 @@ export async function HalamanKunci({ pengguna, remah }: { pengguna: Pengguna; re
         <Alert>
           <AlertTitle>Mode uji embedding aktif</AlertTitle>
           <AlertDescription>EMBEDDING_PENYEDIA=uji: dokumen diindeks dengan embedding uji lokal tanpa memanggil Gemini.</AlertDescription>
+        </Alert>
+      )}
+      {proyekGoogleGanda([...utama, ...cadangan]).length > 0 && (
+        <Alert>
+          <AlertTitle>Beberapa kunci dari project Google yang sama</AlertTitle>
+          <AlertDescription>
+            Project {proyekGoogleGanda([...utama, ...cadangan]).join(", ")} dipakai lebih dari satu kunci. Kuota dihitung per
+            project, jadi menambah kunci dari project yang sama tidak menambah kuota.
+          </AlertDescription>
         </Alert>
       )}
       <div>

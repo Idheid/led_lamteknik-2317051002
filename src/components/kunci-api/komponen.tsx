@@ -18,11 +18,12 @@ export function FormKunci({ kembaliKe, jenis = "utama" }: { kembaliKe?: string; 
   const { sibuk, jalankan } = useAksi();
   const [label, setLabel] = useState(jenis === "cadangan" ? "Kunci cadangan" : "Kunci utama");
   const [kunci, setKunci] = useState("");
+  const [proyekGoogle, setProyekGoogle] = useState("");
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        jalankan(() => aksiTambahKunci(label, kunci, jenis), {
+        jalankan(() => aksiTambahKunci(label, kunci, jenis, proyekGoogle.trim() || null), {
           lalu: ({ dokumen, tugas }) => {
             setKunci("");
             const lanjut = [dokumen ? `${dokumen} dokumen diproses ulang` : "", tugas ? `${tugas} penyusunan dilanjutkan` : ""].filter(Boolean).join(", ");
@@ -41,6 +42,11 @@ export function FormKunci({ kembaliKe, jenis = "utama" }: { kembaliKe?: string; 
           <FieldLabel htmlFor="kunci-isi">Kunci API</FieldLabel>
           <Input id="kunci-isi" type="password" autoComplete="off" value={kunci} onChange={(e) => setKunci(e.target.value)} placeholder="AIza…" />
           <FieldDescription>Kunci tidak bisa dilihat lagi setelah disimpan.</FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="kunci-proyek">Proyek Google (opsional)</FieldLabel>
+          <Input id="kunci-proyek" value={proyekGoogle} onChange={(e) => setProyekGoogle(e.target.value)} placeholder="misalnya led-ti-unila" />
+          <FieldDescription>Nama atau ID project di Google AI Studio tempat kunci dibuat. Kuota dihitung per project.</FieldDescription>
         </Field>
         <Button type="submit" size="lg" disabled={sibuk || kunci.trim().length < 20} className="w-fit">
           <IkonSibuk sibuk={sibuk} />

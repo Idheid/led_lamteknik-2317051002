@@ -23,6 +23,8 @@ export const ANTREAN = {
   indeksUlang: "indeks-ulang-potongan",
   // Rencana 10 Nov T8: pemeriksaan AI otomatis per bagian + perbaikan terarah
   periksaBagian: "periksa-bagian",
+  // Rencana 10 Nov T9: vektor kueri semua sub-bagian satu LED disiapkan di muka
+  siapkanKueri: "siapkan-vektor-kueri",
   // bersama (src/worker/bersama.ts)
   cadangan: "cadangan-harian",
   // L2 (2 Nov 2026): pengingat akreditasi berakhir 18/12/6 bulan, setiap hari

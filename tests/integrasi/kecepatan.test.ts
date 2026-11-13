@@ -3,6 +3,7 @@ import "./siapan";
 // jadi dengan C-unsur (bawaan) sub-bagian tanpa bukti disusun tanpa AI. Perilaku C diuji di unsur-bukti.test.ts.
 process.env.PENCARIAN_KONFIGURASI = "B-bm25";
 import { after, before, test } from "node:test";
+import { setelUlangParalel } from "@/modules/led/proses/paralel";
 import assert from "node:assert/strict";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
@@ -126,6 +127,8 @@ test("kelompok generate: IKU berurutan dikerjakan bersamaan, sisanya satu per sa
 test("Generate dialirkan, dua IKU sekaligus, thinking rendah untuk Gemini 3, pratinjau tersimpan lalu dibersihkan", async () => {
   process.env.GENERATE_STREAM = "1";
   process.env.GENERATE_PARALEL = "2";
+  process.env.GENERATE_PARALEL_MAKS = "2";
+  setelUlangParalel();
   try {
     const t = await mulaiGenerate(pj, proyekId, "C.1");
     // amati pratinjau selama tugas berjalan
@@ -150,6 +153,8 @@ test("Generate dialirkan, dua IKU sekaligus, thinking rendah untuk Gemini 3, pra
   } finally {
     process.env.GENERATE_STREAM = "0";
     process.env.GENERATE_PARALEL = "1";
+    process.env.GENERATE_PARALEL_MAKS = "1";
+    setelUlangParalel();
   }
 });
 

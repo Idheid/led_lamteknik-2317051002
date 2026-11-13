@@ -139,3 +139,46 @@ Pemulihan menimpa isi basis data tujuan. Selalu uji dulu ke basis data terpisah.
 
 Memindahkan data dari laptop ke server memakai cara yang sama: buat cadangan di laptop (`npm run cadangan`), salin
 foldernya ke folder cadangan server, lalu pulihkan seperti langkah 2.
+
+## 6. Gemini tier berbayar untuk data asli
+
+**Mengapa.** Pada layanan gratis (*free tier*), Google boleh memakai isi permintaan untuk meningkatkan produknya; pada
+tier berbayar tidak. Sistem menyamarkan NIDN/NIP/NIM dan nama mahasiswa sebelum dikirim, tetapi dokumen mutu prodi tetap
+dikirim sebagai potongan teks. Untuk LED asli, pakai kunci dari project Google yang penagihannya aktif.
+
+Fakta yang dicek 6 November 2026 (bisa berubah; lihat halaman resmi Google sebelum memutuskan):
+
+- batas kuota (permintaan per menit, token per menit, permintaan per hari) dihitung **per project Google**, bukan per
+  kunci API; menambah kunci dari project yang sama tidak menambah kuota;
+- kuota harian direset tengah malam waktu Pasifik (± 15.00 WIB saat PST, ± 14.00 WIB saat PDT); dialog Susun seluruh LED
+  menampilkan jam reset berikutnya;
+- angka batas free tier hanya tampil di Google AI Studio.
+
+**Menautkan penagihan (Tier 1).**
+
+1. Buka aistudio.google.com → *Get API key* → pilih project yang dipakai kunci LED.
+2. Pilih *Set up billing* / *Upgrade*, lalu tautkan akun penagihan Google Cloud (kartu atau rekening institusi).
+3. Di Google Cloud Console → *Billing* → *Budgets & alerts*, buat anggaran dengan batas tagihan, misalnya $250, dan
+   pemberitahuan pada 50%, 90%, dan 100%.
+4. Di aplikasi, buka Kunci API, isi kolom **Proyek Google** dengan nama project tersebut, lalu **Uji koneksi**.
+
+**Memperkirakan biaya dari `LogPemakaian`.** Setiap panggilan mencatat model, token masukan, token keluaran (termasuk
+*thinking*), dan token dari *cache*. Contoh untuk bulan berjalan:
+
+```sql
+SELECT "model", count(*) AS panggilan, sum("tokenMasuk") AS masuk, sum("tokenKeluar") AS keluar, sum("tokenCache") AS cache
+FROM "LogPemakaian"
+WHERE "berhasil" AND "createdAt" >= date_trunc('month', now())
+GROUP BY "model";
+```
+
+Biaya ≈ (masuk ÷ 1.000.000 × harga masukan) + (keluar ÷ 1.000.000 × harga keluaran). Harga `gemini-3.8-flash` per
+1 juta token menurut halaman harga Google pada 6 November 2026 (bukan harga tetap):
+
+| | Sampai 31 Des 2026 | Mulai 1 Jan 2027 |
+|---|---|---|
+| Masukan | $0,75 | $1,50 |
+| Keluaran (termasuk *thinking*) | $3,75 | $7,50 |
+
+**Belum dikerjakan (kemungkinan):** mode *Batch API* untuk menyusun semalam (harga ± separuh, hasil tidak langsung
+tampil). Perlu persetujuan sebelum dibuat.

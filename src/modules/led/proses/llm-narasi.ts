@@ -1,5 +1,6 @@
 import { generateText, NoObjectGeneratedError, Output, streamText } from "ai";
 import { z } from "zod";
+import { pengaturParalel } from "@/modules/led/proses/paralel";
 import { prisma } from "@/modules/bersama/db";
 import { catatGalatKunci, GalatTanpaKunci, isiKunci, kunciFakultas } from "@/modules/bersama/data/kunci-api";
 import { klasifikasiGalat, pesanKunciHabis, pilihKunci } from "@/modules/bersama/domain/kunci-api";
@@ -248,6 +249,7 @@ export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise
           });
           const durasiMs = Date.now() - mulai;
           await catat({ kunciId: k.id, model: kodeModel, berhasil: true, tokenMasuk: r.tokenMasuk, tokenKeluar: r.tokenKeluar, tokenCache: r.tokenCache ?? 0, durasiMs });
+          pengaturParalel().berhasil();
           return { keluaran: r.output, model: kodeModel, kunciId: k.id, tokenMasuk: r.tokenMasuk, tokenKeluar: r.tokenKeluar, tokenCache: r.tokenCache ?? 0, durasiMs };
         } catch (e) {
           if (habisWaktu(e)) {
@@ -272,6 +274,8 @@ export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise
           await catat({ kunciId: k.id, model: kodeModel, berhasil: false, galat: `${jenis}: ${pesanGalat(e)}`, durasiMs: Date.now() - mulai });
           const status = galatPenyedia(e).status;
           if (jenis === "batas_per_menit" || jenis === "sementara") {
+            // Rencana 10 Nov T9: 429 per menit → jumlah paralel turun ke separuh; jeda retryDelay Google tetap dihormati
+            if (jenis === "batas_per_menit") pengaturParalel().kena429();
             tunggu = jenis === "batas_per_menit" ? jedaDariGalat(e, coba) : 5_000 * (coba + 1);
             if (coba < 2) await tidur(tunggu);
             else {

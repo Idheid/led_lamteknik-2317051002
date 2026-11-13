@@ -1,6 +1,7 @@
 import { prisma } from "@/modules/bersama/db";
 import { GalatPengguna, pastikanAdmin, pastikanPeran, type Pengguna } from "@/modules/bersama/akses";
-import { modelEmbeddingAktif, penyediaEmbedding } from "@/modules/bersama/data/kunci-api";
+import { modelEmbeddingAktif } from "@/modules/bersama/data/kunci-api";
+import { vektorKueri as vektorKueriTersimpan } from "@/modules/led/data/vektor-kueri";
 import { ambilProyek } from "@/modules/led/data/proyek";
 import { jalankanJalur, jalankanUnsur, kueriSubBagian, kueriUnsurSubBagian, type LingkupCari } from "@/modules/led/data/pencarian";
 import {
@@ -56,16 +57,11 @@ export async function eksporDataUjiPencarian(p: Pengguna, proyekId: string | nul
   const daftarProyek = await proyekYangDiekspor(p, proyekId);
   const model = await modelEmbeddingAktif();
   const konfigurasi = konfigurasiAktif();
-  const vektorCache = new Map<string, Promise<number[]>>();
-  let penyedia: Awaited<ReturnType<typeof penyediaEmbedding>>["penyedia"] | null = null;
+  // Rencana 10 Nov T9: vektor kueri dibaca dari EmbeddingKueri (dibuat sekali bila belum ada)
   const vektorKueri = (kueri: string) => async () => {
-    if (!vektorCache.has(kueri)) {
-      vektorCache.set(kueri, (async () => {
-        penyedia ??= (await penyediaEmbedding()).penyedia;
-        return penyedia.embedKueri(kueri);
-      })());
-    }
-    return vektorCache.get(kueri)!;
+    const v = (await vektorKueriTersimpan([kueri], { model })).vektor.get(kueri);
+    if (!v) throw new Error("vektor kueri tidak tersedia");
+    return v;
   };
 
   const baris: unknown[][] = [];

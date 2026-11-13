@@ -61,6 +61,7 @@ export async function BagianModel({ p }: { p: Pengguna }) {
                 modelCadangan: atur.modelCadangan,
                 modelEmbedding: atur.modelEmbedding,
                 pakaiCadanganAdmin: atur.pakaiCadanganAdmin,
+                gabungSubPendek: atur.gabungSubPendek,
               }}
               narasi={narasi}
               embedding={embedding}

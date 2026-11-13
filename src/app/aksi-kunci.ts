@@ -11,9 +11,9 @@ function segarkan() {
   revalidatePath("/admin", "layout");
 }
 
-export async function aksiTambahKunci(label: string, kunci: string, jenis: kunciApi.JenisKunci = "utama") {
+export async function aksiTambahKunci(label: string, kunci: string, jenis: kunciApi.JenisKunci = "utama", proyekGoogle: string | null = null) {
   const r = await jalankanAksi(async (p) => {
-    const k = await kunciApi.tambahKunci(p, { label, kunci, jenis });
+    const k = await kunciApi.tambahKunci(p, { label, kunci, jenis, proyekGoogle });
     return { dokumen: k.diantre, tugas: k.tugasDilanjutkan };
   });
   segarkan();

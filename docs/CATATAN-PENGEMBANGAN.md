@@ -2446,3 +2446,73 @@ Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum
 2 potongan dengan embedding uji, jadi angka panggilan, label per kalimat, dan contoh perbaikan untuk C.4 diambil di T11
 dengan dokumen dan kunci asli. Uji integrasi di atas menunjukkan alurnya dengan AI tiruan (1 panggilan periksa per
 bagian, 1 perbaikan, 1 periksa ulang).
+
+### T9: hemat kuota dan cepat
+
+1. **Vektor kueri disiapkan di muka** (`proses/siapkan-kueri.ts`, antrean `siapkan-vektor-kueri`): semua kueri satu LED
+   (kueri per unsur C-unsur dan kueri gabungan A/B untuk setiap sub-bagian bernarasi yang berlaku untuk jenjangnya)
+   di-embedding dalam batch 100 lewat `vektorKueri` (T6); yang sudah ada dilewati. Dijalankan saat LED dibuat, saat
+   "Mulai periode berikutnya", saat versi instrumen diaktifkan (untuk LED yang memakainya), dan di awal Susun seluruh
+   LED. Kueri bergantung pada label TS proyek, jadi disiapkan per LED, bukan per jenjang (**beda dari rencana**).
+   Ekspor data uji pencarian kini juga membaca vektor dari `EmbeddingKueri` (sebelumnya `embedKueri` langsung).
+2. **Pakai ulang hasil pemrosesan dokumen** (`proses/dokumen.ts`, `domain/versi-pemrosesan.ts`, migrasi
+   `20261114090000_hemat_kuota`): `Dokumen.versiPemrosesan` = aturan potong + `VERSI_KEPALA` + `VERSI_OCR` + model
+   embedding. Dokumen dengan `hash` sama, status `siap`, dan versi sama → potongan disalin (ID baru, teks, halaman,
+   sumber teks dan keyakinan OCR, `embedding`), tanpa ekstraksi ulang, OCR ulang, atau embedding. Kepala disusun dari
+   judul dokumen baru; bila sama dengan sumber, `embeddingKonteks` ikut disalin, bila berbeda hanya `embeddingKonteks`
+   yang di-embedding. `dokumenSumberPakaiUlangId` mencatat jejak; pesan "Memakai hasil pemrosesan berkas yang sama".
+   Dokumen dengan koreksi OCR sendiri tidak memakai ulang. Penyalinan hanya di server; akses dokumen sumber tetap
+   dibatasi seperti biasa (diuji: Tim Prodi lain ditolak). Dokumen yang diproses sebelum T9 belum punya
+   `versiPemrosesan`, jadi baru bisa menjadi sumber setelah diproses ulang sekali.
+3. **Cache konteks per tugas** (`CacheKonteks` di `proses/generate.ts`): proyek dan identitas fakultas, LKPS terurai
+   (`sumberLkps`), `nilaiButirUntukProyek`, `capaianButirUntukProyek`, anggaran kata, dan daftar sub-bagian per bagian
+   disusun sekali per tugas generate (dalam memori). Ringkasan IKU tidak di-cache karena bergantung pada draf yang baru
+   ditulis. Diuji: `susunKonteks` dengan dan tanpa cache identik untuk 3 sub-bagian C.1 dan C.4 (LKPS fikstur).
+4. **Mode gabung** (opsional, bawaan mati; `PengaturanLLM.gabungSubPendek`, migrasi `20261114100000_gabung_sub_pendek`,
+   sakelar di Kunci API → Model Gemini): `domain/gabung.ts` memilih sampai 3 sub-bagian berurutan (bukan IKU, AF, SWOT,
+   kata pengantar, ringkasan, Bab III/IV) dengan target ≤ 250 kata dan total potongan ≤ 20. Satu panggilan
+   (`generateGabungan`, `LogPemakaian.subBagianKode = gabung:<kode>+<kode>`) dengan keluaran `{subBagian: [...]}`;
+   setiap sub-bagian disimpan sebagai versinya sendiri (`modeGenerate = "gabung"`, lencana "Mode gabung") dan melewati
+   cek kutipan T7 dengan sumber sub-bagian itu saja (kode D1 sub-bagian lain tidak sah karena teksnya berbeda), lalu
+   T8 per bagian. Sub-bagian yang hilang dari keluaran disusun ulang sendiri. Tidak berlaku di mode narasi uji
+   pengembangan. Perbandingan dengan mode tunggal dikerjakan di T11; jangan dijadikan bawaan sebelum itu.
+5. **Sidik jari konteks** (`VersiDraf.sidikJari`, `sidikJari()`): SHA-256 dari versi format (`t9-1`), model narasi,
+   konfigurasi pencarian, instruksi sistem, dan teks pengguna (instruksi, butir, J, M, T, ID + teks potongan). Susun
+   seluruh LED (`lewatiBilaSama` untuk tugas rangkaian) melewati sub-bagian yang sidik jarinya sama dengan versi terakhir
+   dan statusnya bukan "belum" (draf yang sudah disunting tidak ditimpa). Tombol **Generate** per sub-bagian/bagian
+   tetap selalu menyusun ulang (berfungsi sebagai "generate ulang paksa").
+6. **Perkiraan sebelum Susun** (`data/perkiraan-susun.ts`, `domain/perkiraan-susun.ts`, dimuat saat dialog dibuka):
+   jumlah sub-bagian dikirim/dilewati/tanpa AI (juga per bagian), permintaan = narasi + 1 pemeriksaan per bagian
+   (+ paling banyak 2 per bagian untuk perbaikan dan periksa ulang), token kasar (4 karakter/token; keluaran ≈ 2 × target
+   kata; pemeriksaan ≈ 1,5 × keluaran masukan dan 40 token per kalimat), pemakaian sejak reset terakhir dari
+   `LogPemakaian`, dan jam reset (tengah malam Pasifik) dalam WIB. Menyusun konteks memakai vektor kueri tersimpan;
+   kueri yang belum ada dibuat sekali (sama seperti generate).
+7. **Proyek Google**: kolom `KunciAPI.proyekGoogle` (manual, opsional) di form dan tabel Kunci API; peringatan bila dua
+   kunci berlabel project sama ("kuota dihitung per project …"). Tidak ada fitur untuk mengakali batas kuota.
+8. **Paralel adaptif** (`domain/paralel-adaptif.ts`, `proses/paralel.ts`): satu pengatur per proses worker; mulai
+   `GENERATE_PARALEL` (2), naik 1 setiap 20 panggilan berhasil tanpa 429 sampai `GENERATE_PARALEL_MAKS` (4), turun ke
+   separuh saat 429 batas per menit (dilaporkan `llm-narasi`); jeda `retryDelay` Google tetap dihormati di sana. Uji
+   integrasi memakai `GENERATE_PARALEL_MAKS=1` supaya urutan panggilan model tiruan tetap.
+9. Pemeriksaan tidak menghalangi: sudah dari T8 (draf tampil dulu, lencana "Sedang diperiksa AI").
+10. **Model**: generate dan pemeriksaan memakai model narasi aktif; draf dari model cadangan diberi lencana
+    "Model cadangan" di panel draf dan tetap melewati T7–T8.
+11. **Tier berbayar**: `docs/PANDUAN-SERVER.md` bagian 6 (alasan privasi, menautkan penagihan Tier 1 dengan anggaran
+    $250, kueri SQL perkiraan biaya dari `LogPemakaian`, tabel harga 3.8 Flash per 6 Nov 2026 sebagai tarif yang tampil
+    saat itu).
+12. **Batch API**: tidak dikerjakan; dicatat sebagai kemungkinan di PANDUAN-SERVER dan perlu persetujuan Adrianne.
+
+- Uji: `tests/unit/hemat-kuota.test.ts` (5: paralel naik/turun pada 429, aturan gabung, rumus perkiraan, versi
+  pemrosesan, project Google ganda), `tests/integrasi/hemat-kuota.test.ts` (5: generate sesudah penyiapan memanggil
+  embedding kueri 0 kali; cache konteks identik; sidik jari sama → 0 panggilan dan perkiraan = jumlah panggilan narasi
+  dan pemeriksaan tiruan; berkas sama di LED prodi lain disalin tanpa embedding, judul beda → 1 permintaan untuk
+  embeddingKonteks, versi pemrosesan beda → diproses penuh, Tim Prodi lain tidak bisa membuka sumber; mode gabung satu
+  panggilan dan versi per sub-bagian).
+- ⏸ Perbandingan sebelum/sesudah T9 untuk C.4: dengan model tiruan, embedding kueri saat generate = 0 (diuji) dan
+  dokumen salinan = 0 embedding (diuji). Angka dengan kunci asli (panggilan AI, detik per sub-bagian, waktu kriteria,
+  "Mulai periode berikutnya" 5 dokumen) diukur di T11 karena Basis Pengetahuan dev belum berisi dokumen asli.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 210/210 lulus |
+| `npm run test:integrasi` | 130/130 lulus |

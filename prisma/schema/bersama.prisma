@@ -190,6 +190,8 @@ model PengaturanLLM {
   suhu           Float    @default(0.2)
   maksTokenKeluaran Int   @default(4096)
   pakaiCadanganAdmin Boolean @default(true)
+  // Rencana 10 Nov T9: mode hemat, sampai 3 sub-bagian pendek berurutan dalam satu panggilan AI (bawaan mati)
+  gabungSubPendek Boolean @default(false)
   daftarModel    Json?    // hasil models.list Google terakhir (nama, kode, metode, batas token)
   daftarModelDiperbarui DateTime?
   updatedAt      DateTime @updatedAt
@@ -221,6 +223,8 @@ model KunciAPI {
   habisSampai DateTime?
   urutan      Int          @default(0)
   batasHarian Int?
+  // Rencana 10 Nov T9: nama/ID project Google asal kunci (diisi manual); kuota dihitung per project
+  proyekGoogle String?
   log         LogPemakaian[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

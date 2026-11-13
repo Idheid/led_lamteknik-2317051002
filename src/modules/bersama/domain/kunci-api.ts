@@ -128,3 +128,27 @@ export function pesanKunciHabis(daftar: KunciAPI[], _sekarang: Date): string {
   const dasar = 'Kuota semua kunci API habis. Tambahkan kunci baru dari project atau akun Google yang berbeda';
   return jam ? `${dasar}, atau tunggu reset kuota sekitar pukul ${jam} WIB.` : `${dasar}.`;
 }
+
+// Rencana 10 Nov T9: label project Google pada kunci
+
+/** Normalisasi label project Google untuk membandingkan (huruf kecil, tanpa spasi tepi). */
+export function kunciProyekGoogle(x: string | null | undefined): string | null {
+  const t = (x ?? "").trim().toLowerCase();
+  return t || null;
+}
+
+/**
+ * Project Google yang dipakai lebih dari satu kunci. Menambah kunci dari project yang sama tidak menambah kuota, jadi
+ * halaman Kunci API memperingatkan (sistem tidak membuat fitur untuk mengakali batas kuota).
+ */
+export function proyekGoogleGanda(kunci: { proyekGoogle: string | null }[]): string[] {
+  const hitung = new Map<string, { nama: string; n: number }>();
+  for (const k of kunci) {
+    const kunciNama = kunciProyekGoogle(k.proyekGoogle);
+    if (!kunciNama) continue;
+    const x = hitung.get(kunciNama) ?? { nama: k.proyekGoogle!.trim(), n: 0 };
+    x.n += 1;
+    hitung.set(kunciNama, x);
+  }
+  return [...hitung.values()].filter((x) => x.n > 1).map((x) => x.nama);
+}

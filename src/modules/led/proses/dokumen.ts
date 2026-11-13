@@ -5,7 +5,8 @@ import { prisma } from "@/modules/bersama/db";
 import { bacaBerkas } from "@/modules/bersama/penyimpanan";
 import { potongTeks } from "@/modules/led/domain/potong-teks";
 import { literalVektor } from "@/modules/bersama/llm/embedding";
-import { catatGalatKunci, GalatTanpaKunci, penyediaEmbedding } from "@/modules/bersama/data/kunci-api";
+import { catatGalatKunci, GalatTanpaKunci, modelEmbeddingAktif, penyediaEmbedding } from "@/modules/bersama/data/kunci-api";
+import { versiPemrosesan } from "@/modules/led/domain/versi-pemrosesan";
 import type { Prisma } from "@/generated/prisma/client";
 import { halamanPindaian, ocrHalamanPdf, VERSI_OCR } from "@/modules/led/ekstraksi/ocr";
 import { gabungHalaman, keyakinanPotongan, type HalamanTeks } from "@/modules/led/domain/ocr";
@@ -22,7 +23,74 @@ import { bagianTerdekat, namaDokumenKepala, susunKepala, teksIndeks, VERSI_KEPAL
  * berbasis ID potongan; vektor yang sama tidak di-embedding ulang).
  * Rencana 10 Nov T4: setiap potongan diberi kepala konteks (domain/kepala-potongan.ts); `embedding` dari teks saja
  * (konfigurasi A-lama) dan `embeddingKonteks` dari kepala + teks. Keduanya dikirim dalam batch 100 yang sama.
+ * Rencana 10 Nov T9: berkas yang sama (hash) yang sudah diproses dengan versi pemrosesan yang sama dipakai ulang:
+ * potongan dan vektornya disalin (ID baru), tanpa ekstraksi ulang, OCR ulang, maupun embedding ulang. Kepala disusun
+ * dari judul dokumen baru; hanya bila berbeda, `embeddingKonteks` dibuat ulang. Penyalinan hanya di server.
  */
+
+export const PESAN_PAKAI_ULANG = "Memakai hasil pemrosesan berkas yang sama";
+
+interface PotonganSumber {
+  urutan: number;
+  teks: string;
+  halaman: number | null;
+  sumberTeks: string;
+  keyakinanOcr: number | null;
+  teksIndeks: string | null;
+  vektor: string | null;
+  vektorKonteks: string | null;
+}
+
+/**
+ * Salin hasil pemrosesan dokumen sumber (hash dan versi pemrosesan sama). Mengembalikan false bila sumber tidak bisa
+ * dipakai (potongan tanpa vektor), sehingga dokumen diproses penuh.
+ */
+async function pakaiUlangPemrosesan(
+  dok: { id: string; jenis: string; lokasi: string; judul: string | null; namaBerkas: string; dokumenDiharapkan: { nama: string } | null },
+  sumber: { id: string; halamanTeks: unknown; versiOcr: string | null },
+  versi: string,
+  model: string,
+  catatKunci: (id: string | null) => void,
+): Promise<boolean> {
+  const potongan = await prisma.$queryRaw<PotonganSumber[]>`
+    SELECT "urutan", "teks", "halaman", "sumberTeks", "keyakinanOcr", "teksIndeks",
+           "embedding"::text AS "vektor", "embeddingKonteks"::text AS "vektorKonteks"
+    FROM "Potongan" WHERE "dokumenId" = ${sumber.id} AND "modelEmbedding" = ${model} ORDER BY "urutan"`;
+  if (potongan.length === 0 || potongan.some((p) => !p.vektor || !p.vektorKonteks)) return false;
+  // teks halaman untuk kepala: hasil OCR sumber bila ada, selain itu ekstraksi lapisan teks (tanpa AI, tanpa OCR)
+  const halamanSumber = Array.isArray(sumber.halamanTeks) ? (sumber.halamanTeks as HalamanTeks[]).map((h) => h.teks) : null;
+  const halaman = halamanSumber ?? (await ekstrakTeks(dok.jenis, await bacaBerkas(dok.lokasi))).halaman;
+  const kepala = kepalaPotongan({ judul: dok.judul, namaBerkas: dok.namaBerkas, jenisDiharapkan: dok.dokumenDiharapkan?.nama ?? null }, halaman, potongan);
+  const berbeda = kepala.filter((k, i) => k.teksIndeks !== potongan[i].teksIndeks).map((k) => k.teksIndeks);
+  let vektorBaru = new Map<string, string>();
+  if (berbeda.length > 0) {
+    const terpilih = await penyediaEmbedding();
+    catatKunci(terpilih.kunciId);
+    if (terpilih.penyedia.model !== model) return false;
+    vektorBaru = (await embedLiteral(terpilih.penyedia, berbeda)).peta;
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.potongan.deleteMany({ where: { dokumenId: dok.id } });
+    for (const [i, p] of potongan.entries()) {
+      const k = kepala[i];
+      const vektorKonteks = k.teksIndeks === p.teksIndeks ? p.vektorKonteks! : vektorBaru.get(k.teksIndeks)!;
+      await tx.$executeRaw`
+        INSERT INTO "Potongan" ("id", "dokumenId", "urutan", "teks", "halaman", "sumberTeks", "keyakinanOcr", "modelEmbedding", "embedding",
+                                "kepala", "teksIndeks", "versiKepala", "embeddingKonteks")
+        VALUES (${randomUUID()}, ${dok.id}, ${p.urutan}, ${p.teks}, ${p.halaman}, ${p.sumberTeks}, ${p.keyakinanOcr}, ${model},
+                ${p.vektor}::vector, ${k.kepala}, ${k.teksIndeks}, ${VERSI_KEPALA}, ${vektorKonteks}::vector)`;
+    }
+    await tx.dokumen.update({
+      where: { id: dok.id },
+      data: {
+        status: "siap", pesan: PESAN_PAKAI_ULANG, jumlahPotongan: potongan.length, diprosesPada: new Date(),
+        halamanTeks: (sumber.halamanTeks ?? undefined) as Prisma.InputJsonValue | undefined,
+        versiOcr: sumber.versiOcr, versiPemrosesan: versi, dokumenSumberPakaiUlangId: sumber.id,
+      },
+    });
+  }, { timeout: 120_000 });
+  return true;
+}
 
 /** Kepala dan teks berkepala setiap potongan dokumen. */
 export function kepalaPotongan(
@@ -85,6 +153,18 @@ export async function prosesDokumen(dokumenId: string): Promise<void> {
 
   let kunciId: string | null = null;
   try {
+    // Rencana 10 Nov T9: berkas yang sama sudah pernah diproses dengan versi yang sama → salin hasilnya
+    const modelAktif = await modelEmbeddingAktif();
+    const versi = versiPemrosesan(modelAktif, VERSI_OCR);
+    const adaKoreksi = Array.isArray(dok.halamanTeks) && (dok.halamanTeks as unknown as HalamanTeks[]).some((h) => h.dikoreksi);
+    if (dok.hash && !adaKoreksi) {
+      const sumber = await prisma.dokumen.findFirst({
+        where: { hash: dok.hash, status: "siap", versiPemrosesan: versi, jumlahPotongan: { gt: 0 }, NOT: { id: dok.id } },
+        orderBy: { diprosesPada: "desc" },
+        select: { id: true, halamanTeks: true, versiOcr: true },
+      });
+      if (sumber && await pakaiUlangPemrosesan(dok, sumber, versi, modelAktif, (id) => { kunciId = id; })) return;
+    }
     const isi = await bacaBerkas(dok.lokasi);
     const ekstrak = await ekstrakTeks(dok.jenis, isi);
     const { adaHalaman } = ekstrak;
@@ -164,6 +244,7 @@ export async function prosesDokumen(dokumenId: string): Promise<void> {
           status: "siap", pesan: null, jumlahPotongan: potongan.length, diprosesPada: new Date(),
           halamanTeks: (halamanTeks ?? undefined) as unknown as Prisma.InputJsonValue | undefined,
           versiOcr: halamanTeks ? VERSI_OCR : null,
+          versiPemrosesan: versiPemrosesan(model, VERSI_OCR), dokumenSumberPakaiUlangId: null,
         },
       });
     }, { timeout: 120_000 });

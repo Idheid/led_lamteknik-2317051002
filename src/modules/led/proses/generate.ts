@@ -1,9 +1,10 @@
+import { createHash } from "node:crypto";
 import { prisma } from "@/modules/bersama/db";
 import { sumberLkps } from "@/modules/led/data/sumber-lkps";
 import { Prisma } from "@/generated/prisma/client";
 import type { Pengguna } from "@/modules/bersama/akses";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
-import { GalatTanpaKunci } from "@/modules/bersama/data/kunci-api";
+import { GalatTanpaKunci, pengaturanLlm } from "@/modules/bersama/data/kunci-api";
 import { cariPotongan, cariPotonganUnsur } from "@/modules/led/data/pencarian";
 import { drafTanpaBukti, kueriPerUnsur } from "@/modules/led/domain/kueri-unsur";
 import { terapkanCekKutipan } from "@/modules/led/domain/kutipan";
@@ -34,7 +35,11 @@ import {
 import { subAwalSusun, subBelumSelesai, urutanBagianSusun } from "@/modules/led/domain/rangkaian";
 import { kodeSumberSah, periksaKeluaran, susunPengguna, susunSistem, type KonteksSubBagian } from "@/modules/led/domain/prompt";
 import { formatTahunAkademik, gantiLabelTS, petaTS } from "@/modules/bersama/domain/tahun-akademik";
-import { GalatSementara, panggilNarasi } from "@/modules/led/proses/llm-narasi";
+import { GalatSementara, panggilNarasi, panggilTerstruktur, skemaKeluaran } from "@/modules/led/proses/llm-narasi";
+import { ATURAN_GABUNG, MAKS_GABUNG, bolehDigabung, jumlahGabung, susunPenggunaGabung } from "@/modules/led/domain/gabung";
+import { pakaiNarasiUji } from "@/modules/bersama/llm/narasi-uji";
+import { z } from "zod";
+import { pengaturParalel } from "@/modules/led/proses/paralel";
 import { narasiPeriodeLalu } from "@/modules/led/data/periode";
 import { bolehSumberPeriodeLalu } from "@/modules/led/domain/periode";
 
@@ -205,10 +210,32 @@ interface KonteksLengkap {
   pencarian: JejakPencarian;
 }
 
+/**
+ * Rencana 10 Nov T9 (3): cache dalam memori per tugas generate. Data yang sama untuk semua sub-bagian satu kriteria
+ * (proyek dan identitas, LKPS terurai, nilai butir, capaian, anggaran kata, daftar sub-bagian) disusun sekali.
+ * Tidak disimpan di basis data; ringkasan IKU (bergantung pada draf yang baru ditulis) tidak di-cache.
+ */
+export type CacheKonteks = Map<string, Promise<unknown>>;
+
+export function buatCacheKonteks(): CacheKonteks {
+  return new Map();
+}
+
+function ingat<T>(cache: CacheKonteks | undefined, kunci: string, f: () => Promise<T>): Promise<T> {
+  if (!cache) return f();
+  if (!cache.has(kunci)) {
+    const janji = f();
+    // galat tidak di-cache: panggilan berikutnya mencoba lagi
+    janji.catch(() => cache.delete(kunci));
+    cache.set(kunci, janji);
+  }
+  return cache.get(kunci) as Promise<T>;
+}
+
 /** Susun konteks prompt satu sub-bagian. Data pribadi disamarkan sebelum masuk konteks. */
-export async function susunKonteks(proyekId: string, subBagianKode: string): Promise<KonteksLengkap> {
-  const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId }, include: { prodi: true } });
-  const fakultas = await prisma.fakultas.findUnique({ where: { id: "utama" } });
+export async function susunKonteks(proyekId: string, subBagianKode: string, cache?: CacheKonteks): Promise<KonteksLengkap> {
+  const proyek = await ingat(cache, "proyek", () => prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId }, include: { prodi: true } }));
+  const fakultas = await ingat(cache, "fakultas", () => prisma.fakultas.findUnique({ where: { id: "utama" } }));
   const ts = proyek.tsTahunMulai;
   const s = await prisma.subBagian.findFirst({
     where: { kode: subBagianKode, bagian: { versiId: proyek.versiId } },
@@ -234,10 +261,10 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
 
   // LKPS aktif: metrik butir angka dan tabel terkait
   // revisi 31 Okt 2026: tabel gabungan semua berkas sumber (PDF per tabel), berkas terbaru menang
-  const berkas = await sumberLkps(proyekId);
+  const berkas = await ingat(cache, "lkps", () => sumberLkps(proyekId));
   const tabelLkps = (berkas?.tabel ?? []).map((t) => ({ ...t, kolom: t.kolom as unknown as KolomLkps[], baris: t.baris as unknown as BarisLkps[] }));
   // revisi 19 Okt 2026: rumus lewat kodeRumus butir; tanpa rumus atau rumus gagal membaca LKPS → nilai manual PJ
-  const nilai = (await nilaiButirUntukProyek(proyek)).daftar.filter((n) => butir.some((b) => b.kode === n.butir));
+  const nilai = (await ingat(cache, "nilai", () => nilaiButirUntukProyek(proyek))).daftar.filter((n) => butir.some((b) => b.kode === n.butir));
   const metrikButir: HasilButirAngka[] = nilai.flatMap((n) => (n.sumber === "rumus" && n.hasil ? [n.hasil] : []));
   const manualButir = nilai.filter((n) => n.sumber === "manual" && n.manual);
   const metrik: KonteksSubBagian["metrik"] = [
@@ -252,7 +279,7 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
     }),
   ];
   // revisi 22 Okt 2026: capaian terhadap target dan tren tiga tahun, dihitung sistem (bukan AI)
-  const capaian = await capaianButirUntukProyek(proyek);
+  const capaian = await ingat(cache, "capaian", () => capaianButirUntukProyek(proyek));
   for (const b of butir.filter((x) => x.jenis === "angka")) {
     const c = capaian.get(b.kode);
     if (c?.hasil) {
@@ -337,13 +364,15 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   }
 
   // target kata (anggaran halaman)
-  const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
-  const semuaButir = await prisma.butirPenilaian.findMany({
-    where: { versiId: proyek.versiId, jenjang: proyek.jenjang },
-    select: { kode: true, bagianKode: true, bobot: true, jenis: true },
+  const anggaran = await ingat(cache, "anggaran", async () => {
+    const { pengaturan, bagian: bagianAnggaran } = bacaAnggaran(proyek.anggaran);
+    const semuaButir = await prisma.butirPenilaian.findMany({
+      where: { versiId: proyek.versiId, jenjang: proyek.jenjang },
+      select: { kode: true, bagianKode: true, bobot: true, jenis: true },
+    });
+    return hitungAnggaran(bagianAnggaran, semuaButir.map((b) => ({ kode: b.kode, bagian: b.bagianKode, bobot: Number(b.bobot), jenis: b.jenis })), pengaturan);
   });
-  const anggaran = hitungAnggaran(bagianAnggaran, semuaButir.map((b) => ({ kode: b.kode, bagian: b.bagianKode, bobot: Number(b.bobot), jenis: b.jenis })), pengaturan);
-  const subSebagian = await subBagianProyek(proyek, s.bagian.kode);
+  const subSebagian = await ingat(cache, `sub:${s.bagian.kode}`, () => subBagianProyek(proyek, s.bagian.kode));
   const target = targetKataSubBagian(anggaran, s.bagian.kode, subSebagian.map((x) => ({ kode: x.kode, tipe: x.tipe, butir: x.butir.map((b) => b.kode) })))[s.kode] ?? TARGET_CADANGAN;
 
   const konteks: KonteksSubBagian = {
@@ -414,7 +443,7 @@ export { MODEL_TANPA_AI };
  * Rencana 10 Nov T6: bila semua unsur skor 4 tanpa bukti (pra-cek pencarian) dan tidak ada J, M, maupun T, AI tidak
  * dipanggil. Draf deterministik berisi penanda [BELUM ADA BUKTI: unsur] per unsur dan daftar dokumen yang diharapkan.
  */
-async function drafTanpaAi(k: KonteksLengkap) {
+export async function drafTanpaAi(k: KonteksLengkap) {
   const c = k.konteks;
   const semuaUnsur = c.butir.flatMap((b) => b.unsurSkor4.map((u) => ({ butir: b.kode, unsur: u })));
   const tanpa = c.unsurTanpaBukti ?? [];
@@ -440,14 +469,48 @@ async function drafTanpaAi(k: KonteksLengkap) {
   };
 }
 
+/** Versi format sidik jari; naikkan bila cara menyusun prompt berubah tanpa mengubah teks prompt. */
+export const VERSI_SIDIK = "t9-1";
+
+/**
+ * Rencana 10 Nov T9 (5): sidik jari masukan prompt (SHA-256): versi, model narasi, instruksi sistem, dan teks pengguna
+ * (instruksi sub-bagian, butir, J, M, T, ID dan teks potongan) beserta konfigurasi pencarian.
+ */
+export function sidikJari(k: KonteksLengkap, model: string): string {
+  return createHash("sha256")
+    .update(JSON.stringify({ v: VERSI_SIDIK, model, konfigurasi: k.pencarian.konfigurasi, sistem: susunSistem(), pengguna: susunPengguna(k.konteks) }))
+    .digest("hex");
+}
+
+/** Sidik jari versi generate terakhir sub-bagian dan status drafnya (null bila belum pernah). */
+export async function sidikTerakhir(proyekId: string, subBagianId: string): Promise<{ sidik: string | null; status: string } | null> {
+  const bd = await prisma.bagianDraf.findUnique({ where: { proyekId_subBagianId: { proyekId, subBagianId } }, select: { id: true, status: true } });
+  if (!bd) return null;
+  const v = await prisma.versiDraf.findFirst({
+    where: { bagianDrafId: bd.id, sidikJari: { not: null } }, orderBy: { nomor: "desc" }, select: { sidikJari: true },
+  });
+  return { sidik: v?.sidikJari ?? null, status: bd.status };
+}
+
+/** Sub-bagian dilewati Susun bila sidik jarinya sama dengan versi terakhir dan drafnya bukan "belum". */
+export function bolehDilewati(terakhir: { sidik: string | null; status: string } | null, sidik: string): boolean {
+  return Boolean(terakhir && terakhir.status !== "belum" && terakhir.sidik === sidik);
+}
+
 /** Generate satu sub-bagian dan simpan sebagai versi baru. */
 export async function generateSubBagian(
   proyekId: string,
   subBagianKode: string,
-  opsi: { tugasId?: string | null; dibuatOlehId?: string | null; onSebagian?: (sebagian: unknown) => void } = {},
+  opsi: {
+    tugasId?: string | null; dibuatOlehId?: string | null; onSebagian?: (sebagian: unknown) => void; cache?: CacheKonteks;
+    /** Susun seluruh LED: lewati bila sidik jari sama dengan versi terakhir (T9) */
+    lewatiBilaSama?: boolean;
+  } = {},
 ) {
   const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId } });
-  const k = await susunKonteks(proyekId, subBagianKode);
+  const k = await susunKonteks(proyekId, subBagianKode, opsi.cache);
+  const sidik = sidikJari(k, (await pengaturanLlm()).modelNarasi);
+  if (opsi.lewatiBilaSama && bolehDilewati(await sidikTerakhir(proyekId, k.sub.id), sidik)) return null;
   const tanpaAi = await drafTanpaAi(k);
   const hasil = tanpaAi ?? await panggilNarasi({
     prodiId: proyek.prodiId,
@@ -458,6 +521,26 @@ export async function generateSubBagian(
     pengguna: susunPengguna(k.konteks),
     onSebagian: opsi.onSebagian,
   });
+  return simpanHasilGenerate(proyekId, k, sidik, hasil, { tanpaAi: Boolean(tanpaAi), tugasId: opsi.tugasId, dibuatOlehId: opsi.dibuatOlehId, mode: "tunggal" });
+}
+
+interface HasilNarasi {
+  keluaran: KeluaranSubBagian;
+  model: string;
+  tokenMasuk: number;
+  tokenKeluar: number;
+  durasiMs: number;
+}
+
+/** Cek kutipan, pemeriksaan aturan, lalu simpan sebagai versi baru (dipakai mode tunggal dan gabung). */
+async function simpanHasilGenerate(
+  proyekId: string,
+  k: KonteksLengkap,
+  sidik: string,
+  hasil: HasilNarasi,
+  opsi: { tanpaAi: boolean; tugasId?: string | null; dibuatOlehId?: string | null; mode: "tunggal" | "gabung" },
+) {
+  const tanpaAi = opsi.tanpaAi;
   // Rencana 10 Nov T7: cek kutipan (0 token): bukti ditolak, paragraf tidak didukung, unsur diturunkan
   const cek = tanpaAi ? null : cekKutipanKeluaran(k.konteks, hasil.keluaran, k.rujukan.tahunSah);
   const keluaran = cek?.keluaran ?? hasil.keluaran;
@@ -492,6 +575,8 @@ export async function generateSubBagian(
         pemeriksaan: { ...pemeriksaan, ...t8, rujukan: k.rujukan, catatanSistem: k.catatan, kutipan: cek?.ringkasan ?? null } as unknown as Prisma.InputJsonValue,
         model: hasil.model,
         pencarian: k.pencarian as unknown as Prisma.InputJsonValue,
+        sidikJari: sidik,
+        modeGenerate: opsi.mode,
         keluaranMentah: {
           keluaran: hasil.keluaran,
           pemakaian: { tokenMasuk: hasil.tokenMasuk, tokenKeluar: hasil.tokenKeluar, durasiMs: hasil.durasiMs },
@@ -506,6 +591,66 @@ export async function generateSubBagian(
   });
   await perbaruiStatusBagian(proyekId, k.sub.bagianKode);
   return versi;
+}
+
+/**
+ * Rencana 10 Nov T9 (4): beberapa sub-bagian pendek dalam satu panggilan AI. Setiap sub-bagian tetap disimpan sebagai
+ * versinya sendiri dan melewati cek kutipan (T7) dengan sumber sub-bagian itu saja, lalu pemeriksaan T8 per bagian.
+ * Sub-bagian yang tidak ada di keluaran disusun ulang sendiri-sendiri.
+ */
+export async function generateGabungan(
+  proyekId: string,
+  daftar: { k: KonteksLengkap; sidik: string }[],
+  opsi: { tugasId?: string | null; dibuatOlehId?: string | null; cache?: CacheKonteks } = {},
+) {
+  const proyek = await prisma.proyekLED.findUniqueOrThrow({ where: { id: proyekId } });
+  const kode = daftar.map((d) => d.k.sub.kode);
+  const skema = z.object({ subBagian: z.array(skemaKeluaran.extend({ kode: z.string() })) });
+  const r = await panggilTerstruktur({
+    prodiId: proyek.prodiId, proyekId, tugasId: opsi.tugasId ?? null, subBagianKode: `gabung:${kode.join("+")}`,
+    sistem: `${susunSistem()}\n\n${ATURAN_GABUNG}`,
+    pengguna: susunPenggunaGabung(daftar.map((d) => ({ kode: d.k.sub.kode, pengguna: susunPengguna(d.k.konteks) }))),
+    skema, pikir: "rendah",
+  });
+  const keluaran = r.keluaran.subBagian;
+  const versi = [];
+  for (const [i, d] of daftar.entries()) {
+    const out = keluaran.find((x) => x.kode === d.k.sub.kode) ?? (keluaran.length === daftar.length ? keluaran[i] : undefined);
+    if (!out) {
+      versi.push(await generateSubBagian(proyekId, d.k.sub.kode, opsi));
+      continue;
+    }
+    const { kode: _kode, ...satu } = out;
+    versi.push(await simpanHasilGenerate(proyekId, d.k, d.sidik, {
+      keluaran: satu as unknown as KeluaranSubBagian, model: r.model,
+      tokenMasuk: Math.round(r.tokenMasuk / daftar.length), tokenKeluar: Math.round(r.tokenKeluar / daftar.length), durasiMs: r.durasiMs,
+    }, { tanpaAi: false, tugasId: opsi.tugasId, dibuatOlehId: opsi.dibuatOlehId, mode: "gabung" }));
+  }
+  return versi;
+}
+
+/**
+ * Kelompok gabung mulai indeks i (mode hemat aktif): konteks disusun untuk sampai 3 sub-bagian berurutan; berhenti pada
+ * sub-bagian yang tidak boleh digabung, akan dilewati (sidik jari sama), atau disusun tanpa AI.
+ */
+async function rencanaGabung(
+  tugas: { proyekId: string; subBagianKode: string[]; rangkaianTotal: number | null },
+  i: number,
+  cache: CacheKonteks,
+): Promise<{ k: KonteksLengkap; sidik: string }[] | null> {
+  if (!bolehDigabung(tugas.subBagianKode[i])) return null;
+  const model = (await pengaturanLlm()).modelNarasi;
+  const calon: { k: KonteksLengkap; sidik: string }[] = [];
+  for (const kode of tugas.subBagianKode.slice(i, i + MAKS_GABUNG)) {
+    if (!bolehDigabung(kode)) break;
+    const k = await susunKonteks(tugas.proyekId, kode, cache);
+    const sidik = sidikJari(k, model);
+    if (tugas.rangkaianTotal !== null && bolehDilewati(await sidikTerakhir(tugas.proyekId, k.sub.id), sidik)) break;
+    if (await drafTanpaAi(k)) break;
+    calon.push({ k, sidik });
+  }
+  const n = jumlahGabung(calon.map((c) => ({ kode: c.k.sub.kode, targetKata: c.k.konteks.targetKata, potongan: c.k.konteks.potongan.length })));
+  return n >= 2 ? calon.slice(0, n) : null;
 }
 
 // ------------------------------------------------------------------ tugas generate
@@ -569,11 +714,6 @@ function pakaiAliran(): boolean {
   return process.env.GENERATE_STREAM !== "0";
 }
 
-/** Jumlah sub-bagian indikator kinerja yang dikerjakan bersamaan (revisi 22 Okt 2026; bawaan 2). */
-function jumlahParalel(): number {
-  const n = Number(process.env.GENERATE_PARALEL);
-  return Number.isInteger(n) && n >= 1 ? Math.min(n, 4) : 2;
-}
 
 /** Kelompok berikutnya mulai indeks i: sub-bagian IKU berurutan dikerjakan bersamaan; AF, SWOT, dll. satu per satu. */
 export function kelompokGenerate(kode: string[], i: number, paralel: number): string[] {
@@ -593,9 +733,8 @@ export async function prosesTugasGenerate(tugasId: string): Promise<string> {
   const klaim = await ubahTugas(tugasId, ["antre", "tertunda"], { status: "berjalan", pesan: null, dilanjutkanPada: null });
   if (klaim.count === 0) return "dilewati";
   const tugas = await prisma.tugasGenerate.findUniqueOrThrow({ where: { id: tugasId }, include: { proyek: true } });
-  const paralel = jumlahParalel();
   try {
-    return await kerjakanTugas(tugas, paralel);
+    return await kerjakanTugas(tugas);
   } finally {
     await prisma.tugasGenerate.update({ where: { id: tugasId }, data: { pratinjau: Prisma.DbNull } }).catch(() => undefined);
   }
@@ -603,18 +742,26 @@ export async function prosesTugasGenerate(tugasId: string): Promise<string> {
 
 async function kerjakanTugas(
   tugas: { id: string; proyekId: string; indeks: number; subBagianKode: string[]; dibuatOlehId: string | null; bagianKode: string | null; rangkaianTotal: number | null },
-  paralel: number,
 ): Promise<string> {
   const tugasId = tugas.id;
+  const cache = buatCacheKonteks();
+  // Rencana 10 Nov T9: mode hemat gabung (Admin; tidak berlaku di mode narasi uji pengembangan)
+  const gabungAktif = (await pengaturanLlm()).gabungSubPendek && !pakaiNarasiUji();
   for (let i = tugas.indeks; i < tugas.subBagianKode.length;) {
     const kini = await prisma.tugasGenerate.findUnique({ where: { id: tugasId }, select: { status: true } });
     if (!kini || kini.status !== "berjalan") return kini?.status ?? "dibatalkan";
-    const grup = kelompokGenerate(tugas.subBagianKode, i, paralel);
-    const hasil = await Promise.allSettled(grup.map(async (kode) => {
+    const gabung = gabungAktif ? await rencanaGabung(tugas, i, cache) : null;
+    // Rencana 10 Nov T9: jumlah paralel adaptif (naik tanpa 429, turun ke separuh saat 429 per menit)
+    const grup = gabung ? gabung.map((g) => g.k.sub.kode) : kelompokGenerate(tugas.subBagianKode, i, pengaturParalel().nilai);
+    const hasil = gabung
+      ? [await generateGabungan(tugas.proyekId, gabung, { tugasId, dibuatOlehId: tugas.dibuatOlehId, cache })
+        .then((v) => ({ status: "fulfilled" as const, value: v }), (reason: unknown) => ({ status: "rejected" as const, reason }))]
+      : await Promise.allSettled(grup.map(async (kode) => {
       const pratinjau = penulisPratinjau(tugasId, kode);
       try {
         await generateSubBagian(tugas.proyekId, kode, {
-          tugasId, dibuatOlehId: tugas.dibuatOlehId, onSebagian: pakaiAliran() ? pratinjau.onSebagian : undefined,
+          tugasId, dibuatOlehId: tugas.dibuatOlehId, onSebagian: pakaiAliran() ? pratinjau.onSebagian : undefined, cache,
+          lewatiBilaSama: tugas.rangkaianTotal !== null,
         });
       } finally {
         await pratinjau.hapus();

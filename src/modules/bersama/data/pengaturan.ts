@@ -25,6 +25,7 @@ const skema = z.object({
   modelCadangan: z.array(kodeModel).max(5, "Paling banyak 5 model cadangan."),
   modelEmbedding: kodeModel,
   pakaiCadanganAdmin: z.boolean(),
+  gabungSubPendek: z.boolean().optional(),
 });
 export type MasukanPengaturan = z.input<typeof skema>;
 

@@ -120,6 +120,11 @@ export async function aturAktifVersi(p: Pengguna, id: string, aktif: boolean) {
     return tx.versiInstrumen.update({ where: { id }, data: { aktif, status: aktif ? "aktif" : "nonaktif" } });
   });
   await catatAktivitas(p, aktif ? "aktifkan" : "nonaktifkan", "versi_instrumen", id, { kode: v.kode });
+  // Rencana 10 Nov T9: LED yang memakai versi ini menyiapkan vektor kueri di muka
+  if (aktif) {
+    const { jadwalkanSiapkanKueri } = await import("@/modules/led/proses/siapkan-kueri");
+    for (const x of await prisma.proyekLED.findMany({ where: { versiId: id, diarsipkanPada: null }, select: { id: true } })) await jadwalkanSiapkanKueri(x.id);
+  }
   return v;
 }
 
