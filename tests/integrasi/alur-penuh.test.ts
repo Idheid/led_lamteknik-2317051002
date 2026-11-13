@@ -99,7 +99,7 @@ before(async () => {
       };
     },
   }));
-  await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: [], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
+  await simpanPengaturan(admin, { modelNarasi: "gemini-3.8-flash", modelCadangan: [], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
   await tambahKunci(admin, { label: "Kunci fakultas", kunci: "AIzaSyKunciAlurPenuh00000000000000000001" });
 });
 

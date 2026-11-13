@@ -32,7 +32,7 @@ export interface ModelAiAktif {
   narasi: string;
   cadangan: string[];
   embedding: string;
-  /** "Google Gemini gemini-3-flash-preview", atau keterangan mode uji pengembangan */
+  /** "Google Gemini gemini-3.8-flash", atau keterangan mode uji pengembangan */
   labelNarasi: string;
   labelEmbedding: string;
 }

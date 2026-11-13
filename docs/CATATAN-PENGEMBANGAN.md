@@ -2117,3 +2117,35 @@ memakai ulang klien Prisma yang tersimpan di `globalThis`, yang dibuat dari kela
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 174/174 lulus |
 | `npm run test:integrasi` | 98/98 lulus |
+
+## Rencana 10 November 2026
+
+Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum pernah dijalankan). Dikerjakan mulai
+13 Nov 2026 di branch `revisi-31okt`, satu commit atau lebih per tahap.
+
+### T1: model bawaan `gemini-3.8-flash`
+
+- `MODEL_NARASI_BAWAAN` = `gemini-3.8-flash` (sesuai Batasan Masalah; model pratinjau bisa dihentikan Google).
+  `MODEL_CADANGAN_BAWAAN` = `["gemini-3.5-flash-lite"]`, dipakai saat baris pengaturan `utama` pertama kali dibuat.
+- Migrasi data `20261113090000_model_narasi_38`: baris yang masih `gemini-3-flash-preview` diubah ke `gemini-3.8-flash`;
+  cadangan kosong diisi `gemini-3.5-flash-lite`, cadangan yang sudah dipilih tetap (tanpa `gemini-3.8-flash` ganda).
+  Model lain pilihan Admin tidak diubah. Dev DB: menjadi `gemini-3.8-flash` + `{gemini-3.5-flash-lite}`.
+- Halaman Kunci API → Model Gemini: peringatan ringan bila model terpilih model pratinjau (`modelPratinjau`, akhiran
+  `-preview`/`-exp`).
+- Model *embedding* tetap `gemini-embedding-001`.
+- Model versi draf tetap tercatat di `VersiDraf.model`; draf dari model cadangan berlabel modelnya (uji `kecepatan` dan
+  `generate` kini memakai `gemini-3.8-flash` dan `gemini-3.5-flash-lite`).
+- `.gitignore`: `postman/` dan `.postman/` (bisa berisi ID aplikasi atau token MyUnila).
+- Uji baru: `tests/integrasi/model-bawaan.test.ts` (3: baris baru, migrasi bawaan lama, migrasi tidak menimpa pilihan
+  Admin dan aman diulang), uji domain `modelPratinjau`.
+- Uji manual dengan kunci asli (satu generate sub-bagian memakai `gemini-3.8-flash`): **belum dijalankan**, menunggu
+  Adrianne menjalankannya dengan kuncinya sendiri.
+- Kejadian lingkungan: Docker Desktop gagal start (soket basi `docker-secrets-engine\engine.sock`, sama seperti 20 Okt);
+  di dialog galat sempat dipilih "Reset to factory defaults", tetapi reset berhenti sebelum menyentuh disk data. Setelah
+  folder soket diganti nama, basis data `led_lamteknik` utuh (17 prodi, 4 LED, 178 versi draf).
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 175/175 lulus |
+| `npm run test:integrasi` | 101/101 lulus |

@@ -6,7 +6,7 @@
  */
 
 export interface ModelGoogle {
-  /** Kode tanpa awalan "models/", misalnya "gemini-3-flash-preview". */
+  /** Kode tanpa awalan "models/", misalnya "gemini-3.8-flash". */
   kode: string;
   nama: string;
   deskripsi: string;
@@ -104,6 +104,11 @@ export function pilihCadanganBawaan(daftar: ModelGoogle[], utama: string): strin
 export function pilihEmbeddingBawaan(daftar: ModelGoogle[]): string | null {
   const e = modelEmbedding(daftar).map((m) => m.kode);
   return e.find((k) => k === 'gemini-embedding-001') ?? e.find((k) => /^gemini-embedding/.test(k)) ?? e[0] ?? null;
+}
+
+/** Rencana 10 Nov T1: model pratinjau (-preview/-exp) bisa diubah atau dihentikan Google kapan saja. */
+export function modelPratinjau(kode: string): boolean {
+  return /-(preview|exp)(-|$)/.test(kode);
 }
 
 /** Model 2.5 dibatasi untuk pengguna baru: anggap perlu diganti. */

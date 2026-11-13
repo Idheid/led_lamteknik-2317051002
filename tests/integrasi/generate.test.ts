@@ -153,7 +153,7 @@ before(async () => {
   prodiId = prodi.id;
   proyekId = (await buatProyek(pj, { nama: "LED Uji", tahunPengajuan: 2026 })).id;
   proyekLainId = (await buatProyek(pjLain, { nama: "LED Lain", tahunPengajuan: 2026 })).id;
-  await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: ["gemini-3.1-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: true });
+  await simpanPengaturan(admin, { modelNarasi: "gemini-3.8-flash", modelCadangan: ["gemini-3.5-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: true });
 
   const b = await unggahLkps(pj, proyekId, { nama: "lkps.xlsx", isi: XLSX });
   await prosesBerkasLkps(b.id);
@@ -199,7 +199,7 @@ test("F-13 generate kriteria C.1 berurutan (IKU → LB, KEB → AF → SWOT); F-
   assert.ok(!c1[0].pengguna.includes("RINGKASAN INDIKATOR KINERJA"));
   for (const c of c1) {
     assert.ok(!/0012345678|198501012010121001/.test(c.pengguna), "NIDN/NIP tidak dikirim ke LLM");
-    assert.equal(c.model, "gemini-3-flash-preview");
+    assert.equal(c.model, "gemini-3.8-flash");
   }
   assert.ok(c1[0].pengguna.includes("[ID disamarkan]"));
   assert.ok(c1[0].pengguna.includes("[J]") && c1[0].pengguna.includes("[D1]"), "jawaban penyusun dan potongan dokumen masuk konteks");
@@ -352,8 +352,8 @@ test("F-19 429 harian: generate berhenti rapi, meminta kunci baru, lalu lanjut d
   assert.equal(kA.status, "kuota_habis");
   assert.ok(kA.habisSampai && kA.habisSampai > new Date());
   const gagal = await prisma.logPemakaian.findMany({ where: { tugasId: tugas.id, berhasil: false } });
-  assert.ok(gagal.some((l) => l.model === "gemini-3-flash-preview" && /kuota_harian/.test(l.galat ?? "")));
-  assert.ok(gagal.some((l) => l.model === "gemini-3.1-flash-lite" && /kuota_harian/.test(l.galat ?? "")), "model cadangan dicoba sebelum kunci ditandai habis");
+  assert.ok(gagal.some((l) => l.model === "gemini-3.8-flash" && /kuota_harian/.test(l.galat ?? "")));
+  assert.ok(gagal.some((l) => l.model === "gemini-3.5-flash-lite" && /kuota_harian/.test(l.galat ?? "")), "model cadangan dicoba sebelum kunci ditandai habis");
   assert.ok(gagal.some((l) => /batas_per_menit/.test(l.galat ?? "")), "batas per menit dicatat lalu diulang");
   const banner = (await tugasProyek(pj, proyekId)).find((x) => x.id === tugas.id)!;
   assert.equal(banner.status, "tertunda");

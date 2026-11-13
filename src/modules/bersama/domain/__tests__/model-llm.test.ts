@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   bacaDaftarModel, modelEmbedding, modelNarasi, modelUsang, penjelasanModel, pilihCadanganBawaan,
-  pilihEmbeddingBawaan, pilihModelNarasiBawaan, versiModel,
+  pilihEmbeddingBawaan, pilihModelNarasiBawaan, versiModel, modelPratinjau,
 } from '../model-llm.ts';
 
 const contoh = {
@@ -45,4 +45,12 @@ test('versi, model usang, dan penjelasan', () => {
   assert.match(penjelasanModel('gemini-3-flash-preview'), /Disarankan.*pratinjau/s);
   assert.match(penjelasanModel('gemini-embedding-001'), /vektor/);
   assert.match(penjelasanModel('gemini-3.1-flash-lite'), /hemat/);
+});
+
+test('Rencana 10 Nov T1: model pratinjau dikenali untuk peringatan di halaman Kunci API', () => {
+  assert.ok(modelPratinjau('gemini-3-flash-preview'));
+  assert.ok(modelPratinjau('gemini-3.1-pro-preview-06-05'));
+  assert.ok(modelPratinjau('gemini-2.0-flash-exp'));
+  assert.ok(!modelPratinjau('gemini-3.8-flash'));
+  assert.ok(!modelPratinjau('gemini-3.5-flash-lite'));
 });

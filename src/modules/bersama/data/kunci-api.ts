@@ -20,13 +20,16 @@ import { galatPenyedia, pakaiPenyediaUji, penyediaGemini, penyediaUji, type Peny
  */
 
 export const MODEL_EMBEDDING_BAWAAN = "gemini-embedding-001";
-// model 2.5 dibatasi Google untuk pengguna baru; diganti otomatis saat daftar model dimuat (data/pengaturan.ts)
-export const MODEL_NARASI_BAWAAN = "gemini-3-flash-preview";
+// Rencana 10 Nov T1: model stabil sesuai Batasan Masalah skripsi (model pratinjau bisa dihentikan Google).
+// Model yang tidak ada di daftar Google diganti otomatis saat daftar model dimuat (data/pengaturan.ts).
+export const MODEL_NARASI_BAWAAN = "gemini-3.8-flash";
+/** Cadangan bawaan: dipakai bila model utama kena kuota; draf dari cadangan tetap berlabel modelnya. */
+export const MODEL_CADANGAN_BAWAAN = ["gemini-3.5-flash-lite"];
 
 export async function pengaturanLlm() {
   return prisma.pengaturanLLM.upsert({
     where: { id: "utama" },
-    create: { id: "utama", modelNarasi: MODEL_NARASI_BAWAAN, modelCadangan: [], modelEmbedding: MODEL_EMBEDDING_BAWAAN },
+    create: { id: "utama", modelNarasi: MODEL_NARASI_BAWAAN, modelCadangan: MODEL_CADANGAN_BAWAAN, modelEmbedding: MODEL_EMBEDDING_BAWAAN },
     update: {},
   });
 }

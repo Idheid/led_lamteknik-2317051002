@@ -72,11 +72,11 @@ test("Revisi 31 Okt tahap 7: jadwal terlewat tidak menolak unggah, jawaban, gene
 });
 
 test("Revisi 31 Okt tahap 7: nama model AI mengikuti PengaturanLLM", async () => {
-  await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: ["gemini-3.1-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
+  await simpanPengaturan(admin, { modelNarasi: "gemini-3.8-flash", modelCadangan: ["gemini-3.5-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
   process.env.LLM_NARASI = "";
   const m = await modelAiAktif();
-  assert.deepEqual([m.narasi, m.cadangan, m.embedding], ["gemini-3-flash-preview", ["gemini-3.1-flash-lite"], "gemini-embedding-001"]);
-  assert.equal(m.labelNarasi, "Google Gemini gemini-3-flash-preview");
+  assert.deepEqual([m.narasi, m.cadangan, m.embedding], ["gemini-3.8-flash", ["gemini-3.5-flash-lite"], "gemini-embedding-001"]);
+  assert.equal(m.labelNarasi, "Google Gemini gemini-3.8-flash");
   await simpanPengaturan(admin, { modelNarasi: "gemini-3.1-pro-preview", modelCadangan: [], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: false });
   assert.equal((await modelAiAktif()).labelNarasi, "Google Gemini gemini-3.1-pro-preview", "berubah tanpa mengubah kode");
   process.env.LLM_NARASI = "uji";

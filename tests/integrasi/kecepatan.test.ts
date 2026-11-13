@@ -70,7 +70,7 @@ before(async () => {
   await siapkanFakultas(admin);
   ({ tim: pj } = await siapkanProdi(admin, { nama: "Teknik Contoh", jenjang: "S1", kodePddikti: "11111", identitas: {} }));
   proyekId = (await buatProyek(pj, { nama: "LED Uji", tahunPengajuan: 2026 })).id;
-  await simpanPengaturan(admin, { modelNarasi: "gemini-3-flash-preview", modelCadangan: ["gemini-3.1-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: true });
+  await simpanPengaturan(admin, { modelNarasi: "gemini-3.8-flash", modelCadangan: ["gemini-3.5-flash-lite"], modelEmbedding: "gemini-embedding-001", pakaiCadanganAdmin: true });
   await tambahKunci(admin, { label: "Kunci A", kunci: "AIzaSyKunciKecepatan000000000000000000001" });
   aturModelUji((_k, kode) => new MockLanguageModelV4({
     modelId: kode,
@@ -152,18 +152,18 @@ test("Generate dialirkan, dua IKU sekaligus, thinking rendah untuk Gemini 3, pra
 
 test("Panggilan yang menggantung dihentikan setelah batas waktu, diulang sekali, lalu pindah ke model cadangan", async () => {
   process.env.GENERATE_BATAS_MS = "300";
-  pantau.gantung.add("gemini-3-flash-preview");
+  pantau.gantung.add("gemini-3.8-flash");
   pantau.model.length = 0;
   try {
     const mulai = Date.now();
     const t = await mulaiGenerate(pj, proyekId, "C.1", "C.1-LB");
     assert.equal(await prosesTugasGenerate(t.id), "selesai");
     assert.ok(Date.now() - mulai < 15_000, "tidak macet lama");
-    assert.deepEqual(pantau.model, ["gemini-3-flash-preview", "gemini-3-flash-preview", "gemini-3.1-flash-lite"]);
+    assert.deepEqual(pantau.model, ["gemini-3.8-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite"]);
     const log = await prisma.logPemakaian.findMany({ where: { tugasId: t.id }, orderBy: { createdAt: "asc" } });
-    assert.deepEqual(log.map((l) => [l.model, l.berhasil]), [["gemini-3-flash-preview", false], ["gemini-3-flash-preview", false], ["gemini-3.1-flash-lite", true]]);
+    assert.deepEqual(log.map((l) => [l.model, l.berhasil]), [["gemini-3.8-flash", false], ["gemini-3.8-flash", false], ["gemini-3.5-flash-lite", true]]);
     assert.ok(log.slice(0, 2).every((l) => l.galat?.startsWith("batas_waktu")));
-    assert.equal((await drafBagian(pj, proyekId, "C.1"))["C.1-LB"].aktif?.model, "gemini-3.1-flash-lite");
+    assert.equal((await drafBagian(pj, proyekId, "C.1"))["C.1-LB"].aktif?.model, "gemini-3.5-flash-lite");
   } finally {
     delete process.env.GENERATE_BATAS_MS;
     pantau.gantung.clear();

@@ -8,7 +8,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
-import { penjelasanModel, type ModelGoogle } from "@/modules/bersama/domain/model-llm";
+import { penjelasanModel, type ModelGoogle, modelPratinjau } from "@/modules/bersama/domain/model-llm";
 import { aksiMuatDaftarModel, aksiSimpanPengaturan, aksiUjiModel } from "../aksi";
 
 interface Awal {
@@ -94,6 +94,11 @@ function Penjelasan({ kode, daftar }: { kode: string; daftar: ModelGoogle[] }) {
     <FieldDescription>
       <span className="font-mono">{kode}</span> · {penjelasanModel(kode)}
       {m?.batasMasuk ? ` Batas masukan ${m.batasMasuk.toLocaleString("id-ID")} token.` : ""}
+      {modelPratinjau(kode) && (
+        <span className="mt-1 block text-amber-700 dark:text-amber-300">
+          Model pratinjau bisa diubah atau dihentikan Google sewaktu-waktu. Untuk data asli, pilih model stabil (tanpa akhiran -preview).
+        </span>
+      )}
     </FieldDescription>
   );
 }
