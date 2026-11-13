@@ -235,6 +235,7 @@ model LogPemakaian {
   model       String
   tokenMasuk  Int       @default(0)
   tokenKeluar Int       @default(0)
+  tokenCache  Int       @default(0) // Rencana 10 Nov T7: token masukan dari cache implisit Gemini
   berhasil    Boolean
   galat       String?
   tugasId     String?

@@ -76,7 +76,10 @@ export function susunSistem(): string {
     '8. Arahkan narasi ke unsur deskriptor skor 4 secara jujur: tunjukkan bukti untuk unsur yang terpenuhi dan tindak lanjut untuk yang belum.',
     '9. Butir berjenis angka cukup 1 sampai 2 paragraf analisis (tren, penyebab, rencana); tabelnya disisipkan sistem.',
     '10. Narasi indikator kinerja harus mengevaluasi capaian, bukan hanya menceritakan pelaksanaan. Bila METRIK memuat capaian terhadap target atau tren tiga tahun (M-CAPAIAN, M-TREN), salin angkanya persis, nyatakan tercapai atau belum dan arah trennya, lalu jelaskan akar masalah dan tindak lanjut bila belum tercapai atau tren turun.',
-    '11. Keluarkan hanya JSON sesuai skema.',
+    '11. Langkah kerja berbasis kutipan: (a) pilih dulu kutipan bukti dari POTONGAN DOKUMEN atau JAWABAN PENYUSUN dan salin PERSIS (paling banyak 300 karakter, tanpa "…", tanpa merangkai dua tempat) ke daftar "bukti" dengan id B1, B2, … beserta kode sumbernya (D1, U2, J); (b) tulis narasi hanya dari kutipan itu, METRIK, dan TABEL; (c) setiap paragraf mencantumkan id bukti yang dipakai di "bukti" dan kode sumbernya di "sumber".',
+    '12. Setiap kalimat faktual harus didukung minimal satu kutipan bukti atau kode M-/T-. Jangan merangkum atau menyimpulkan isi yang tidak ada di kutipan.',
+    '13. Unsur berstatus "terpenuhi" wajib mencantumkan id bukti atau kode M-/T-/J pendukungnya.',
+    '14. Keluarkan hanya JSON sesuai skema.',
   ].join('\n');
 }
 
@@ -126,8 +129,17 @@ export function kodeSumberSah(k: KonteksSubBagian): Set<string> {
 export const SKEMA_KELUARAN = {
   type: 'object',
   additionalProperties: false,
-  required: ['paragraf', 'unsur', 'dokumenKurang'],
+  required: ['bukti', 'paragraf', 'unsur', 'dokumenKurang'],
   properties: {
+    bukti: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'sumber', 'kutipan'],
+        properties: { id: { type: 'string' }, sumber: { type: 'string' }, kutipan: { type: 'string' } },
+      },
+    },
     paragraf: {
       type: 'array',
       minItems: 1,
@@ -138,6 +150,7 @@ export const SKEMA_KELUARAN = {
         properties: {
           teks: { type: 'string' },
           sumber: { type: 'array', minItems: 1, items: { type: 'string' } },
+          bukti: { type: 'array', items: { type: 'string' } },
         },
       },
     },
@@ -161,8 +174,10 @@ export const SKEMA_KELUARAN = {
 } as const;
 
 export interface KeluaranSubBagian {
-  paragraf: { teks: string; sumber: string[] }[];
-  unsur: { butir: string; unsur: string; status: 'terpenuhi' | 'sebagian' | 'belum_ada_bukti'; sumber?: string[] }[];
+  /** Rencana 10 Nov T7: kutipan bukti (salinan persis dari sumbernya) */
+  bukti?: { id: string; sumber: string; kutipan: string }[];
+  paragraf: { teks: string; sumber: string[]; bukti?: string[] }[];
+  unsur: { butir: string; unsur: string; status: 'terpenuhi' | 'sebagian' | 'belum_ada_bukti'; sumber?: string[]; bukti?: string[] }[];
   dokumenKurang: string[];
   catatanUntukPenyusun?: string;
 }

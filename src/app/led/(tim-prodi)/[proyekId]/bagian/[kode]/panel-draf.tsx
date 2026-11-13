@@ -24,6 +24,7 @@ import type { CatatanTampil } from "@/modules/led/data/review";
 import { PanelCatatan, keSorotan, useCatatanLangsung } from "@/modules/led/komponen/review/panel-catatan";
 import { LABEL_BAHAN_PRODI } from "@/modules/led/domain/bahan-prodi";
 import { BarisPeriksa, type ItemPeriksa } from "@/modules/led/komponen/narasi/panel-samping";
+import type { RingkasanKutipan } from "@/modules/led/domain/kutipan";
 
 export interface ButirCek {
   kode: string;
@@ -99,6 +100,56 @@ function PanelVerifikasi({
       >
         {sibuk ? <IkonSibuk sibuk /> : <ShieldCheck aria-hidden />}Periksa dengan AI
       </Button>
+    </section>
+  );
+}
+
+// ------------------------------------------------------------------ bukti kutipan (Rencana 10 Nov T7)
+
+/** Kutipan bukti yang dipilih AI, dicek kode terhadap teks sumber: yang sah per paragraf, dan yang ditolak beserta alasannya. */
+function PanelKutipan({ k }: { k: RingkasanKutipan | null | undefined }) {
+  if (!k || k.bukti.length + k.paragraf.length === 0) return null;
+  const peta = new Map(k.bukti.map((b) => [b.id, b]));
+  const ditolak = k.bukti.filter((b) => !b.sah);
+  return (
+    <section aria-label="Bukti kutipan" className="rounded-lg border p-3 text-sm">
+      <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Bukti kutipan</h4>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {k.jumlah.buktiSah} kutipan cocok dengan sumber, {k.jumlah.buktiDitolak} ditolak
+        {k.jumlah.kalimatTidakDidukung > 0 ? `; ${k.jumlah.kalimatTidakDidukung} kalimat tidak didukung` : ""}
+        {k.unsurDiturunkan.length > 0 ? `; ${k.unsurDiturunkan.length} unsur diturunkan ke belum ada bukti` : ""}.
+      </p>
+      <ol className="max-h-72 space-y-2 overflow-y-auto">
+        {k.paragraf.map((p) => (
+          <li key={p.indeks} className="text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium">Paragraf {p.indeks + 1}</span>
+              {p.status === "tidak_didukung" && <Badge variant="outline" className={GAYA_LABEL.tidak_didukung}>Tidak didukung</Badge>}
+            </div>
+            {p.buktiSah.map((id) => (
+              <blockquote key={id} className="mt-1 border-l-2 border-emerald-400 pl-2 text-muted-foreground">
+                “{peta.get(id)?.kutipan}” <span className="whitespace-nowrap">({peta.get(id)?.sumber})</span>
+              </blockquote>
+            ))}
+            {p.angkaTanpaRujukan.length > 0 && (
+              <p className="mt-1 text-amber-700 dark:text-amber-400">Angka tidak ada di bukti yang dirujuk: {p.angkaTanpaRujukan.join(", ")}</p>
+            )}
+          </li>
+        ))}
+      </ol>
+      {ditolak.length > 0 && (
+        <div className="mt-3 border-t pt-2">
+          <h5 className="mb-1 text-xs font-medium">Kutipan ditolak</h5>
+          <ul className="space-y-1.5">
+            {ditolak.map((b) => (
+              <li key={b.id} className="text-xs">
+                <p className="line-clamp-2 line-through decoration-rose-400">“{b.kutipan}” ({b.sumber})</p>
+                <p className="text-muted-foreground">{b.alasan}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
@@ -354,6 +405,7 @@ export function PanelDraf({
       isi: (
         <>
           <PanelPemeriksaan h={hasilPeriksa} />
+          {!periksa && <PanelKutipan k={aktif?.pemeriksaan?.kutipan} />}
           <DaftarCek butir={butir} unsur={aktif?.unsur ?? []} />
           {aktif && aktif.dokumenKurang.length > 0 && (
             <section className="rounded-lg border p-3 text-sm">

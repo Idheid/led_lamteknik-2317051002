@@ -6,6 +6,8 @@ import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { GalatTanpaKunci } from "@/modules/bersama/data/kunci-api";
 import { cariPotongan, cariPotonganUnsur } from "@/modules/led/data/pencarian";
 import { drafTanpaBukti, kueriPerUnsur } from "@/modules/led/domain/kueri-unsur";
+import { terapkanCekKutipan } from "@/modules/led/domain/kutipan";
+import type { KeluaranSubBagian } from "@/modules/led/domain/prompt";
 import { konfigurasiBawaan } from "@/modules/led/domain/konfigurasi-pencarian";
 import { kueriGenerate } from "@/modules/led/domain/rrf";
 import type { JejakPencarian } from "@/modules/led/domain/konfigurasi-pencarian";
@@ -386,6 +388,23 @@ export async function susunKonteks(proyekId: string, subBagianKode: string): Pro
   return { konteks, rujukan, tabelSistem, legenda, catatan, sub: { id: s.id, kode: s.kode, bagianKode: s.bagian.kode }, pencarian: cari.jejak };
 }
 
+/**
+ * Rencana 10 Nov T7: sumber kutipan = teks yang diberikan ke AI (potongan D/U, Jawaban penyusun J, narasi lalu P);
+ * data pendukung paragraf tanpa kutipan = METRIK (M-…), TABEL (T-…), dan J.
+ */
+export function cekKutipanKeluaran(k: KonteksSubBagian, keluaran: KeluaranSubBagian, tahun: number[]) {
+  const sumber = new Map<string, string>(k.potongan.map((p) => [p.id, p.teks]));
+  if (k.jawabanForm?.trim()) sumber.set("J", k.jawabanForm);
+  if (k.narasiLalu?.trim()) sumber.set("P", k.narasiLalu);
+  const data = new Map<string, string>([
+    ...k.metrik.map((m) => [m.id, `${m.nama} = ${m.nilaiTeks}`] as [string, string]),
+    ...k.tabel.map((t) => [t.id, `${t.judul}
+${t.markdown}`] as [string, string]),
+  ]);
+  if (k.jawabanForm?.trim()) data.set("J", k.jawabanForm);
+  return terapkanCekKutipan(keluaran, sumber, data, tahun);
+}
+
 /** Label model versi draf yang disusun tanpa memanggil AI (Rencana 10 Nov T6). */
 export const MODEL_TANPA_AI = "tanpa AI";
 
@@ -437,8 +456,11 @@ export async function generateSubBagian(
     pengguna: susunPengguna(k.konteks),
     onSebagian: opsi.onSebagian,
   });
-  const doc = keluaranKeDokumen(hasil.keluaran, k.tabelSistem);
-  const pemeriksaan = periksaDokumen(doc, k.rujukan, periksaKeluaran(k.konteks, hasil.keluaran));
+  // Rencana 10 Nov T7: cek kutipan (0 token): bukti ditolak, paragraf tidak didukung, unsur diturunkan
+  const cek = tanpaAi ? null : cekKutipanKeluaran(k.konteks, hasil.keluaran, k.rujukan.tahunSah);
+  const keluaran = cek?.keluaran ?? hasil.keluaran;
+  const doc = keluaranKeDokumen(keluaran, k.tabelSistem);
+  const pemeriksaan = periksaDokumen(doc, k.rujukan, periksaKeluaran(k.konteks, keluaran));
   const dibuatOlehId = opsi.dibuatOlehId && (await prisma.user.findUnique({ where: { id: opsi.dibuatOlehId }, select: { id: true } })) ? opsi.dibuatOlehId : null;
 
   const versi = await prisma.$transaction(async (tx) => {
@@ -455,9 +477,9 @@ export async function generateSubBagian(
         asal: "generate",
         isi: doc as unknown as Prisma.InputJsonValue,
         sumber: k.legenda,
-        unsur: hasil.keluaran.unsur as unknown as Prisma.InputJsonValue,
-        dokumenKurang: hasil.keluaran.dokumenKurang,
-        pemeriksaan: { ...pemeriksaan, rujukan: k.rujukan, catatanSistem: k.catatan } as unknown as Prisma.InputJsonValue,
+        unsur: keluaran.unsur as unknown as Prisma.InputJsonValue,
+        dokumenKurang: keluaran.dokumenKurang,
+        pemeriksaan: { ...pemeriksaan, rujukan: k.rujukan, catatanSistem: k.catatan, kutipan: cek?.ringkasan ?? null } as unknown as Prisma.InputJsonValue,
         model: hasil.model,
         pencarian: k.pencarian as unknown as Prisma.InputJsonValue,
         keluaranMentah: {

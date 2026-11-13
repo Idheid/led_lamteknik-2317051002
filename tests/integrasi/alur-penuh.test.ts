@@ -28,6 +28,9 @@ import { prosesTugasGenerate, susunKonteks, urutanSubBagian } from "@/modules/le
 import { prosesEkspor } from "@/modules/led/proses/ekspor";
 import { pecahBody, teksElemen } from "@/modules/led/ekspor/xml";
 import { bersihkanDb, buatAdmin, siapkanFakultas, siapkanProdi } from "./bantu";
+import { Document, Packer, Paragraph } from "docx";
+import { unggahDokumen } from "@/modules/led/data/dokumen";
+import { prosesDokumen } from "@/modules/led/proses/dokumen";
 
 /**
  * Revisi 19 Okt 2026 tahap 6: alur penuh dari basis data kosong (tanpa instrumen bawaan):
@@ -82,7 +85,19 @@ function narasi(pengguna: string) {
   const kalimat = pengguna.includes(JAWABAN_C1)
     ? "Visi keilmuan ditinjau setiap tahun dalam lokakarya kurikulum bersama pemangku kepentingan."
     : "Program studi menjalankan kebijakan secara terencana dan terdokumentasi.";
-  return { paragraf: [{ teks: kalimat, sumber: kutip }, { teks: "Hasil pemantauan ditindaklanjuti dalam rapat program studi.", sumber: kutip }], unsur, dokumenKurang: [] };
+  // Rencana 10 Nov T7: kutipan bukti disalin persis dari potongan [D..] atau JAWABAN PENYUSUN di prompt
+  const bukti: { id: string; sumber: string; kutipan: string }[] = [];
+  const d = /\[(D\d+)\] \([^)]*\)\n([^\n]{12,})/.exec(pengguna);
+  if (d) bukti.push({ id: "B1", sumber: d[1], kutipan: d[2].slice(0, 120) });
+  const j = /## JAWABAN PENYUSUN \[J\]\n([^\n]{12,})/.exec(pengguna);
+  if (j) bukti.push({ id: `B${bukti.length + 1}`, sumber: "J", kutipan: j[1].slice(0, 120) });
+  const idBukti = bukti.map((x) => x.id);
+  return {
+    bukti,
+    paragraf: [{ teks: kalimat, sumber: kutip, bukti: idBukti }, { teks: "Hasil pemantauan ditindaklanjuti dalam rapat program studi.", sumber: kutip, bukti: idBukti }],
+    unsur: unsur.map((u) => ({ ...u, bukti: idBukti })),
+    dokumenKurang: [],
+  };
 }
 
 before(async () => {
@@ -150,6 +165,15 @@ test("Alur penuh: Admin UPPS tambah prodi dan akun Tim Prodi → unggah instrume
   assert.equal(nilai.daftar.find((x) => x.butir === "27")?.perluManual, true);
   await simpanNilaiManual(pj, proyekId, { butirKode: "27", nilai: "37,5%", keterangan: "15 dari 40 DTPS bergelar doktor" });
   assert.ok((await susunKonteks(proyekId, "C.4-IKU-a.iii")).konteks.metrik.some((m) => m.id === "M-NILAI-27"));
+
+  // Rencana 10 Nov T7: dokumen bukti umum (tanpa sub-bagian) supaya setiap sub-bagian punya kutipan; tanpa bukti,
+  // unsur "terpenuhi" diturunkan dan penanda [BELUM ADA BUKTI] menahan ekspor final
+  const bukti = await unggahDokumen(pj, proyekId, {
+    nama: "laporan-mutu.docx",
+    tautanBukti: "https://drive.unila.ac.id/bukti/laporan-mutu",
+    isi: Buffer.from(await Packer.toBuffer(new Document({ sections: [{ children: [new Paragraph("Laporan mutu program studi mencatat tata pamong, kerja sama, kurikulum, dan sumber daya yang dikelola secara terencana dan dievaluasi setiap tahun.")] }] }))),
+  });
+  await prosesDokumen(bukti.id);
 
   // 5. generate: kriteria dulu, lalu bagian ringkasan (kata pengantar, ringkasan, Bab III, Bab IV)
   const bagian: string[] = [];

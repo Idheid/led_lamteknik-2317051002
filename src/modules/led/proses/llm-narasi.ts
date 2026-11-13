@@ -22,12 +22,15 @@ import { MODEL_NARASI_UJI, modelNarasiUji, pakaiNarasiUji } from "@/modules/bers
  */
 
 export const skemaKeluaran = z.object({
-  paragraf: z.array(z.object({ teks: z.string(), sumber: z.array(z.string()) })).min(1),
+  // Rencana 10 Nov T7: kutipan bukti disalin persis dari POTONGAN/JAWABAN, dicek kode setelah keluaran diterima
+  bukti: z.array(z.object({ id: z.string(), sumber: z.string(), kutipan: z.string() })).default([]),
+  paragraf: z.array(z.object({ teks: z.string(), sumber: z.array(z.string()), bukti: z.array(z.string()).default([]) })).min(1),
   unsur: z.array(z.object({
     butir: z.string(),
     unsur: z.string(),
     status: z.enum(["terpenuhi", "sebagian", "belum_ada_bukti"]),
     sumber: z.array(z.string()).optional(),
+    bukti: z.array(z.string()).optional(),
   })),
   dokumenKurang: z.array(z.string()),
   catatanUntukPenyusun: z.string().optional(),
@@ -67,6 +70,8 @@ export interface HasilPanggilan<T = KeluaranSubBagian> {
   kunciId: string | null;
   tokenMasuk: number;
   tokenKeluar: number;
+  /** Rencana 10 Nov T7: token masukan yang dibaca dari cache implisit Gemini (bila dilaporkan AI SDK) */
+  tokenCache?: number;
   durasiMs: number;
 }
 
@@ -132,7 +137,7 @@ async function panggilModel<T>(
   a: PanggilanTerstruktur<T>,
   model: Parameters<typeof generateText>[0]["model"],
   opsi: { maxOutputTokens: number; temperature?: number; providerOptions?: ReturnType<typeof opsiPenyedia> },
-): Promise<{ output: T; tokenMasuk: number; tokenKeluar: number }> {
+): Promise<{ output: T; tokenMasuk: number; tokenKeluar: number; tokenCache?: number }> {
   const abortSignal = AbortSignal.timeout(batasPanggilanMs());
   const dasar = {
     model, system: a.sistem, prompt: a.pengguna, output: Output.object({ schema: a.skema }), maxRetries: 0, abortSignal,
@@ -143,7 +148,7 @@ async function panggilModel<T>(
   if (!a.onSebagian) {
     try {
       const r = await generateText(dasar);
-      return { output: r.output as T, tokenMasuk: r.usage.inputTokens ?? 0, tokenKeluar: r.usage.outputTokens ?? 0 };
+      return { output: r.output as T, tokenMasuk: r.usage.inputTokens ?? 0, tokenKeluar: r.usage.outputTokens ?? 0, tokenCache: tokenCache(r.usage) };
     } catch (e) {
       if (NoObjectGeneratedError.isInstance(e)) return pulihkanKeluaran(a, e);
       throw e;
@@ -155,13 +160,18 @@ async function panggilModel<T>(
     for await (const sebagian of r.partialOutputStream) a.onSebagian(sebagian);
     const output = await r.output;
     const usage = await r.usage;
-    return { output: output as T, tokenMasuk: usage.inputTokens ?? 0, tokenKeluar: usage.outputTokens ?? 0 };
+    return { output: output as T, tokenMasuk: usage.inputTokens ?? 0, tokenKeluar: usage.outputTokens ?? 0, tokenCache: tokenCache(usage) };
   } catch (e) {
     // galat asli penyedia (429, 403, batas waktu) dipakai untuk klasifikasi kunci/model
     if (galat) throw galat;
     if (NoObjectGeneratedError.isInstance(e)) return pulihkanKeluaran(a, e);
     throw e;
   }
+}
+
+/** Token masukan dari cache implisit Gemini (AI SDK: inputTokenDetails.cacheReadTokens). */
+function tokenCache(u: { inputTokenDetails?: { cacheReadTokens?: number | undefined } } | undefined): number {
+  return u?.inputTokenDetails?.cacheReadTokens ?? 0;
 }
 
 /** Coba baca jawaban yang gagal di-parse (pagar kode, teks tambahan, koma berlebih); gagal → GalatKeluaranRusak. */
@@ -181,7 +191,7 @@ function pulihkanKeluaran<T>(a: PanggilanTerstruktur<T>, e: NoObjectGeneratedErr
  */
 export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise<HasilPanggilan<T>> {
   const dikecualikan = new Set<string>();
-  const catat = (data: { kunciId: string | null; model: string; berhasil: boolean; galat?: string; tokenMasuk?: number; tokenKeluar?: number; durasiMs: number }) =>
+  const catat = (data: { kunciId: string | null; model: string; berhasil: boolean; galat?: string; tokenMasuk?: number; tokenKeluar?: number; tokenCache?: number; durasiMs: number }) =>
     prisma.logPemakaian.create({
       data: { ...data, proyekId: a.proyekId, prodiId: a.prodiId, tugasId: a.tugasId ?? null, subBagianKode: a.subBagianKode },
     });
@@ -237,8 +247,8 @@ export async function panggilTerstruktur<T>(a: PanggilanTerstruktur<T>): Promise
             providerOptions: opsiPenyedia(kodeModel, a.pikir),
           });
           const durasiMs = Date.now() - mulai;
-          await catat({ kunciId: k.id, model: kodeModel, berhasil: true, tokenMasuk: r.tokenMasuk, tokenKeluar: r.tokenKeluar, durasiMs });
-          return { keluaran: r.output, model: kodeModel, kunciId: k.id, tokenMasuk: r.tokenMasuk, tokenKeluar: r.tokenKeluar, durasiMs };
+          await catat({ kunciId: k.id, model: kodeModel, berhasil: true, tokenMasuk: r.tokenMasuk, tokenKeluar: r.tokenKeluar, tokenCache: r.tokenCache ?? 0, durasiMs });
+          return { keluaran: r.output, model: kodeModel, kunciId: k.id, tokenMasuk: r.tokenMasuk, tokenKeluar: r.tokenKeluar, tokenCache: r.tokenCache ?? 0, durasiMs };
         } catch (e) {
           if (habisWaktu(e)) {
             // revisi 22 Okt 2026: panggilan yang menggantung dihentikan setelah batas waktu, diulang sekali,

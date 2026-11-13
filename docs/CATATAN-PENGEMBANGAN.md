@@ -2352,3 +2352,41 @@ Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 196/196 lulus |
 | `npm run test:integrasi` | 118/118 lulus |
+
+### T7: generate berbasis kutipan
+
+- Skema keluaran (`skemaKeluaran` di `proses/llm-narasi.ts`, `SKEMA_KELUARAN` di `domain/prompt.ts`): `bukti[]`
+  (`id` B1…, `sumber` D/U/J, `kutipan` ≤ 300 karakter), `paragraf[].bukti`, `unsur[].bukti` (opsional). Skema Zod memberi
+  bawaan `[]` supaya keluaran lama dan model cadangan yang lupa mengisi `bukti` tetap diterima lalu diperiksa.
+- Aturan prompt 11–13: pilih kutipan dulu dan salin persis dari POTONGAN atau JAWABAN PENYUSUN; setiap kalimat faktual
+  merujuk bukti atau M/T; unsur `terpenuhi` wajib punya bukti atau M/T/J. Aturan JSON kini nomor 14.
+- Cek kode 0 token (`domain/kutipan.ts`, dipanggil `cekKutipanKeluaran` di `proses/generate.ts` untuk semua keluaran AI):
+  - normalisasi: tanda hubung lunak, kata dipenggal di akhir baris, tanda kutip/hubung tipografis, spasi, huruf kecil;
+  - kutipan ditolak bila sumbernya tidak ada di konteks, kosong, kurang dari 8 karakter, memakai "…"/"...", lebih dari
+    320 karakter, atau tidak ditemukan persis;
+  - paragraf yang tidak punya bukti sah, tidak merujuk M/T/J/P, dan bukan penanda → `tidak_didukung` (semua kalimatnya);
+  - angka di paragraf yang didukung harus ada di kutipan sah atau data M/T/J yang dirujuk paragraf itu
+    (`angkaTanpaRujukan`, memakai `angkaTidakBerdasar` yang sama dengan pemeriksaan lama, tahun sah dikecualikan);
+  - unsur `terpenuhi` tanpa bukti sah dan tanpa M/T/J → `belum_ada_bukti`, penanda `[BELUM ADA BUKTI: unsur]`
+    disisipkan sebagai paragraf terakhir sehingga gerbang ekspor final menahannya.
+- Penyimpanan: `VersiDraf.pemeriksaan.kutipan` (hasil per bukti, per paragraf, per kalimat, unsur diturunkan, jumlah);
+  `keluaranMentah` tetap menyimpan keluaran asli AI untuk audit. Narasi (dan ekspor Word) hanya memuat teks paragraf;
+  id bukti tidak pernah masuk ke dokumen. Setelah PJ menyunting, ringkasan kutipan tidak dibawa ke versi suntingan
+  (kalimatnya sudah berubah).
+- Antarmuka: panel Pemeriksaan di halaman bagian menampilkan "Bukti kutipan": kutipan sah per paragraf (teks dan kode
+  sumber, legenda kode menunjukkan dokumen/halaman), paragraf tidak didukung, angka tanpa rujukan, dan daftar kutipan
+  ditolak (dicoret) beserta alasannya.
+- *Cache* implisit: `LogPemakaian.tokenCache` (migrasi `20261113150000_log_token_cache`) diisi dari
+  `usage.inputTokenDetails.cacheReadTokens` AI SDK. **Penyimpangan dari rencana:** awalan bersama hanya instruksi sistem
+  dan blok IDENTITAS; tabel LKPS tetap per sub-bagian (bukan gabungan per kriteria) karena menggabungkannya menambah token
+  masukan setiap panggilan, padahal *cache* implisit hanya berlaku di atas 4.096 token awalan dan tidak dijamin. Efek
+  *cache* diukur di T11 dari kolom ini; penggabungan per kriteria dikerjakan sebagai mode opsional di T9.
+- Uji: `tests/unit/kutipan.test.ts` (5), `tests/integrasi/kutipan-generate.test.ts` (3: kutipan beda spasi diterima dan
+  rekaan ditolak, unsur diturunkan dan id bukti tidak masuk narasi, token cache tercatat). AI tiruan di `alur-penuh`
+  kini mengisi bukti dari potongan dan JAWABAN PENYUSUN, dan uji itu mengunggah satu dokumen bukti umum bertautan bukti.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 201/201 lulus |
+| `npm run test:integrasi` | 121/121 lulus |

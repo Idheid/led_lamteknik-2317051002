@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { RingkasanKutipan } from "@/modules/led/domain/kutipan";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
@@ -186,9 +187,9 @@ export async function tugasProyek(p: Pengguna, proyekId: string): Promise<Ringka
 
 // ------------------------------------------------------------------ draf dan versi
 
-type PemeriksaanTersimpan = HasilPemeriksaan & { rujukan?: RujukanPeriksa; catatanSistem?: string[]; kalimatAi?: HasilVerifikasiAi };
+type PemeriksaanTersimpan = HasilPemeriksaan & { rujukan?: RujukanPeriksa; catatanSistem?: string[]; kalimatAi?: HasilVerifikasiAi; kutipan?: RingkasanKutipan | null };
 
-function pemeriksaanTampil(json: unknown): (HasilPemeriksaan & { catatanSistem?: string[]; kalimatAi?: HasilVerifikasiAi }) | null {
+function pemeriksaanTampil(json: unknown): (HasilPemeriksaan & { catatanSistem?: string[]; kalimatAi?: HasilVerifikasiAi; kutipan?: RingkasanKutipan | null }) | null {
   if (!json || typeof json !== "object") return null;
   const { rujukan: _r, ...sisa } = json as PemeriksaanTersimpan;
   return sisa;
