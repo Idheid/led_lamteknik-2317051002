@@ -4,13 +4,20 @@ import type { Prisma } from "@/generated/prisma/client";
 import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
-import { bacaDokumen, type RujukanPeriksa } from "@/modules/led/domain/narasi";
-import { periksaKalimat, ringkasVerifikasi, type KalimatTerperiksa, type LabelKalimat, type RingkasVerifikasi } from "@/modules/led/domain/verifikasi";
+import { bacaDokumen, paragrafBersumber, type RujukanPeriksa } from "@/modules/led/domain/narasi";
+import { kunciKalimat, pecahKalimat, periksaKalimat, ringkasVerifikasi, type RingkasVerifikasi } from "@/modules/led/domain/verifikasi";
+import {
+  SISTEM_PERIKSA, buktiParagraf, kunciTahan, labelAturan, susunPenggunaPeriksa, terapkanLabelAi,
+  type HasilVerifikasiAi, type KonfirmasiKalimat, type PemeriksaanT8,
+} from "@/modules/led/domain/periksa-bagian";
 import { panggilTerstruktur } from "@/modules/led/proses/llm-narasi";
 
+export type { HasilVerifikasiAi };
+
 /**
- * Tombol "Periksa dengan AI" per sub-bagian (revisi 22 Okt 2026): satu panggilan Gemini menerima kalimat beserta
- * teks sumber yang dirujuk, lalu memberi label dan alasan per kalimat. Hasil disimpan bersama versi draf aktif.
+ * Tombol "Periksa dengan AI" per sub-bagian (revisi 22 Okt 2026), kini dengan masukan yang sama seperti pemeriksaan
+ * otomatis per bagian (Rencana 10 Nov T8): kalimat + kutipan bukti yang dirujuk + baris M/T/J, bukan potongan utuh.
+ * Hasil disimpan bersama versi draf aktif dan menjadi dasar gerbang ekspor final.
  */
 
 const skema = z.object({
@@ -21,55 +28,64 @@ const skema = z.object({
   })),
 });
 
-export interface HasilVerifikasiAi {
-  model: string;
-  waktu: string;
-  hasil: KalimatTerperiksa[];
-}
+type Pemeriksaan = PemeriksaanT8 & { rujukan?: RujukanPeriksa } & Record<string, unknown>;
 
-const SISTEM = [
-  "Anda pemeriksa fakta untuk draf Laporan Evaluasi Diri. Untuk setiap kalimat bernomor, nilai apakah isinya didukung SUMBER yang dirujuk kalimat itu (kode di dalam kurung).",
-  "Label:",
-  '- "sesuai": isi dan angkanya ada di sumber yang dirujuk;',
-  '- "sebagian": merujuk sumber, tetapi ada simpulan, penilaian, atau tambahan kata yang tidak ada di sumber;',
-  '- "tidak_didukung": angka atau isinya tidak ditemukan di sumber yang dirujuk, atau kalimat tidak merujuk sumber.',
-  "Kalimat yang berisi penanda [BELUM ADA BUKTI: ...] diberi label \"sebagian\".",
-  "Alasan ditulis singkat (paling banyak 25 kata) dalam bahasa Indonesia. Keluarkan satu objek untuk setiap nomor kalimat, hanya JSON sesuai skema.",
-].join("\n");
-
-export async function periksaDenganAi(p: Pengguna, proyekId: string, subBagianKode: string): Promise<RingkasVerifikasi> {
+async function versiAktif(p: Pengguna, proyekId: string, subBagianKode: string) {
   const proyek = await ambilProyekUbah(p, proyekId);
   const bd = await prisma.bagianDraf.findFirst({
     where: { proyekId: proyek.id, subBagian: { kode: subBagianKode, bagian: { versiId: proyek.versiId } } },
   });
   if (!bd?.versiAktifId) throw new GalatPengguna("Sub-bagian ini belum punya draf.");
   const v = await prisma.versiDraf.findUniqueOrThrow({ where: { id: bd.versiAktifId } });
-  const periksa = (v.pemeriksaan ?? {}) as { rujukan?: RujukanPeriksa };
-  const teksSumber = periksa.rujukan?.teksSumber ?? {};
-  const kalimat = periksaKalimat(bacaDokumen(v.isi), teksSumber, { tahunSah: periksa.rujukan?.tahunSah ?? [] });
-  if (kalimat.length === 0) throw new GalatPengguna("Tidak ada kalimat narasi untuk diperiksa.");
+  return { proyek, v, periksa: (v.pemeriksaan ?? {}) as Pemeriksaan };
+}
 
-  const dipakai = [...new Set(kalimat.flatMap((k) => k.sumber))].filter((s) => teksSumber[s]);
-  const pengguna = [
-    "## SUMBER",
-    dipakai.length ? dipakai.map((s) => `[${s}]\n${teksSumber[s].slice(0, 2500)}`).join("\n\n") : "(tidak ada teks sumber tersimpan)",
-    "",
-    "## KALIMAT",
-    kalimat.map((k, i) => `${i + 1}. (${k.sumber.join(", ") || "tanpa sumber"}) ${k.teks}`).join("\n"),
-  ].join("\n");
+export async function periksaDenganAi(p: Pengguna, proyekId: string, subBagianKode: string): Promise<RingkasVerifikasi> {
+  const { proyek, v, periksa } = await versiAktif(p, proyekId, subBagianKode);
+  const doc = bacaDokumen(v.isi);
+  const teksSumber = periksa.rujukan?.teksSumber ?? {};
+  // versi suntingan tidak membawa kutipan; label aturan dihitung ulang dari narasi saat ini
+  const kutipan = v.asal === "sunting" ? null : periksa.kutipan;
+  const aturan = labelAturan(periksaKalimat(doc, teksSumber, { tahunSah: periksa.rujukan?.tahunSah ?? [] }), kutipan);
+  if (aturan.kalimat.length === 0) throw new GalatPengguna("Tidak ada kalimat narasi untuk diperiksa.");
+  const paragraf = paragrafBersumber(doc);
+  const item = [{ kode: subBagianKode, kalimat: aturan.kalimat, bukti: (i: number) => buktiParagraf(i, paragraf[i]?.sumber ?? [], kutipan, teksSumber) }];
+  const { teks, peta } = susunPenggunaPeriksa(item);
   const r = await panggilTerstruktur({
     prodiId: proyek.prodiId, proyekId: proyek.id, tugasId: null, subBagianKode: `verifikasi:${subBagianKode}`,
-    sistem: SISTEM, pengguna, skema, pikir: "rendah",
+    sistem: SISTEM_PERIKSA, pengguna: teks, skema, pikir: "rendah",
   });
-  const hasil: KalimatTerperiksa[] = kalimat.map((k, i) => {
-    const a = r.keluaran.kalimat.find((x) => x.nomor === i + 1);
-    return a ? { ...k, label: a.label as LabelKalimat, alasan: a.alasan } : { ...k, alasan: `AI tidak menilai kalimat ini; label cek otomatis: ${k.alasan}` };
-  });
+  const hasil = terapkanLabelAi(item, peta, r.keluaran.kalimat)[0];
   const simpan: HasilVerifikasiAi = { model: r.model, waktu: new Date().toISOString(), hasil };
   await prisma.versiDraf.update({
     where: { id: v.id },
-    data: { pemeriksaan: { ...(v.pemeriksaan as object ?? {}), kalimatAi: simpan } as unknown as Prisma.InputJsonValue },
+    data: {
+      pemeriksaan: {
+        ...periksa, kalimatAi: simpan, tahan: kunciTahan(hasil, [], true), statusAi: "selesai", pesanAi: undefined,
+      } as unknown as Prisma.InputJsonValue,
+    },
   });
   await catatAktivitas(p, "verifikasi_ai", "proyek", proyek.id, { subBagianKode });
   return ringkasVerifikasi(hasil);
+}
+
+/**
+ * Rencana 10 Nov T8: Tim Prodi mengonfirmasi kalimat berlabel tidak didukung (misalnya fakta yang benar tetapi buktinya
+ * belum diunggah) dengan alasan. Kalimat terkonfirmasi tidak lagi menahan ekspor final.
+ */
+export async function konfirmasiKalimat(p: Pengguna, proyekId: string, subBagianKode: string, teks: string, alasan: string) {
+  const a = alasan.trim();
+  if (a.length < 10) throw new GalatPengguna("Tulis alasan konfirmasi (paling sedikit 10 karakter).");
+  const { proyek, v, periksa } = await versiAktif(p, proyekId, subBagianKode);
+  const kunci = kunciKalimat(teks);
+  const ada = paragrafBersumber(bacaDokumen(v.isi)).flatMap((x) => pecahKalimat(x.teks)).some((x) => kunciKalimat(x) === kunci);
+  if (!ada) throw new GalatPengguna("Kalimat itu tidak ada lagi di narasi (mungkin sudah disunting).");
+  const lain = (periksa.konfirmasi ?? []).filter((k) => k.kunci !== kunci);
+  const baru: KonfirmasiKalimat = { kunci, teks, alasan: a.slice(0, 500), oleh: p.nama || p.email, waktu: new Date().toISOString() };
+  await prisma.versiDraf.update({
+    where: { id: v.id },
+    data: { pemeriksaan: { ...periksa, konfirmasi: [...lain, baru] } as unknown as Prisma.InputJsonValue },
+  });
+  await catatAktivitas(p, "konfirmasi_kalimat", "proyek", proyek.id, { subBagianKode, alasan: baru.alasan });
+  return baru;
 }

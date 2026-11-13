@@ -104,7 +104,8 @@ test("Verifikasi per kalimat otomatis setelah generate dan setelah disunting; Pe
   await assert.rejects(periksaDenganAi(admin, proyekId, "C.4-IKU-a.i"), GalatAkses);
   const r = await periksaDenganAi(pj, proyekId, "C.4-IKU-a.i");
   assert.deepEqual(r, { total: 3, sesuai: 2, sebagian: 1, tidak_didukung: 0 });
-  assert.match(promptVerifikasi[0], /## SUMBER[\s\S]*\[M-NDTPS\][\s\S]*## KALIMAT\n1\. \(M-NDTPS\)/);
+  // Rencana 10 Nov T8: masukan pemeriksa = bukti per sub-bagian (kutipan sah dan baris M/T/J), bukan teks sumber utuh
+  assert.match(promptVerifikasi[0], /### BUKTI[\s\S]*\[s1\.M-NDTPS\] [^\n]*= \d+[\s\S]*### KALIMAT\n1\. \(s1\.M-NDTPS\)/);
   d = (await drafBagian(pj, proyekId, "C.4"))["C.4-IKU-a.i"].aktif!;
   assert.equal(d.pemeriksaan?.kalimatAi?.hasil[1].label, "sebagian");
   assert.equal(d.pemeriksaan?.kalimatAi?.model, "gemini-3-flash-preview");

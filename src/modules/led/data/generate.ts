@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { RingkasanKutipan } from "@/modules/led/domain/kutipan";
+import { kalimatMenahan, type PemeriksaanT8 } from "@/modules/led/domain/periksa-bagian";
+import { kunciKalimat, pecahKalimat } from "@/modules/led/domain/verifikasi";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
@@ -8,10 +9,9 @@ import { catatAktivitas } from "@/modules/bersama/data/log";
 import { ringkasanKunci } from "@/modules/bersama/data/kunci-api";
 import { ambilProyek, ambilProyekUbah, pastikanBisaDiubah } from "@/modules/led/data/proyek";
 import {
-  bacaDokumen, bandingkanTeks, periksaDokumen, teksDokumen, type DokTiptap, type HasilPemeriksaan, type RujukanPeriksa,
+  bacaDokumen, bandingkanTeks, paragrafBersumber, periksaDokumen, teksDokumen, type DokTiptap, type HasilPemeriksaan, type RujukanPeriksa,
 } from "@/modules/led/domain/narasi";
 import type { KeluaranSubBagian } from "@/modules/led/domain/prompt";
-import type { HasilVerifikasiAi } from "@/modules/led/data/verifikasi";
 import { perbaruiStatusBagian, rencanaSusun, subBagianProyek, urutanSubBagian } from "@/modules/led/proses/generate";
 import { pakaiNarasiUji } from "@/modules/bersama/llm/narasi-uji";
 
@@ -187,12 +187,20 @@ export async function tugasProyek(p: Pengguna, proyekId: string): Promise<Ringka
 
 // ------------------------------------------------------------------ draf dan versi
 
-type PemeriksaanTersimpan = HasilPemeriksaan & { rujukan?: RujukanPeriksa; catatanSistem?: string[]; kalimatAi?: HasilVerifikasiAi; kutipan?: RingkasanKutipan | null };
+type PemeriksaanTersimpan = HasilPemeriksaan & Omit<PemeriksaanT8, "kalimat"> & { rujukan?: RujukanPeriksa; catatanSistem?: string[] };
 
-function pemeriksaanTampil(json: unknown): (HasilPemeriksaan & { catatanSistem?: string[]; kalimatAi?: HasilVerifikasiAi; kutipan?: RingkasanKutipan | null }) | null {
+function pemeriksaanTampil(json: unknown): (HasilPemeriksaan & Omit<PemeriksaanT8, "kalimat"> & { catatanSistem?: string[]; menahan: string[] }) | null {
   if (!json || typeof json !== "object") return null;
   const { rujukan: _r, ...sisa } = json as PemeriksaanTersimpan;
-  return sisa;
+  return { ...sisa, menahan: [] };
+}
+
+/** Pemeriksaan untuk ditampilkan, dengan kalimat yang masih menahan ekspor final. */
+function tampilDenganMenahan(json: unknown, isi: unknown) {
+  const t = pemeriksaanTampil(json);
+  if (!t) return null;
+  const kalimat = paragrafBersumber(bacaDokumen(isi)).flatMap((x) => pecahKalimat(x.teks));
+  return { ...t, menahan: kalimatMenahan(t.tahan, kalimat, t.konfirmasi) };
 }
 
 function pemakaian(json: unknown): { tokenMasuk: number; tokenKeluar: number; durasiMs: number } | null {
@@ -228,7 +236,7 @@ export async function drafBagian(p: Pengguna, proyekId: string, bagianKode: stri
         legenda: (v.sumber ?? {}) as Record<string, string>,
         unsur: (v.unsur ?? []) as KeluaranSubBagian["unsur"],
         dokumenKurang: v.dokumenKurang,
-        pemeriksaan: pemeriksaanTampil(v.pemeriksaan),
+        pemeriksaan: tampilDenganMenahan(v.pemeriksaan, v.isi),
         catatanPenyusun: ((v.keluaranMentah as { keluaran?: KeluaranSubBagian } | null)?.keluaran?.catatanUntukPenyusun) ?? null,
         model: v.model,
         pemakaian: pemakaian(v.keluaranMentah),
@@ -274,7 +282,14 @@ export async function simpanSuntingan(p: Pengguna, proyekId: string, subBagianKo
   const lamaPeriksa = (dasar?.pemeriksaan ?? null) as PemeriksaanTersimpan | null;
   const rujukan: RujukanPeriksa = lamaPeriksa?.rujukan ?? { angkaSah: [], tahunSah: [], target: null, sumberSah: [] };
   const pemeriksaan = periksaDokumen(isi, rujukan, (lamaPeriksa?.masalahSumber ?? []).filter((m) => m.jenis === "unsur_hilang"));
-  const simpanPeriksa = { ...pemeriksaan, rujukan } as unknown as Prisma.InputJsonValue;
+  // Rencana 10 Nov T8: kalimat yang menahan ekspor final dan konfirmasinya ikut ke versi suntingan selama kalimatnya
+  // tidak diubah; kalimat yang disunting lepas dengan sendirinya
+  const kalimatBaru = new Set(paragrafBersumber(isi).flatMap((x) => pecahKalimat(x.teks)).map(kunciKalimat));
+  const bawa = {
+    tahan: (lamaPeriksa?.tahan ?? []).filter((k) => kalimatBaru.has(k)),
+    konfirmasi: (lamaPeriksa?.konfirmasi ?? []).filter((k) => kalimatBaru.has(k.kunci)),
+  };
+  const simpanPeriksa = { ...pemeriksaan, ...bawa, rujukan } as unknown as Prisma.InputJsonValue;
 
   // versi yang dirujuk catatan asesor (versi saat catatan dibuat atau ditandai diperbaiki) tidak ditimpa, supaya
   // asesor bisa membandingkan sebelum dan sesudah perbaikan (revisi 22 Okt 2026)

@@ -7,6 +7,8 @@ import { GalatTanpaKunci } from "@/modules/bersama/data/kunci-api";
 import { cariPotongan, cariPotonganUnsur } from "@/modules/led/data/pencarian";
 import { drafTanpaBukti, kueriPerUnsur } from "@/modules/led/domain/kueri-unsur";
 import { terapkanCekKutipan } from "@/modules/led/domain/kutipan";
+import { kunciTahan, labelAturan } from "@/modules/led/domain/periksa-bagian";
+import { MODEL_TANPA_AI, jadwalkanPeriksaBagian, periksaOtomatisAktif } from "@/modules/led/proses/periksa-bagian";
 import type { KeluaranSubBagian } from "@/modules/led/domain/prompt";
 import { konfigurasiBawaan } from "@/modules/led/domain/konfigurasi-pencarian";
 import { kueriGenerate } from "@/modules/led/domain/rrf";
@@ -406,7 +408,7 @@ ${t.markdown}`] as [string, string]),
 }
 
 /** Label model versi draf yang disusun tanpa memanggil AI (Rencana 10 Nov T6). */
-export const MODEL_TANPA_AI = "tanpa AI";
+export { MODEL_TANPA_AI };
 
 /**
  * Rencana 10 Nov T6: bila semua unsur skor 4 tanpa bukti (pra-cek pencarian) dan tidak ada J, M, maupun T, AI tidak
@@ -461,6 +463,14 @@ export async function generateSubBagian(
   const keluaran = cek?.keluaran ?? hasil.keluaran;
   const doc = keluaranKeDokumen(keluaran, k.tabelSistem);
   const pemeriksaan = periksaDokumen(doc, k.rujukan, periksaKeluaran(k.konteks, keluaran));
+  // Rencana 10 Nov T8 Langkah 1: label aturan + cek kutipan; kalimat tidak didukung menurut cek kutipan menahan ekspor
+  // final sampai diperiksa AI, disunting, atau dikonfirmasi
+  const aturan = labelAturan(pemeriksaan.kalimat ?? [], cek?.ringkasan);
+  const t8 = {
+    kalimat: aturan.kalimat,
+    tahan: kunciTahan(aturan.kalimat, aturan.pasti, false),
+    ...(tanpaAi || !periksaOtomatisAktif() ? {} : { statusAi: "antre" as const }),
+  };
   const dibuatOlehId = opsi.dibuatOlehId && (await prisma.user.findUnique({ where: { id: opsi.dibuatOlehId }, select: { id: true } })) ? opsi.dibuatOlehId : null;
 
   const versi = await prisma.$transaction(async (tx) => {
@@ -479,7 +489,7 @@ export async function generateSubBagian(
         sumber: k.legenda,
         unsur: keluaran.unsur as unknown as Prisma.InputJsonValue,
         dokumenKurang: keluaran.dokumenKurang,
-        pemeriksaan: { ...pemeriksaan, rujukan: k.rujukan, catatanSistem: k.catatan, kutipan: cek?.ringkasan ?? null } as unknown as Prisma.InputJsonValue,
+        pemeriksaan: { ...pemeriksaan, ...t8, rujukan: k.rujukan, catatanSistem: k.catatan, kutipan: cek?.ringkasan ?? null } as unknown as Prisma.InputJsonValue,
         model: hasil.model,
         pencarian: k.pencarian as unknown as Prisma.InputJsonValue,
         keluaranMentah: {
@@ -592,7 +602,7 @@ export async function prosesTugasGenerate(tugasId: string): Promise<string> {
 }
 
 async function kerjakanTugas(
-  tugas: { id: string; proyekId: string; indeks: number; subBagianKode: string[]; dibuatOlehId: string | null },
+  tugas: { id: string; proyekId: string; indeks: number; subBagianKode: string[]; dibuatOlehId: string | null; bagianKode: string | null; rangkaianTotal: number | null },
   paralel: number,
 ): Promise<string> {
   const tugasId = tugas.id;
@@ -637,6 +647,11 @@ async function kerjakanTugas(
     return "gagal";
   }
   await ubahTugas(tugasId, ["berjalan"], { status: "selesai", pesan: null });
+  // Rencana 10 Nov T8: Susun/generate bagian → periksa segera; generate satu sub-bagian → 60 detik tanpa generate lain
+  if (tugas.bagianKode) {
+    await jadwalkanPeriksaBagian(tugas.proyekId, tugas.bagianKode, tugas.rangkaianTotal !== null || tugas.subBagianKode.length > 1)
+      .catch((e) => console.error(`[generate] ${tugasId} jadwal periksa:`, e instanceof Error ? e.message : e));
+  }
   await lanjutkanRangkaian(tugasId);
   return "selesai";
 }

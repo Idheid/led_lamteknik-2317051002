@@ -8,7 +8,9 @@ import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { bacaBerkas, hapusBerkas, simpanBerkas } from "@/modules/bersama/penyimpanan";
 import { periksaSebelumEkspor, type HasilPeriksaEkspor } from "@/modules/led/domain/ekspor";
 import { KODE_JENJANG } from "@/modules/bersama/domain/jenjang";
-import { bacaDokumen } from "@/modules/led/domain/narasi";
+import { bacaDokumen, paragrafBersumber } from "@/modules/led/domain/narasi";
+import { kalimatMenahan, type PemeriksaanT8 } from "@/modules/led/domain/periksa-bagian";
+import { pecahKalimat } from "@/modules/led/domain/verifikasi";
 import { lokasiSoffice } from "@/modules/led/ekspor/halaman";
 import { bacaTemplateVersi, bacaTim, siapkanTemplate, subBagianTemplate, type JenisEkspor } from "@/modules/led/proses/ekspor";
 import { dokumenDirujuk, namaDokumen, type DokumenRujukan } from "@/modules/led/domain/rujukan";
@@ -73,7 +75,7 @@ export async function periksaEkspor(p: Pengguna, proyekId: string, jenis: JenisE
   const bagianKode = [...new Set(sub.map((s) => s.bagianKode))];
   const status = new Map(proyek.status.map((s) => [s.bagianKode, s.status]));
   const draf = await prisma.bagianDraf.findMany({ where: { proyekId: proyek.id, versiAktifId: { not: null } }, select: { subBagianId: true, versiAktifId: true } });
-  const versiDraf = await prisma.versiDraf.findMany({ where: { id: { in: draf.map((d) => d.versiAktifId!) } }, select: { id: true, isi: true } });
+  const versiDraf = await prisma.versiDraf.findMany({ where: { id: { in: draf.map((d) => d.versiAktifId!) } }, select: { id: true, isi: true, pemeriksaan: true } });
   const isi = new Map(draf.map((d) => [d.subBagianId, versiDraf.find((v) => v.id === d.versiAktifId)?.isi]));
   const hasil = periksaSebelumEkspor(
     bagianKode.map((k) => ({
@@ -84,6 +86,18 @@ export async function periksaEkspor(p: Pengguna, proyekId: string, jenis: JenisE
     })),
     sub.map((s) => ({ kode: s.kode, label: s.label, bagianKode: s.bagianKode, doc: isi.has(s.id) ? bacaDokumen(isi.get(s.id)) : null })),
   );
+  // Rencana 10 Nov T8: kalimat tidak didukung (AI atau cek kutipan) yang belum disunting atau dikonfirmasi menahan ekspor final
+  const kalimatTahan = sub.flatMap((s) => {
+    const v = versiDraf.find((x) => x.id === draf.find((d) => d.subBagianId === s.id)?.versiAktifId);
+    if (!v) return [];
+    const t = (v.pemeriksaan ?? {}) as PemeriksaanT8;
+    const kalimat = paragrafBersumber(bacaDokumen(v.isi)).flatMap((x) => pecahKalimat(x.teks));
+    return kalimatMenahan(t.tahan, kalimat, t.konfirmasi).map((teks) => ({ sub: s.label || s.kode, teks }));
+  });
+  if (kalimatTahan.length) {
+    const di = [...new Set(kalimatTahan.map((k) => k.sub))];
+    hasil.galat.push(`${kalimatTahan.length} kalimat tidak didukung bukti belum disunting atau dikonfirmasi (${di.slice(0, 6).join(", ")}${di.length > 6 ? ", …" : ""}). Buka panel Verifikasi di sub-bagian itu.`);
+  }
   const tim = bacaTim(proyek.timPenyusun);
   if (tim.dosen.length === 0) hasil.galat.push("Tim penyusun (dosen) belum diisi di menu Tim penyusun.");
   const templateAda = Boolean(versi.templateLedLokasi || process.env.TEMPLATE_LEDPS_PATH);

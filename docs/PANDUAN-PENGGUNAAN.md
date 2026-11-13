@@ -295,6 +295,14 @@ kunci API hanya menampilkan status; bila kunci habis, hubungi Admin UPPS.
 - Baca hasil: penanda sumber (D dokumen, U dokumen bersama, T tabel LKPS, M metrik, J = Bahan dari prodi), pemeriksaan
   otomatis, verifikasi per kalimat (hijau/kuning/merah), **Periksa dengan AI**. Sunting langsung; setiap suntingan
   tersimpan sebagai versi dan bisa dibandingkan atau dipulihkan.
+- **Bukti kutipan** (panel Pemeriksaan): kalimat dari dokumen yang dipakai AI sebagai bukti tiap paragraf. Kutipan yang
+  tidak ditemukan persis di dokumen dicoret dan paragrafnya diberi label **Tidak didukung**.
+- **Pemeriksaan AI otomatis**: setelah satu bagian selesai disusun (atau 1 menit setelah generate satu sub-bagian), AI
+  memeriksa semua kalimat bagian itu sekaligus. Lencana di panel Verifikasi: **Diperiksa aturan** (selalu),
+  **Sedang diperiksa AI**, lalu **Diperiksa AI**. Paragraf yang memuat kalimat tidak didukung ditulis ulang sekali
+  secara otomatis dari bukti yang sah dan disimpan sebagai versi **Perbaikan otomatis** (versi asal tetap di Riwayat).
+- Kalimat yang masih **Tidak didukung** menahan **ekspor final** sampai disunting atau dikonfirmasi: buka panel
+  Verifikasi, klik **Konfirmasi dengan alasan** di kalimat itu (misalnya buktinya menyusul). Ekspor DRAF tidak tertahan.
 
 ### 6. Perkiraan nilai
 

@@ -2390,3 +2390,59 @@ Rencana `docs/RENCANA-10NOV.md` (menggantikan `docs/RENCANA-5NOV.md`, yang belum
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 201/201 lulus |
 | `npm run test:integrasi` | 121/121 lulus |
+
+### T8: pemeriksaan AI otomatis per bagian dan perbaikan terarah
+
+- Domain `domain/periksa-bagian.ts` (murni, diuji unit), proses `proses/periksa-bagian.ts`, antrean baru
+  `periksa-bagian` (pg-boss, `retryLimit: 0`, `localConcurrency: 1`), pengerja di `src/worker/led.ts`.
+- **Langkah 1, aturan (0 token):** saat generate, label kata kunci/angka per kalimat (revisi 22 Okt) digabung dengan
+  cek kutipan T7 (`labelAturan`): paragraf `tidak_didukung` menurut cek kutipan, atau kalimat dengan angka yang tidak ada
+  di kutipan/data yang dirujuk, menjadi `tidak_didukung`. Hanya label dari cek kutipan (deterministik) yang langsung
+  menahan ekspor final; label kata kunci tetap petunjuk sampai AI memeriksa.
+- **Langkah 2, AI otomatis per bagian:** satu panggilan `panggilTerstruktur` (thinking "rendah", model narasi aktif)
+  untuk semua kalimat semua versi aktif bagian itu yang belum diperiksa (`asal = generate`, bukan draf `tanpa AI`).
+  Masukan: kalimat bernomor + bukti per sub-bagian (`s1.B1` kutipan sah, `s1.M-PDS3` baris M/T/J/P dipotong 1.200
+  karakter). Dokumen D/U hanya lewat kutipan; versi lama tanpa kutipan memakai 800 karakter awal dokumen.
+- **Langkah 3, perbaikan terarah sekali:** paragraf yang memuat kalimat `tidak_didukung` (dari semua sub-bagian bagian
+  itu) dikirim dalam satu panggilan; AI menulis ulang hanya dari bukti sah paragraf itu atau mengosongkan teks
+  (paragraf dihapus). Kode memeriksa hasilnya (`cekPerbaikan`: kode bukti di luar bukti sah paragraf ditolak, angka
+  harus ada di bukti yang dipakai, kode bukti mentah dibuang dari teks). Hasil disimpan sebagai versi baru
+  `asal = "perbaikan"` (label "Perbaikan otomatis"); versi asal ditandai `diperbaiki` dan tetap di Riwayat. Versi aktif
+  hanya diganti bila Tim Prodi belum menyunting sejak generate. Langkah 1 dijalankan ulang untuk versi perbaikan, lalu
+  satu panggilan AI memeriksa **hanya kalimat yang berubah**; kalimat lain memakai label AI sebelumnya. Versi
+  perbaikan tidak pernah diperbaiki lagi; sisa kalimat `tidak_didukung` tetap merah.
+- **Waktu jalan:** di akhir tugas generate, `jadwalkanPeriksaBagian` mengirim tugas segera untuk Susun seluruh LED
+  (rangkaian) dan generate satu bagian; untuk generate satu sub-bagian dikirim dengan `startAfter` 60 detik
+  (`PERIKSA_JEDA_MS`). Saat jalan, tugas ditunda ulang bila ada generate di bagian itu kurang dari 60 detik lalu
+  (*debounce*), dan dilewati bila tugas generate bagian itu masih antre/berjalan. Versi yang sudah punya `kalimatAi`
+  tidak dikirim lagi, jadi tugas ganda di antrean tidak memakai kuota. `PERIKSA_AI_OTOMATIS=0` mematikan semuanya.
+  Galat sementara (429/503) menjadwalkan ulang; kunci habis menandai `statusAi = "gagal"` (lencana "Pemeriksaan AI
+  tertunda", tombol manual tetap bisa).
+- **Gerbang ekspor final:** `pemeriksaan.tahan` = kunci kalimat `tidak_didukung` (label AI bila ada, selain itu cek
+  kutipan). Ekspor final ditolak selama ada kalimat tahan yang masih ada di narasi dan belum dikonfirmasi
+  (`kalimatMenahan`). Suntingan membawa `tahan` dan `konfirmasi` hanya untuk kalimat yang tidak diubah, jadi kalimat
+  yang disunting lepas dengan sendirinya. Konfirmasi (`konfirmasiKalimat`, alasan ≥ 10 karakter) dicatat di log
+  aktivitas. Ekspor DRAF tidak tertahan. Draf lama (sebelum T8) tidak punya `tahan`, jadi tidak tertahan.
+- **Antarmuka:** panel Verifikasi menampilkan lencana "Diperiksa aturan", "Sedang diperiksa AI" / "Diperiksa AI" /
+  "Pemeriksaan AI tertunda", jumlah kalimat yang menahan ekspor, form "Konfirmasi dengan alasan" per kalimat, dan
+  keterangan versi perbaikan otomatis (paragraf yang ditulis ulang/dihapus). Tombol "Periksa dengan AI" tetap ada dan
+  kini memakai masukan yang sama (kutipan + M/T/J, bukan teks sumber 2.500 karakter).
+- **Penyimpangan dari rencana:** `LogPemakaian.subBagianKode` untuk panggilan gabungan diisi `periksa:<bagian>`,
+  `perbaikan:<bagian>`, dan `periksa-ulang:<bagian>` (bukan kode bagian polos) supaya pemakaian narasi per sub-bagian dan
+  pemeriksaan bisa dipisahkan saat pengukuran T11.
+- Uji: `tests/unit/periksa-bagian.test.ts` (4), `tests/integrasi/periksa-bagian.test.ts` (4: lencana dan debounce,
+  satu panggilan per bagian + satu perbaikan + satu pemeriksaan ulang, tidak mengulang dan tidak memperbaiki dua kali,
+  gerbang ekspor dengan konfirmasi dan suntingan).
+- `tests/integrasi/verifikasi.test.ts`: asersi format prompt "Periksa dengan AI" disesuaikan ke format baru (blok
+  BUKTI per sub-bagian); perilaku yang diuji tidak berubah.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | Lulus |
+| `npm run test:unit` | 205/205 lulus |
+| `npm run test:integrasi` | 125/125 lulus |
+
+⏸ Titik henti T8 (satu kriteria nyata setelah Susun) belum bisa ditunjukkan: Basis Pengetahuan dev hanya berisi
+2 potongan dengan embedding uji, jadi angka panggilan, label per kalimat, dan contoh perbaikan untuk C.4 diambil di T11
+dengan dokumen dan kunci asli. Uji integrasi di atas menunjukkan alurnya dengan AI tiruan (1 panggilan periksa per
+bagian, 1 perbaikan, 1 periksa ulang).

@@ -21,6 +21,8 @@ export const ANTREAN = {
   strukturTemplate: "struktur-template",
   // Rencana 10 Nov T4: kepala konteks + embeddingKonteks untuk potongan lama
   indeksUlang: "indeks-ulang-potongan",
+  // Rencana 10 Nov T8: pemeriksaan AI otomatis per bagian + perbaikan terarah
+  periksaBagian: "periksa-bagian",
   // bersama (src/worker/bersama.ts)
   cadangan: "cadangan-harian",
   // L2 (2 Nov 2026): pengingat akreditasi berakhir 18/12/6 bulan, setiap hari
@@ -44,7 +46,7 @@ export async function siapkanAntrean(bos: PgBoss): Promise<void> {
   for (const nama of Object.values(ANTREAN)) {
     // generate dan ekstraksi instrumen mengatur ulang sendiri (kunci habis, batas per menit); tidak diulang otomatis.
     // Cadangan mencatat sendiri kegagalannya; diulang sekali saja (jadwal berikutnya besok).
-    const opsi = nama === ANTREAN.generate || nama === ANTREAN.instrumen || nama === ANTREAN.skorRubrik ? { retryLimit: 0 }
+    const opsi = nama === ANTREAN.generate || nama === ANTREAN.instrumen || nama === ANTREAN.skorRubrik || nama === ANTREAN.periksaBagian ? { retryLimit: 0 }
       : nama === ANTREAN.cadangan ? { retryLimit: 1, retryDelay: 600 }
       : { retryLimit: 2, retryDelay: 30, retryBackoff: true };
     await bos.createQueue(nama, opsi);

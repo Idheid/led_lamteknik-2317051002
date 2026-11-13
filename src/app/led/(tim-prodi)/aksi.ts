@@ -13,7 +13,7 @@ import * as ekspor from "@/modules/led/data/ekspor";
 import { simpanNilaiManual } from "@/modules/led/data/nilai-butir";
 import { simpanJadwal } from "@/modules/led/data/kesiapan";
 import { simpanTarget } from "@/modules/led/data/target-butir";
-import { periksaDenganAi } from "@/modules/led/data/verifikasi";
+import { konfirmasiKalimat, periksaDenganAi } from "@/modules/led/data/verifikasi";
 import { simpanAlasanKonsistensi } from "@/modules/led/data/konsistensi";
 import { mulaiLedPeriodeBerikutnya, type MasukanSalin } from "@/modules/led/data/periode";
 
@@ -240,6 +240,13 @@ export async function aksiSimpanTarget(proyekId: string, masukan: { butirKode: s
 /** Periksa dengan AI per sub-bagian (revisi 22 Okt 2026). */
 export async function aksiPeriksaDenganAi(proyekId: string, subBagianKode: string) {
   const r = await jalankanAksi((p) => periksaDenganAi(p, proyekId, subBagianKode));
+  revalidatePath(`/led/${proyekId}`, "layout");
+  return r;
+}
+
+/** Rencana 10 Nov T8: konfirmasi kalimat tidak didukung dengan alasan (tidak lagi menahan ekspor final). */
+export async function aksiKonfirmasiKalimat(proyekId: string, subBagianKode: string, teks: string, alasan: string) {
+  const r = await jalankanAksi((p) => konfirmasiKalimat(p, proyekId, subBagianKode, teks, alasan).then(() => null));
   revalidatePath(`/led/${proyekId}`, "layout");
   return r;
 }

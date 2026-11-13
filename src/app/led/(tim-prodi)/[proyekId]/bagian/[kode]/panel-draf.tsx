@@ -17,9 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/modules/bersama/utils";
-import { aksiBandingkanVersi, aksiPeriksaDenganAi, aksiPulihkanVersi, aksiTandaiSubBagian } from "@/app/led/(tim-prodi)/aksi";
+import { aksiBandingkanVersi, aksiKonfirmasiKalimat, aksiPeriksaDenganAi, aksiPulihkanVersi, aksiTandaiSubBagian } from "@/app/led/(tim-prodi)/aksi";
+import type { KonfirmasiKalimat, PemeriksaanT8 } from "@/modules/led/domain/periksa-bagian";
+import { Textarea } from "@/components/ui/textarea";
 import { LABEL_KALIMAT, kunciKalimat, ringkasVerifikasi, teksRingkas, type KalimatTerperiksa, type LabelKalimat } from "@/modules/led/domain/verifikasi";
-import type { HasilVerifikasiAi } from "@/modules/led/data/verifikasi";
+import type { HasilVerifikasiAi } from "@/modules/led/domain/periksa-bagian";
 import type { CatatanTampil } from "@/modules/led/data/review";
 import { PanelCatatan, keSorotan, useCatatanLangsung } from "@/modules/led/komponen/review/panel-catatan";
 import { LABEL_BAHAN_PRODI } from "@/modules/led/domain/bahan-prodi";
@@ -31,7 +33,7 @@ export interface ButirCek {
   unsur: string[];
 }
 
-const LABEL_ASAL: Record<string, string> = { generate: "Generate", sunting: "Suntingan", pulihkan: "Dipulihkan" };
+const LABEL_ASAL: Record<string, string> = { generate: "Generate", sunting: "Suntingan", pulihkan: "Dipulihkan", perbaikan: "Perbaikan otomatis" };
 
 function waktu(iso: string) {
   return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(new Date(iso));
@@ -61,18 +63,68 @@ const GAYA_LABEL: Record<LabelKalimat, string> = {
   tidak_didukung: "border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100",
 };
 
+/** Rencana 10 Nov T8: konfirmasi kalimat tidak didukung dengan alasan (melepas gerbang ekspor final). */
+function FormKonfirmasi({ proyekId, subBagianKode, teks }: { proyekId: string; subBagianKode: string; teks: string }) {
+  const { sibuk, jalankan } = useAksi();
+  const [buka, setBuka] = useState(false);
+  const [alasan, setAlasan] = useState("");
+  if (!buka) {
+    return <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setBuka(true)}>Konfirmasi dengan alasan</Button>;
+  }
+  return (
+    <div className="mt-1 space-y-1">
+      <Textarea value={alasan} onChange={(e) => setAlasan(e.target.value)} rows={2} className="text-xs"
+        placeholder="Misalnya: fakta ini benar; SK-nya diunggah setelah draf disusun." aria-label="Alasan konfirmasi" />
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" disabled={sibuk || alasan.trim().length < 10}
+          onClick={() => jalankan(() => aksiKonfirmasiKalimat(proyekId, subBagianKode, teks, alasan), { lalu: () => { toast.success("Kalimat dikonfirmasi."); setBuka(false); } })}>
+          {sibuk && <IkonSibuk sibuk />}Simpan konfirmasi
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setBuka(false)}>Batal</Button>
+      </div>
+    </div>
+  );
+}
+
+/** Lencana sumber label: aturan (selalu), AI (setelah diperiksa), atau status antrean pemeriksaan AI. */
+function LencanaPeriksa({ ai, statusAi, pesanAi }: { ai: HasilVerifikasiAi | null; statusAi?: PemeriksaanT8["statusAi"]; pesanAi?: string }) {
+  return (
+    <div className="mb-2 flex flex-wrap gap-1.5">
+      <Badge variant="outline">Diperiksa aturan</Badge>
+      {ai
+        ? <Badge variant="outline" className="border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-100">Diperiksa AI</Badge>
+        : statusAi === "antre"
+          ? <Badge variant="outline" className="gap-1"><IkonSibuk sibuk />Sedang diperiksa AI</Badge>
+          : statusAi === "gagal"
+            ? <Badge variant="outline" className={GAYA_LABEL.sebagian} title={pesanAi}>Pemeriksaan AI tertunda</Badge>
+            : null}
+    </div>
+  );
+}
+
 function PanelVerifikasi({
-  proyekId, subBagianKode, kalimat, ai,
-}: { proyekId: string; subBagianKode: string; kalimat: KalimatTerperiksa[]; ai: HasilVerifikasiAi | null }) {
+  proyekId, subBagianKode, kalimat, ai, statusAi, pesanAi, menahan = [], konfirmasi = [],
+}: {
+  proyekId: string; subBagianKode: string; kalimat: KalimatTerperiksa[]; ai: HasilVerifikasiAi | null;
+  statusAi?: PemeriksaanT8["statusAi"]; pesanAi?: string; menahan?: string[]; konfirmasi?: KonfirmasiKalimat[];
+}) {
   const { sibuk, jalankan } = useAksi();
   const [hanyaMasalah, setHanyaMasalah] = useState(true);
   if (kalimat.length === 0) return null;
+  const tahan = new Set(menahan.map(kunciKalimat));
+  const terkonfirmasi = new Map(konfirmasi.map((k) => [k.kunci, k]));
   const r = ringkasVerifikasi(kalimat);
   const tampil = hanyaMasalah ? kalimat.filter((k) => k.label !== "sesuai") : kalimat;
   return (
     <section aria-label="Verifikasi per kalimat" className="rounded-lg border p-3 text-sm">
       <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Verifikasi per kalimat</h4>
+      <LencanaPeriksa ai={ai} statusAi={statusAi} pesanAi={pesanAi} />
       <p className="mb-2">{teksRingkas(r)}</p>
+      {menahan.length > 0 && (
+        <p className="mb-2 text-xs text-rose-700 dark:text-rose-300">
+          {menahan.length} kalimat menahan ekspor final: sunting kalimatnya atau konfirmasi dengan alasan.
+        </p>
+      )}
       <p className="mb-2 text-xs text-muted-foreground">
         {ai ? `Diperiksa AI (${ai.model}), ${waktu(ai.waktu)}.` : "Cek otomatis: angka dan kata kunci dicocokkan dengan sumber yang dirujuk."}
       </p>
@@ -85,6 +137,10 @@ function PanelVerifikasi({
             <Badge variant="outline" className={cn("mb-0.5", GAYA_LABEL[k.label])}>{LABEL_KALIMAT[k.label]}</Badge>
             <p className="line-clamp-3">{k.teks}</p>
             <p className="text-muted-foreground">{k.alasan}</p>
+            {terkonfirmasi.has(kunciKalimat(k.teks)) && (
+              <p className="text-emerald-700 dark:text-emerald-400">Dikonfirmasi {terkonfirmasi.get(kunciKalimat(k.teks))!.oleh}: {terkonfirmasi.get(kunciKalimat(k.teks))!.alasan}</p>
+            )}
+            {tahan.has(kunciKalimat(k.teks)) && <FormKonfirmasi proyekId={proyekId} subBagianKode={subBagianKode} teks={k.teks} />}
           </li>
         ))}
         {tampil.length === 0 && <li className="text-xs text-muted-foreground">Semua kalimat sesuai sumber.</li>}
@@ -424,7 +480,20 @@ export function PanelDraf({
     ...(kalimatTampil.length > 0 ? [{
       kunci: "verifikasi", label: "Verifikasi", jumlah: kalimatBermasalah, perhatian: kalimatBermasalah > 0,
       ikon: <ShieldCheck aria-hidden />, keterangan: "Setiap kalimat dicocokkan dengan sumber yang dirujuk.",
-      isi: <PanelVerifikasi proyekId={proyekId} subBagianKode={subBagianKode} kalimat={kalimatTampil} ai={ai} />,
+      isi: (
+        <>
+          {aktif?.pemeriksaan?.perbaikan && (
+            <p className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Perbaikan otomatis </span>dari versi {aktif.pemeriksaan.perbaikan.dariNomor}
+              {aktif.pemeriksaan.perbaikan.ditulisUlang.length > 0 && `: paragraf ${aktif.pemeriksaan.perbaikan.ditulisUlang.join(", ")} ditulis ulang dari bukti yang sah`}
+              {aktif.pemeriksaan.perbaikan.dihapus.length > 0 && `; paragraf ${aktif.pemeriksaan.perbaikan.dihapus.join(", ")} dihapus`}. Bandingkan dengan versi asal di Riwayat.
+            </p>
+          )}
+          <PanelVerifikasi proyekId={proyekId} subBagianKode={subBagianKode} kalimat={kalimatTampil} ai={ai}
+            statusAi={periksa ? undefined : aktif?.pemeriksaan?.statusAi} pesanAi={aktif?.pemeriksaan?.pesanAi}
+            menahan={periksa ? [] : aktif?.pemeriksaan?.menahan ?? []} konfirmasi={aktif?.pemeriksaan?.konfirmasi ?? []} />
+        </>
+      ),
     }] : []),
   ];
 

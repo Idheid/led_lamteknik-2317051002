@@ -9,6 +9,7 @@ import { prosesEkstraksiInstrumen, pulihkanEkstraksiTerputus } from "@/modules/l
 import { prosesUsulanStruktur } from "@/modules/led/proses/struktur-template";
 import { prosesSkorRubrik } from "@/modules/led/proses/skor-rubrik";
 import { prosesIndeksUlang } from "@/modules/led/proses/indeks-ulang";
+import { prosesPeriksaBagian } from "@/modules/led/proses/periksa-bagian";
 
 /**
  * Pengerja antrean modul LED: membaca LKPS yang diunggah ke LED, memproses dokumen Basis Pengetahuan (ekstraksi,
@@ -42,6 +43,12 @@ export async function daftarkanPengerjaLed(bos: PgBoss): Promise<void> {
   });
   await bos.work<{ tugasId: string }>(ANTREAN.indeksUlang, { localConcurrency: 1 }, async ([tugas]) => {
     console.log(`[indeks-ulang] ${tugas.data.tugasId} ${await prosesIndeksUlang(tugas.data.tugasId)}`);
+  });
+  // Rencana 10 Nov T8: satu bagian sekali jalan supaya dua pemeriksaan tidak memperbaiki versi yang sama
+  await bos.work<{ proyekId: string; bagianKode: string; segera?: string }>(ANTREAN.periksaBagian, { localConcurrency: 1 }, async ([tugas]) => {
+    const { proyekId, bagianKode, segera } = tugas.data;
+    const r = await prosesPeriksaBagian(proyekId, bagianKode, { segera: segera === "1" });
+    console.log(`[periksa-bagian] ${proyekId} ${bagianKode} ${r.status} (${r.versi} versi, ${r.panggilanAi} panggilan AI, ${r.diperbaiki} diperbaiki)`);
   });
   await bos.work<{ proyekId: string }>(ANTREAN.skorRubrik, { localConcurrency: 1 }, async ([tugas]) => {
     console.log(`[skor-rubrik] ${tugas.data.proyekId}`);
