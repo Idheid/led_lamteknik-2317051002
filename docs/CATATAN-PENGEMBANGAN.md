@@ -2673,3 +2673,22 @@ bagian, 1 perbaikan, 1 periksa ulang).
 | `npm run lint`, `npm run typecheck` | Lulus |
 | `npm run test:unit` | 244/244 lulus |
 | `npm run test:integrasi` | 130/130 lulus |
+
+## Gabung LKPS (18 November 2026)
+
+Rencana: `docs/RENCANA-GABUNG-LKPS.md` (G0–G8), branch `gabung-lkps` dari `revisi-31okt`. Sumber kode LKPS:
+`Achmadghalib725/LKPS_LAM-TEKNIK@c718eff` (Achmad Ghalib), di-clone ke `../lkps-ghalib-c718eff` (di luar repo, tidak
+dijalankan). G1–G2 = S1–S2 `docs/RENCANA-18NOV.md`.
+
+### G0: sumber, inventaris, dan peta
+
+- Inventaris 101 berkas (tanpa `src/generated/`). Peta lengkap di `docs/GABUNG-LKPS-PETA.md`: berkas (dipindah/dibuang
+  beserta alasan), model (`Lkps*`, `prodiId` wajib kecuali konfigurasi), rute halaman dan API, peran Ghalib → LED,
+  isian prodi/identitas Ghalib → pengganti LED, dan 17 masalah beserta perbaikannya.
+- Temuan di luar daftar rencana: `api/identitas` menghapus **semua** `Prodi` dan `TimPenyusun` tanpa syarat; `GET` tanpa
+  prodi aktif mengembalikan data semua prodi; `update`/`delete` per baris hanya `where: { id }`; isian kriteria dinamis
+  disimpan di konfigurasi tabel bersama semua prodi; beberapa rute (ekspor, komputasi, impor, kriteria dinamis, unggah,
+  sinkron) tidak memeriksa hak; `nidn` dosen unik global.
+- Isi berkas kredensial MyUnila dan `cookies_admin.txt` tidak dibaca ke catatan ini dan tidak disalin.
+- Pemeriksaan G0: lint dan typecheck lulus; `test:unit` 244/244; `test:integrasi` 130/130 (setelah Docker Desktop
+  dipulihkan dua kali dengan cara ganti nama folder soket; mesin sempat restart sendiri sekali sebelum stabil).
