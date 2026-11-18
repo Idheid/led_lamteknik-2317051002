@@ -2985,3 +2985,29 @@ untuk kode asal tetap dimatikan per berkas. Ditanyakan di ringkasan akhir.
 - **Hal terbuka:** G7 (tanya Adrianne); struktur tabel vs template LKPS 2025 (Ghalib dan Pak Tris); sambungan data
   LKPS ke LED; kredensial dan bentuk respons check-token WS API myUnila; asumsi nilai pengisi sinkron One Data;
   keamanan repo lama Ghalib; akun Tamu lewat SSO.
+
+### G7 kelompok 1: beranda dan identitas
+
+Keputusan Adrianne (18 Nov 2026), menjawab pertanyaan G7: tampilan LKPS **disamakan dengan LED sekarang**, dengan
+mempertahankan empat hal informatif dari Ghalib yang dibuat ulang dengan komponen LED: (1) kartu progres per kriteria
+di beranda, (2) kartu hitungan langsung (mis. rumus RK di K1), (3) tampilan kosong yang memberi arahan, dan (4) ikon
+berwarna per kriteria. Dikerjakan per kelompok dengan ⏸ di setiap kelompok.
+
+- **Komponen bersama baru** `komponen/bersama/kriteria-tampil.tsx`: `IkonKriteria` (ikon dan warna K1–K9 dari kode asal,
+  latar tipis + teks berwarna, varian mode gelap; kriteria tambahan memakai ikon lapisan ungu) dan `CincinProgres`
+  (warna tema `--primary`/`--muted`, hijau saat 100%, `role="progressbar"`).
+- **Beranda LKPS** (`komponen/beranda/beranda-lkps.tsx`, server): Card, Progress, Badge, Button, Petunjuk. Isi sama:
+  sapaan + progres keseluruhan, empat angka (total, selesai, sedang diisi, belum), kartu kriteria dengan ikon berwarna,
+  bilah dan cincin progres, lencana "Kustom", tombol "Kelola kriteria & tabel" (Admin). Spanduk gradien, kotak
+  "Petunjuk Pengisian", dan spanduk reviewer digabung ke Petunjuk halaman.
+- **Identitas & tim** (`komponen/identitas/halaman-identitas.tsx`, klien): Tabs, Card, Table, Input, Select, Button,
+  Skeleton, toast. Identitas PT/UPPS ditampilkan sebagai daftar data hanya baca, bukan isian nonaktif. Kolom "Jumlah
+  mahasiswa aktif" dibuang (tidak disimpan, keputusan G0 no. 4).
+  - **Perbedaan perilaku:** tombol "Upload TTD" kode asal tidak punya aksi. Kini ia mengunggah gambar PNG/JPEG ke bukti
+    prodi lewat `/api/lkps/bukti`, dan tautan "Lihat" membuka gambarnya. Lapisan data sudah mendukung `fotoTtd` sejak G4.
+  - Simpan tetap "ganti semua tim penyusun"; `fotoTtd` hanya dikirim bila ada.
+  - `eslint-disable` di berkas ini tidak diperlukan lagi.
+- **Uji jalan** (build produksi port 3100, akun uji Tim Prodi): beranda dan identitas tampil dengan gaya LED; isi
+  anggota tim, unggah tanda tangan PNG, Simpan → toast "Tim penyusun tersimpan.", data terbaca ulang, unduh tanda
+  tangan 200 `image/png`.
+- **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 278/278; build lulus.

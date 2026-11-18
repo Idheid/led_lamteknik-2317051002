@@ -1,512 +1,320 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability -- kode asal Ghalib dipindah apa adanya (Gabung LKPS G5); dirapikan saat G7 */
 
 // Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/app/(dashboard)/identitas/page.tsx.
-// Gabung LKPS G5: dipindah ke kerangka LED (alamat /api/lkps, galat { pesan }, Header -> JudulHalaman, RoleNotice -> Petunjuk).
+// Gabung LKPS G5: alamat /api/lkps, identitas PT/UPPS dan prodi dari data LED (hanya baca), tim penyusun tetap diisi.
+// Gabung LKPS G7: dibuat ulang dengan komponen LED (Tabs, Card, Table, Input, Select, Button, Petunjuk, toast).
+// Perbedaan tampilan: identitas hanya baca ditampilkan sebagai daftar data (bukan isian nonaktif); kolom "Jumlah
+// mahasiswa aktif" dibuang (tidak disimpan, keputusan G0 no. 4); tombol "Upload TTD" kini benar-benar mengunggah
+// gambar tanda tangan ke bukti prodi (kode asal: tombol tanpa aksi). Perilaku simpan sama: ganti semua tim penyusun.
 
-import { useState, useEffect } from 'react'
-import { JudulHalaman } from "@/components/judul-halaman"
-import IconBadge from "@/modules/lkps/komponen/bersama/ikon-lencana"
-import Link from "next/link"
-import { Petunjuk } from "@/components/petunjuk"
-import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran"
-import { useInfoLkps } from "@/modules/lkps/komponen/bersama/konteks"
-import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim"
-import {
-  Building2,
-  GraduationCap,
-  Users,
-  Plus,
-  Trash2,
-  UploadCloud,
-  Save,
-  CheckCircle2,
-  Loader2,
-  Building,
-  School,
-  FileCheck,
-} from 'lucide-react'
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { Building2, GraduationCap, Loader2, Plus, Save, Trash2, Upload, Users } from "lucide-react";
+import { JudulHalaman } from "@/components/judul-halaman";
+import { Petunjuk } from "@/components/petunjuk";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { namaJenjang } from "@/modules/bersama/domain/jenjang";
+import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran";
+import { useInfoLkps } from "@/modules/lkps/komponen/bersama/konteks";
+import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim";
 
 interface IdentitasPT {
-  namaPT: string
-  namaUPPS: string
-  jenisProgram: string
-  namaProdi: string
-  alamat: string
-  noSkPendirianPT: string
-  tanggalSkPT: string
-  noSkPembukaanPS: string
-  tanggalSkPS: string
+  namaPT: string;
+  namaUPPS: string;
+  jenisProgram: string;
+  namaProdi: string;
+  alamat: string;
+  noSkPendirianPT: string | null;
+  tanggalSkPT: string | null;
+  noSkPembukaanPS: string | null;
+  tanggalSkPS: string | null;
 }
 
 interface ProdiRow {
-  id: string
-  namaProdi: string
-  jenjang: string
-  peringkatAkreditasi: string
-  jumlahMahasiswaAktif: string
+  id: string;
+  namaProdi: string;
+  jenjang: string;
+  peringkatAkreditasi: string | null;
 }
 
-interface TimPenyusunRow {
-  id: string
-  nama: string
-  nidn: string
-  jabatan: string
+interface TimRow {
+  id: string;
+  nama: string;
+  nidn: string;
+  jabatan: string;
+  fotoTtd: string | null;
 }
+
+const JABATAN = ["Ketua Tim Penyusun", "Sekretaris", "Anggota Tim", "Ketua Program Studi", "Dekan/Wakil Dekan"];
+const fmtTanggal = new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" });
+
+function tanggal(v: string | null): string | null {
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? v : fmtTanggal.format(d);
+}
+
+function Data({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-sm font-medium">{children || <span className="font-normal text-muted-foreground">Belum diisi</span>}</dd>
+    </div>
+  );
+}
+
+const timKosong = (): TimRow => ({ id: `baru-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, nama: "", nidn: "", jabatan: "", fotoTtd: null });
 
 export default function HalamanIdentitas() {
-  const { canEdit } = useModulePermission('identitas')
-  const { peran } = useInfoLkps()
-  const [activeTab, setActiveTab] = useState<'identitas' | 'prodi' | 'tim'>('identitas')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const { canEdit } = useModulePermission("identitas");
+  const { peran } = useInfoLkps();
+  const [memuat, setMemuat] = useState(true);
+  const [menyimpan, setMenyimpan] = useState(false);
+  const [mengunggah, setMengunggah] = useState<string | null>(null);
+  const [identitas, setIdentitas] = useState<IdentitasPT | null>(null);
+  const [prodiList, setProdiList] = useState<ProdiRow[]>([]);
+  const [timList, setTimList] = useState<TimRow[]>([timKosong()]);
 
-  const [identitas, setIdentitas] = useState<IdentitasPT>({
-    namaPT: '',
-    namaUPPS: '',
-    jenisProgram: 'Vokasi',
-    namaProdi: '',
-    alamat: '',
-    noSkPendirianPT: '',
-    tanggalSkPT: '',
-    noSkPembukaanPS: '',
-    tanggalSkPS: '',
-  })
-
-  const [prodiList, setProdiList] = useState<ProdiRow[]>([
-    { id: '1', namaProdi: '', jenjang: 'D3', peringkatAkreditasi: '', jumlahMahasiswaAktif: '0' },
-  ])
-
-  const [timList, setTimList] = useState<TimPenyusunRow[]>([
-    { id: '1', nama: '', nidn: '', jabatan: '' },
-  ])
-
-
-  function addTim() {
-    setTimList(prev => [...prev, { id: Date.now().toString(), nama: '', nidn: '', jabatan: '' }])
-  }
-
-  function removeTim(id: string) {
-    setTimList(prev => prev.filter(t => t.id !== id))
-  }
-
-  function updateTim(id: string, field: keyof TimPenyusunRow, value: string) {
-    setTimList(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t))
-  }
+  const muat = useCallback(async () => {
+    try {
+      const res = await kirimLkps("/api/lkps/identitas");
+      if (!res.ok) return;
+      const data = await res.json();
+      setIdentitas(data.identitas ?? null);
+      setProdiList(Array.isArray(data.prodiList) ? data.prodiList : []);
+      if (Array.isArray(data.timList) && data.timList.length > 0) {
+        setTimList(data.timList.map((t: Partial<TimRow>) => ({
+          id: String(t.id), nama: t.nama ?? "", nidn: t.nidn ?? "", jabatan: t.jabatan || "Anggota Tim", fotoTtd: t.fotoTtd ?? null,
+        })));
+      }
+    } finally {
+      setMemuat(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    void muat();
+  }, [muat]);
 
-  async function fetchData() {
+  const ubahTim = (id: string, kolom: keyof TimRow, nilai: string | null) =>
+    setTimList((l) => l.map((t) => (t.id === id ? { ...t, [kolom]: nilai } : t)));
+
+  async function unggahTtd(id: string, berkas: File | undefined) {
+    if (!berkas) return;
+    setMengunggah(id);
     try {
-      const res = await fetch('/api/lkps/identitas')
-      if (res.ok) {
-        const data = await res.json()
-        if (data.identitas) {
-          setIdentitas({
-            namaPT: data.identitas.namaPT || '',
-            namaUPPS: data.identitas.namaUPPS || '',
-            jenisProgram: data.identitas.jenisProgram || 'Vokasi',
-            namaProdi: data.identitas.namaProdi || '',
-            alamat: data.identitas.alamat || '',
-            noSkPendirianPT: data.identitas.noSkPendirianPT || '',
-            tanggalSkPT: data.identitas.tanggalSkPT ? data.identitas.tanggalSkPT.split('T')[0] : '',
-            noSkPembukaanPS: data.identitas.noSkPembukaanPS || '',
-            tanggalSkPS: data.identitas.tanggalSkPS ? data.identitas.tanggalSkPS.split('T')[0] : '',
-          })
-        }
-        if (data.prodiList && data.prodiList.length > 0) {
-          setProdiList(data.prodiList.map((p: any) => ({
-            id: p.id,
-            namaProdi: p.namaProdi || '',
-            jenjang: p.jenjang || 'D3',
-            peringkatAkreditasi: p.peringkatAkreditasi || '',
-            jumlahMahasiswaAktif: (p.jumlahMahasiswaAktif ?? 0).toString(),
-          })))
-        }
-        if (data.timList && data.timList.length > 0) {
-          setTimList(data.timList.map((t: any) => ({
-            id: t.id,
-            nama: t.nama || '',
-            nidn: t.nidn || '',
-            jabatan: t.jabatan || 'Anggota Tim',
-          })))
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch Identitas data:', err)
+      const fd = new FormData();
+      fd.append("file", berkas);
+      const res = await kirimLkps("/api/lkps/bukti", { method: "POST", body: fd });
+      if (!res.ok) return;
+      const data = await res.json();
+      ubahTim(id, "fotoTtd", data.url);
+      toast.success("Tanda tangan diunggah. Klik Simpan untuk menyimpan tim penyusun.");
     } finally {
-      setLoading(false)
+      setMengunggah(null);
     }
   }
 
-  async function handleSave() {
-    if (!canEdit) return
-    setSaving(true)
+  async function simpan() {
+    if (!canEdit) return;
+    setMenyimpan(true);
     try {
-      const res = await kirimLkps('/api/lkps/identitas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identitas, prodiList, timList }),
-      })
+      const res = await kirimLkps("/api/lkps/identitas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // fotoTtd hanya dikirim bila ada (skema: alamat bukti opsional, bukan null)
+        body: JSON.stringify({ identitas, prodiList, timList: timList.map(({ fotoTtd, ...t }) => (fotoTtd ? { ...t, fotoTtd } : t)) }),
+      });
       if (res.ok) {
-        await fetchData()
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        await muat();
+        toast.success("Tim penyusun tersimpan.");
       }
     } finally {
-      setSaving(false)
+      setMenyimpan(false);
     }
   }
+
+  const tautanUbah = peran === "ADMIN"
+    ? <>Ubah di <Link href="/pengaturan/institusi" className="font-medium text-primary underline-offset-4 hover:underline">Identitas institusi</Link> atau <Link href="/pengaturan/prodi" className="font-medium text-primary underline-offset-4 hover:underline">Program studi</Link>.</>
+    : peran === "TIM_PRODI"
+      ? <>Ubah di <Link href="/led/identitas-prodi" className="font-medium text-primary underline-offset-4 hover:underline">Identitas prodi</Link>.</>
+      : null;
 
   return (
     <>
-      <JudulHalaman judul="Identitas & Tim Penyusun" />
-      <div className="page-content animate-fade-in">
-        <div style={{ marginBottom: '24px' }}>
-          <h2 className="section-title">Identitas Pengusul & Tim Penyusun</h2>
-          <p className="section-subtitle">
-            Isi data identitas Program Studi, daftar prodi di bawah UPPS, dan tim penyusun dokumen LKPS.
-          </p>
-        </div>
+      <JudulHalaman judul="Identitas & Tim Penyusun" deskripsi="Identitas pengusul, program studi di bawah UPPS, dan tim penyusun dokumen LKPS." />
+      <RoleNotice module="identitas" />
+      <Petunjuk
+        kunci="lkps-identitas-led"
+        fungsi={<>Identitas institusi dan program studi diambil dari data LED dan hanya dapat dibaca di sini. {tautanUbah}</>}
+        langkah={canEdit ? ["Isi tim penyusun di tab Tim Penyusun, unggah tanda tangan bila ada, lalu klik Simpan."] : []}
+      />
 
-        <RoleNotice module="identitas" />
+      <Tabs defaultValue="identitas" className="gap-4">
+        <TabsList>
+          <TabsTrigger value="identitas"><Building2 aria-hidden />Identitas PT & UPPS</TabsTrigger>
+          <TabsTrigger value="prodi"><GraduationCap aria-hidden />Prodi di UPPS</TabsTrigger>
+          <TabsTrigger value="tim"><Users aria-hidden />Tim Penyusun</TabsTrigger>
+        </TabsList>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--lkps-border-color)', marginBottom: '28px' }}>
-          {[
-            { key: 'identitas', label: 'Identitas PT & UPPS', icon: Building2 },
-            { key: 'prodi', label: 'Prodi di UPPS', icon: GraduationCap },
-            { key: 'tim', label: 'Tim Penyusun', icon: Users },
-          ].map(tab => {
-            const TabIcon = tab.icon
-            const isActive = activeTab === tab.key
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 18px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: isActive ? '2px solid var(--lkps-accent-blue)' : '2px solid transparent',
-                  color: isActive ? 'var(--lkps-accent-blue)' : 'var(--lkps-text-secondary)',
-                  fontWeight: isActive ? 600 : 400,
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  transition: 'var(--lkps-transition-fast)',
-                  marginBottom: '-1px',
-                }}
-              >
-                <TabIcon size={16} strokeWidth={1.75} style={{ opacity: isActive ? 1 : 0.7 }} />
-                <span>{tab.label}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Gabung LKPS G5: identitas PT/UPPS dan prodi dibaca dari data LED (hanya baca); tim penyusun tetap diisi di sini */}
-        {activeTab !== 'tim' && (
-          <div style={{ marginBottom: '16px' }}>
-            <Petunjuk
-              kunci="lkps-identitas-led"
-              fungsi={<>Identitas institusi dan program studi diambil dari data LED dan hanya dapat dibaca di sini.{' '}
-                {peran === 'ADMIN'
-                  ? <>Ubah di <Link href="/pengaturan/institusi" className="font-medium text-primary underline-offset-4 hover:underline">Identitas institusi</Link> atau <Link href="/pengaturan/prodi" className="font-medium text-primary underline-offset-4 hover:underline">Program studi</Link>.</>
-                  : peran === 'TIM_PRODI'
-                    ? <>Ubah di <Link href="/led/identitas-prodi" className="font-medium text-primary underline-offset-4 hover:underline">Identitas prodi</Link>.</>
-                    : null}
-              </>}
-              langkah={[]}
-            />
-          </div>
-        )}
-
-        {/* Tab: Identitas PT */}
-        {activeTab === 'identitas' && (
-          <div className="card animate-fade-in">
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <IconBadge color="blue" size="md">
-                  <Building size={20} strokeWidth={1.75} />
-                </IconBadge>
-                <div>
-                  <div className="card-title">Data Identitas PT & UPPS</div>
-                  <div className="card-subtitle">Sesuai SK Pendirian dari Kemendikbudristek</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="form-row" style={{ marginBottom: '18px' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Nama Perguruan Tinggi <span className="required">*</span></label>
-                <input className="form-input" placeholder="Contoh: Universitas Teknik Nusantara"
-                  disabled
-                  value={identitas.namaPT} onChange={e => setIdentitas(p => ({ ...p, namaPT: e.target.value }))} />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Nama UPPS (Fakultas/Departemen) <span className="required">*</span></label>
-                <input className="form-input" placeholder="Contoh: Fakultas Teknik"
-                  disabled
-                  value={identitas.namaUPPS} onChange={e => setIdentitas(p => ({ ...p, namaUPPS: e.target.value }))} />
-              </div>
-            </div>
-
-            <div className="form-row" style={{ marginBottom: '18px' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Nama Program Studi <span className="required">*</span></label>
-                <input className="form-input" placeholder="Contoh: Teknik Elektro"
-                  disabled
-                  value={identitas.namaProdi} onChange={e => setIdentitas(p => ({ ...p, namaProdi: e.target.value }))} />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Jenis Program <span className="required">*</span></label>
-                <select className="form-select"
-                  disabled
-                  value={identitas.jenisProgram} onChange={e => setIdentitas(p => ({ ...p, jenisProgram: e.target.value }))}>
-                  <option value="Vokasi">Vokasi</option>
-                  <option value="Akademik">Akademik</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Alamat Perguruan Tinggi</label>
-              <textarea className="form-textarea" placeholder="Jl. contoh No. 1, Kota, Provinsi"
-                disabled
-                value={identitas.alamat} onChange={e => setIdentitas(p => ({ ...p, alamat: e.target.value }))} rows={2} />
-            </div>
-
-            <hr className="divider" />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <IconBadge color="cyan" size="sm">
-                <FileCheck size={16} strokeWidth={1.75} />
-              </IconBadge>
-              <div className="card-title">SK Pendirian Perguruan Tinggi</div>
-            </div>
-
-            <div className="form-row" style={{ marginBottom: '18px' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Nomor SK Pendirian PT</label>
-                <input className="form-input" placeholder="No. SK..."
-                  disabled
-                  value={identitas.noSkPendirianPT} onChange={e => setIdentitas(p => ({ ...p, noSkPendirianPT: e.target.value }))} />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Tanggal SK Pendirian PT</label>
-                <input type="date" className="form-input"
-                  disabled
-                  value={identitas.tanggalSkPT} onChange={e => setIdentitas(p => ({ ...p, tanggalSkPT: e.target.value }))} />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Nomor SK Pembukaan Prodi</label>
-                <input className="form-input" placeholder="No. SK..."
-                  disabled
-                  value={identitas.noSkPembukaanPS} onChange={e => setIdentitas(p => ({ ...p, noSkPembukaanPS: e.target.value }))} />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Tanggal SK Pembukaan Prodi</label>
-                <input type="date" className="form-input"
-                  disabled
-                  value={identitas.tanggalSkPS} onChange={e => setIdentitas(p => ({ ...p, tanggalSkPS: e.target.value }))} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab: Prodi di UPPS */}
-        {activeTab === 'prodi' && (
-          <div className="card animate-fade-in">
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <IconBadge color="purple" size="md">
-                  <School size={20} strokeWidth={1.75} />
-                </IconBadge>
-                <div>
-                  <div className="card-title">Daftar Program Studi di bawah UPPS</div>
-                  <div className="card-subtitle">Tabel 1 – Data seluruh prodi dalam UPPS beserta status akreditasi</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Program Studi</th>
-                    <th>Jenjang</th>
-                    <th>Peringkat Akreditasi</th>
-                    <th>Jml. Mahasiswa Aktif (TS)</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {prodiList.map((prodi, idx) => (
-                    <tr key={prodi.id}>
-                      <td style={{ color: 'var(--lkps-text-muted)', width: '40px' }}>{idx + 1}</td>
-                      <td className="input-cell">
-                        <input placeholder="Nama Prodi..." value={prodi.namaProdi} disabled
-                          readOnly />
-                      </td>
-                      <td className="input-cell" style={{ width: '100px' }}>
-                        <select className="form-select" style={{ padding: '6px 10px', fontSize: '13px' }}
-                          disabled
-                          value={prodi.jenjang}>
-                          <option>D3</option><option>D4</option><option>S1</option>
-                          <option>S2</option><option>S3</option>
-                        </select>
-                      </td>
-                      <td className="input-cell" style={{ width: '180px' }}>
-                        <select className="form-select" style={{ padding: '6px 10px', fontSize: '13px' }}
-                          disabled
-                          value={prodi.peringkatAkreditasi}>
-                          <option value="">-- Pilih --</option>
-                          <option>Unggul</option><option>Baik Sekali</option><option>Baik</option>
-                          <option>A</option><option>B</option><option>C</option><option>Belum Terakreditasi</option>
-                        </select>
-                      </td>
-                      <td className="input-cell" style={{ width: '180px' }}>
-                        <input type="number" min="0" value={prodi.jumlahMahasiswaAktif} disabled
-                          readOnly />
-                      </td>
-                      <td style={{ width: '60px' }}>
-                        <span className="text-xs text-muted">–</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tab: Tim Penyusun */}
-        {activeTab === 'tim' && (
-          <div className="card animate-fade-in">
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <IconBadge color="emerald" size="md">
-                  <Users size={20} strokeWidth={1.75} />
-                </IconBadge>
-                <div>
-                  <div className="card-title">Tim Penyusun Dokumen LKPS</div>
-                  <div className="card-subtitle">Data anggota tim penyusun beserta jabatan dan tanda tangan</div>
-                </div>
-              </div>
-              {canEdit && (
-                <button id="btn-add-tim" className="btn btn-primary btn-sm" onClick={addTim}>
-                  <Plus size={15} strokeWidth={2} />
-                  Tambah Anggota
-                </button>
-              )}
-            </div>
-
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Lengkap</th>
-                    <th>NIDN/NIP</th>
-                    <th>Jabatan dalam Tim</th>
-                    <th>Tanda Tangan</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {timList.map((t, idx) => (
-                    <tr key={t.id}>
-                      <td style={{ color: 'var(--lkps-text-muted)' }}>{idx + 1}</td>
-                      <td className="input-cell">
-                        <input placeholder="Nama Dosen/Staf..." value={t.nama} disabled={!canEdit}
-                          onChange={e => updateTim(t.id, 'nama', e.target.value)} />
-                      </td>
-                      <td className="input-cell" style={{ width: '150px' }}>
-                        <input placeholder="0000000000" value={t.nidn} disabled={!canEdit}
-                          onChange={e => updateTim(t.id, 'nidn', e.target.value)} />
-                      </td>
-                      <td className="input-cell">
-                        <select className="form-select" style={{ padding: '6px 10px', fontSize: '13px' }}
-                          disabled={!canEdit}
-                          value={t.jabatan} onChange={e => updateTim(t.id, 'jabatan', e.target.value)}>
-                          <option value="">-- Pilih Jabatan --</option>
-                          <option>Ketua Tim Penyusun</option>
-                          <option>Sekretaris</option>
-                          <option>Anggota Tim</option>
-                          <option>Ketua Program Studi</option>
-                          <option>Dekan/Wakil Dekan</option>
-                        </select>
-                      </td>
-                      <td style={{ width: '140px' }}>
-                        {canEdit ? (
-                          <label style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '6px',
-                            padding: '6px 12px', background: 'rgba(79,142,247,0.08)',
-                            border: '1px dashed rgba(79,142,247,0.3)', borderRadius: 'var(--lkps-radius-sm)',
-                            cursor: 'pointer', fontSize: '12px', color: 'var(--lkps-accent-blue)',
-                          }}>
-                            <UploadCloud size={13} strokeWidth={2} />
-                            Upload TTD
-                            <input type="file" accept="image/*" style={{ display: 'none' }} />
-                          </label>
-                        ) : (
-                          <span className="badge badge-gray" style={{ fontSize: '11px' }}>Tersimpan</span>
-                        )}
-                      </td>
-                      <td>
-                        {canEdit ? (
-                          <button className="btn btn-danger btn-sm" onClick={() => removeTim(t.id)}
-                            disabled={timList.length === 1}>
-                            <Trash2 size={14} strokeWidth={1.75} />
-                          </button>
-                        ) : (
-                          <span className="text-xs text-muted">–</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Save button */}
-        {canEdit && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            {saved && (
-              <div className="badge badge-emerald" style={{ fontSize: '13px', padding: '8px 14px' }}>
-                <CheckCircle2 size={14} strokeWidth={2} />
-                Data berhasil disimpan!
-              </div>
-            )}
-            <button id="btn-save-identitas" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="spin" size={16} strokeWidth={2} />
-                  Menyimpan...
-                </>
+        <TabsContent value="identitas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Data identitas PT & UPPS</CardTitle>
+              <CardDescription>Sesuai SK pendirian dari Kemendikbudristek.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {memuat || !identitas ? (
+                <Skeleton className="h-32 w-full" />
               ) : (
-                <>
-                  <Save size={16} strokeWidth={1.75} />
-                  Simpan Data
-                </>
+                <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <Data label="Nama perguruan tinggi">{identitas.namaPT}</Data>
+                  <Data label="Nama UPPS (fakultas/departemen)">{identitas.namaUPPS}</Data>
+                  <Data label="Nama program studi">{identitas.namaProdi}</Data>
+                  <Data label="Jenis program">{identitas.jenisProgram}</Data>
+                  <Data label="No. SK pendirian PT">{identitas.noSkPendirianPT}</Data>
+                  <Data label="Tanggal SK pendirian PT">{tanggal(identitas.tanggalSkPT)}</Data>
+                  <Data label="No. SK pembukaan prodi">{identitas.noSkPembukaanPS}</Data>
+                  <Data label="Tanggal SK pembukaan prodi">{tanggal(identitas.tanggalSkPS)}</Data>
+                  <div className="sm:col-span-2 lg:col-span-3"><Data label="Alamat perguruan tinggi">{identitas.alamat}</Data></div>
+                </dl>
               )}
-            </button>
-          </div>
-        )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      </div>
+        <TabsContent value="prodi">
+          <Card className="py-0">
+            <CardHeader className="pt-6">
+              <CardTitle>Program studi di bawah UPPS</CardTitle>
+              <CardDescription>Tabel 1: program studi aktif dan status akreditasinya.</CardDescription>
+            </CardHeader>
+            <CardContent className="overflow-x-auto px-0 pb-2">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12 pl-6">No</TableHead>
+                    <TableHead>Nama program studi</TableHead>
+                    <TableHead>Jenjang</TableHead>
+                    <TableHead className="pr-6">Peringkat akreditasi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {prodiList.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="pl-6 text-muted-foreground">{memuat ? "Memuat…" : "Belum ada program studi."}</TableCell></TableRow>
+                  )}
+                  {prodiList.map((p, i) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="pl-6 text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="font-medium">{p.namaProdi}</TableCell>
+                      <TableCell>{namaJenjang(p.jenjang)}</TableCell>
+                      <TableCell className="pr-6">{p.peringkatAkreditasi ? <Badge variant="secondary">{p.peringkatAkreditasi}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tim">
+          <Card className="py-0">
+            <CardHeader className="pt-6">
+              <CardTitle>Tim penyusun dokumen LKPS</CardTitle>
+              <CardDescription>Anggota tim penyusun beserta jabatan dan tanda tangan.</CardDescription>
+              {canEdit && (
+                <CardAction>
+                  <Button size="sm" onClick={() => setTimList((l) => [...l, timKosong()])}><Plus aria-hidden />Tambah anggota</Button>
+                </CardAction>
+              )}
+            </CardHeader>
+            <CardContent className="overflow-x-auto px-0 pb-2">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12 pl-6">No</TableHead>
+                    <TableHead className="min-w-44">Nama lengkap</TableHead>
+                    <TableHead className="min-w-32">NIDN/NIP</TableHead>
+                    <TableHead className="min-w-40">Jabatan dalam tim</TableHead>
+                    <TableHead>Tanda tangan</TableHead>
+                    {canEdit && <TableHead className="pr-6 text-right">Aksi</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {timList.map((t, i) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="pl-6 text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell>
+                        {canEdit
+                          ? <Input aria-label={`Nama anggota ${i + 1}`} placeholder="Nama dosen/staf" value={t.nama} onChange={(e) => ubahTim(t.id, "nama", e.target.value)} />
+                          : t.nama || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {canEdit
+                          ? <Input aria-label={`NIDN/NIP anggota ${i + 1}`} placeholder="0000000000" inputMode="numeric" value={t.nidn} onChange={(e) => ubahTim(t.id, "nidn", e.target.value)} />
+                          : t.nidn || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {canEdit ? (
+                          <Select value={t.jabatan || undefined} onValueChange={(v) => ubahTim(t.id, "jabatan", v)}>
+                            <SelectTrigger className="w-full" aria-label={`Jabatan anggota ${i + 1}`}><SelectValue placeholder="Pilih jabatan" /></SelectTrigger>
+                            <SelectContent>{JABATAN.map((j) => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent>
+                          </Select>
+                        ) : (t.jabatan || "—")}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {t.fotoTtd
+                            ? <a href={t.fotoTtd} target="_blank" rel="noreferrer" className="text-sm font-medium text-primary underline-offset-4 hover:underline">Lihat</a>
+                            : <span className="text-sm text-muted-foreground">Belum ada</span>}
+                          {canEdit && (
+                            <Button asChild size="sm" variant="outline">
+                              <label className={mengunggah === t.id ? "pointer-events-none cursor-wait opacity-60" : "cursor-pointer"}>
+                                {mengunggah === t.id ? <Loader2 className="animate-spin" aria-hidden /> : <Upload aria-hidden />}
+                                {t.fotoTtd ? "Ganti" : "Unggah"}
+                                <input
+                                  type="file" accept="image/png,image/jpeg" className="sr-only" aria-label={`Unggah tanda tangan anggota ${i + 1}`}
+                                  onChange={(e) => void unggahTtd(t.id, e.target.files?.[0])}
+                                />
+                              </label>
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      {canEdit && (
+                        <TableCell className="pr-6 text-right">
+                          <Button
+                            size="icon" variant="ghost" aria-label={`Hapus anggota ${i + 1}`} disabled={timList.length === 1}
+                            onClick={() => setTimList((l) => l.filter((x) => x.id !== t.id))}
+                          >
+                            <Trash2 aria-hidden />
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          {canEdit && (
+            <div className="mt-4 flex justify-end">
+              <Button onClick={simpan} disabled={menyimpan}>
+                {menyimpan ? <Loader2 className="animate-spin" aria-hidden /> : <Save aria-hidden />}
+                {menyimpan ? "Menyimpan…" : "Simpan tim penyusun"}
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </>
-  )
+  );
 }
-
