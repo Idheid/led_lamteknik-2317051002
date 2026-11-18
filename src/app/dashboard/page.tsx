@@ -4,7 +4,7 @@ import { Award, ClipboardCheck, FileSearch, LayoutDashboard } from "lucide-react
 import { wajibPeran } from "@/modules/bersama/sesi";
 import { ambilFakultas } from "@/modules/bersama/data/organisasi";
 import { LABEL_STATUS_AKUN } from "@/modules/bersama/domain/akreditasi";
-import { dataDashboard, type BarisDashboard } from "@/modules/led/data/dashboard";
+import { dataDashboard, dataDashboardTamu, type BarisDashboard, type BarisDashboardTamu } from "@/modules/led/data/dashboard";
 import { jumlahPerTab, LABEL_STATUS_LPMPP, LABEL_TAB, masukTab, type TabDashboard } from "@/modules/led/domain/dashboard";
 import { formatAngka } from "@/modules/bersama/domain/teks";
 import { JudulHalaman } from "@/components/judul-halaman";
@@ -22,8 +22,14 @@ export const metadata: Metadata = { title: "Dashboard akreditasi" };
 
 const TAB: TabDashboard[] = ["semua", "prioritas", "unggul", "review"];
 
-function Baris({ b }: { b: BarisDashboard }) {
-  const akun = LABEL_STATUS_AKUN[b.statusAkun];
+/** Baris Admin memuat akun dan aksi; baris Tamu (Gabung LKPS G2) hanya kolom aman dari dataDashboardTamu. */
+function adalahAdmin(b: BarisDashboard | BarisDashboardTamu): b is BarisDashboard {
+  return "akun" in b;
+}
+
+function Baris({ b }: { b: BarisDashboard | BarisDashboardTamu }) {
+  const admin = adalahAdmin(b) ? b : null;
+  const akun = admin ? LABEL_STATUS_AKUN[admin.statusAkun] : null;
   return (
     <TableRow>
       <TableCell className="min-w-52 pl-4 align-top whitespace-normal">
@@ -33,7 +39,7 @@ function Baris({ b }: { b: BarisDashboard }) {
           {b.perluLedBaru && <Badge variant="outline" className="border-amber-400 text-amber-800 dark:text-amber-200">Perlu LED baru</Badge>}
           {akun && <Badge variant="outline" className="border-amber-400 text-amber-800 dark:text-amber-200">{akun}</Badge>}
         </div>
-        {b.akun.length > 0 && <div className="mt-1 text-xs text-muted-foreground">{b.akun.length} akun Tim Prodi</div>}
+        {admin && admin.akun.length > 0 && <div className="mt-1 text-xs text-muted-foreground">{admin.akun.length} akun Tim Prodi</div>}
       </TableCell>
       <TableCell className="align-top"><Badge variant="outline">{b.lembaga}</Badge></TableCell>
       <TableCell className="align-top">
@@ -55,20 +61,20 @@ function Baris({ b }: { b: BarisDashboard }) {
       </TableCell>
       <TableCell className="min-w-40 align-top whitespace-normal">
         <Badge variant="outline" className={cn("whitespace-normal", NADA_STATUS[b.status])}>{LABEL_STATUS_LPMPP[b.status]}</Badge>
-        {b.led?.asesor && <div className="mt-1 text-xs text-muted-foreground">Reviewer: {b.led.asesor}</div>}
+        {admin?.led?.asesor && <div className="mt-1 text-xs text-muted-foreground">Reviewer: {admin.led.asesor}</div>}
       </TableCell>
       <TableCell className="pr-4 align-top">
         <div className="flex flex-wrap justify-end gap-2">
           <Button asChild size="sm" variant="outline"><Link href={`/dashboard/prodi/${b.prodi.id}`}><FileSearch aria-hidden />Detail</Link></Button>
-          {b.led && (
+          {admin?.led && (
             <Button asChild size="sm" variant="outline">
-              <Link href={`/led/asesor/${b.led.id}/penilaian`}><ClipboardCheck aria-hidden />Review LPMPP</Link>
+              <Link href={`/led/asesor/${admin.led.id}/penilaian`}><ClipboardCheck aria-hidden />Review LPMPP</Link>
             </Button>
           )}
-          {b.bolehCatat && b.led && (
-            <Button asChild size="sm"><Link href={`/pengaturan/prodi/${b.prodi.id}/akreditasi?led=${b.led.id}`}><Award aria-hidden />Catat hasil</Link></Button>
+          {admin?.bolehCatat && admin.led && (
+            <Button asChild size="sm"><Link href={`/pengaturan/prodi/${b.prodi.id}/akreditasi?led=${admin.led.id}`}><Award aria-hidden />Catat hasil</Link></Button>
           )}
-          {b.perluLedBaru && b.akun.length > 0 && <TombolIngatkan prodiId={b.prodi.id} />}
+          {admin && admin.perluLedBaru && admin.akun.length > 0 && <TombolIngatkan prodiId={b.prodi.id} />}
         </div>
       </TableCell>
     </TableRow>
@@ -81,20 +87,11 @@ function Baris({ b }: { b: BarisDashboard }) {
  */
 export default async function HalamanDashboard({ searchParams }: PageProps<"/dashboard">) {
   const p = await wajibPeran("ADMIN", "TAMU");
-  // Gabung LKPS G1: isi dashboard Tamu (tanpa data peka) dikerjakan di G2; sampai itu Tamu tidak memuat data apa pun
-  if (p.peran === "TAMU") {
-    return (
-      <>
-        <JudulHalaman judul="Dashboard akreditasi" deskripsi="Anda masuk sebagai Tamu." />
-        <Alert>
-          <AlertDescription>Anda masuk sebagai Tamu. Untuk menyusun LKPS/LED atau mereview, minta Admin UPPS memberi peran.</AlertDescription>
-        </Alert>
-      </>
-    );
-  }
+  const tamu = p.peran === "TAMU";
   const { tab: tabMentah } = (await searchParams) as { tab?: string };
   const tab: TabDashboard = TAB.includes(tabMentah as TabDashboard) ? (tabMentah as TabDashboard) : "semua";
-  const [baris, fakultas] = await Promise.all([dataDashboard(p), ambilFakultas()]);
+  // Gabung LKPS G2: Tamu memakai varian data tanpa akun, reviewer, dan isian internal (bukan sekadar disembunyikan)
+  const [baris, fakultas] = await Promise.all([tamu ? dataDashboardTamu(p) : dataDashboard(p), ambilFakultas()]);
   const jumlah = jumlahPerTab(baris);
   const tampil = baris.filter((b) => masukTab(b, tab));
 
@@ -104,6 +101,11 @@ export default async function HalamanDashboard({ searchParams }: PageProps<"/das
         judul={<span className="flex items-center gap-2"><LayoutDashboard className="size-6 text-primary" aria-hidden />Dashboard akreditasi</span>}
         deskripsi={`Matriks kinerja dan kesiapan akreditasi seluruh program studi ${fakultas?.nama ?? "fakultas"}.`}
       />
+      {tamu ? (
+        <Alert>
+          <AlertDescription>Anda masuk sebagai Tamu. Untuk menyusun LKPS/LED atau mereview, minta Admin UPPS memberi peran.</AlertDescription>
+        </Alert>
+      ) : (
       <Petunjuk
         kunci="admin-dashboard"
         fungsi="Memantau kesiapan akreditasi semua prodi: masa berlaku, kelengkapan LKPS dan LED, simulasi nilai, dan status review LPMPP."
@@ -115,6 +117,7 @@ export default async function HalamanDashboard({ searchParams }: PageProps<"/das
           "Setelah SK akreditasi keluar, klik Catat hasil. Tanggal berakhir, lembaga, dan peringkat diambil dari riwayat akreditasi prodi.",
         ]}
       />
+      )}
       <nav aria-label="Saring prodi" className="flex flex-wrap gap-2">
         {TAB.map((t) => (
           <Link
@@ -150,7 +153,9 @@ export default async function HalamanDashboard({ searchParams }: PageProps<"/das
               {tampil.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="py-6 text-center text-muted-foreground">
-                    {baris.length === 0
+                    {baris.length === 0 && tamu
+                      ? "Belum ada program studi."
+                      : baris.length === 0
                       ? <>Belum ada program studi. Tambahkan di menu <Link className="text-primary underline" href="/pengaturan/prodi">Program studi</Link>.</>
                       : "Tidak ada prodi di tab ini."}
                   </TableCell>

@@ -1,5 +1,5 @@
 import { prisma } from "@/modules/bersama/db";
-import { pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
+import { pastikanAdmin, pastikanPeran, type Pengguna } from "@/modules/bersama/akses";
 import { statusPeriodeProdi } from "@/modules/bersama/data/pengingat-akreditasi";
 import { riwayatBerlakuTerbaru } from "@/modules/bersama/domain/akreditasi";
 import { namaJenjang } from "@/modules/bersama/domain/jenjang";
@@ -15,6 +15,50 @@ import { masaBerlaku, persenLed, statusLpmpp } from "@/modules/led/domain/dashbo
  */
 export async function dataDashboard(p: Pengguna, hariIni = new Date(), opsi: { prodiId?: string } = {}) {
   pastikanAdmin(p);
+  return hitungDashboard(p, hariIni, opsi);
+}
+
+/**
+ * Gabung LKPS G2 (= Rencana 18 Nov S2): dashboard hanya baca untuk Tamu. Data dihitung di server dengan pembaca
+ * internal setara Admin UPPS, lalu hanya kolom aman yang dikembalikan: prodi, lembaga, peringkat, nomor SK, masa berlaku,
+ * kelengkapan LKPS dan LED, simulasi nilai, status LPMPP, dan perlu LED baru. Daftar akun Tim Prodi (nama, email, login
+ * terakhir), status akun, nama reviewer, jumlah catatan reviewer, izin catat hasil, dan id LED tidak pernah dikirim.
+ */
+export async function dataDashboardTamu(p: Pengguna, hariIni = new Date(), opsi: { prodiId?: string } = {}) {
+  pastikanPeran(p, "TAMU", "ADMIN");
+  const baris = await hitungDashboard(PEMBACA_INTERNAL, hariIni, opsi);
+  return baris.map((b) => ({
+    prodi: b.prodi,
+    lembaga: b.lembaga,
+    peringkat: b.peringkat,
+    nomorSk: b.nomorSk,
+    berlakuSampai: b.berlakuSampai,
+    masa: b.masa,
+    led: b.led ? { nama: b.led.nama, tahunPengajuan: b.led.tahunPengajuan } : null,
+    lkpsPersen: b.lkpsPersen,
+    ledPersen: b.ledPersen,
+    simulasi: b.simulasi ? { total: b.simulasi.total, perkiraan: b.simulasi.perkiraan } : null,
+    status: b.status,
+    perluLedBaru: b.perluLedBaru,
+  }));
+}
+
+export type BarisDashboardTamu = Awaited<ReturnType<typeof dataDashboardTamu>>[number];
+
+/** Riwayat akreditasi satu prodi untuk Tamu (hanya baca; tanpa berkas SK dan catatan internal). */
+export async function riwayatAkreditasiTamu(p: Pengguna, prodiId: string) {
+  pastikanPeran(p, "TAMU", "ADMIN");
+  return prisma.riwayatAkreditasi.findMany({
+    where: { prodiId },
+    orderBy: [{ berlakuSampai: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
+    select: { id: true, peringkat: true, lembaga: true, nomorSk: true, berlakuSampai: true, status: true },
+  });
+}
+
+/** Pembaca internal untuk menghitung dashboard Tamu di server (tidak pernah dipakai sebagai sesi). */
+const PEMBACA_INTERNAL: Pengguna = { id: "sistem-dashboard", nama: "Sistem", email: "", peran: "ADMIN", prodiId: null };
+
+async function hitungDashboard(p: Pengguna, hariIni: Date, opsi: { prodiId?: string }) {
   const [prodi, periode, riwayat, asesor] = await Promise.all([
     prisma.prodi.findMany({
       where: opsi.prodiId ? { id: opsi.prodiId } : {},
@@ -68,4 +112,4 @@ export async function dataDashboard(p: Pengguna, hariIni = new Date(), opsi: { p
   }));
 }
 
-export type BarisDashboard = Awaited<ReturnType<typeof dataDashboard>>[number];
+export type BarisDashboard = Awaited<ReturnType<typeof hitungDashboard>>[number];

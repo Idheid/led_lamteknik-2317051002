@@ -14,7 +14,8 @@ import { bersihkanDb, buatAdmin, imporSeed, penggunaDari } from "./bantu";
  * fungsi baru (termasuk modul LKPS) ikut teruji.
  */
 
-const BOLEH_TAMU = new Set(["gantiKataSandiSendiri", "catatAktivitas"]);
+// G2: dashboard hanya baca untuk Tamu (kolom aman saja, diuji di dashboard.test.ts)
+const BOLEH_TAMU = new Set(["gantiKataSandiSendiri", "catatAktivitas", "dataDashboardTamu", "riwayatAkreditasiTamu"]);
 let tamu: Pengguna;
 
 function berkas(dir: string): string[] {

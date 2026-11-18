@@ -2737,3 +2737,21 @@ dijalankan). G1–G2 = S1–S2 `docs/RENCANA-18NOV.md`.
   ber-`wajibLogin`), `tests/integrasi/akses-tamu.test.ts` (3: semua fungsi data menolak Tamu, dicari otomatis sehingga
   fungsi modul LKPS baru di G4 ikut teruji). Uji akses ditaruh di berkas baru, bukan di `akses.test.ts`.
 - Pemeriksaan: lint, typecheck; `test:unit` 249/249; `test:integrasi` 133/133.
+
+### G2: dashboard hanya baca untuk Tamu (= Rencana 18 Nov S2)
+
+- `dataDashboardTamu(p)` dan `riwayatAkreditasiTamu(p, prodiId)` di `src/modules/led/data/dashboard.ts`: data dihitung di
+  server dengan pembaca internal setara Admin (`PEMBACA_INTERNAL`, tidak pernah menjadi sesi), lalu hanya kolom aman yang
+  dikembalikan (prodi, lembaga, peringkat, nomor SK, masa berlaku, kelengkapan LKPS/LED, simulasi, status LPMPP, perlu
+  LED baru, nama dan tahun LED). Tidak dikirim: akun Tim Prodi (nama, email, login terakhir), status akun, nama
+  reviewer, jumlah catatan reviewer, izin catat hasil, id LED, berkas SK. `dataDashboard` tetap khusus Admin.
+- `/dashboard`: Tamu memakai varian data itu; tombol Ingatkan, Review LPMPP, Catat hasil, jumlah akun, dan nama reviewer
+  tidak dirender; keterangan "Anda masuk sebagai Tamu. Untuk menyusun LKPS/LED atau mereview, minta Admin UPPS memberi
+  peran." di atas tabel. `ingatkanTimProdi` tetap `pastikanAdmin`.
+- `/dashboard/prodi/[id]`: **keputusan Adrianne (18 Nov): Tamu boleh membuka detail dalam mode hanya baca**. Halaman
+  bercabang ke `DetailProdiTamu` (akreditasi, LED, LKPS, review LPMPP, riwayat akreditasi) tanpa tombol ke halaman admin
+  atau LED dan tanpa kartu akun.
+- Uji: `tests/integrasi/dashboard.test.ts` + 1 (JSON data Tamu tidak memuat email, nama akun, nama reviewer, atau kunci
+  internal; nilai sama dengan versi Admin; `dataDashboard` dan Ingatkan ditolak untuk Tamu). Uji G1 mendaftar kedua fungsi
+  baru sebagai pengecualian yang disengaja.
+- Pemeriksaan: lint, typecheck; `test:unit` 249/249; `test:integrasi` 134/134.

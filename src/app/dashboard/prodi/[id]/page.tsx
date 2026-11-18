@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Award, BookOpen, ClipboardCheck, FileSpreadsheet, History, Pencil, ShieldCheck, Users } from "lucide-react";
-import { wajibAdmin } from "@/modules/bersama/sesi";
+import { wajibPeran } from "@/modules/bersama/sesi";
 import { riwayatAkreditasiProdi } from "@/modules/bersama/data/akreditasi";
 import { LABEL_STATUS_AKUN } from "@/modules/bersama/domain/akreditasi";
 import { formatAngka } from "@/modules/bersama/domain/teks";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/modules/bersama/utils";
 import { TombolIngatkan } from "../../tombol-ingatkan";
+import { DetailProdiTamu } from "./detail-tamu";
 import { fmtTanggal, Kelengkapan, NADA_STATUS, WARNA_MASA } from "../../tampil";
 
 export const metadata: Metadata = { title: "Detail prodi" };
@@ -38,8 +39,10 @@ function Data({ label, children }: { label: string; children: React.ReactNode })
  * data prodi tetap di Program studi (/pengaturan/prodi/[id]).
  */
 export default async function HalamanDetailProdi({ params }: PageProps<"/dashboard/prodi/[id]">) {
-  const p = await wajibAdmin();
+  const p = await wajibPeran("ADMIN", "TAMU");
   const { id } = await params;
+  // Gabung LKPS G2: Tamu melihat detail hanya baca tanpa data peka (keputusan Adrianne 18 Nov)
+  if (p.peran === "TAMU") return <DetailProdiTamu p={p} prodiId={id} />;
   const [b] = await dataDashboard(p, new Date(), { prodiId: id });
   if (!b) notFound();
   const [riwayat, kesiapan] = await Promise.all([
