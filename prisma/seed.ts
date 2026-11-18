@@ -9,6 +9,7 @@ import { prisma } from "@/modules/bersama/db";
 import { auth } from "@/modules/bersama/auth";
 import { imporInstrumen } from "@/modules/led/data/impor-instrumen";
 import { isiProdiBawaan } from "@/modules/bersama/data/prodi-bawaan";
+import { isiKonfigurasiAwalLkps } from "@/modules/lkps/data/konfigurasi-awal";
 
 async function seedAdmin() {
   const email = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();
@@ -37,6 +38,9 @@ async function main() {
   // revisi 31 Okt 2026: daftar prodi FT Unila sudah terisi; prodi yang ada tidak ditimpa
   const prodi = await isiProdiBawaan();
   console.log(`Prodi bawaan: ${prodi.dibuat} ditambahkan, ${prodi.dilewati} sudah ada.`);
+  // Gabung LKPS G3: konfigurasi kriteria/tabel LKPS bawaan (hanya bila belum ada regulasi)
+  const lkps = await isiKonfigurasiAwalLkps();
+  console.log(lkps.dibuat ? `Konfigurasi LKPS bawaan: ${lkps.kriteria} kriteria dibuat.` : "Konfigurasi LKPS sudah ada, dilewati.");
 }
 
 main()

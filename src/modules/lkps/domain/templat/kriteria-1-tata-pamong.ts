@@ -1,0 +1,53 @@
+// Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/lib/templates/kriteria-1-tata-pamong.ts. Dipindah tanpa perubahan isi (Gabung LKPS G3).
+import type { KriteriaTemplateDef } from "./types.ts";
+
+export const kriteria1TataPamong: KriteriaTemplateDef = {
+  nomorUrut: 1,
+  kode: 'Kriteria 1',
+  nama: 'Tata Pamong, Tata Kelola & Kerjasama',
+  levelWewenang: 'UPPS',
+  deskripsi: 'Sistem tata pamong, kepemimpinan fungsional, penjaminan mutu, dan jejaring kerjasama tridharma perguruan tinggi di tingkat fakultas/UPPS.',
+  bobotNilai: 5.0,
+  syaratPerlu: false,
+  tabelList: [
+    {
+      nomorTabel: 'Tabel 1.1',
+      sheetRef: '1-1',
+      namaTabel: 'Kerjasama Bidang Pendidikan',
+      levelPengisi: 'UPPS',
+      wajibUploadBukti: true,
+      targetJenjang: 'Semua Jenjang',
+      konvensiWaktu: 'TS-2 s.d. TS (3 Tahun Terakhir)',
+      deskripsi: 'Kerjasama pertukaran dosen/mahasiswa, transfer kredit, dan penyusunan kurikulum bersama dengan mitra institusi internasional, nasional, dan wilayah.',
+      kolom: ['Lembaga Mitra', 'Tingkat (Internasional / Nasional / Wilayah)', 'Judul Kegiatan Kerjasama', 'Manfaat bagi Program Studi', 'Waktu & Durasi Kegiatan', 'Bukti Dokumen Kerjasama'],
+      dokumenBukti: 'Dokumen MoU / MoA / Implementation Agreement (IA) aktif dalam format PDF yang telah ditandatangani kedua belah pihak.',
+      rumusPenilaian: 'Rasio Kerjasama (RK) = (2×N1 + 1×N2 + 3×N3) / NDTPS. Skor maksimal 4 jika RK ≥ 1.0 (N1: Kerjasama Pendidikan).',
+    },
+    {
+      nomorTabel: 'Tabel 1.2',
+      sheetRef: '1-2',
+      namaTabel: 'Kerjasama Bidang Penelitian',
+      levelPengisi: 'UPPS',
+      wajibUploadBukti: true,
+      targetJenjang: 'Semua Jenjang',
+      konvensiWaktu: 'TS-2 s.d. TS (3 Tahun Terakhir)',
+      deskripsi: 'Kerjasama riset kolaboratif, joint research, penggunaan fasilitas laboratorium industri, dan publikasi bersama mitra bereputasi.',
+      kolom: ['Lembaga Mitra', 'Tingkat (Internasional / Nasional / Wilayah)', 'Judul Kegiatan Kerjasama Riset', 'Manfaat bagi PS & Dosen', 'Waktu & Durasi Kegiatan', 'Bukti Dokumen Kerjasama'],
+      dokumenBukti: 'Kontrak Kerjasama Penelitian, SK Tim Peneliti, & Laporan Kemajuan Riset.',
+      rumusPenilaian: 'Komponen N2 pada rumus Rasio Kerjasama (RK).',
+    },
+    {
+      nomorTabel: 'Tabel 1.3',
+      sheetRef: '1-3',
+      namaTabel: 'Kerjasama Bidang Pengabdian kepada Masyarakat (PkM)',
+      levelPengisi: 'UPPS',
+      wajibUploadBukti: true,
+      targetJenjang: 'Semua Jenjang',
+      konvensiWaktu: 'TS-2 s.d. TS (3 Tahun Terakhir)',
+      deskripsi: 'Kerjasama penerapan teknologi tepat guna (TTG), pendampingan UMKM, pembinaan desa binaan, dan hilirisasi produk rekayasa ke masyarakat.',
+      kolom: ['Lembaga Mitra', 'Tingkat (Internasional / Nasional / Wilayah)', 'Judul Kegiatan PkM', 'Manfaat bagi Masyarakat & PS', 'Waktu & Durasi Kegiatan', 'Bukti Dokumen Kerjasama'],
+      dokumenBukti: 'MoA / IA PkM dengan mitra masyarakat/industri, dokumentasi implementasi, & surat apresiasi mitra.',
+      rumusPenilaian: 'Komponen N3 pada rumus Rasio Kerjasama (RK) dengan faktor bobot pengali 3x.',
+    },
+  ],
+};

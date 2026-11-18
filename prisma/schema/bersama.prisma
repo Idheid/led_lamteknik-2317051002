@@ -139,6 +139,28 @@ model Prodi {
   proyek      ProyekLED[]
   anggota     User[]       // akun Tim Prodi prodi ini (revisi 31 Okt 2026)
   riwayatAkreditasi RiwayatAkreditasi[] // L1 (2 Nov 2026): sumber tanggal berakhir, peringkat, dan nomor SK
+  // Gabung LKPS G3: relasi balik data modul LKPS (lkps.prisma); hanya relasi skema, bukan impor kode antarmodul
+  lkpsTimPenyusun LkpsTimPenyusun[]
+  lkpsKerjasama LkpsKerjasama[]
+  lkpsSeleksiMahasiswaBaru LkpsSeleksiMahasiswaBaru[]
+  lkpsMahasiswaAsing LkpsMahasiswaAsing[]
+  lkpsDosenTetap LkpsDosenTetap[]
+  lkpsBimbinganTa LkpsBimbinganTa[]
+  lkpsEwmp LkpsEwmp[]
+  lkpsLuaranDosen LkpsLuaranDosen[]
+  lkpsTenagaKependidikan LkpsTenagaKependidikan[]
+  lkpsPenggunaanDana LkpsPenggunaanDana[]
+  lkpsLaboratorium LkpsLaboratorium[]
+  lkpsMataKuliah LkpsMataKuliah[]
+  lkpsProgramMbkm LkpsProgramMbkm[]
+  lkpsPenelitianDosen LkpsPenelitianDosen[]
+  lkpsIpkLulusan LkpsIpkLulusan[]
+  lkpsPrestasiMahasiswa LkpsPrestasiMahasiswa[]
+  lkpsEfektivitasStudi LkpsEfektivitasStudi[]
+  lkpsTracerStudy LkpsTracerStudy[]
+  lkpsLuaranMahasiswa LkpsLuaranMahasiswa[]
+  lkpsDokumenSpmi LkpsDokumenSpmi[]
+  lkpsIsianTabel LkpsIsianTabel[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }

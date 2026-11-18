@@ -1,0 +1,53 @@
+// Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/lib/templates/kriteria-2-mahasiswa.ts. Dipindah tanpa perubahan isi (Gabung LKPS G3).
+import type { KriteriaTemplateDef } from "./types.ts";
+
+export const kriteria2Mahasiswa: KriteriaTemplateDef = {
+  nomorUrut: 2,
+  kode: 'Kriteria 2',
+  nama: 'Mahasiswa',
+  levelWewenang: 'PRODI',
+  deskripsi: 'Kualitas input mahasiswa baru, seleksi penerimaan, daya tampung, rasio keketatan, dan mahasiswa asing.',
+  bobotNilai: 7.5,
+  syaratPerlu: false,
+  tabelList: [
+    {
+      nomorTabel: 'Tabel 2.a.1',
+      sheetRef: '2a1',
+      namaTabel: 'Seleksi Mahasiswa Baru (Sarjana / Sarjana Terapan)',
+      levelPengisi: 'PRODI',
+      wajibUploadBukti: false,
+      targetJenjang: 'Sarjana / S.Tr / S2 / S3',
+      konvensiWaktu: 'TS-4 s.d. TS (5 Tahun Terakhir)',
+      deskripsi: 'Data tren animo pendaftar, daya tampung, kelulusan seleksi, serta registrasi mahasiswa baru reguler & transfer selama 5 tahun terakhir.',
+      kolom: ['Tahun Akademik', 'Daya Tampung', 'Jumlah Pendaftar', 'Lulus Seleksi', 'Mahasiswa Baru Reguler', 'Mahasiswa Baru Transfer', 'Mahasiswa Aktif Reguler', 'Mahasiswa Aktif Transfer'],
+      dokumenBukti: 'SK Kuota Penerimaan Mahasiswa Baru & Laporan Registrasi Akademik BAAK.',
+      rumusPenilaian: 'Rasio Pendaftar terhadap Diterima (Keketatan Seleksi ≥ 5:1 untuk skor maksimal) & Rasio Daftar Ulang ≥ 90%.',
+    },
+    {
+      nomorTabel: 'Tabel 2.a.2',
+      sheetRef: '2a2',
+      namaTabel: 'Seleksi Mahasiswa Baru (Program Diploma 3)',
+      levelPengisi: 'PRODI',
+      wajibUploadBukti: false,
+      targetJenjang: 'Diploma 3 (D3)',
+      konvensiWaktu: 'TS-2 s.d. TS (3 Tahun Terakhir)',
+      deskripsi: 'Data seleksi calon mahasiswa baru program vokasi diploma tiga selama 3 tahun terakhir.',
+      kolom: ['Tahun Akademik', 'Daya Tampung', 'Jumlah Pendaftar', 'Lulus Seleksi', 'Mahasiswa Baru Reguler', 'Mahasiswa Baru Transfer', 'Mahasiswa Aktif Reguler', 'Mahasiswa Aktif Transfer'],
+      dokumenBukti: 'Laporan Registrasi Akademik & PD-DIKTI.',
+      rumusPenilaian: 'Kecukupan rasio daya tampung dan persentase registrasi ulang mahasiswa vokasi.',
+    },
+    {
+      nomorTabel: 'Tabel 2.b',
+      sheetRef: '2b',
+      namaTabel: 'Mahasiswa Asing',
+      levelPengisi: 'PRODI',
+      wajibUploadBukti: true,
+      targetJenjang: 'Semua Jenjang',
+      konvensiWaktu: 'TS-2 s.d. TS (3 Tahun Terakhir)',
+      deskripsi: 'Data mahasiswa asing yang menempuh studi penuh (full-time degree) atau program pertukaran kredit (credit earning / part-time).',
+      kolom: ['Nama Program Studi', 'Mahasiswa Aktif TS-2', 'Mahasiswa Aktif TS-1', 'Mahasiswa Aktif TS', 'Mahasiswa Asing Full-time', 'Mahasiswa Asing Part-time'],
+      dokumenBukti: 'Surat Izin Belajar dari Kemendikbudristek / Kemenkumham & Paspor/Visa Mahasiswa.',
+      rumusPenilaian: 'Persentase Mahasiswa Asing (PMA) = (Mahasiswa Asing / Total Mahasiswa) × 100%. Skor maksimal jika PMA ≥ 1%.',
+    },
+  ],
+};

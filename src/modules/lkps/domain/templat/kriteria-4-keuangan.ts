@@ -1,0 +1,53 @@
+// Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/lib/templates/kriteria-4-keuangan.ts. Dipindah tanpa perubahan isi (Gabung LKPS G3).
+import type { KriteriaTemplateDef } from "./types.ts";
+
+export const kriteria4Keuangan: KriteriaTemplateDef = {
+  nomorUrut: 4,
+  kode: 'Kriteria 4',
+  nama: 'Keuangan, Sarana & Prasarana',
+  levelWewenang: 'UPPS',
+  deskripsi: 'Alokasi dan realisasi biaya operasional pendidikan, kecukupan fasilitas laboratorium, rasio sarana praktikum, dan prasarana kampus.',
+  bobotNilai: 10.0,
+  syaratPerlu: false,
+  tabelList: [
+    {
+      nomorTabel: 'Tabel 4.a',
+      sheetRef: '4a',
+      namaTabel: 'Alokasi & Penggunaan Dana Operasional & Investasi',
+      levelPengisi: 'UPPS',
+      wajibUploadBukti: true,
+      targetJenjang: 'Semua Jenjang',
+      konvensiWaktu: 'TS-2 s.d. TS (3 Tahun Terakhir)',
+      deskripsi: 'Penggunaan dana untuk operasional pendidikan, riset dosen, PkM dosen, investasi SDM, dan pengembangan sarpras teknik.',
+      kolom: ['Jenis Penggunaan Dana', 'Biaya Operasional Pendidikan', 'Biaya Penelitian Dosen', 'Biaya PkM Dosen', 'Investasi Sarpras', 'Realisasi TS-2', 'Realisasi TS-1', 'Realisasi TS'],
+      dokumenBukti: 'Laporan Keuangan Audit Akuntan Publik / SPI dan Rencana Kerja Anggaran Tahunan (RKAT).',
+      rumusPenilaian: 'Biaya Operasional Pendidikan per Mahasiswa per Tahun: DOPM = Biaya Operasional / Mahasiswa. Skor 4 jika DOPM ≥ Rp 10.000.000.',
+    },
+    {
+      nomorTabel: 'Tabel 4.b',
+      sheetRef: '4b',
+      namaTabel: 'Peralatan Utama Laboratorium & Bengkel UPPS',
+      levelPengisi: 'UPPS',
+      wajibUploadBukti: true,
+      targetJenjang: 'Semua Jenjang',
+      konvensiWaktu: 'TS',
+      deskripsi: 'Daftar alat-alat utama laboratorium praktikum, jumlah unit, kepemilikan, kondisi kelayakan, dan jam pemakaian rata-rata per minggu.',
+      kolom: ['Nama Laboratorium / Workshop', 'Nama Alat Utama', 'Jumlah Unit', 'Kepemilikan (Sendiri/Sewa)', 'Kondisi (Terawat/Tidak)', 'Utilisasi (Jam/Minggu)'],
+      dokumenBukti: 'Daftar Inventaris Sarana Lab, Logbook Penggunaan Alat, & Sertifikat Kalibrasi Alat.',
+      rumusPenilaian: 'Kecukupan alat utama praktikum per rombongan belajar (rombel) mahasiswa teknik.',
+    },
+    {
+      nomorTabel: 'Tabel 4.c',
+      sheetRef: '4c',
+      namaTabel: 'Prasarana dan Sarana Gedung UPPS',
+      levelPengisi: 'UPPS',
+      wajibUploadBukti: true,
+      targetJenjang: 'Semua Jenjang',
+      konvensiWaktu: 'TS',
+      deskripsi: 'Ketersediaan ruang kerja dosen, ruang kelas multimedia, ruang laboratorium, studio, perpustakaan, dan lisensi software teknik.',
+      kolom: ['Nama Ruang Prasarana', 'Jumlah Unit', 'Luas Total (m2)', 'Kondisi Kelayakan', 'Lisensi Software Resmi Utama'],
+      dokumenBukti: 'Denah Tata Ruang Fakultas, IMB Gedung, & Bukti Kepemilikan Lisensi Software Resmi (CAD/MATLAB/dll).',
+      rumusPenilaian: 'Rasio luas ruang kuliah dan ruang lab per mahasiswa teknik.',
+    },
+  ],
+};

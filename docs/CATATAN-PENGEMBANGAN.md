@@ -2755,3 +2755,31 @@ dijalankan). G1–G2 = S1–S2 `docs/RENCANA-18NOV.md`.
   internal; nilai sama dengan versi Admin; `dataDashboard` dan Ingatkan ditolak untuk Tamu). Uji G1 mendaftar kedua fungsi
   baru sebagai pengecualian yang disengaja.
 - Pemeriksaan: lint, typecheck; `test:unit` 249/249; `test:integrasi` 134/134.
+
+### G3: skema LKPS
+
+- `prisma/schema/lkps.prisma`: 20 model data (`LkpsTimPenyusun`, `LkpsKerjasama`, `LkpsSeleksiMahasiswaBaru`,
+  `LkpsMahasiswaAsing`, `LkpsDosenTetap`, `LkpsBimbinganTa`, `LkpsEwmp`, `LkpsLuaranDosen`, `LkpsTenagaKependidikan`,
+  `LkpsPenggunaanDana`, `LkpsLaboratorium`, `LkpsMataKuliah`, `LkpsProgramMbkm`, `LkpsPenelitianDosen`, `LkpsIpkLulusan`,
+  `LkpsPrestasiMahasiswa`, `LkpsEfektivitasStudi`, `LkpsTracerStudy`, `LkpsLuaranMahasiswa`, `LkpsDokumenSpmi`),
+  3 model konfigurasi tanpa `prodiId` (`LkpsRegulasi`, `LkpsKriteriaConfig`, `LkpsTabelConfig`), dan model baru
+  `LkpsIsianTabel` (keputusan G0). Tabel `@@map("lkps_…")`. Isian sama dengan asal kecuali:
+  - `prodiId String` wajib, relasi ke `Prodi` LED `onDelete: Restrict`, `@@index([prodiId])` (asal `String?`);
+  - `LkpsDosenTetap`: `@@unique([prodiId, nidn])` (asal `nidn @unique`);
+  - `LkpsBimbinganTa` dan `LkpsEwmp` mendapat `prodiId` (asal hanya `dosenId`);
+  - kolom jalur berkas diganti `berkasLokasi`/`berkasNama`: `fileMou` (kerja sama), `fileRps` (mata kuliah; `linkRps`
+    tetap), `fileDokumen` (SPMI), `fotoTtd` (tim penyusun);
+  - `LkpsIsianTabel(prodiId, tabelId, baris Json, bukti Json?)` `@@unique([prodiId, tabelId])` menggantikan
+    penyimpanan baris di `TabelConfig.formatKolom`.
+- Relasi balik 21 model di `model Prodi` (`bersama.prisma`), hanya relasi skema. Migrasi
+  `20261118100000_skema_lkps` (24 tabel). Catatan: `npx prisma format` merapikan ulang seluruh `led.prisma` dan
+  `bersama.prisma` (spasi saja); perubahan itu dibatalkan supaya diff hanya relasi baru.
+- Akibat `Restrict`: prodi yang masih punya data LKPS tidak bisa dihapus di Program studi (pesan "Data ini masih
+  dipakai data lain…").
+- Templat kriteria 1–9 (`src/lib/templates/*`) dipindah tanpa perubahan isi ke `src/modules/lkps/domain/templat/` (impor
+  relatif diberi akhiran `.ts` seperti domain lain). Isi otomatis konfigurasi di `GET /api/konfigurasi` kode asal diganti
+  seed idempoten `isiKonfigurasiAwalLkps()` (dipanggil `npm run db:seed`; hanya konfigurasi, tanpa akun atau data
+  contoh). Basis data dev: 9 kriteria bawaan dibuat.
+- Uji: `tests/integrasi/lkps-skema.test.ts` (4: seed idempoten, NIDN unik per prodi, isian tabel dinamis per prodi,
+  anak dosen ber-`prodiId` dan `Restrict`).
+- Pemeriksaan: lint, typecheck; `test:unit` 249/249; `test:integrasi` 138/138.

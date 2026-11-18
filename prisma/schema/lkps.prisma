@@ -1,10 +1,461 @@
-// Skema modul LKPS (dikerjakan Ghalib). Masih kosong: model tabel LKPS ditambahkan di berkas ini.
+// Skema modul LKPS. Gabung LKPS G3 (18 Nov 2026): model tabel LKPS dan konfigurasi dari kode Ghalib
+// (Achmadghalib725/LKPS_LAM-TEKNIK@c718eff), isian sama dengan asal supaya kode Ghalib berubah sesedikit mungkin.
 //
-// Aturan supaya mudah digabung dengan modul LED:
-// - Pakai model bersama di bersama.prisma: Prodi (kunci prodi, termasuk kodePddikti), User, Fakultas.
-//   Contoh relasi: prodiId String; prodi Prodi @relation(fields: [prodiId], references: [id]); lalu tambahkan
-//   field balik (misalnya `lkps LaporanLKPS[]`) di model Prodi.
-// - Beri nama model berawalan Lkps (misalnya LkpsLaporan, LkpsBaris) supaya tidak bentrok dengan model LED
-//   (BerkasLKPS dan TabelLKPS di led.prisma adalah data LKPS yang diunggah ke LED sebagai sumber narasi).
-// - Simpan "ID sinkron" One Data di setiap baris yang ditarik (rencana revisi 22 Okt 2026).
-// - Satu basis data untuk seluruh website; migrasi tetap di prisma/migrations.
+// Aturan:
+// - Pakai model bersama di bersama.prisma: Prodi (kunci prodi), User, Fakultas. Model data LKPS memakai `prodiId`
+//   wajib berelasi ke Prodi LED (onDelete: Restrict) dan @@index([prodiId]); relasi balik ada di model Prodi.
+// - Nama model berawalan Lkps dan tabel @@map("lkps_…") supaya tidak bentrok dengan model LED (BerkasLKPS dan TabelLKPS
+//   di led.prisma adalah LKPS yang diunggah ke LED sebagai sumber narasi; LED tidak membaca model di berkas ini).
+// - Berkas bukti disimpan di penyimpanan LED: kolom berkasLokasi (kunci penyimpanan) dan berkasNama (nama asli),
+//   menggantikan jalur di public/ milik kode asal (fileMou, fileRps, fileDokumen, fotoTtd).
+// - Model konfigurasi (LkpsRegulasi, LkpsKriteriaConfig, LkpsTabelConfig) berlaku untuk seluruh fakultas: tanpa prodiId.
+// - Struktur tabel mengikuti rancangan Ghalib (LKPS lama), bukan template LKPS LAM Teknik 2025; lihat
+//   src/modules/lkps/README.md.
+
+// ─── IDENTITAS ───────────────────────────────────────────────
+
+model LkpsTimPenyusun {
+  id           String   @id @default(cuid())
+  nama         String
+  nidn         String?
+  jabatan      String
+  berkasLokasi String? // tanda tangan (asal: fotoTtd)
+  berkasNama   String?
+  prodiId      String
+  prodi        Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_tim_penyusun")
+}
+
+// ─── KRITERIA 1: KERJASAMA ────────────────────────────────────
+
+model LkpsKerjasama {
+  id             String   @id @default(cuid())
+  namaLembaga    String
+  tingkat        String // Internasional / Nasional / Wilayah
+  judulKegiatan  String
+  manfaat        String
+  tanggalMulai   DateTime
+  tanggalAkhir   DateTime
+  jenisKerjasama String // N1=Pendidikan, N2=Penelitian, N3=PkM
+  berkasLokasi   String? // berkas MoU (asal: fileMou)
+  berkasNama     String?
+  prodiId        String
+  prodi          Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_kerjasama")
+}
+
+// ─── KRITERIA 2: MAHASISWA ────────────────────────────────────
+
+model LkpsSeleksiMahasiswaBaru {
+  id                     String   @id @default(cuid())
+  tahunSemester          String // contoh: "TS", "TS-1", "TS-2", "TS-3", "TS-4"
+  dayaTampung            Int      @default(0)
+  jumlahPendaftar        Int      @default(0)
+  jumlahLulusSeleksi     Int      @default(0)
+  mahasiswaBaruReguler   Int      @default(0)
+  mahasiswaBaruTransfer  Int      @default(0)
+  mahasiswaAktifReguler  Int      @default(0)
+  mahasiswaAktifTransfer Int      @default(0)
+  prodiId                String
+  prodi                  Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_seleksi_mahasiswa_baru")
+}
+
+model LkpsMahasiswaAsing {
+  id             String   @id @default(cuid())
+  tahunSemester  String // "TS", "TS-1", "TS-2"
+  jumlahFullTime Int      @default(0)
+  jumlahPartTime Int      @default(0)
+  prodiId        String
+  prodi          Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_mahasiswa_asing")
+}
+
+// ─── KRITERIA 3: SDM ──────────────────────────────────────────
+
+model LkpsDosenTetap {
+  id                    String   @id @default(cuid())
+  nama                  String
+  // keputusan G0: unik per prodi (asal: unik global), dosen yang sama boleh tercatat di dua prodi
+  nidn                  String
+  pendidikanS2          Boolean  @default(false)
+  pendidikanS3          Boolean  @default(false)
+  prodiPascaS2          String? // Nama Prodi Pascasarjana Magister
+  prodiPascaS3          String? // Nama Prodi Pascasarjana Doktor
+  bidangKeahlian        String?
+  kesesuaianKompetensi  Boolean  @default(true) // Kesesuaian dengan Kompetensi Inti PS
+  jabatanAkademik       String // Asisten Ahli / Lektor / Lektor Kepala / Guru Besar
+  sertifikasiDosen      Boolean  @default(true)
+  noSertifikatPendidik  String?
+  sertifikasiKompetensi Boolean  @default(false)
+  bidangSertifikasi     String?
+  lembagaSertifikasi    String?
+  mataKuliahDiampu      String?
+  kesesuaianBidang      Boolean  @default(true) // Kesesuaian Bidang Keahlian dg MK
+  mataKuliahPSLain      String?
+  bebanMengajar         Float    @default(0)
+  prodiId               String
+  prodi                 Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  bimbinganTA LkpsBimbinganTa[]
+  ewmp        LkpsEwmp[]
+  luaranDosen LkpsLuaranDosen[]
+
+  @@unique([prodiId, nidn])
+  @@index([prodiId])
+  @@map("lkps_dosen_tetap")
+}
+
+model LkpsBimbinganTa {
+  id                    String         @id @default(cuid())
+  dosenId               String
+  dosen                 LkpsDosenTetap @relation(fields: [dosenId], references: [id], onDelete: Cascade)
+  bimbinganPSSendiriTS  Int            @default(0)
+  bimbinganPSSendiriTS1 Int            @default(0)
+  bimbinganPSSendiriTS2 Int            @default(0)
+  bimbinganPSLainTS     Int            @default(0)
+  bimbinganPSLainTS1    Int            @default(0)
+  bimbinganPSLainTS2    Int            @default(0)
+  // keputusan G0: prodiId wajib juga di anak dosen (sama dengan prodi dosennya)
+  prodiId               String
+  prodi                 Prodi          @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_bimbingan_ta")
+}
+
+model LkpsEwmp {
+  id                     String         @id @default(cuid())
+  dosenId                String
+  dosen                  LkpsDosenTetap @relation(fields: [dosenId], references: [id], onDelete: Cascade)
+  sksPendidikanPSSendiri Float          @default(0)
+  sksPendidikanPSLain    Float          @default(0)
+  sksPenelitian          Float          @default(0)
+  sksPkm                 Float          @default(0)
+  sksTugasTambahan       Float          @default(0)
+  prodiId                String
+  prodi                  Prodi          @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_ewmp")
+}
+
+model LkpsLuaranDosen {
+  id        String          @id @default(cuid())
+  dosenId   String?
+  dosen     LkpsDosenTetap? @relation(fields: [dosenId], references: [id], onDelete: Cascade)
+  namaDosen String?
+  jenis     String // publikasi / sitasi / hki / produk
+  judul     String
+  tahun     Int
+  detail    String?
+  prodiId   String
+  prodi     Prodi           @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_luaran_dosen")
+}
+
+model LkpsTenagaKependidikan {
+  id                String   @id @default(cuid())
+  jenis             String // Pustakawan / Laboran / Teknisi / Administrasi
+  jenjangPendidikan String // SMA / D3 / S1 / S2 / S3
+  jumlah            Int      @default(0)
+  prodiId           String
+  prodi             Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_tenaga_kependidikan")
+}
+
+// ─── KRITERIA 4: KEUANGAN & SARANA ───────────────────────────
+
+model LkpsPenggunaanDana {
+  id                         String   @id @default(cuid())
+  tahunSemester              String
+  biayaOperasionalPendidikan Float    @default(0)
+  biayaPenelitianDosen       Float    @default(0)
+  biayaPkmDosen              Float    @default(0)
+  investasiSdm               Float    @default(0)
+  investasiSarana            Float    @default(0)
+  investasiPrasarana         Float    @default(0)
+  prodiId                    String
+  prodi                      Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_penggunaan_dana")
+}
+
+model LkpsLaboratorium {
+  id             String   @id @default(cuid())
+  namaLab        String
+  jenisPeralatan String
+  kepemilikan    String // Milik Sendiri / Sewa
+  kondisi        String // Baik / Rusak Ringan / Rusak Berat
+  jamPenggunaan  Float    @default(0)
+  luasRuangan    Float    @default(0)
+  prodiId        String
+  prodi          Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_laboratorium")
+}
+
+// ─── KRITERIA 5: KURIKULUM ────────────────────────────────────
+
+model LkpsMataKuliah {
+  id                String   @id @default(cuid())
+  kode              String
+  nama              String
+  sksTeori          Float    @default(0)
+  sksPraktikum      Float    @default(0)
+  cpl               String // CPL yang dipetakan (comma-separated)
+  linkRps           String?
+  berkasLokasi      String? // berkas RPS (asal: fileRps)
+  berkasNama        String?
+  unitPenyelenggara String?
+  prodiId           String
+  prodi             Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_mata_kuliah")
+}
+
+model LkpsProgramMbkm {
+  id              String   @id @default(cuid())
+  namaMahasiswa   String
+  nim             String
+  namaMitra       String
+  sksKonversi     Float    @default(0)
+  dosenPembimbing String
+  tahun           Int
+  prodiId         String
+  prodi           Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_program_mbkm")
+}
+
+// ─── KRITERIA 6 & 7: PENELITIAN & PKM ────────────────────────
+
+model LkpsPenelitianDosen {
+  id                String   @id @default(cuid())
+  judul             String
+  namaDosen         String
+  mahasiswaTerlibat String // Nama mahasiswa (comma-separated)
+  tahun             Int
+  jenis             String // Penelitian / PkM
+  prodiId           String
+  prodi             Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_penelitian_dosen")
+}
+
+// ─── KRITERIA 8: LUARAN TRIDHARMA ────────────────────────────
+
+model LkpsIpkLulusan {
+  id            String   @id @default(cuid())
+  tahunSemester String // "TS", "TS-1", "TS-2"
+  ipkMinimum    Float    @default(0)
+  ipkRataRata   Float    @default(0)
+  ipkMaksimum   Float    @default(0)
+  prodiId       String
+  prodi         Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_ipk_lulusan")
+}
+
+model LkpsPrestasiMahasiswa {
+  id            String   @id @default(cuid())
+  namaMahasiswa String
+  namaKegiatan  String
+  tingkat       String // Wilayah / Nasional / Internasional
+  penghargaan   String
+  tahun         Int
+  jenis         String // Akademik / Non-Akademik
+  prodiId       String
+  prodi         Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_prestasi_mahasiswa")
+}
+
+model LkpsEfektivitasStudi {
+  id               String   @id @default(cuid())
+  angkatan         Int // Tahun masuk
+  jumlahMasuk      Int      @default(0)
+  jumlahLulusTepat Int      @default(0) // lulus ≤ 3.5 tahun
+  prodiId          String
+  prodi            Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_efektivitas_studi")
+}
+
+model LkpsTracerStudy {
+  id                             String   @id @default(cuid())
+  tahun                          Int
+  jumlahResponden                Int      @default(0)
+  rataWaktuTunggu                Float    @default(0) // dalam bulan
+  persenSesuaiBidang             Float    @default(0) // persentase
+  persenTempatKerjaLokal         Float    @default(0)
+  persenTempatKerjaNasional      Float    @default(0)
+  persenTempatKerjaInternasional Float    @default(0)
+  skorKepuasanPengguna           Float    @default(0) // skala 1-4
+  prodiId                        String
+  prodi                          Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_tracer_study")
+}
+
+model LkpsLuaranMahasiswa {
+  id            String   @id @default(cuid())
+  jenis         String // publikasi / sitasi / produk
+  judul         String
+  namaMahasiswa String
+  tahun         Int
+  detail        String?
+  prodiId       String
+  prodi         Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_luaran_mahasiswa")
+}
+
+// ─── KRITERIA 9: PENJAMINAN MUTU ─────────────────────────────
+
+model LkpsDokumenSpmi {
+  id           String   @id @default(cuid())
+  jenisDokumen String // Kebijakan / Manual / Standar / Formulir / AMI / PPEPP
+  tersedia     Boolean  @default(false)
+  berkasLokasi String? // asal: fileDokumen
+  berkasNama   String?
+  keterangan   String?
+  prodiId      String
+  prodi        Prodi    @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([prodiId])
+  @@map("lkps_dokumen_spmi")
+}
+
+// ─── KONFIGURASI DINAMIS KRITERIA & TABEL LKPS (seluruh fakultas, tanpa prodiId) ─────
+
+model LkpsRegulasi {
+  id            String   @id @default(cuid())
+  nama          String // Contoh: "Instrumen LAM Teknik 2024 (Diploma III)"
+  tahunAkademik String // Contoh: "2024/2025"
+  statusAktif   Boolean  @default(true)
+  keterangan    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  kriteriaList LkpsKriteriaConfig[]
+
+  @@map("lkps_regulasi")
+}
+
+model LkpsKriteriaConfig {
+  id            String        @id @default(cuid())
+  regulasiId    String?
+  regulasi      LkpsRegulasi? @relation(fields: [regulasiId], references: [id], onDelete: Cascade)
+  nomorUrut     Int           @default(1)
+  kode          String // Contoh: "K1", "K2", ...
+  nama          String
+  deskripsi     String?
+  levelWewenang String        @default("BERSAMA") // "UPPS" | "PRODI" | "BERSAMA"
+  statusAktif   Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tabelList LkpsTabelConfig[]
+
+  @@map("lkps_kriteria_config")
+}
+
+model LkpsTabelConfig {
+  id               String             @id @default(cuid())
+  kriteriaId       String
+  kriteria         LkpsKriteriaConfig @relation(fields: [kriteriaId], references: [id], onDelete: Cascade)
+  nomorTabel       String // Contoh: "Tabel 1", "Tabel 2.a"
+  namaTabel        String
+  deskripsi        String?
+  levelPengisi     String             @default("PRODI") // "UPPS" | "PRODI" | "BERSAMA"
+  wajibUploadBukti Boolean            @default(true)
+  formatKolom      String? // metadata kolom (JSON); isian per prodi ada di LkpsIsianTabel, bukan di sini
+  statusAktif      Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  isian LkpsIsianTabel[]
+
+  @@map("lkps_tabel_config")
+}
+
+/// Keputusan G0 (18 Nov 2026): isian tabel kriteria dinamis per prodi. Kode asal menyimpan baris di
+/// TabelConfig.formatKolom (dipakai bersama semua prodi), sehingga isian satu prodi menimpa prodi lain.
+model LkpsIsianTabel {
+  id        String          @id @default(cuid())
+  tabelId   String
+  tabel     LkpsTabelConfig @relation(fields: [tabelId], references: [id], onDelete: Cascade)
+  baris     Json            @default("[]")
+  bukti     Json? // daftar bukti (kunci penyimpanan dan nama) seperti buktiList asal
+  prodiId   String
+  prodi     Prodi           @relation(fields: [prodiId], references: [id], onDelete: Restrict)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([prodiId, tabelId])
+  @@index([prodiId])
+  @@map("lkps_isian_tabel")
+}
