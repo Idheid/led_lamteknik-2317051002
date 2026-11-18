@@ -61,3 +61,24 @@ Uji jalan RENCANA-GABUNG-LKPS G8 butir 2–3.
 |---|---|---|---|---|
 | E1 | `curl /lkps` | 307 ke `/login?ke=%2Flkps` | L | – |
 | E2 | `curl /api/lkps/kerjasama` | 401 `{ pesan: "Sesi Anda berakhir. Silakan masuk lagi." }` | L | `lkps-rute.test.ts` (`penolakanRute`, semua rute lewat `jalankanRute`) |
+
+## F. Penyamaan tampilan (G7)
+
+Uji ulang sesudah semua halaman LKPS memakai komponen LED (build produksi, akun uji sementara; data dan akun uji
+dihapus sesudahnya).
+
+| No | Langkah | Hasil yang diharapkan | Hasil | Bukti |
+|---|---|---|---|---|
+| F1 | Tim Prodi: beranda LKPS | Kartu progres per kriteria dengan ikon berwarna dan cincin progres, gaya LED | L | – |
+| F2 | Tim Prodi: Identitas & tim → isi anggota, unggah tanda tangan PNG, Simpan | Toast "Tim penyusun tersimpan."; tanda tangan terunduh 200 `image/png` | L | – |
+| F3 | Tim Prodi: K1 tambah kerja sama + unggah MoU lewat kotak unggah | Tersimpan, kartu RK berubah langsung, tautan MoU di tabel 200 | L | – |
+| F4 | Tim Prodi: K2 isi MA reguler TS 150 → Simpan | Tersimpan, RMD 15,00 | L | – |
+| F5 | Tim Prodi: K3 tambah dosen; tambah lalu hapus tendik (dialog konfirmasi); sub-tab 3.b.6 → tambah luaran | Tersimpan/terhapus; kategori "Sitasi" terpilih otomatis | L | – |
+| F6 | Tim Prodi: K4 isi dana TS → Simpan; tambah lab | Ringkasan Rp 250.000.000; lab tersimpan dengan jam/luas 0 (tanpa angka contoh) | L | – |
+| F7 | Tim Prodi: K7 tambah PkM | Tersimpan dengan jenis PkM, tidak tampil di K6 | L | – |
+| F8 | Tim Prodi: K9 centang satu dokumen + unggah PDF → Simpan | 1/6 dokumen; PDF 200; tidak ada nomor SK/tautan karangan | L | `lkps-halaman.test.ts` |
+| F9 | Admin: konfigurasi → tambah kriteria + tabel | Tersimpan; "Buka halaman" semua ke `/lkps/…`; sidebar "K10" | L | `lkps-halaman.test.ts` (menu) |
+| F10 | Admin: halaman kriteria dinamis | Hanya baca, tanpa isian dan tombol simpan | L | – |
+| F11 | Tim Prodi: kriteria dinamis → isi baris → Simpan tabel | Toast; baris tersimpan untuk prodi ini | L | `lkps-akses.test.ts` (G4) |
+| F12 | Semua halaman LKPS | Tidak ada kelas CSS kode asal, `confirm()`/`alert()`, atau `eslint-disable` | L | `lkps-halaman.test.ts` |
+

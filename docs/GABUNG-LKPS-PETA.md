@@ -27,8 +27,8 @@ Inventaris: 101 berkas di luar `src/generated/` (± 15.500 baris tanpa `package-
 | `src/app/(dashboard)/{kerjasama,mahasiswa,sdm,keuangan,pendidikan,penelitian,pkm,luaran,penjaminan}/page.tsx` | `src/modules/lkps/komponen/<modul>/` + `src/app/lkps/<modul>/page.tsx` | G5 |
 | `src/app/(dashboard)/{kriteria/[id],identitas,import,export,konfigurasi}/page.tsx` | `src/modules/lkps/komponen/…` + `src/app/lkps/{kriteria/[id],identitas,impor,ekspor,konfigurasi}/page.tsx` | G5 |
 | `src/components/layout/header.tsx` (dropdown prodi, c718eff) | dasar komponen baru pemilih prodi `src/modules/lkps/komponen/pemilih-prodi.tsx` (cookie `lkps_prodi`) | G5 |
-| `src/components/common/icon-badge.tsx` | `src/modules/lkps/komponen/` bila masih dipakai halaman (dihapus di G7) | G5 |
-| `src/app/globals.css` (kelas `.card`, `.btn`, `.form-input`, …) | `src/modules/lkps/komponen/gaya-lkps.css`, dibungkus `.lkps-klasik`, variabel `--lkps-*`, tanpa `@import` font/Tailwind | G5 |
+| `src/components/common/icon-badge.tsx` | dipindah di G5, dihapus di G7 (diganti `komponen/bersama/kriteria-tampil.tsx`) | G5, G7 |
+| `src/app/globals.css` (kelas `.card`, `.btn`, `.form-input`, …) | G5: `src/modules/lkps/komponen/gaya-lkps.css` (dihapus di G7), dibungkus `.lkps-klasik`, variabel `--lkps-*`, tanpa `@import` font/Tailwind | G5 |
 
 ### Dibuang
 
@@ -189,7 +189,7 @@ Model tanpa `prodiId` (berlaku untuk seluruh fakultas): `LkpsRegulasi`, `LkpsKri
 | G4 | `6ab49be` | domain, data, dan API `/api/lkps/*` |
 | G5 | `23d4fdc` | halaman `/lkps/*` di kerangka LED, menu, pemilih prodi, gaya terlingkup |
 | G6 | `25d6d8e` | sinkron One Data mati secara bawaan |
-| G7 | – | **belum dikerjakan**: menunggu keputusan Adrianne (dikerjakan sekarang atau diserahkan ke Ghalib); `gaya-lkps.css` tetap ada |
+| G7 | `d4e2679` … `3a32779` | penyamaan tampilan dengan komponen LED (7 kelompok); kartu progres, kartu hitungan langsung, tampilan kosong berarahan, dan ikon berwarna kriteria dipertahankan; `gaya-lkps.css` dihapus |
 | G8 | (commit G8) | uji akhir, uji jalan empat peran, dokumentasi |
 
 Masalah bagian 6: nomor 1, 3–14, dan 16 diperbaiki seperti kolom "Perbaikan". Nomor 2 dan 17 tetap hal terbuka
@@ -200,11 +200,12 @@ Rute halaman bagian 3 sudah ada semua (`/lkps`, `/lkps/<modul>`, `/lkps/kriteria
 `/lkps/impor`, `/lkps/ekspor`, `/lkps/konfigurasi`). Rute API juga sudah ada semua, termasuk `/api/lkps/onedata/sinkron`.
 
 **Hal terbuka:**
-- G7, penyamaan tampilan dengan komponen shadcn/ui LED: kerjakan sekarang atau serahkan ke Ghalib.
 - Struktur tabel LKPS dibandingkan dengan template LKPS LAM Teknik 2025 (keputusan Ghalib dan Pak Tris).
 - Sambungan data modul LKPS ke LED (adaptor opsional); unggah berkas tetap jalur utama.
 - Kredensial WS API myUnila yang dipakai (aplikasi Adrianne atau Ghalib); bentuk respons `/v1/auth/check-token`;
   asumsi nilai pengisi sinkron One Data (lihat `CATATAN-PENGEMBANGAN.md` G6).
 - Keamanan repo lama Ghalib (ganti password MyUnila, hapus cookie), dikerjakan Ghalib di repo lamanya.
 - Akun Tamu belum bisa dibuat dari Kelola akun; Tamu direncanakan masuk lewat SSO (Rencana 18 Nov, mulai S3).
+- Catatan rumus untuk Ghalib (tidak diubah di G7): rumus RK di halaman K1 berbeda dengan rumus RK mesin hitung; skor
+  K9 di halaman bernilai 3 walau 0% dokumen; NDTPS kartu K1/K2 diisi manual (bawaan 10).
 

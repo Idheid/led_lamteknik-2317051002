@@ -3100,3 +3100,18 @@ Pola sama dengan kelompok 2 (blok `ui-lkps.tsx`); rumus dan aksi API tidak berub
   - Tim Prodi: isi baris K10 dan simpan → tersimpan per prodi.
   - K10 sementara dan isiannya dihapus sesudah uji.
 - **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 278/278; `test:integrasi` 145/145; build lulus.
+
+### Ringkasan akhir Gabung LKPS (G0–G8, 18 Nov 2026)
+
+- Semua tahap selesai, termasuk G7 (penyamaan tampilan). Skenario black-box: 38 langkah (A–F), semua lulus.
+- Data dan akun uji G7 dihapus dari basis data dev: 23 baris LKPS uji di S1 Teknik Informatika, 3 berkas bukti,
+  kriteria K10 sementara, 4 akun `*.lkps@uji.test`. Penugasan reviewer LED yang dipinjam dikembalikan.
+- **Pemeriksaan akhir:** lint 0 galat (1 peringatan di `domain/hitung.ts` kode asal yang tidak diubah); typecheck;
+  `test:unit` 278/278; `test:integrasi` 145/145; `npm run build` lulus (61 halaman).
+- **Hal terbuka:**
+  - struktur tabel LKPS vs template LKPS LAM Teknik 2025 (Ghalib dan Pak Tris);
+  - sambungan data modul LKPS ke LED (adaptor opsional; unggah berkas tetap jalur utama);
+  - kredensial WS API myUnila dan bentuk respons check-token; asumsi nilai pengisi sinkron One Data;
+  - catatan rumus untuk Ghalib: RK di halaman K1 berbeda dengan mesin hitung; skor K9 di halaman bernilai 3 walau 0%;
+    NDTPS kartu K1/K2 manual; jumlah bobot 110 (maksimum 440);
+  - keamanan repo lama Ghalib; akun Tamu lewat SSO (Rencana 18 Nov, mulai S3 di branch `tamu-sso`).

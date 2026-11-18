@@ -265,8 +265,8 @@ lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
     `src/modules/lkps/README.md`): `domain/` (`akses.ts` matriks hak, `validasi.ts` zod, `hitung.ts` mesin skor,
     `bukti.ts`, `prodi.ts`, `onedata-prodi.ts`, `templat/`), `data/` (satu berkas per modul kriteria, `akses.ts`,
     `prodi-aktif.ts`, `beranda.ts`, `impor.ts`, `ekspor.ts`, `bukti.ts`, `onedata/` mati secara bawaan), `komponen/`
-    (halaman klien per modul, `bersama/`, `pemilih-prodi.tsx`, `wajib-prodi.tsx`, `shell-lkps.tsx`, `gaya-lkps.css`
-    di bawah `.lkps-klasik`), `index.ts` (`MODUL_LKPS.siap = true`). Model `Lkps*` di `prisma/schema/lkps.prisma`.
+    (halaman klien per modul dengan komponen LED sejak G7, `bersama/` = konteks, `ui-lkps.tsx`, `kriteria-tampil.tsx`,
+    `kirim.ts`; `pemilih-prodi.tsx`, `wajib-prodi.tsx`, `shell-lkps.tsx`), `index.ts` (`MODUL_LKPS.siap = true`). Model `Lkps*` di `prisma/schema/lkps.prisma`.
     LED tetap membaca LKPS dari berkas yang diunggah (`led/data-lkps/`).
   - Komponen tampilan umum tetap di `src/components/` (shadcn/ui, `shell/` = `ShellAplikasi`, `ShellBersama`,
     `ShellPeran`, `menu-peran.ts` dengan menu per peran, lonceng, menu pengguna).

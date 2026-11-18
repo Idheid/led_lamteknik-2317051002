@@ -32,7 +32,7 @@ bagian 7). Jangan menulis nilai kredensial di kode, dokumen, atau commit.
 | Halaman (tipis) | `src/app/lkps/<modul>/page.tsx`; layout `src/app/lkps/layout.tsx` (kerangka LED, pemilih prodi, gaya) |
 | Komponen halaman (klien) | `src/modules/lkps/komponen/<modul>/halaman-<modul>.tsx` (asal halaman `src/app/(dashboard)/*` repo lama) |
 | Komponen bersama modul | `komponen/bersama/` (`konteks.tsx` peran/prodi aktif, `pemberitahuan-peran.tsx`, `ikon-lencana.tsx`, `kirim.ts`), `pemilih-prodi.tsx`, `wajib-prodi.tsx`, `shell-lkps.tsx`, `beranda/` |
-| Gaya lama | `komponen/gaya-lkps.css` (semua selektor di bawah `.lkps-klasik`, variabel `--lkps-*`); dihapus setelah penyamaan tampilan (G7) |
+| Komponen tampilan | komponen LED di `src/components/ui` (shadcn/ui) dan blok halaman kriteria `komponen/bersama/ui-lkps.tsx` (`KartuHitung`, `KosongArahan`, `KartuTabel`, `UnggahBukti`, `TombolHapus`, …), ikon/cincin kriteria `komponen/bersama/kriteria-tampil.tsx`. Gaya CSS kode asal sudah dihapus (G7). |
 | Route Handler | `src/app/api/lkps/<modul>/route.ts` (tipis: `jalankanRute` + `prodiAktifWajib` + fungsi data) |
 | Akses data | `src/modules/lkps/data/<modul>.ts`; One Data di `data/onedata/` |
 | Logika murni + uji | `src/modules/lkps/domain/` (`akses.ts`, `validasi.ts`, `hitung.ts`, `bukti.ts`, `prodi.ts`, `onedata-prodi.ts`, `templat/`), uji di `domain/__tests__/` |
@@ -89,7 +89,9 @@ Peran repo lama dipetakan ke peran LED (matriks di `domain/akses.ts`, rincian di
 5. Rute di `src/app/api/lkps/<modul>/route.ts` dengan `jalankanRute` dan `prodiAktifWajib`; tambahkan ke tabel di
    `tests/unit/lkps-rute.test.ts`.
 6. Halaman: komponen di `komponen/<modul>/`, halaman tipis di `src/app/lkps/<modul>/page.tsx` dibungkus `WajibProdi`,
-   menu di `menuLkps`. Pakai komponen shadcn/ui di `src/components/ui` untuk tampilan baru.
+   menu di `menuLkps`. Pakai komponen shadcn/ui di `src/components/ui` dan blok `ui-lkps.tsx` (kartu hitungan langsung,
+   tampilan kosong yang memberi arahan, kartu tabel berikon kriteria); jangan menambah CSS sendiri (diperiksa
+   `tests/unit/lkps-halaman.test.ts`).
 7. Tabel dinamis (tanpa model baru) cukup lewat **Struktur kriteria & tabel**: isian per prodi disimpan di
    `LkpsIsianTabel`.
 
