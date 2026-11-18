@@ -1,294 +1,233 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any -- kode asal Ghalib dipindah apa adanya (Gabung LKPS G5); dirapikan saat G7 */
 
 // Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/app/(dashboard)/import/page.tsx.
-// Gabung LKPS G5: dipindah ke kerangka LED (alamat /api/lkps, galat { pesan }, Header -> JudulHalaman, RoleNotice -> Petunjuk).
+// Gabung LKPS G5/G6: alamat /api/lkps/impor dan /api/lkps/onedata/sinkron; tombol sinkron nonaktif bila One Data mati.
+// Gabung LKPS G7: dibuat ulang dengan komponen LED (Card, Field, Select, Button, Alert, Table, toast). Alur sama:
+// sinkron One Data lewat tombol (bukan realtime, keputusan Adrianne), atau unggah berkas → pratinjau → terapkan.
+// Perbedaan: pratinjau 3 baris pertama tampil sebagai tabel (asal: JSON mentah); format .xls tidak ditawarkan lagi
+// (pembaca G4 memakai exceljs: xlsx, csv, json); tombol sinkron/ekstraksi/terapkan hanya untuk Tim Prodi (penulis
+// isian kriteria), peran lain melihat pemberitahuan hanya baca.
 
-import { useState } from 'react'
-import { JudulHalaman } from "@/components/judul-halaman"
-import IconBadge from "@/modules/lkps/komponen/bersama/ikon-lencana"
-import {
-  UploadCloud,
-  FileSpreadsheet,
-  CheckCircle,
-  AlertCircle,
-  ArrowRight,
-  Database,
-  RefreshCw,
-  Globe2,
-} from 'lucide-react'
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import { AlertCircle, CheckCircle2, Database, FileSpreadsheet, Globe2, Loader2, RefreshCw, UploadCloud } from "lucide-react";
+import { JudulHalaman } from "@/components/judul-halaman";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran";
+import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim";
 
-/** Gabung LKPS G6: `oneDataAktif` dari server (LKPS_ONEDATA_AKTIF + variabel MYUNILA_*); tanpa nilai apa pun. */
+interface HasilEkstraksi {
+  domain: string;
+  kriteriaTarget: string;
+  tabelTarget: string;
+  recordsProcessed: number;
+  items: Record<string, unknown>[];
+}
+
+interface HasilSinkron {
+  message?: string;
+  details?: Record<string, string>;
+}
+
+const DOMAIN = [
+  ["auto", "Deteksi otomatis dari kolom"],
+  ["sdm", "SDM dosen (Tabel 3.a.1 & 3.a.4)"],
+  ["mahasiswa", "Seleksi mahasiswa baru (Tabel 2.a)"],
+  ["kerjasama", "Kerja sama tridharma (Tabel 1.1–1.3)"],
+  ["tracer", "Tracer study & waktu tunggu (Tabel 8.d)"],
+];
+
+function teksSel(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "–";
+  return typeof v === "object" ? JSON.stringify(v) : String(v);
+}
+
 export default function HalamanImpor({ oneDataAktif }: { oneDataAktif: boolean }) {
-  const [file, setFile] = useState<File | null>(null)
-  const [domain, setDomain] = useState<string>('auto')
-  const [loading, setLoading] = useState(false)
-  const [syncLoading, setSyncLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
-  const [syncResult, setSyncResult] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [applyLoading, setApplyLoading] = useState(false)
-  const [applySuccess, setApplySuccess] = useState<string | null>(null)
+  const { canEdit } = useModulePermission("kerjasama");
+  const [file, setFile] = useState<File | null>(null);
+  const [domain, setDomain] = useState("auto");
+  const [loading, setLoading] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [result, setResult] = useState<HasilEkstraksi | null>(null);
+  const [syncResult, setSyncResult] = useState<HasilSinkron | null>(null);
+  const [applySuccess, setApplySuccess] = useState<string | null>(null);
 
-  const handleLiveSync = async () => {
-    setSyncLoading(true)
-    setError(null)
-    setSyncResult(null)
-
+  async function sinkron() {
+    setSyncLoading(true);
+    setSyncResult(null);
     try {
-      const res = await fetch('/api/lkps/onedata/sinkron', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: 'all' }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.pesan || 'Gagal sinkronisasi data prodi')
-
-      setSyncResult(data)
-    } catch (err: any) {
-      setError(err.message)
+      const res = await kirimLkps("/api/lkps/onedata/sinkron", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain: "all" }),
+      });
+      if (res.ok) setSyncResult(await res.json());
     } finally {
-      setSyncLoading(false)
+      setSyncLoading(false);
     }
   }
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!file) return
-
-    setLoading(true)
-    setError(null)
-    setResult(null)
-
+  async function ekstrak(e: FormEvent) {
+    e.preventDefault();
+    if (!file) return;
+    setLoading(true);
+    setResult(null);
+    setApplySuccess(null);
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('domain', domain)
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("domain", domain);
+      const res = await kirimLkps("/api/lkps/impor", { method: "POST", body: fd });
+      if (res.ok) setResult((await res.json()).result);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-      const res = await fetch('/api/lkps/impor', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data.pesan || 'Gagal memproses file')
+  async function terapkan() {
+    if (!result?.items) return;
+    setApplyLoading(true);
+    setApplySuccess(null);
+    try {
+      const res = await kirimLkps("/api/lkps/impor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "apply", domain: result.domain, items: result.items }),
+      });
+      if (res.ok) {
+        const pesan = (await res.json()).message || "Data berhasil disimpan ke basis data LKPS.";
+        setApplySuccess(pesan);
+        toast.success(pesan);
       }
-
-      setResult(data.result)
-    } catch (err: any) {
-      setError(err.message)
     } finally {
-      setLoading(false)
+      setApplyLoading(false);
     }
   }
 
-  const handleApplyIngestion = async () => {
-    if (!result || !result.items) return
-    setApplyLoading(true)
-    setError(null)
-    setApplySuccess(null)
-
-    try {
-      const res = await fetch('/api/lkps/impor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'apply',
-          domain: result.domain,
-          items: result.items,
-        }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.pesan || 'Gagal menerapkan data ke LKPS')
-
-      setApplySuccess(data.message || 'Data berhasil disimpan ke basis data!')
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setApplyLoading(false)
-    }
-  }
+  const contoh = result?.items.slice(0, 3) ?? [];
+  const kolom = [...new Set(contoh.flatMap((r) => Object.keys(r)))].slice(0, 8);
 
   return (
     <>
-      <JudulHalaman judul="Hybrid Data Ingestion" />
-      <div className="page-content animate-fade-in">
-        <div style={{ marginBottom: '24px' }}>
-          <h2 className="section-title">Import & Sinkronisasi One Data UNILA</h2>
-          <p className="section-subtitle">
-            Tarik data terbaru otomatis via API One Data UNILA (terisolasi khusus untuk program studi aktif), 
-            atau unggah berkas ekspor spreadsheet (.xlsx, .csv, .json).
-          </p>
-        </div>
+      <JudulHalaman
+        judul="Impor One Data"
+        deskripsi="Tarik data terbaru dari One Data Unila untuk prodi aktif, atau unggah berkas ekspor (.xlsx, .csv, .json)."
+      />
+      <RoleNotice module="kerjasama" customMessage="Impor dan sinkron One Data menulis isian kriteria, jadi hanya dapat dijalankan Tim Prodi." />
 
-        {/* Live Sync One Data Card */}
-        <div className="card" style={{ marginBottom: '24px', background: 'linear-gradient(135deg, rgba(79,142,247,0.06), rgba(6,182,212,0.06))', border: '1px solid rgba(79,142,247,0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <h3 style={{ fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                <Globe2 size={20} color="#4f8ef7" />
-                Sinkronisasi Langsung dari API One Data (Per Prodi)
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--lkps-text-secondary)', margin: '6px 0 0 0' }}>
-                Hanya menarik data milik Program Studi Anda. Menghindari duplikasi dan menjaga integritas borang akreditasi.
-              </p>
-              <p style={{ fontSize: '11px', color: 'var(--lkps-accent-amber)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <AlertCircle size={13} />
-                Catatan: API One Data hanya menyediakan metadata teks. Berkas fisik (PDF MoU, SK, Sertifikat, RPS) perlu diunggah manual pada modul masing-masing.
-              </p>
-              {!oneDataAktif && (
-                <p role="status" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--lkps-text-secondary)', margin: '6px 0 0 0' }}>
-                  Sinkron One Data belum diaktifkan. Impor berkas di bawah tetap bisa dipakai.
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleLiveSync}
-              disabled={syncLoading || !oneDataAktif}
-              title={oneDataAktif ? undefined : 'Sinkron One Data belum diaktifkan'}
-              className="btn btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 20px', opacity: oneDataAktif ? 1 : 0.55 }}
+      <Card className="border-primary/20 bg-primary/[0.03]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Globe2 className="size-4 text-primary" aria-hidden />Sinkron langsung dari One Data (per prodi)</CardTitle>
+          <CardDescription>
+            Hanya menarik data milik program studi aktif dan hanya saat tombol ditekan (tidak berjalan otomatis).
+          </CardDescription>
+          <CardAction>
+            <Button
+              onClick={() => void sinkron()} disabled={syncLoading || !oneDataAktif || !canEdit}
+              title={oneDataAktif ? undefined : "Sinkron One Data belum diaktifkan"}
             >
-              <RefreshCw size={16} className={syncLoading ? 'animate-spin' : ''} />
-              {syncLoading ? 'Menghubungkan ke One Data...' : 'Tarik Data Terbaru Prodi'}
-            </button>
-          </div>
-
-          {syncResult && (
-            <div style={{ marginTop: '16px', padding: '12px 16px', background: 'var(--lkps-bg-card)', borderRadius: '8px', border: '1px solid var(--lkps-border-color)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--lkps-accent-emerald)', fontWeight: 600, fontSize: '14px', marginBottom: '8px' }}>
-                <CheckCircle size={18} />
-                <span>{syncResult.message}</span>
-              </div>
-              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--lkps-text-secondary)' }}>
-                {Object.entries(syncResult.details || syncResult.data?.details || {}).map(([key, msg]: any) => (
-                  <li key={key}>{msg}</li>
-                ))}
-              </ul>
-            </div>
+              <RefreshCw className={syncLoading ? "animate-spin" : undefined} aria-hidden />
+              {syncLoading ? "Menghubungkan ke One Data…" : "Tarik data terbaru prodi"}
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm">
+          {!oneDataAktif && (
+            <p role="status" className="font-medium">Sinkron One Data belum diaktifkan. Impor berkas di bawah tetap bisa dipakai.</p>
           )}
-        </div>
+          <p className="flex items-start gap-2 text-muted-foreground">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            One Data hanya menyediakan data teks. Berkas fisik (PDF MoU, SK, sertifikat, RPS) tetap diunggah di halaman kriteria masing-masing.
+          </p>
+          {syncResult && (
+            <Alert>
+              <CheckCircle2 aria-hidden />
+              <AlertTitle>{syncResult.message}</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5">
+                  {Object.entries(syncResult.details ?? {}).map(([k, v]) => <li key={k}>{v}</li>)}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-          {/* Card Form Upload */}
-          <div className="card">
-            <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UploadCloud size={20} color="#4f8ef7" />
-              Unggah File One Data
-            </h3>
-
-            <form onSubmit={handleUpload}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
-                  Target Domain / Modul
-                </label>
-                <select
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  className="input-select"
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--lkps-border-color)', background: 'var(--lkps-bg-secondary)' }}
-                >
-                  <option value="auto">Otomatis Deteksi Struktur Kolom</option>
-                  <option value="sdm">SDM Dosen (Tabel 3.a.1 & 3.a.4)</option>
-                  <option value="mahasiswa">Seleksi Mahasiswa Baru (Tabel 2.a)</option>
-                  <option value="kerjasama">Kerjasama Tridharma (Tabel 1.1-1.3)</option>
-                  <option value="tracer">Tracer Study & Waktu Tunggu (Tabel 8.d)</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
-                  Pilih File (.xlsx, .xls, .csv, .json)
-                </label>
-                <input
-                  type="file"
-                  accept=".xlsx, .xls, .csv, .json"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--lkps-border-color)', background: 'var(--lkps-bg-secondary)' }}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!file || loading}
-                className="btn btn-primary"
-                style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-              >
-                {loading ? <RefreshCw size={16} className="animate-spin" /> : <Database size={16} />}
-                {loading ? 'Mengekstrak Data...' : 'Mulai Ekstraksi Ingestion'}
-              </button>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><UploadCloud className="size-4 text-primary" aria-hidden />Unggah berkas One Data</CardTitle>
+            <CardDescription>Langkah 1: pilih jenis data dan berkas, lalu ekstrak untuk melihat pratinjau.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={(e) => void ekstrak(e)}>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="impor-domain">Target domain / modul</FieldLabel>
+                  <Select value={domain} onValueChange={setDomain}>
+                    <SelectTrigger id="impor-domain" className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>{DOMAIN.map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="impor-berkas">Berkas</FieldLabel>
+                  <Input id="impor-berkas" type="file" accept=".xlsx,.csv,.json" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                  <FieldDescription>Format .xlsx, .csv, atau .json.</FieldDescription>
+                </Field>
+                <Button type="submit" disabled={!file || loading || !canEdit} className="w-fit">
+                  {loading ? <Loader2 className="animate-spin" aria-hidden /> : <Database aria-hidden />}
+                  {loading ? "Mengekstrak data…" : "Ekstrak dan pratinjau"}
+                </Button>
+              </FieldGroup>
             </form>
+          </CardContent>
+        </Card>
 
-            {error && (
-              <div style={{ marginTop: '16px', padding: '12px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--lkps-accent-rose)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <AlertCircle size={18} />
-                <span style={{ fontSize: '13px' }}>{error}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Card Hasil Ingestion */}
-          <div className="card">
-            <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle size={20} color="#10b981" />
-              Hasil Pemetaan Kolom Baku
-            </h3>
-
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden />Hasil pemetaan kolom</CardTitle>
+            <CardDescription>Langkah 2: periksa pratinjau, lalu terapkan ke LKPS prodi aktif.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
             {result ? (
-              <div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{ padding: '12px', background: 'var(--lkps-bg-secondary)', borderRadius: '8px', fontSize: '13px' }}>
-                    <strong>Domain Sumber:</strong> {result.domain}
-                  </div>
-                  <div style={{ padding: '12px', background: 'var(--lkps-bg-secondary)', borderRadius: '8px', fontSize: '13px' }}>
-                    <strong>Target LKPS:</strong> {result.kriteriaTarget} ({result.tabelTarget})
-                  </div>
-                  <div style={{ padding: '12px', background: 'var(--lkps-bg-secondary)', borderRadius: '8px', fontSize: '13px' }}>
-                    <strong>Baris Terproses:</strong> {result.recordsProcessed} entri data
-                  </div>
+              <>
+                <div className="flex flex-wrap gap-1.5 text-sm">
+                  <Badge variant="secondary">Domain: {result.domain}</Badge>
+                  <Badge variant="outline">{result.kriteriaTarget} · {result.tabelTarget}</Badge>
+                  <Badge variant="outline">{result.recordsProcessed} baris</Badge>
                 </div>
-
-                <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--lkps-border-color)', borderRadius: '8px', padding: '8px' }}>
-                  <pre style={{ fontSize: '11px', margin: 0 }}>
-                    {JSON.stringify(result.items.slice(0, 3), null, 2)}
-                  </pre>
-                </div>
-                <p style={{ fontSize: '11px', color: 'var(--lkps-text-muted)', marginTop: '6px' }}>
-                  * Menampilkan preview 3 entri pertama dari total {result.recordsProcessed} baris.
-                </p>
-
-                <div style={{ marginTop: '16px' }}>
-                  <button
-                    type="button"
-                    disabled={applyLoading}
-                    onClick={handleApplyIngestion}
-                    className="btn btn-primary"
-                    style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                  >
-                    {applyLoading ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle size={16} />}
-                    {applyLoading ? 'Menerapkan ke Basis Data...' : 'Terapkan ke Basis Data LKPS'}
-                  </button>
-                </div>
-
-                {applySuccess && (
-                  <div style={{ marginTop: '12px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--lkps-accent-emerald)', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '13px' }}>
-                    <CheckCircle size={16} />
-                    <span>{applySuccess}</span>
+                {contoh.length > 0 && (
+                  <div className="overflow-x-auto rounded-md border">
+                    <Table>
+                      <TableHeader><TableRow>{kolom.map((k) => <TableHead key={k} className="whitespace-nowrap">{k}</TableHead>)}</TableRow></TableHeader>
+                      <TableBody>
+                        {contoh.map((r, i) => <TableRow key={i}>{kolom.map((k) => <TableCell key={k} className="max-w-48 truncate">{teksSel(r[k])}</TableCell>)}</TableRow>)}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
-              </div>
+                <p className="text-sm text-muted-foreground">Pratinjau {contoh.length} dari {result.recordsProcessed} baris.</p>
+                <Button className="w-fit" disabled={applyLoading || !canEdit} onClick={() => void terapkan()}>
+                  {applyLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CheckCircle2 aria-hidden />}
+                  {applyLoading ? "Menerapkan…" : "Terapkan ke basis data LKPS"}
+                </Button>
+                {applySuccess && <p role="status" className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{applySuccess}</p>}
+              </>
             ) : (
-              <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--lkps-text-muted)' }}>
-                <FileSpreadsheet size={40} strokeWidth={1.5} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-                <p style={{ fontSize: '13px' }}>Belum ada berkas diekstrak. Unggah berkas One Data untuk memulai pemetaan.</p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
+                <FileSpreadsheet className="size-8" aria-hidden />
+                Belum ada berkas diekstrak. Unggah berkas One Data untuk memulai pemetaan.
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </>
-  )
+  );
 }

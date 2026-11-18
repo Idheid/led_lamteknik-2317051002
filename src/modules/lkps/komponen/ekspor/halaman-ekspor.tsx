@@ -1,100 +1,84 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any -- kode asal Ghalib dipindah apa adanya (Gabung LKPS G5); dirapikan saat G7 */
 
 // Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/app/(dashboard)/export/page.tsx.
-// Gabung LKPS G5: dipindah ke kerangka LED (alamat /api/lkps, galat { pesan }, Header -> JudulHalaman, RoleNotice -> Petunjuk).
+// Gabung LKPS G5: alamat /api/lkps/ekspor, galat { pesan }, kartu "Kirim ke Sistem LED" dibuang.
+// Gabung LKPS G7: dibuat ulang dengan komponen LED (Card, Button, Alert, toast). Galat unduh memakai toast (asal:
+// alert()). Teks "format baku LKPS_Akademik_Vokasi-1.xlsx siap diajukan ke LAM Teknik" dilunakkan: templat ekspor
+// adalah milik modul ini (LKPS_TEMPLAT_EKSPOR, atau buku kerja baru), bukan templat LKPS 2025 yang dibaca LED.
 
-import { useState } from 'react'
-import { JudulHalaman } from "@/components/judul-halaman"
-import IconBadge from "@/modules/lkps/komponen/bersama/ikon-lencana"
-import { FileSpreadsheet, Download, RefreshCw, CheckCircle2, Info } from 'lucide-react'
+import { useState } from "react";
+import { toast } from "sonner";
+import { CheckCircle2, Download, FileSpreadsheet, Info, Loader2 } from "lucide-react";
+import { JudulHalaman } from "@/components/judul-halaman";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useInfoLkps } from "@/modules/lkps/komponen/bersama/konteks";
 
 export default function HalamanEkspor() {
-  const [downloading, setDownloading] = useState(false)
-  const [downloadSuccess, setDownloadSuccess] = useState(false)
+  const { namaProdi } = useInfoLkps();
+  const [downloading, setDownloading] = useState(false);
+  const [berhasil, setBerhasil] = useState(false);
 
-  const handleDownload = async () => {
-    setDownloading(true)
-    setDownloadSuccess(false)
+  async function unduh() {
+    setDownloading(true);
+    setBerhasil(false);
     try {
-      const res = await fetch('/api/lkps/ekspor')
-      if (!res.ok) throw new Error((await res.json().catch(() => null))?.pesan || 'Gagal mengunduh file ekspor')
-
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? `LKPS_LAM_Teknik_${new Date().toISOString().slice(0, 10)}.xlsx`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
-      setDownloadSuccess(true)
-    } catch (err: any) {
-      alert(err.message || 'Terjadi kesalahan saat ekspor')
+      const res = await fetch("/api/lkps/ekspor");
+      if (!res.ok) {
+        toast.error((await res.json().catch(() => null))?.pesan || "Gagal mengunduh berkas ekspor.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? `LKPS_LAM_Teknik_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setBerhasil(true);
+    } catch {
+      toast.error("Terjadi kendala koneksi saat ekspor.");
     } finally {
-      setDownloading(false)
+      setDownloading(false);
     }
   }
 
-
   return (
     <>
-      <JudulHalaman judul="Ekspor & Integrasi Dokumen" />
-      <div className="page-content animate-fade-in">
-        <div style={{ marginBottom: '24px' }}>
-          <h2 className="section-title">Ekspor Borang LKPS</h2>
-          <p className="section-subtitle">
-            Unduh berkas LKPS format baku LAM Teknik (.xlsx).
-          </p>
-        </div>
+      <JudulHalaman judul="Ekspor Excel" deskripsi="Unduh LKPS program studi aktif sebagai berkas Excel (.xlsx)." />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', maxWidth: '960px', margin: '0 auto' }}>
-          {/* Card Ekspor Excel */}
-          <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
-            <IconBadge color="emerald" size="xl" glow style={{ margin: '0 auto 16px' }}>
-              <FileSpreadsheet size={28} strokeWidth={1.75} />
-            </IconBadge>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
-              Unduh Berkas Excel (.xlsx)
-            </h3>
-            <p style={{ color: 'var(--lkps-text-secondary)', fontSize: '13px', margin: '0 auto 20px', lineHeight: 1.6 }}>
-              Mengisi otomatis data ke lembar kerja format baku <strong>LKPS_Akademik_Vokasi-1.xlsx</strong> siap diajukan ke LAM Teknik.
-            </p>
-
-            <button
-              onClick={handleDownload}
-              disabled={downloading}
-              className="btn btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 20px' }}
-            >
-              {downloading ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} strokeWidth={2} />}
-              {downloading ? 'Membuat File...' : 'Unduh LKPS (.xlsx)'}
-            </button>
-
-            {downloadSuccess && (
-              <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--lkps-accent-emerald)', fontSize: '13px' }}>
-                <CheckCircle2 size={16} />
-                <span>File LKPS berhasil diunduh!</span>
-              </div>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><FileSpreadsheet className="size-4 text-emerald-600" aria-hidden />Unduh berkas Excel (.xlsx)</CardTitle>
+            <CardDescription>
+              Mengisi data LKPS {namaProdi ? <strong className="text-foreground">{namaProdi}</strong> : "prodi aktif"} dari semua kriteria ke lembar kerja Excel.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Button className="w-fit" onClick={() => void unduh()} disabled={downloading}>
+              {downloading ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />}
+              {downloading ? "Membuat berkas…" : "Unduh LKPS (.xlsx)"}
+            </Button>
+            {berhasil && (
+              <p role="status" className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 className="size-4" aria-hidden />Berkas LKPS berhasil diunduh.
+              </p>
             )}
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Gabung LKPS G5: kartu "Kirim ke Sistem LED" (/api/sync-led) dibuang; LED tetap membaca LKPS dari berkas yang diunggah */}
-          <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
-            <IconBadge color="blue" size="xl" style={{ margin: '0 auto 16px' }}>
-              <Info size={28} strokeWidth={1.75} />
-            </IconBadge>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
-              Data LKPS untuk LED
-            </h3>
-            <p style={{ color: 'var(--lkps-text-secondary)', fontSize: '13px', margin: '0 auto', lineHeight: 1.6 }}>
-              Data di modul LKPS belum dipakai LED. LED membaca LKPS dari berkas Excel/PDF yang diunggah di <strong>Data LKPS</strong> proyek LED.
-            </p>
-          </div>
-        </div>
+        <Alert>
+          <Info aria-hidden />
+          <AlertTitle>Data LKPS untuk LED</AlertTitle>
+          <AlertDescription>
+            Data di modul LKPS belum dipakai LED. LED membaca LKPS dari berkas Excel/PDF yang diunggah di <strong>Data LKPS</strong> proyek LED.
+          </AlertDescription>
+        </Alert>
       </div>
     </>
-  )
+  );
 }
-

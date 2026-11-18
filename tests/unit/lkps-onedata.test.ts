@@ -114,6 +114,6 @@ test("rute sinkron: jalankanRute + prodi aktif, 503 bila mati; halaman impor men
   const halaman = readFileSync(join(akar, "src/app/lkps/impor/page.tsx"), "utf8");
   assert.match(halaman, /oneDataAktif=\{oneDataAktif\(\)\}/);
   const komponen = readFileSync(join(akar, "src/modules/lkps/komponen/impor/halaman-impor.tsx"), "utf8");
-  assert.match(komponen, /disabled=\{syncLoading \|\| !oneDataAktif\}/);
+  assert.match(komponen, /disabled=\{syncLoading \|\| !oneDataAktif/);
   assert.match(komponen, /Sinkron One Data belum diaktifkan/);
 });
