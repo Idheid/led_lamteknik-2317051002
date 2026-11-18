@@ -3011,3 +3011,7 @@ berwarna per kriteria. Dikerjakan per kelompok dengan ⏸ di setiap kelompok.
   anggota tim, unggah tanda tangan PNG, Simpan → toast "Tim penyusun tersimpan.", data terbaca ulang, unduh tanda
   tangan 200 `image/png`.
 - **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 278/278; build lulus.
+- **Keputusan Adrianne (18 Nov 2026):** sinkron One Data (myUnila) ke LKPS **tidak realtime**, hanya lewat tombol
+  "Tarik Data Terbaru Prodi" supaya tidak berat. Ini sudah sesuai dengan G6: tidak ada sinkron berkala, proses latar,
+  atau panggilan myUnila saat halaman dibuka; satu tekan tombol = satu tarik data untuk prodi aktif. Pertahankan saat
+  modul dikembangkan lanjut.
