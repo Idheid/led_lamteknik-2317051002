@@ -4,15 +4,15 @@ import { ZodError } from "zod";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ambilPengguna } from "@/modules/bersama/sesi";
 import { pesanGalatZod } from "@/modules/bersama/validasi";
-import { tamuDitolak } from "@/modules/bersama/domain/tamu";
+import { penolakanRute } from "@/modules/bersama/domain/tamu";
 
 /** Pembungkus Route Handler: periksa sesi, ubah galat menjadi JSON { pesan } dengan status HTTP yang sesuai. */
 export async function jalankanRute(fn: (p: Pengguna) => Promise<Response>): Promise<Response> {
   const p = await ambilPengguna();
-  if (!p) return NextResponse.json({ pesan: "Sesi Anda berakhir. Silakan masuk lagi." }, { status: 401 });
-  // Gabung LKPS G1: Tamu tidak memakai API mana pun (dashboard dirender di server); lapis kedua di atas lapisan data
-  if (tamuDitolak(p.peran)) return NextResponse.json({ pesan: new GalatAkses().message }, { status: 403 });
-  if (p.wajibGantiSandi) return NextResponse.json({ pesan: "Ganti kata sandi Anda terlebih dahulu." }, { status: 403 });
+  // Gabung LKPS G1/G4: tanpa sesi 401; Tamu tidak memakai API mana pun (dashboard dirender di server), lapis kedua di
+  // atas lapisan data; wajib ganti sandi 403
+  const tolak = penolakanRute(p);
+  if (tolak || !p) return NextResponse.json({ pesan: tolak?.pesan }, { status: tolak?.status ?? 401 });
   try {
     return await fn(p);
   } catch (e) {

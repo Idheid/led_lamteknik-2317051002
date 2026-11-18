@@ -2783,3 +2783,60 @@ dijalankan). G1–G2 = S1–S2 `docs/RENCANA-18NOV.md`.
 - Uji: `tests/integrasi/lkps-skema.test.ts` (4: seed idempoten, NIDN unik per prodi, isian tabel dinamis per prodi,
   anak dosen ber-`prodiId` dan `Restrict`).
 - Pemeriksaan: lint, typecheck; `test:unit` 249/249; `test:integrasi` 138/138.
+
+### G4: domain, data, dan API modul LKPS
+
+- **Domain** (`src/modules/lkps/domain/`):
+  - `akses.ts` memetakan matriks `permissions.ts` ke peran LED:
+    - isian kriteria 1–9: tulis hanya Tim Prodi (prodinya);
+    - identitas/tim penyusun: tulis Admin dan Tim Prodi;
+    - konfigurasi: tulis Admin;
+    - ekspor: Admin, Tim Prodi, Asesor;
+    - Tamu: tidak ada akses.
+  - `bukti.ts`: kunci `lkps/<prodiId>/bukti/<uuid>-<nama>`, jenis berkas dicek dari isi (PDF/PNG/JPG/XLSX), maks 10 MB.
+  - `validasi.ts`: skema zod dengan nama isian API kode asal.
+  - `hitung.ts`: `computation-engine.ts` tanpa perubahan rumus. Hitungan tangan di
+    `docs/uji/hitungan-manual-lkps-gabung.md`. Temuan: jumlah bobot kriteria 110, jadi skor maksimum 440.
+- **Keputusan Adrianne di ⏸ G4 (18 Nov 2026):** Asesor hanya membaca LKPS prodi yang LED-nya ditugaskan kepadanya.
+  - Fungsi baru `prodiDitugaskanAsesor` di `src/modules/bersama/data/penugasan-asesor.ts` (LKPS tidak boleh mengimpor
+    LED).
+  - Dipakai `src/modules/lkps/data/akses.ts` (`pastikanBacaProdiLkps`, `pastikanEksporProdiLkps`) dan `prodi-aktif.ts`.
+- **Prodi aktif** (`data/prodi-aktif.ts`):
+  - Tim Prodi selalu prodinya;
+  - Admin/Asesor memakai `?prodiId=` atau cookie `lkps_prodi` setelah dicek;
+  - tanpa pilihan → `null`, dan rute membalas 400 "Pilih program studi terlebih dahulu.".
+- **Lapisan data** `src/modules/lkps/data/`: kerjasama, mahasiswa, sdm, keuangan, pendidikan, penelitian (+PkM),
+  luaran, penjaminan, identitas, kriteria (isian per prodi di `LkpsIsianTabel`, digabung kembali ke `formatKolom` saat
+  dibaca), konfigurasi, hitung, bukti, impor, ekspor; pengurai One Data dipindah tanpa perubahan ke `data/onedata/parser.ts`.
+  - Simpan per baris: `updateMany({ where: { id, prodiId } })`; baris prodi lain → `GalatAkses`.
+  - "Ganti semua" di transaksi dengan `where: { prodiId }`.
+  - Tanggal/tahun kosong → galat validasi.
+  - Rujukan bukti hanya bukti prodi yang sama.
+- **Rute** `src/app/api/lkps/`: kerjasama, mahasiswa, sdm, keuangan, pendidikan, penelitian, pkm, luaran, penjaminan,
+  identitas, kriteria/[id], konfigurasi, computation, impor (asal ingestion), ekspor (asal export), bukti (asal upload,
+  ditambah GET unduh).
+  - Bentuk permintaan/respons sukses sama dengan kode asal. Galat memakai `{ pesan }` LED (asal `{ error }`); halaman
+    disesuaikan di G5.
+  - `jalankanRute` kini memakai fungsi murni `penolakanRute` (`bersama/domain/tamu.ts`) supaya penolakan tanpa login
+    (401) dan Tamu (403) bisa diuji tanpa server.
+- **Perbedaan perilaku dari kode asal, diserahkan ke pengembang (⏸ G4):**
+  - Tim Prodi boleh menyimpan tenaga kependidikan (asal: operator dilarang), karena isian kriteria hanya ditulis Tim
+    Prodi.
+  - Menghapus regulasi/kriteria/tabel yang sudah diisi prodi ditolak; nonaktifkan saja.
+  - Identitas PT/prodi dibaca dari Pengaturan LED; POST identitas hanya menyimpan tim penyusun.
+  - Impor kerja sama ditolak bila berkas tidak memuat tanggal (asal: hari ini dan +1 tahun).
+  - Impor tracer ditolak tanpa tahun. Kode asal membaca nama isian yang tidak dihasilkan pengurai, sehingga semua
+    nilainya bawaan.
+  - Nilai cadangan di hitung skor (mis. 250 mahasiswa, 24 penelitian, 15 PkM bila tabel kosong) dipertahankan seperti
+    kode asal. Keputusan Adrianne: boleh ada, yang penting datanya bisa diedit.
+- **Uji:**
+  - unit `src/modules/lkps/domain/__tests__/{hitung,akses}.test.ts` dan `tests/unit/lkps-rute.test.ts` (tabel rute,
+    `jalankanRute` + prodi aktif di tiap rute, penjaga 401/403);
+  - integrasi `tests/integrasi/lkps-akses.test.ts`:
+    - Tim Prodi A vs B, termasuk ganti semua dan id baris prodi lain;
+    - Admin baca/tidak tulis kriteria;
+    - Asesor hanya prodi tugasnya;
+    - Tamu ditolak;
+    - bukti per prodi.
+  - `akses-tamu.test.ts` otomatis ikut menguji semua fungsi data LKPS baru.
+- **Pemeriksaan:** lint (0 galat), typecheck; `test:unit` 264/264; `test:integrasi` 143/143.

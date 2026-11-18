@@ -169,3 +169,11 @@ Model tanpa `prodiId` (berlaku untuk seluruh fakultas): `LkpsRegulasi`, `LkpsKri
 2. `LkpsDosenTetap`: `@@unique([prodiId, nidn])` menggantikan `nidn @unique` global (masalah 16).
 3. `prodiId` wajib juga di `LkpsBimbinganTa` dan `LkpsEwmp` (anak `LkpsDosenTetap`).
 4. `jenisProgram` diturunkan dari jenjang; `jumlahMahasiswaAktif` tidak dibuat (tidak dipakai perhitungan).
+
+## Keputusan Adrianne di ⏸ G4 (18 Nov 2026)
+
+1. Asesor hanya membaca LKPS prodi yang LED-nya ditugaskan kepadanya (bukan semua prodi seperti rancangan Ghalib).
+2. Nilai cadangan di hitung skor (bila tabel kosong) boleh tetap ada; yang penting datanya bisa diedit.
+3. Perbedaan perilaku lain dari kode asal (impor kerja sama/tracer tanpa tanggal/tahun ditolak, Tim Prodi menyimpan
+   tendik, hapus konfigurasi yang sudah diisi ditolak, galat `{ pesan }`) diserahkan ke pengembang; dicatat di
+   `docs/CATATAN-PENGEMBANGAN.md` bagian G4.
