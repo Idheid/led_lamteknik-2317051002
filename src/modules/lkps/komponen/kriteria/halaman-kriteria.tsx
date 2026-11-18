@@ -1,643 +1,300 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability -- kode asal Ghalib dipindah apa adanya (Gabung LKPS G5); dirapikan saat G7 */
 
 // Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/app/(dashboard)/kriteria/[id]/page.tsx.
-// Gabung LKPS G5: dipindah ke kerangka LED (alamat /api/lkps, galat { pesan }, Header -> JudulHalaman, RoleNotice -> Petunjuk).
+// Gabung LKPS G5: alamat /api/lkps, galat { pesan }, peran dari kerangka LED.
+// Gabung LKPS G7: dibuat ulang dengan komponen LED (Card, Table, Input, Badge, Alert, Skeleton, toast). Kolom isian,
+// baris awal, ketentuan instrumen, dan aksi saveTableRows tidak berubah. Perbedaan:
+// - tautan kembali/konfigurasi ke /lkps dan /lkps/konfigurasi (asal: /dashboard dan /konfigurasi, alamat lama);
+// - isian, tambah/hapus baris, dan tombol simpan hanya untuk Tim Prodi (asal: tombol simpan bawah dan isian tetap aktif
+//   untuk peran baca, lalu ditolak server); peran baca melihat tabel hanya baca.
 
-import { useState, useEffect, use } from 'react'
-import Link from 'next/link'
-import { useInfoLkps } from "@/modules/lkps/komponen/bersama/konteks"
-import { JudulHalaman } from "@/components/judul-halaman"
-import IconBadge from "@/modules/lkps/komponen/bersama/ikon-lencana"
-import {
-  Layers,
-  ArrowLeft,
-  TableProperties,
-  Save,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-  Plus,
-  Trash2,
-  FileText,
-  FileCheck,
-  Building,
-  GraduationCap,
-  Calendar,
-  ExternalLink,
-  SlidersHorizontal,
-  Info,
-  Clock,
-  Sparkles,
-} from 'lucide-react'
+import { use, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { AlertCircle, ArrowLeft, Info, Plus, SlidersHorizontal, TableProperties, Trash2 } from "lucide-react";
+import { JudulHalaman } from "@/components/judul-halaman";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useInfoLkps } from "@/modules/lkps/komponen/bersama/konteks";
+import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim";
+import { IkonKriteria } from "@/modules/lkps/komponen/bersama/kriteria-tampil";
+import { KartuTabel, TautanBukti, TombolSimpan } from "@/modules/lkps/komponen/bersama/ui-lkps";
 
 interface ParsedKetentuan {
-  sheetRef?: string
-  targetJenjang?: string
-  konvensiWaktu?: string
-  kolom?: string[] | string
-  dokumenBukti?: string
-  rumusPenilaian?: string
-  rows?: any[]
-  buktiList?: any[]
+  sheetRef?: string;
+  targetJenjang?: string;
+  konvensiWaktu?: string;
+  kolom?: string[] | string;
+  dokumenBukti?: string;
+  rumusPenilaian?: string;
+  rows?: BarisIsian[];
+}
+
+interface BarisIsian {
+  id?: string;
+  namaKegiatan?: string;
+  kategori?: string;
+  tahun?: string;
+  buktiDokumen?: string;
+  keterangan?: string;
+  [kunci: string]: unknown;
 }
 
 interface TabelConfigItem {
-  id: string
-  nomorTabel: string
-  namaTabel: string
-  deskripsi: string | null
-  levelPengisi: string
-  wajibUploadBukti: boolean
-  formatKolom: string | null
-  statusAktif: boolean
+  id: string;
+  nomorTabel: string;
+  namaTabel: string;
+  deskripsi: string | null;
+  levelPengisi: string;
+  wajibUploadBukti: boolean;
+  formatKolom: string | null;
+  statusAktif: boolean;
 }
 
 interface KriteriaDetail {
-  id: string
-  nomorUrut: number
-  kode: string
-  nama: string
-  deskripsi: string | null
-  levelWewenang: string
-  statusAktif: boolean
-  regulasi?: {
-    id: string
-    nama: string
-    tahunAkademik: string
-  }
-  tabelList: TabelConfigItem[]
+  id: string;
+  nomorUrut: number;
+  kode: string;
+  nama: string;
+  deskripsi: string | null;
+  levelWewenang: string;
+  statusAktif: boolean;
+  regulasi?: { id: string; nama: string; tahunAkademik: string };
+  tabelList: TabelConfigItem[];
 }
 
+function parseKetentuan(formatKolom: string | null): ParsedKetentuan {
+  if (!formatKolom) return {};
+  try {
+    return JSON.parse(formatKolom);
+  } catch {
+    return { kolom: formatKolom };
+  }
+}
+
+const KOLOM: [keyof BarisIsian & string, string, string][] = [
+  ["namaKegiatan", "Judul / nama entitas", "Contoh: Proposal riset AI keteknikan"],
+  ["kategori", "Kategori / jenis", "Kategori / jenis"],
+  ["tahun", "Tahun / periode", "TS / 2024"],
+  ["buktiDokumen", "Tautan bukti / dokumen", "https://drive.google.com/…"],
+  ["keterangan", "Keterangan / catatan", "Catatan tambahan"],
+];
+
+const NADA_WEWENANG: Record<string, string> = {
+  UPPS: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  PRODI: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+};
+
 export default function HalamanKriteria({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params)
-  const kriteriaId = resolvedParams.id
+  const { id: kriteriaId } = use(params);
+  const { peran } = useInfoLkps();
+  const canManageStructure = peran === "ADMIN";
+  const canEditData = peran === "TIM_PRODI";
 
-  const { peran } = useInfoLkps()
-  // Akses ubah struktur kriteria (Admin UPPS / Fakultas)
-  const canManageStructure = peran === 'ADMIN'
-  // Akses isi & simpan baris data kriteria (Khusus Operator Prodi)
-  const canEditData = peran === 'TIM_PRODI'
+  const [kriteria, setKriteria] = useState<KriteriaDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [savingTableId, setSavingTableId] = useState<string | null>(null);
+  const [tableData, setTableData] = useState<Record<string, BarisIsian[]>>({});
 
-  const [kriteria, setKriteria] = useState<KriteriaDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [savingTableId, setSavingTableId] = useState<string | null>(null)
-  const [saveSuccessTableId, setSaveSuccessTableId] = useState<string | null>(null)
+  const barisBaru = useCallback((id: string, k?: KriteriaDetail | null): BarisIsian => ({
+    id, namaKegiatan: "", kategori: "", tahun: k?.regulasi?.tahunAkademik || "2024/2025", buktiDokumen: "", keterangan: "",
+  }), []);
 
-  // State data rows per table: { [tabelId]: Array<any> }
-  const [tableData, setTableData] = useState<Record<string, any[]>>({})
+  const fetchKriteria = useCallback(async () => {
+    try {
+      const res = await kirimLkps(`/api/lkps/kriteria/${kriteriaId}`);
+      if (res.ok) {
+        const data: KriteriaDetail = await res.json();
+        setKriteria(data);
+        const awal: Record<string, BarisIsian[]> = {};
+        data.tabelList?.forEach((t) => {
+          const parsed = parseKetentuan(t.formatKolom);
+          awal[t.id] = Array.isArray(parsed.rows) && parsed.rows.length > 0 ? parsed.rows : [barisBaru("row_1", data)];
+        });
+        setTableData(awal);
+      } else {
+        setError((await res.json().catch(() => null))?.pesan || "Gagal memuat detail kriteria");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [kriteriaId, barisBaru]);
 
   useEffect(() => {
-    fetchKriteria()
-  }, [kriteriaId])
+    void fetchKriteria();
+  }, [fetchKriteria]);
 
-  async function fetchKriteria() {
-    setLoading(true)
-    setError('')
+  const ubahSel = (tabelId: string, i: number, kolom: string, nilai: string) =>
+    setTableData((p) => ({ ...p, [tabelId]: (p[tabelId] || []).map((r, j) => (j === i ? { ...r, [kolom]: nilai } : r)) }));
+  const tambahBaris = (tabelId: string) => setTableData((p) => ({ ...p, [tabelId]: [...(p[tabelId] || []), barisBaru(`row_${Date.now()}`, kriteria)] }));
+  const hapusBaris = (tabelId: string, i: number) => setTableData((p) => ({ ...p, [tabelId]: (p[tabelId] || []).filter((_, j) => j !== i) }));
+
+  async function simpanTabel(tabelId: string) {
+    setSavingTableId(tabelId);
     try {
-      const res = await fetch(`/api/lkps/kriteria/${kriteriaId}`)
-      if (res.ok) {
-        const data: KriteriaDetail = await res.json()
-        setKriteria(data)
-
-        // Initialize table data
-        const initialRows: Record<string, any[]> = {}
-        data.tabelList?.forEach((t) => {
-          const parsed = parseKetentuan(t.formatKolom)
-          if (parsed.rows && Array.isArray(parsed.rows) && parsed.rows.length > 0) {
-            initialRows[t.id] = parsed.rows
-          } else {
-            // Default placeholder row
-            initialRows[t.id] = [
-              {
-                id: 'row_1',
-                namaKegiatan: '',
-                kategori: '',
-                tahun: data.regulasi?.tahunAkademik || '2024/2025',
-                buktiDokumen: '',
-                keterangan: '',
-              },
-            ]
-          }
-        })
-        setTableData(initialRows)
-      } else {
-        const err = await res.json()
-        setError(err.pesan || 'Gagal memuat detail kriteria')
-      }
-    } catch {
-      setError('Terjadi kendala koneksi saat memuat kriteria')
+      const res = await kirimLkps(`/api/lkps/kriteria/${kriteriaId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "saveTableRows", payload: { tabelId, rows: tableData[tabelId] || [] } }),
+      });
+      if (res.ok) toast.success("Isian tabel tersimpan.");
     } finally {
-      setLoading(false)
-    }
-  }
-
-  function parseKetentuan(formatKolom: string | null): ParsedKetentuan {
-    if (!formatKolom) return {}
-    try {
-      return JSON.parse(formatKolom)
-    } catch {
-      return { kolom: formatKolom }
-    }
-  }
-
-  function handleAddRow(tabelId: string) {
-    setTableData((prev) => {
-      const current = prev[tabelId] || []
-      const newRow = {
-        id: `row_${Date.now()}`,
-        namaKegiatan: '',
-        kategori: '',
-        tahun: kriteria?.regulasi?.tahunAkademik || '2024/2025',
-        buktiDokumen: '',
-        keterangan: '',
-      }
-      return {
-        ...prev,
-        [tabelId]: [...current, newRow],
-      }
-    })
-  }
-
-  function handleRemoveRow(tabelId: string, rowIndex: number) {
-    setTableData((prev) => {
-      const current = [...(prev[tabelId] || [])]
-      current.splice(rowIndex, 1)
-      return {
-        ...prev,
-        [tabelId]: current,
-      }
-    })
-  }
-
-  function handleCellChange(tabelId: string, rowIndex: number, field: string, value: any) {
-    setTableData((prev) => {
-      const current = [...(prev[tabelId] || [])]
-      current[rowIndex] = {
-        ...current[rowIndex],
-        [field]: value,
-      }
-      return {
-        ...prev,
-        [tabelId]: current,
-      }
-    })
-  }
-
-  async function handleSaveTable(tabelId: string) {
-    setSavingTableId(tabelId)
-    setSaveSuccessTableId(null)
-    setError('')
-    try {
-      const rows = tableData[tabelId] || []
-      const res = await fetch(`/api/lkps/kriteria/${kriteriaId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'saveTableRows',
-          payload: {
-            tabelId,
-            rows,
-          },
-        }),
-      })
-
-      if (res.ok) {
-        setSaveSuccessTableId(tabelId)
-        setTimeout(() => setSaveSuccessTableId(null), 3000)
-      } else {
-        const data = await res.json()
-        setError(data.pesan || 'Gagal menyimpan data tabel')
-      }
-    } catch {
-      setError('Terjadi kendala koneksi saat menyimpan data')
-    } finally {
-      setSavingTableId(null)
+      setSavingTableId(null);
     }
   }
 
   if (loading) {
     return (
       <>
-        <JudulHalaman judul="Memuat Kriteria..." />
-        <div className="page-content animate-fade-in" style={{ textAlign: 'center', padding: '80px 20px' }}>
-          <Loader2 className="spin" size={32} style={{ margin: '0 auto 16px', color: 'var(--lkps-accent-blue)' }} />
-          <div style={{ color: 'var(--lkps-text-secondary)' }}>Mengambil data kriteria dan tabel LKPS...</div>
-        </div>
+        <JudulHalaman judul="Memuat kriteria…" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-64 w-full" />
       </>
-    )
+    );
   }
 
   if (error || !kriteria) {
     return (
       <>
-        <JudulHalaman judul="Kriteria Tidak Ditemukan" />
-        <div className="page-content animate-fade-in">
-          <div className="card" style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center', padding: '40px 24px' }}>
-            <AlertCircle size={40} style={{ color: 'var(--lkps-accent-rose)', margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
-              {error || 'Data kriteria tidak tersedia atau telah dihapus'}
-            </h3>
-            <p style={{ color: 'var(--lkps-text-secondary)', fontSize: '13px', marginBottom: '20px' }}>
-              Pastikan ID kriteria yang Anda tuju valid dan terdaftar dalam regulasi aktif.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
-              <Link href="/dashboard" className="btn btn-secondary">
-                <ArrowLeft size={15} /> Kembali ke Dashboard
-              </Link>
-              {canManageStructure && (
-                <Link href="/konfigurasi" className="btn btn-primary">
-                  <SlidersHorizontal size={15} /> Konfigurasi Regulasi
-                </Link>
-              )}
+        <JudulHalaman judul="Kriteria tidak ditemukan" />
+        <Alert variant="destructive" className="max-w-2xl">
+          <AlertCircle aria-hidden />
+          <AlertTitle>{error || "Data kriteria tidak tersedia atau telah dihapus"}</AlertTitle>
+          <AlertDescription>
+            <p>Pastikan kriteria yang dituju terdaftar dalam regulasi aktif.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button asChild size="sm" variant="outline"><Link href="/lkps"><ArrowLeft aria-hidden />Beranda LKPS</Link></Button>
+              {canManageStructure && <Button asChild size="sm"><Link href="/lkps/konfigurasi"><SlidersHorizontal aria-hidden />Struktur kriteria & tabel</Link></Button>}
             </div>
-          </div>
-        </div>
+          </AlertDescription>
+        </Alert>
       </>
-    )
+    );
   }
-
-  const wewenangBadge =
-    kriteria.levelWewenang === 'UPPS'
-      ? 'badge-blue'
-      : kriteria.levelWewenang === 'PRODI'
-      ? 'badge-emerald'
-      : 'badge-purple'
 
   return (
     <>
       <JudulHalaman
         judul={`${kriteria.kode}: ${kriteria.nama}`}
-        deskripsi={`Instrumen Akreditasi: ${kriteria.regulasi?.nama || 'LAM Teknik 2024'}`}
+        deskripsi={`Instrumen akreditasi: ${kriteria.regulasi?.nama || "LAM Teknik 2024"}`}
+        remah={[{ label: "Beranda LKPS", href: "/lkps" }, { label: kriteria.kode }]}
+        aksi={canManageStructure && (
+          <Button asChild variant="outline"><Link href="/lkps/konfigurasi"><SlidersHorizontal aria-hidden />Atur struktur</Link></Button>
+        )}
       />
 
-      <div className="page-content animate-fade-in">
-        {/* Navigation & Action Bar */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-            gap: '12px',
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Link href="/dashboard" className="btn btn-ghost btn-sm" style={{ textDecoration: 'none' }}>
-              <ArrowLeft size={15} />
-              <span>Dashboard</span>
-            </Link>
-            <span style={{ color: 'var(--lkps-border-color)' }}>/</span>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--lkps-text-primary)' }}>
-              {kriteria.kode}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {canManageStructure && (
-              <Link href="/konfigurasi" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none' }}>
-                <SlidersHorizontal size={14} />
-                <span>Atur Struktur di Konfigurasi</span>
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Hero / Overview Banner */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(79,142,247,0.08) 100%)',
-            border: '1px solid rgba(139,92,246,0.2)',
-            borderRadius: 'var(--lkps-radius-xl)',
-            padding: '24px 28px',
-            marginBottom: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '20px',
-            flexWrap: 'wrap',
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-              <span className="badge badge-purple" style={{ fontWeight: 800, fontSize: '13px', padding: '4px 10px' }}>
-                {kriteria.kode}
-              </span>
-              <span className={`badge ${wewenangBadge}`} style={{ fontSize: '12px', textTransform: 'uppercase' }}>
-                Wewenang: {kriteria.levelWewenang}
-              </span>
-              <span className="badge badge-secondary" style={{ fontSize: '12px' }}>
-                {kriteria.tabelList?.length || 0} Tabel Instrumen
-              </span>
-              <span className="badge badge-emerald" style={{ fontSize: '11px' }}>
-                Kriteria Kustom Aktif
-              </span>
-            </div>
-            <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--lkps-text-primary)', marginBottom: '6px' }}>
-              {kriteria.nama}
-            </h1>
-            <p style={{ color: 'var(--lkps-text-secondary)', fontSize: '13.5px', maxWidth: '750px', lineHeight: 1.5 }}>
-              {kriteria.deskripsi ||
-                'Kriteria akreditasi tambahan yang dikonfigurasi secara dinamis untuk mendukung kelengkapan instrumen evaluasi diri dan LKPS LAM Teknik.'}
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
-            <div
-              className="card"
-              style={{
-                padding: '12px 18px',
-                textAlign: 'center',
-                background: 'var(--lkps-bg-secondary)',
-                border: '1px solid var(--lkps-border-color)',
-              }}
-            >
-              <div style={{ fontSize: '11px', color: 'var(--lkps-text-secondary)', marginBottom: '2px' }}>Tahun Akademik</div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--lkps-text-primary)' }}>
-                {kriteria.regulasi?.tahunAkademik || '2024/2025'}
+      <Card>
+        <CardContent className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <IkonKriteria nomor={0} besar="lg" />
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="secondary">{kriteria.kode}</Badge>
+                <Badge className={NADA_WEWENANG[kriteria.levelWewenang] ?? "bg-violet-500/10 text-violet-700 dark:text-violet-300"}>Wewenang: {kriteria.levelWewenang}</Badge>
+                <Badge variant="outline">{kriteria.tabelList?.length || 0} tabel instrumen</Badge>
+                <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">Kriteria kustom aktif</Badge>
               </div>
+              <p className="text-sm text-muted-foreground">
+                {kriteria.deskripsi || "Kriteria akreditasi tambahan yang dikonfigurasi secara dinamis untuk mendukung kelengkapan instrumen evaluasi diri dan LKPS LAM Teknik."}
+              </p>
             </div>
           </div>
-        </div>
-
-        {/* List of Tables */}
-        {kriteria.tabelList?.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '50px 20px' }}>
-            <TableProperties size={36} style={{ color: 'var(--lkps-text-muted)', margin: '0 auto 12px' }} />
-            <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>
-              Belum Ada Tabel di Bawah {kriteria.kode}
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--lkps-text-secondary)', marginBottom: '16px' }}>
-              Super Admin atau Admin UPPS dapat menambahkan tabel instrumen melalui halaman konfigurasi.
-            </p>
-            {canManageStructure && (
-              <Link href="/konfigurasi" className="btn btn-primary btn-sm" style={{ display: 'inline-flex' }}>
-                <Plus size={14} /> Tambahkan Tabel Sekarang
-              </Link>
-            )}
+          <div className="rounded-lg border bg-muted/40 px-4 py-2 text-center">
+            <div className="text-xs text-muted-foreground">Tahun akademik</div>
+            <div className="font-semibold tabular-nums">{kriteria.regulasi?.tahunAkademik || "2024/2025"}</div>
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-            {kriteria.tabelList.map((tabel) => {
-              const parsed = parseKetentuan(tabel.formatKolom)
-              const rows = tableData[tabel.id] || []
-              const isSaving = savingTableId === tabel.id
-              const isSaved = saveSuccessTableId === tabel.id
+        </CardContent>
+      </Card>
 
-              return (
-                <div key={tabel.id} className="card" style={{ padding: '0', overflow: 'hidden' }}>
-                  {/* Table Header */}
-                  <div
-                    style={{
-                      padding: '18px 22px',
-                      background: 'var(--lkps-bg-secondary)',
-                      borderBottom: '1px solid var(--lkps-border-color)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '12px',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <span className="badge badge-purple" style={{ fontWeight: 700 }}>
-                          Tabel {tabel.nomorTabel}
-                        </span>
-                        <span className="badge badge-secondary" style={{ fontSize: '11px' }}>
-                          Pengisi: {tabel.levelPengisi}
-                        </span>
-                        {tabel.wajibUploadBukti && (
-                          <span className="badge badge-amber" style={{ fontSize: '11px' }}>
-                            Wajib Bukti PDF
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--lkps-text-primary)' }}>
-                        {tabel.namaTabel}
-                      </div>
-                      {tabel.deskripsi && (
-                        <div style={{ fontSize: '12.5px', color: 'var(--lkps-text-secondary)', marginTop: '2px' }}>
-                          {tabel.deskripsi}
-                        </div>
-                      )}
-                    </div>
-
-                    {canEditData && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => handleSaveTable(tabel.id)}
-                          disabled={isSaving}
-                        >
-                          {isSaving ? (
-                            <>
-                              <Loader2 className="spin" size={14} /> Menyimpan...
-                            </>
-                          ) : isSaved ? (
-                            <>
-                              <CheckCircle2 size={14} style={{ color: '#fff' }} /> Tersimpan!
-                            </>
-                          ) : (
-                            <>
-                              <Save size={14} /> Simpan Data
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Ketentuan Banner */}
-                  {(parsed.sheetRef || parsed.targetJenjang || parsed.konvensiWaktu || parsed.dokumenBukti) && (
-                    <div
-                      style={{
-                        padding: '12px 22px',
-                        background: 'rgba(79,142,247,0.04)',
-                        borderBottom: '1px solid var(--lkps-border-color)',
-                        display: 'flex',
-                        gap: '24px',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        fontSize: '12px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--lkps-accent-blue)', fontWeight: 600 }}>
-                        <Info size={14} /> Ketentuan Instrumen:
-                      </div>
-                      {parsed.sheetRef && (
-                        <div>
-                          <span style={{ color: 'var(--lkps-text-muted)' }}>Sheet Ref:</span>{' '}
-                          <strong style={{ color: 'var(--lkps-text-primary)' }}>{parsed.sheetRef}</strong>
-                        </div>
-                      )}
-                      {parsed.targetJenjang && (
-                        <div>
-                          <span style={{ color: 'var(--lkps-text-muted)' }}>Target Jenjang:</span>{' '}
-                          <strong style={{ color: 'var(--lkps-text-primary)' }}>{parsed.targetJenjang}</strong>
-                        </div>
-                      )}
-                      {parsed.konvensiWaktu && (
-                        <div>
-                          <span style={{ color: 'var(--lkps-text-muted)' }}>Konvensi Waktu:</span>{' '}
-                          <strong style={{ color: 'var(--lkps-text-primary)' }}>{parsed.konvensiWaktu}</strong>
-                        </div>
-                      )}
-                      {parsed.dokumenBukti && (
-                        <div>
-                          <span style={{ color: 'var(--lkps-text-muted)' }}>Dokumen Bukti:</span>{' '}
-                          <strong style={{ color: 'var(--lkps-text-primary)' }}>{parsed.dokumenBukti}</strong>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Interactive Table Grid */}
-                  <div style={{ padding: '20px 22px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--lkps-text-secondary)' }}>
-                        Isian Baris Data ({rows.length} Baris)
-                      </div>
-                      {canEditData && (
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          style={{ fontSize: '12px', padding: '5px 10px' }}
-                          onClick={() => handleAddRow(tabel.id)}
-                        >
-                          <Plus size={13} /> Tambah Baris
-                        </button>
-                      )}
-                    </div>
-
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="table" style={{ width: '100%', fontSize: '13px' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ width: '45px', textAlign: 'center' }}>No</th>
-                            <th style={{ minWidth: '220px' }}>Judul / Nama Entitas</th>
-                            <th style={{ minWidth: '150px' }}>Kategori / Jenis</th>
-                            <th style={{ minWidth: '110px' }}>Tahun / Periode</th>
-                            <th style={{ minWidth: '200px' }}>URL Bukti / Dokumen</th>
-                            <th style={{ minWidth: '180px' }}>Keterangan / Catatan</th>
-                            <th style={{ width: '50px', textAlign: 'center' }}>Aksi</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rows.map((row, idx) => (
-                            <tr key={row.id || idx}>
-                              <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--lkps-text-muted)' }}>
-                                {idx + 1}
-                              </td>
-                              <td>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  style={{ padding: '6px 8px', fontSize: '12.5px', width: '100%' }}
-                                  placeholder="Contoh: Proposal Riset AI Keteknikan"
-                                  value={row.namaKegiatan || ''}
-                                  onChange={(e) => handleCellChange(tabel.id, idx, 'namaKegiatan', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  style={{ padding: '6px 8px', fontSize: '12.5px', width: '100%' }}
-                                  placeholder="Kategori / Jenis"
-                                  value={row.kategori || ''}
-                                  onChange={(e) => handleCellChange(tabel.id, idx, 'kategori', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  style={{ padding: '6px 8px', fontSize: '12.5px', width: '100%' }}
-                                  placeholder="TS / 2024"
-                                  value={row.tahun || ''}
-                                  onChange={(e) => handleCellChange(tabel.id, idx, 'tahun', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    style={{ padding: '6px 8px', fontSize: '12.5px', width: '100%' }}
-                                    placeholder="https://drive.google.com/..."
-                                    value={row.buktiDokumen || ''}
-                                    onChange={(e) => handleCellChange(tabel.id, idx, 'buktiDokumen', e.target.value)}
-                                  />
-                                  {row.buktiDokumen && (
-                                    <a
-                                      href={row.buktiDokumen}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="btn btn-ghost btn-sm"
-                                      style={{ padding: '6px' }}
-                                      title="Buka Link Dokumen"
-                                    >
-                                      <ExternalLink size={13} />
-                                    </a>
-                                  )}
-                                </div>
-                              </td>
-                              <td>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  style={{ padding: '6px 8px', fontSize: '12.5px', width: '100%' }}
-                                  placeholder="Catatan tambahan..."
-                                  value={row.keterangan || ''}
-                                  onChange={(e) => handleCellChange(tabel.id, idx, 'keterangan', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ textAlign: 'center' }}>
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ padding: '6px', color: 'var(--lkps-accent-rose)' }}
-                                  title="Hapus Baris"
-                                  onClick={() => handleRemoveRow(tabel.id, idx)}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleSaveTable(tabel.id)}
-                        disabled={isSaving}
-                      >
-                        {isSaving ? (
-                          <>
-                            <Loader2 className="spin" size={14} /> Menyimpan...
-                          </>
-                        ) : isSaved ? (
-                          <>
-                            <CheckCircle2 size={14} /> Perubahan Tersimpan
-                          </>
-                        ) : (
-                          <>
-                            <Save size={14} /> Simpan Tabel Ini
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
+      {kriteria.tabelList?.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
+            <TableProperties className="size-8 text-muted-foreground" aria-hidden />
+            <div className="text-sm font-medium">Belum ada tabel di bawah {kriteria.kode}</div>
+            <p className="text-sm text-muted-foreground">Admin UPPS dapat menambahkan tabel instrumen lewat Struktur kriteria & tabel.</p>
+            {canManageStructure && <Button asChild size="sm"><Link href="/lkps/konfigurasi"><Plus aria-hidden />Tambahkan tabel</Link></Button>}
+          </CardContent>
+        </Card>
+      ) : (
+        kriteria.tabelList.map((tabel) => {
+          const parsed = parseKetentuan(tabel.formatKolom);
+          const rows = tableData[tabel.id] || [];
+          const ketentuan = [
+            ["Sheet", parsed.sheetRef], ["Target jenjang", parsed.targetJenjang], ["Konvensi waktu", parsed.konvensiWaktu], ["Dokumen bukti", parsed.dokumenBukti],
+          ].filter(([, v]) => v) as [string, string][];
+          return (
+            <KartuTabel
+              key={tabel.id}
+              nomor={0}
+              judul={`Tabel ${tabel.nomorTabel} · ${tabel.namaTabel}`}
+              deskripsi={(
+                <span className="flex flex-col gap-1.5">
+                  {tabel.deskripsi && <span>{tabel.deskripsi}</span>}
+                  <span className="flex flex-wrap gap-1.5">
+                    <Badge variant="outline">Pengisi: {tabel.levelPengisi}</Badge>
+                    {tabel.wajibUploadBukti && <Badge className="bg-amber-500/10 text-amber-800 dark:text-amber-300">Wajib bukti PDF</Badge>}
+                    <Badge variant="secondary">{rows.length} baris</Badge>
+                  </span>
+                </span>
+              )}
+              aksi={canEditData && <Button size="sm" variant="outline" onClick={() => tambahBaris(tabel.id)}><Plus aria-hidden />Tambah baris</Button>}
+            >
+              {ketentuan.length > 0 && (
+                <div className="mx-6 mb-3 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                  <span className="flex items-center gap-1 font-medium text-primary"><Info className="size-4" aria-hidden />Ketentuan instrumen</span>
+                  {ketentuan.map(([l, v]) => <span key={l}><span className="text-muted-foreground">{l}:</span> <strong>{v}</strong></span>)}
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-6">No</TableHead>
+                    {KOLOM.map(([k, label]) => <TableHead key={k} className="min-w-40">{label}</TableHead>)}
+                    {canEditData && <TableHead className="pr-6 text-right">Aksi</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row, i) => (
+                    <TableRow key={row.id || i}>
+                      <TableCell className="pl-6 text-muted-foreground">{i + 1}</TableCell>
+                      {KOLOM.map(([k, label, contoh]) => (
+                        <TableCell key={k}>
+                          {canEditData ? (
+                            <Input
+                              aria-label={`${label} baris ${i + 1}`} placeholder={contoh} value={String(row[k] ?? "")}
+                              onChange={(e) => ubahSel(tabel.id, i, k, e.target.value)}
+                            />
+                          ) : k === "buktiDokumen" ? (
+                            <TautanBukti url={row.buktiDokumen || null} nama="Buka dokumen" kosong="Tidak ada" />
+                          ) : (
+                            String(row[k] ?? "") || "–"
+                          )}
+                        </TableCell>
+                      ))}
+                      {canEditData && (
+                        <TableCell className="pr-6 text-right">
+                          <Button size="icon" variant="ghost" aria-label={`Hapus baris ${i + 1}`} onClick={() => hapusBaris(tabel.id, i)}><Trash2 aria-hidden /></Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {canEditData && (
+                <div className="flex justify-end px-6 pt-2 pb-4">
+                  <TombolSimpan sibuk={savingTableId === tabel.id} onClick={() => void simpanTabel(tabel.id)}>Simpan tabel ini</TombolSimpan>
+                </div>
+              )}
+            </KartuTabel>
+          );
+        })
+      )}
     </>
-  )
+  );
 }
