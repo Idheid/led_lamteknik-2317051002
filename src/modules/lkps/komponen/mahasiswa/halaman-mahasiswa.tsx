@@ -1,402 +1,238 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability -- kode asal Ghalib dipindah apa adanya (Gabung LKPS G5); dirapikan saat G7 */
 
 // Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/app/(dashboard)/mahasiswa/page.tsx.
-// Gabung LKPS G5: dipindah ke kerangka LED (alamat /api/lkps, galat { pesan }, Header -> JudulHalaman, RoleNotice -> Petunjuk).
+// Gabung LKPS G5: alamat /api/lkps, galat { pesan }. Gabung LKPS G7: dibuat ulang dengan komponen LED (Tabs, Table,
+// Input, Card, Alert, toast). Rumus RMD, skor, dan isi simpan ({ seleksi, asing }) tidak berubah.
 
-import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim"
-import { useState, useEffect } from 'react'
-import { JudulHalaman } from "@/components/judul-halaman"
-import IconBadge from "@/modules/lkps/komponen/bersama/ikon-lencana"
-import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran"
-import { Zap, Users, Globe, CheckCircle2, Loader2, Save, Info } from 'lucide-react'
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Globe, Info, Users } from "lucide-react";
+import { JudulHalaman } from "@/components/judul-halaman";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran";
+import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim";
+import {
+  Angka, BarisAngka, InputAngka, KartuHitung, KartuTabel, LencanaSkor, LencanaTahun, TombolSimpan,
+} from "@/modules/lkps/komponen/bersama/ui-lkps";
 
-const TAHUN_LIST = ['TS', 'TS-1', 'TS-2', 'TS-3', 'TS-4']
+const TAHUN_LIST = ["TS", "TS-1", "TS-2", "TS-3", "TS-4"];
+const TAHUN_ASING = ["TS", "TS-1", "TS-2"];
 
 interface SeleksiRow {
-  tahun: string
-  dayaTampung: number
-  jumlahPendaftar: number
-  jumlahLulusSeleksi: number
-  mbReguler: number
-  mbTransfer: number
-  maReguler: number
-  maTransfer: number
+  tahun: string;
+  dayaTampung: number;
+  jumlahPendaftar: number;
+  jumlahLulusSeleksi: number;
+  mbReguler: number;
+  mbTransfer: number;
+  maReguler: number;
+  maTransfer: number;
 }
 
 interface AsingRow {
-  tahun: string
-  fullTime: number
-  partTime: number
+  tahun: string;
+  fullTime: number;
+  partTime: number;
 }
 
 const initSeleksi = (): SeleksiRow[] =>
-  TAHUN_LIST.map(t => ({
-    tahun: t, dayaTampung: 0, jumlahPendaftar: 0,
-    jumlahLulusSeleksi: 0, mbReguler: 0, mbTransfer: 0,
-    maReguler: 0, maTransfer: 0,
-  }))
+  TAHUN_LIST.map((t) => ({ tahun: t, dayaTampung: 0, jumlahPendaftar: 0, jumlahLulusSeleksi: 0, mbReguler: 0, mbTransfer: 0, maReguler: 0, maTransfer: 0 }));
+const initAsing = (): AsingRow[] => TAHUN_ASING.map((t) => ({ tahun: t, fullTime: 0, partTime: 0 }));
 
-const initAsing = (): AsingRow[] =>
-  ['TS', 'TS-1', 'TS-2'].map(t => ({ tahun: t, fullTime: 0, partTime: 0 }))
+// ─── Rumus kode asal (tanpa perubahan) ────────────────────────
 
 function hitungRMD(maReguler: number, maTransfer: number, ndtps: number): number {
-  if (ndtps === 0) return 0
-  return (maReguler + maTransfer) / ndtps
+  if (ndtps === 0) return 0;
+  return (maReguler + maTransfer) / ndtps;
 }
 
-function getSkorRMD(rmd: number): { skor: number; label: string; cls: string } {
-  if (rmd >= 10 && rmd <= 20) return { skor: 4, label: 'Ideal (10–20)', cls: 'score-excellent' }
-  if ((rmd >= 5 && rmd < 10) || (rmd > 20 && rmd <= 30)) return { skor: 3, label: 'Baik', cls: 'score-good' }
-  if (rmd > 0) return { skor: 2, label: 'Cukup', cls: 'score-average' }
-  return { skor: 1, label: 'Kurang', cls: 'score-poor' }
+function getSkorRMD(rmd: number): { skor: number; label: string } {
+  if (rmd >= 10 && rmd <= 20) return { skor: 4, label: "Ideal (10–20)" };
+  if ((rmd >= 5 && rmd < 10) || (rmd > 20 && rmd <= 30)) return { skor: 3, label: "Baik" };
+  if (rmd > 0) return { skor: 2, label: "Cukup" };
+  return { skor: 1, label: "Kurang" };
 }
 
-function NumberInput({
-  value,
-  onChange,
-  min = 0,
-  disabled = false,
-}: {
-  value: number
-  onChange: (v: number) => void
-  min?: number
-  disabled?: boolean
-}) {
-  return (
-    <input
-      type="number"
-      min={min}
-      value={value}
-      disabled={disabled}
-      onChange={e => onChange(parseInt(e.target.value) || 0)}
-      style={{
-        width: '100%', minWidth: '70px',
-        background: 'var(--lkps-bg-primary)', border: '1px solid var(--lkps-border-color)',
-        borderRadius: 'var(--lkps-radius-sm)', color: 'var(--lkps-text-primary)',
-        padding: '6px 8px', fontSize: '13px', textAlign: 'center', outline: 'none',
-      }}
-      onFocus={e => (e.target.style.borderColor = 'var(--lkps-accent-blue)')}
-      onBlur={e => (e.target.style.borderColor = 'var(--lkps-border-color)')}
-    />
-  )
-}
+const KOLOM_SELEKSI = [
+  ["dayaTampung", "Daya tampung"], ["jumlahPendaftar", "Jumlah pendaftar"], ["jumlahLulusSeleksi", "Lulus seleksi"],
+  ["mbReguler", "Mahasiswa baru reguler"], ["mbTransfer", "Mahasiswa baru transfer"],
+  ["maReguler", "Mahasiswa aktif reguler"], ["maTransfer", "Mahasiswa aktif transfer"],
+] as const;
+
+type Baris = Record<string, number | string | null>;
 
 export default function HalamanMahasiswa() {
-  const { canEdit } = useModulePermission('mahasiswa')
-  const [activeTab, setActiveTab] = useState<'seleksi' | 'asing'>('seleksi')
-  const [seleksi, setSeleksi] = useState<SeleksiRow[]>(initSeleksi())
-  const [asing, setAsing] = useState<AsingRow[]>(initAsing())
-  const [ndtps, setNdtps] = useState(10)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const { canEdit } = useModulePermission("mahasiswa");
+  const [seleksi, setSeleksi] = useState<SeleksiRow[]>(initSeleksi());
+  const [asing, setAsing] = useState<AsingRow[]>(initAsing());
+  const [ndtps, setNdtps] = useState(10);
+  const [saving, setSaving] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    const res = await kirimLkps("/api/lkps/mahasiswa");
+    if (!res.ok) return;
+    const data = (await res.json()) as { seleksi?: Baris[]; asing?: Baris[] };
+    const angka = (v: unknown) => (typeof v === "number" ? v : 0);
+    if (data.seleksi?.length) {
+      setSeleksi(TAHUN_LIST.map((t) => {
+        const f = data.seleksi!.find((s) => s.tahunSemester === t);
+        return {
+          tahun: t,
+          dayaTampung: angka(f?.dayaTampung),
+          jumlahPendaftar: angka(f?.jumlahPendaftar),
+          jumlahLulusSeleksi: angka(f?.jumlahLulusSeleksi),
+          mbReguler: angka(f?.mahasiswaBaruReguler),
+          mbTransfer: angka(f?.mahasiswaBaruTransfer),
+          maReguler: angka(f?.mahasiswaAktifReguler),
+          maTransfer: angka(f?.mahasiswaAktifTransfer),
+        };
+      }));
+    }
+    if (data.asing?.length) {
+      setAsing(TAHUN_ASING.map((t) => {
+        const f = data.asing!.find((a) => a.tahunSemester === t);
+        return { tahun: t, fullTime: angka(f?.jumlahFullTime), partTime: angka(f?.jumlahPartTime) };
+      }));
+    }
+  }, []);
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    // muat awal sesudah render (pola sama dengan halaman LKPS lain)
+    const id = setTimeout(() => void fetchData(), 0);
+    return () => clearTimeout(id);
+  }, [fetchData]);
 
-  async function fetchData() {
-    try {
-      const res = await kirimLkps('/api/lkps/mahasiswa')
-      if (res.ok) {
-        const data = await res.json()
-        if (data.seleksi && data.seleksi.length > 0) {
-          setSeleksi(TAHUN_LIST.map(t => {
-            const found = data.seleksi.find((s: any) => s.tahunSemester === t)
-            return {
-              tahun: t,
-              dayaTampung: found?.dayaTampung ?? 0,
-              jumlahPendaftar: found?.jumlahPendaftar ?? 0,
-              jumlahLulusSeleksi: found?.jumlahLulusSeleksi ?? 0,
-              mbReguler: found?.mahasiswaBaruReguler ?? 0,
-              mbTransfer: found?.mahasiswaBaruTransfer ?? 0,
-              maReguler: found?.mahasiswaAktifReguler ?? 0,
-              maTransfer: found?.mahasiswaAktifTransfer ?? 0,
-            }
-          }))
-        }
-        if (data.asing && data.asing.length > 0) {
-          setAsing(['TS', 'TS-1', 'TS-2'].map(t => {
-            const found = data.asing.find((a: any) => a.tahunSemester === t)
-            return {
-              tahun: t,
-              fullTime: found?.jumlahFullTime ?? 0,
-              partTime: found?.jumlahPartTime ?? 0,
-            }
-          }))
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch Mahasiswa data:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const updateSeleksi = (tahun: string, kolom: keyof SeleksiRow, v: number) =>
+    setSeleksi((l) => l.map((r) => (r.tahun === tahun ? { ...r, [kolom]: v } : r)));
+  const updateAsing = (tahun: string, kolom: keyof AsingRow, v: number) =>
+    setAsing((l) => l.map((r) => (r.tahun === tahun ? { ...r, [kolom]: v } : r)));
 
-  function updateSeleksi(tahun: string, field: keyof SeleksiRow, value: number) {
-    setSeleksi(prev => prev.map(r => r.tahun === tahun ? { ...r, [field]: value } : r))
-  }
-
-  function updateAsing(tahun: string, field: keyof AsingRow, value: number) {
-    setAsing(prev => prev.map(r => r.tahun === tahun ? { ...r, [field]: value } : r))
-  }
-
-  const tsMahasiswa = seleksi.find(r => r.tahun === 'TS')
-  const totalMA = (tsMahasiswa?.maReguler ?? 0) + (tsMahasiswa?.maTransfer ?? 0)
-  const rmd = hitungRMD(tsMahasiswa?.maReguler ?? 0, tsMahasiswa?.maTransfer ?? 0, ndtps)
-  const { skor: skorRMD, label: labelRMD, cls: clsRMD } = getSkorRMD(rmd)
-
-  const totalAsingTS = asing.filter(r => r.tahun === 'TS').reduce((a, r) => a + r.fullTime + r.partTime, 0)
+  const ts = seleksi.find((r) => r.tahun === "TS");
+  const totalMA = (ts?.maReguler ?? 0) + (ts?.maTransfer ?? 0);
+  const rmd = hitungRMD(ts?.maReguler ?? 0, ts?.maTransfer ?? 0, ndtps);
+  const { skor, label } = getSkorRMD(rmd);
+  const asingTS = asing.filter((r) => r.tahun === "TS").reduce((a, r) => a + r.fullTime + r.partTime, 0);
 
   async function handleSave() {
-    setSaving(true)
+    setSaving(true);
     try {
-      const res = await kirimLkps('/api/lkps/mahasiswa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await kirimLkps("/api/lkps/mahasiswa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ seleksi, asing }),
-      })
+      });
       if (res.ok) {
-        await fetchData()
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        await fetchData();
+        toast.success("Data mahasiswa tersimpan.");
       }
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
   return (
     <>
-      <JudulHalaman judul="Kriteria 2: Mahasiswa" />
-      <div className="page-content animate-fade-in">
+      <JudulHalaman judul="Kriteria 2: Mahasiswa" deskripsi="Tabel 2.a dan 2.b LKPS: seleksi mahasiswa baru dan mahasiswa asing. RMD dihitung otomatis." />
+      <RoleNotice module="mahasiswa" />
 
-        <div style={{ marginBottom: '24px' }}>
-          <h2 className="section-title">Data Mahasiswa</h2>
-          <p className="section-subtitle">
-            Tabel 2.a & 2.b LKPS – Seleksi mahasiswa baru dan mahasiswa asing. Sistem otomatis menghitung RMD.
-          </p>
+      <KartuHitung
+        judul="Rasio Mahasiswa Dosen (RMD)"
+        deskripsi="Dihitung langsung dari mahasiswa aktif TS di Tabel 2.a dan jumlah DTPS."
+        skor={<LencanaSkor skor={skor} label={label} />}
+        rumus={<>RMD = Jumlah MA (TS) / NDTPS = {totalMA} / {ndtps} = <strong>{rmd.toFixed(2)}</strong></>}
+      >
+        <BarisAngka>
+          <Angka label="MA reguler (TS)" nilai={ts?.maReguler ?? 0} nada="text-cyan-700 dark:text-cyan-300" />
+          <Angka label="MA transfer (TS)" nilai={ts?.maTransfer ?? 0} nada="text-blue-700 dark:text-blue-300" />
+          <Angka label="Total MA (TS)" nilai={totalMA} nada="text-violet-700 dark:text-violet-300" />
+          <Angka label="Mahasiswa asing (TS)" nilai={asingTS} nada="text-emerald-700 dark:text-emerald-300" />
+          <Field orientation="horizontal" className="ml-auto w-auto">
+            <FieldLabel htmlFor="rmd-ndtps" className="whitespace-nowrap">Jumlah DTPS</FieldLabel>
+            <Input id="rmd-ndtps" type="number" min={1} className="w-20 text-center" disabled={!canEdit} value={ndtps} onChange={(e) => setNdtps(parseInt(e.target.value) || 1)} />
+          </Field>
+        </BarisAngka>
+      </KartuHitung>
+
+      <Tabs defaultValue="seleksi" className="gap-4">
+        <TabsList>
+          <TabsTrigger value="seleksi"><Users aria-hidden />Tabel 2.a · Seleksi mahasiswa baru</TabsTrigger>
+          <TabsTrigger value="asing"><Globe aria-hidden />Tabel 2.b · Mahasiswa asing</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="seleksi">
+          <KartuTabel nomor={2} judul="Tabel 2.a · Seleksi mahasiswa baru" deskripsi="Isi per tahun akademik, TS sampai TS-4.">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead rowSpan={2} className="pl-6 align-bottom">Tahun</TableHead>
+                  <TableHead rowSpan={2} className="align-bottom">Daya tampung</TableHead>
+                  <TableHead rowSpan={2} className="align-bottom">Jumlah pendaftar</TableHead>
+                  <TableHead rowSpan={2} className="align-bottom">Lulus seleksi</TableHead>
+                  <TableHead colSpan={2} className="bg-blue-500/5 text-center">Mahasiswa baru</TableHead>
+                  <TableHead colSpan={2} className="bg-emerald-500/5 pr-6 text-center">Mahasiswa aktif</TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead className="bg-blue-500/5">Reguler</TableHead>
+                  <TableHead className="bg-blue-500/5">Transfer</TableHead>
+                  <TableHead className="bg-emerald-500/5">Reguler</TableHead>
+                  <TableHead className="bg-emerald-500/5 pr-6">Transfer</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {seleksi.map((row) => (
+                  <TableRow key={row.tahun}>
+                    <TableCell className="pl-6"><LencanaTahun tahun={row.tahun} /></TableCell>
+                    {KOLOM_SELEKSI.map(([kolom, nama], i) => (
+                      <TableCell key={kolom} className={i === KOLOM_SELEKSI.length - 1 ? "pr-6" : undefined}>
+                        <InputAngka label={`${nama} ${row.tahun}`} value={row[kolom]} disabled={!canEdit} onChange={(v) => updateSeleksi(row.tahun, kolom, v)} />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </KartuTabel>
+        </TabsContent>
+
+        <TabsContent value="asing" className="flex flex-col gap-4">
+          <KartuTabel nomor={2} judul="Tabel 2.b · Mahasiswa asing" deskripsi="Jumlah mahasiswa asing full-time dan part-time pada TS, TS-1, TS-2.">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-6">Tahun</TableHead>
+                  <TableHead>Full-time</TableHead>
+                  <TableHead>Part-time</TableHead>
+                  <TableHead className="pr-6">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {asing.map((row) => (
+                  <TableRow key={row.tahun}>
+                    <TableCell className="pl-6"><LencanaTahun tahun={row.tahun} /></TableCell>
+                    <TableCell><InputAngka label={`Full-time ${row.tahun}`} value={row.fullTime} disabled={!canEdit} onChange={(v) => updateAsing(row.tahun, "fullTime", v)} /></TableCell>
+                    <TableCell><InputAngka label={`Part-time ${row.tahun}`} value={row.partTime} disabled={!canEdit} onChange={(v) => updateAsing(row.tahun, "partTime", v)} /></TableCell>
+                    <TableCell className="pr-6 font-semibold tabular-nums">{row.fullTime + row.partTime}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </KartuTabel>
+          <Alert>
+            <Info aria-hidden />
+            <AlertDescription>Mahasiswa asing full-time berkontribusi dalam perhitungan skor internasionalisasi program studi.</AlertDescription>
+          </Alert>
+        </TabsContent>
+      </Tabs>
+
+      {canEdit && (
+        <div className="flex justify-end">
+          <TombolSimpan sibuk={saving} onClick={() => void handleSave()}>Simpan data mahasiswa</TombolSimpan>
         </div>
-
-        <RoleNotice module="mahasiswa" />
-
-        {/* Formula Card */}
-        <div className="card" style={{ marginBottom: '20px', background: 'rgba(6,182,212,0.04)', borderColor: 'rgba(6,182,212,0.15)' }}>
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <IconBadge color="cyan" size="sm">
-                <Zap size={18} strokeWidth={2} />
-              </IconBadge>
-              <div>
-                <div className="card-title">Rasio Mahasiswa Dosen (RMD) – Real-time</div>
-                <div className="card-subtitle">Dihitung dari data Mahasiswa Aktif TS dan jumlah DTPS</div>
-              </div>
-            </div>
-            <div className={`score-display ${clsRMD}`}>
-              Skor: {skorRMD}/4 – {labelRMD}
-            </div>
-          </div>
-
-          <div className="formula-display" style={{ borderColor: 'rgba(6,182,212,0.2)', color: '#06b6d4' }}>
-            RMD = Jumlah MA (TS) / NDTPS = {totalMA} / {ndtps} = <strong>{rmd.toFixed(2)}</strong>
-          </div>
-
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '20px' }}>
-              {[
-                { label: 'MA Reguler (TS)', value: tsMahasiswa?.maReguler ?? 0, color: '#06b6d4' },
-                { label: 'MA Transfer (TS)', value: tsMahasiswa?.maTransfer ?? 0, color: '#4f8ef7' },
-                { label: 'Total MA (TS)', value: totalMA, color: '#8b5cf6' },
-                { label: 'MA Asing (TS)', value: totalAsingTS, color: '#10b981' },
-              ].map(item => (
-                <div key={item.label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: item.color }}>{item.value}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--lkps-text-secondary)' }}>{item.label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--lkps-text-secondary)' }}>Jumlah DTPS:</span>
-              <input type="number" min="1" disabled={!canEdit} value={ndtps} onChange={e => setNdtps(parseInt(e.target.value) || 1)}
-                style={{
-                  width: '70px', background: 'var(--lkps-bg-primary)', border: '1px solid var(--lkps-border-color)',
-                  borderRadius: 'var(--lkps-radius-sm)', color: 'var(--lkps-text-primary)', padding: '6px 10px',
-                  fontSize: '14px', fontWeight: 600, textAlign: 'center',
-                }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--lkps-border-color)', marginBottom: '20px' }}>
-          {[
-            { key: 'seleksi', label: 'Tabel 2.a – Seleksi Mahasiswa Baru', icon: Users },
-            { key: 'asing', label: 'Tabel 2.b – Mahasiswa Asing', icon: Globe },
-          ].map(tab => {
-            const TabIcon = tab.icon
-            const isActive = activeTab === tab.key
-            return (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '10px 18px', background: 'none', border: 'none',
-                borderBottom: isActive ? '2px solid var(--lkps-accent-blue)' : '2px solid transparent',
-                color: isActive ? 'var(--lkps-accent-blue)' : 'var(--lkps-text-secondary)',
-                fontWeight: isActive ? 600 : 400, fontSize: '14px',
-                cursor: 'pointer', transition: 'var(--lkps-transition-fast)', marginBottom: '-1px',
-              }}>
-                <TabIcon size={16} strokeWidth={1.75} style={{ opacity: isActive ? 1 : 0.7 }} />
-                <span>{tab.label}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Tabel 2.a Seleksi */}
-        {activeTab === 'seleksi' && (
-          <div className="card animate-fade-in">
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <IconBadge color="cyan" size="md">
-                  <Users size={20} strokeWidth={1.75} />
-                </IconBadge>
-                <div>
-                  <div className="card-title">Tabel 2.a – Data Seleksi Mahasiswa Baru</div>
-                  <div className="card-subtitle">Input data per tahun akademik dari TS sampai TS-4</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th rowSpan={2} style={{ width: '60px' }}>Tahun</th>
-                    <th rowSpan={2}>Daya Tampung</th>
-                    <th rowSpan={2}>Jml. Pendaftar</th>
-                    <th rowSpan={2}>Lulus Seleksi</th>
-                    <th colSpan={2} style={{ textAlign: 'center', background: 'rgba(79,142,247,0.08)' }}>Mahasiswa Baru</th>
-                    <th colSpan={2} style={{ textAlign: 'center', background: 'rgba(16,185,129,0.08)' }}>Mahasiswa Aktif</th>
-                  </tr>
-                  <tr>
-                    <th style={{ background: 'rgba(79,142,247,0.05)', fontSize: '11px' }}>Reguler</th>
-                    <th style={{ background: 'rgba(79,142,247,0.05)', fontSize: '11px' }}>Transfer</th>
-                    <th style={{ background: 'rgba(16,185,129,0.05)', fontSize: '11px' }}>Reguler</th>
-                    <th style={{ background: 'rgba(16,185,129,0.05)', fontSize: '11px' }}>Transfer</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {seleksi.map(row => (
-                    <tr key={row.tahun}>
-                      <td>
-                        <span className="badge" style={{
-                          background: row.tahun === 'TS' ? '#eff6ff' : 'var(--lkps-bg-secondary)',
-                          color: row.tahun === 'TS' ? 'var(--lkps-accent-blue)' : 'var(--lkps-text-secondary)',
-                          border: row.tahun === 'TS' ? '1px solid #bfdbfe' : '1px solid var(--lkps-border-color)',
-                        }}>
-                          {row.tahun}
-                        </span>
-                      </td>
-                      {(['dayaTampung', 'jumlahPendaftar', 'jumlahLulusSeleksi', 'mbReguler', 'mbTransfer', 'maReguler', 'maTransfer'] as const).map(field => (
-                        <td key={field} className="input-cell">
-                          <NumberInput value={row[field]} disabled={!canEdit} onChange={v => updateSeleksi(row.tahun, field, v)} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tabel 2.b Asing */}
-        {activeTab === 'asing' && (
-          <div className="card animate-fade-in">
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <IconBadge color="emerald" size="md">
-                  <Globe size={20} strokeWidth={1.75} />
-                </IconBadge>
-                <div>
-                  <div className="card-title">Tabel 2.b – Data Mahasiswa Asing</div>
-                  <div className="card-subtitle">Jumlah mahasiswa asing full-time dan part-time pada TS, TS-1, TS-2</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '80px' }}>Tahun</th>
-                    <th>Jumlah Mahasiswa Asing (Full-time)</th>
-                    <th>Jumlah Mahasiswa Asing (Part-time)</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {asing.map(row => (
-                    <tr key={row.tahun}>
-                      <td>
-                        <span className="badge" style={{
-                          background: row.tahun === 'TS' ? '#ecfdf5' : 'var(--lkps-bg-secondary)',
-                          color: row.tahun === 'TS' ? '#059669' : 'var(--lkps-text-secondary)',
-                          border: row.tahun === 'TS' ? '1px solid #a7f3d0' : '1px solid var(--lkps-border-color)',
-                        }}>
-                          {row.tahun}
-                        </span>
-                      </td>
-                      <td className="input-cell">
-                        <NumberInput value={row.fullTime} disabled={!canEdit} onChange={v => updateAsing(row.tahun, 'fullTime', v)} />
-                      </td>
-                      <td className="input-cell">
-                        <NumberInput value={row.partTime} disabled={!canEdit} onChange={v => updateAsing(row.tahun, 'partTime', v)} />
-                      </td>
-                      <td>
-                        <span style={{ fontWeight: 600, color: row.tahun === 'TS' ? '#10b981' : 'var(--lkps-text-primary)' }}>
-                          {row.fullTime + row.partTime}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="alert alert-info" style={{ marginTop: '16px', alignItems: 'center' }}>
-              <Info size={16} strokeWidth={2} style={{ flexShrink: 0 }} />
-              <span>Mahasiswa asing full-time berkontribusi dalam perhitungan skor internasionalisasi program studi.</span>
-            </div>
-          </div>
-        )}
-
-        {/* Save */}
-        {canEdit && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            {saved && (
-              <div className="badge badge-emerald" style={{ fontSize: '13px', padding: '8px 14px' }}>
-                <CheckCircle2 size={14} strokeWidth={2} />
-                Data berhasil disimpan!
-              </div>
-            )}
-            <button id="btn-save-mahasiswa" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="spin" size={16} strokeWidth={2} />
-                  Menyimpan...
-                </>
-              ) : (
-                <>
-                  <Save size={16} strokeWidth={1.75} />
-                  Simpan Data Mahasiswa
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
+      )}
     </>
-  )
+  );
 }
-

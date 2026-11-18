@@ -3015,3 +3015,33 @@ berwarna per kriteria. Dikerjakan per kelompok dengan ⏸ di setiap kelompok.
   "Tarik Data Terbaru Prodi" supaya tidak berat. Ini sudah sesuai dengan G6: tidak ada sinkron berkala, proses latar,
   atau panggilan myUnila saat halaman dibuka; satu tekan tombol = satu tarik data untuk prodi aktif. Pertahankan saat
   modul dikembangkan lanjut.
+
+### G7 kelompok 2: kriteria 1–3
+
+- **Blok bersama** `komponen/bersama/ui-lkps.tsx` (komponen LED), pengganti kelas `.card`, `.score-display`,
+  `.formula-display`, `.empty-state`, `.upload-zone`, dan `confirm()` kode asal:
+  - `KartuHitung` + `LencanaSkor` + `Angka`: kartu hitungan langsung (rumus dalam kotak mono, `aria-live`), skor 1–4
+    dengan nada warna;
+  - `KosongArahan`: tampilan kosong berikon kriteria; arahan "Klik Tambah …" hanya untuk yang boleh mengisi, peran baca
+    melihat "Tim Prodi belum mengisi …";
+  - `KartuTabel` (ikon berwarna kriteria + aksi), `InputAngka`, `LencanaTahun`, `TautanBukti`, `UnggahBukti`,
+    `TombolHapus` (AlertDialog), `TombolSimpan`.
+- **K1 kerja sama:** Dialog + Field untuk tambah/ubah; rumus RK dan skor tidak berubah. Perbaikan tampilan:
+  - kotak unggah MoU kini bisa diklik (asal: input tersembunyi tanpa label);
+  - tautan MoU tampil untuk bukti yang diunggah (asal hanya mengenali alamat lama `/uploads`, jadi bukti baru tertulis
+    "belum diinputkan").
+- **K2 mahasiswa:** Tabs + Table dengan `InputAngka`; rumus RMD dan isi simpan sama.
+- **K3 SDM:** lima tab (3.a.1, 3.a.2, 3.a.3, 3.b, 3.c), lima Dialog. Indikator, kolom 3.a.1 bernomor 1–13, aksi API,
+  dan saringan 3.b sama. Perbedaan:
+  - formulir "Tambah" tidak lagi terisi contoh data karangan (asal: prodi pasca, bidang keahlian, MK, beban 12,
+    bimbingan 4/5/4, EWMP 6/2/3/2/1) yang bisa ikut tersimpan; contoh dipindah ke placeholder, nilai awal kosong/0;
+  - kategori bawaan luaran per sub-tab memakai nilai yang ada di daftar pilihan (asal: label yang tidak ada, sehingga
+    pilihan tampak kosong); pilihan dikelompokkan per tabel 3.b;
+  - pesan "tambahkan dosen tetap dulu" memakai toast.
+- **Catatan untuk Ghalib (tidak diubah):** rumus RK di halaman K1, `(2·N1 + N2 + 3·N3) / NDTPS` dengan ambang 3/2/1,
+  berbeda dengan rumus mesin hitung skor (`domain/hitung.ts`), `(3·N1 + 2·N2 + N3) / NDTPS` dengan ambang 3,5/3/2.
+  NDTPS di kartu hitungan K1 dan K2 diisi manual (bawaan 10), bukan dari jumlah dosen di K3.
+- **Uji jalan** (build produksi, Tim Prodi): K1 tambah kerja sama + unggah MoU lewat kotak unggah → tersimpan, RK
+  langsung berubah, tautan MoU di tabel 200; K2 isi MA reguler TS 150 → tersimpan, RMD 15,00; K3 tambah dosen tetap,
+  tambah dan hapus tendik lewat dialog konfirmasi, kategori luaran 3.b.6 terpilih otomatis dengan label isian sitasi.
+- **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 278/278; `test:integrasi` 145/145.
