@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BookOpenCheck, Building2, FileSpreadsheet, FileText, FolderOpen, Home, ImageIcon, KeyRound, Landmark, Layers, LayoutDashboard,
   ListChecks, ScrollText, Settings2, UserCog, Users, Activity, ClipboardCheck, MessageSquareText, ArrowLeft, type LucideIcon,
+  Handshake, UserCheck, Wallet, BookOpen, FlaskConical, HeartHandshake, Award, ShieldCheck, UploadCloud, SlidersHorizontal,
 } from "lucide-react";
 import {
   SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem,
@@ -32,6 +33,18 @@ export const IKON = {
   penilaian: ClipboardCheck,
   review: MessageSquareText,
   kembali: ArrowLeft,
+  // modul LKPS (Gabung LKPS G5; ikon sama dengan sidebar kode asal Ghalib)
+  kerjasama: Handshake,
+  mahasiswa: Users,
+  sdm: UserCheck,
+  keuangan: Wallet,
+  pendidikan: BookOpen,
+  penelitian: FlaskConical,
+  pkm: HeartHandshake,
+  luaran: Award,
+  spmi: ShieldCheck,
+  impor: UploadCloud,
+  struktur: SlidersHorizontal,
 } satisfies Record<string, LucideIcon>;
 
 export type NamaIkon = keyof typeof IKON;

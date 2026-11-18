@@ -2840,3 +2840,72 @@ dijalankan). G1–G2 = S1–S2 `docs/RENCANA-18NOV.md`.
     - bukti per prodi.
   - `akses-tamu.test.ts` otomatis ikut menguji semua fungsi data LKPS baru.
 - **Pemeriksaan:** lint (0 galat), typecheck; `test:unit` 264/264; `test:integrasi` 143/143.
+
+### G5: halaman LKPS di dalam kerangka LED
+
+Adrianne menulis "lanjut hingga selesai" di ⏸ G4 (18 Nov 2026), jadi G5–G8 dikerjakan berurutan tanpa berhenti di ⏸
+G5; ringkasan tiap tahap dikumpulkan di ringkasan akhir G8.
+
+- **Halaman:** komponen klien halaman Ghalib dipindah ke `src/modules/lkps/komponen/<modul>/halaman-<modul>.tsx`
+  (atribusi di kepala berkas); halaman tipis di `src/app/lkps/<modul>/page.tsx`. Pemetaan: `/dashboard` → `/lkps`,
+  `/kerjasama` … `/penjaminan` → `/lkps/…`, `/kriteria/[id]` → `/lkps/kriteria/[id]`, `/identitas`, `/import` →
+  `/lkps/impor`, `/export` → `/lkps/ekspor`, `/konfigurasi` (hanya Admin UPPS, `wajibPeran("ADMIN")`). `/admin` dan
+  `/login` dibuang.
+- **Penyesuaian otomatis** (skrip pemindahan): `fetch('/api/x')` → `/api/lkps/x` (ingestion → impor, export → ekspor,
+  upload → bukti, onedata/sync → onedata/sinkron); `data.error` → `data.pesan`; `Header` → `JudulHalaman`; `RoleNotice`
+  → komponen baru berbasis `Petunjuk`; `var(--x)` → `var(--lkps-x)`.
+- **Penyesuaian tangan:**
+  - `useSession` Better Auth kode asal diganti konteks `useInfoLkps()` (`komponen/bersama/konteks.tsx`, diisi layout
+    server); `useModulePermission` memakai matriks `domain/akses.ts`. Hak tulis tetap diperiksa lapisan data.
+  - Halaman yang di kode asal mengabaikan respons gagal (`if (res.ok) {…}` tanpa cabang lain) memakai `kirimLkps`
+    (`komponen/bersama/kirim.ts`): respons sama, tetapi pesan galat server tampil sebagai toast. Dicek di browser
+    (simpan PkM kosong → "Judul wajib diisi; Nama dosen wajib diisi.").
+  - Ekspor: kartu "Kirim ke Sistem LED" (`/api/sync-led`) dibuang, diganti keterangan bahwa LED membaca LKPS dari
+    berkas yang diunggah. Galat unduh membaca `{ pesan }`; nama berkas dari `Content-Disposition`.
+  - Identitas (butir 4): identitas PT/UPPS dan daftar prodi hanya baca, dengan tautan ke Identitas institusi /
+    Program studi (Admin) atau Identitas prodi (Tim Prodi); tim penyusun tetap bisa diubah.
+  - Konfigurasi dan kriteria dinamis: peran Ghalib (`SUPER_ADMIN`, `ADMIN_UPPS`, `OPERATOR_PRODI`) → `ADMIN`/`TIM_PRODI`;
+    tombol "Manajemen Akun" dibuang (akun di `/admin/akun`).
+  - Beranda LKPS (`komponen/beranda/beranda-lkps.tsx` + `data/beranda.ts`): kartu progres per kriteria dari dashboard
+    Ghalib, rumus progres sama, selalu satu prodi aktif; bagian Tamu (data contoh berkode keras) dibuang. Keterangan
+    "Data di modul LKPS belum dipakai LED…" dan tautan ke LED aktif prodi.
+- **Kerangka:** layout `/lkps` memuat `ShellLkps`, `PenyediaLkps`, pemilih prodi (Admin UPPS: semua prodi; reviewer:
+  hanya prodi yang LED-nya ditugaskan; Tim Prodi tidak melihat pemilih) yang mengisi cookie `lkps_prodi`, dan konten
+  `<div className="lkps-klasik" key={prodiAktif}>` supaya halaman klien memuat ulang data saat prodi diganti. Belum
+  memilih prodi → `WajibProdi` menampilkan "Pilih program studi" (tidak jatuh ke prodi pertama).
+- **Sidebar** (`menu-peran.ts`, `menuLkps`): Beranda LKPS, Identitas & tim, K1–K9, kriteria tambahan dari regulasi
+  aktif (nomor urut di luar 1–9, dibaca `kriteriaTambahanAktif` di `ShellLkps`), Impor One Data, Ekspor Excel, Struktur
+  kriteria & tabel (Admin UPPS). Menggantikan "Data LKPS" dan "Kelengkapan LKPS prodi". Ikon lucide sama dengan
+  sidebar Ghalib.
+- **Gaya:** `komponen/gaya-lkps.css` dari `globals.css` Ghalib, dibuat skrip: semua selektor di bawah `.lkps-klasik`,
+  variabel `--lkps-*`, keyframes `lkps-*`. Dibuang: `@import` Google Fonts/tailwindcss, serta reset `*`, `html`, `a`
+  (preflight Tailwind sudah melakukannya; reset tak berlapis akan mengalahkan utilitas Tailwind komponen LED di dalam
+  konten LKPS). Diimpor hanya di layout LKPS.
+  - **Halaman LED tidak berubah:** gaya terhitung (margin, padding, font, warna, latar, border, display, line-height)
+    semua elemen `main` di `/dashboard` (595 elemen), `/admin/akun` (326), dan `/led/pantau` (214) dibandingkan antara
+    muat penuh (tanpa `gaya-lkps.css`) dan navigasi klien sesudah membuka `/lkps` (stylesheet LKPS masih termuat):
+    identik.
+- **Lint:** kode asal memakai `any`, tanda kutip tak di-escape, dan `fetchData` sebelum dideklarasikan. Aturan yang
+  gagal dimatikan per berkas dengan komentar `eslint-disable … -- kode asal Ghalib dipindah apa adanya; dirapikan saat
+  G7`, tanpa mengubah kode.
+- **Build:** `npm run build` gagal sebelum perubahan G5 karena `@napi-rs/canvas` (OCR T3, biner native) dibundel
+  Turbopack ("non-ecmascript placeable asset"). `@napi-rs/canvas` dan `tesseract.js` ditambah ke
+  `serverExternalPackages` (cara resmi Next.js 16 untuk paket native). Sesudahnya build lulus; 5 peringatan pelacakan
+  berkas lama (LED/bersama, bukan LKPS).
+- **Penanda modul:** `MODUL_LKPS.siap = true`.
+- **Uji:**
+  - unit `tests/unit/lkps-halaman.test.ts`: menu per peran, kriteria tambahan, setiap menu punya halaman, halaman klien
+    hanya memanggil `/api/lkps` dan tidak memakai sesi/peran kode asal, `gaya-lkps.css` terlingkup, layout dan
+    konfigurasi, `MODUL_LKPS.siap`;
+  - integrasi `lkps-akses.test.ts` + 1 kasus: pilihan pemilih prodi per peran dan progres beranda per prodi.
+- **Uji jalan** (build produksi di port 3100 dengan `BETTER_AUTH_URL` sementara untuk port itu; akun uji dev
+  `*.lkps@uji.test` dengan sandi acak yang tidak dicatat):
+  - Admin UPPS: tanpa prodi → "Pilih program studi"; memilih prodi lewat pemilih → beranda dan semua halaman LKPS
+    memuat data prodi itu (semua GET `/api/lkps/*` 200); konfigurasi terbuka.
+  - Tim Prodi: tanpa pemilih, tanpa menu Struktur; isi satu baris di K1 (kerja sama), K6 (penelitian), K4 (penggunaan
+    dana); unggah MoU PDF (POST bukti 200, unduh 200 `application/pdf`); ekspor 200 berkas xlsx; galat validasi tampil
+    sebagai toast.
+  - Reviewer: pemilih hanya berisi prodi yang ditugaskan; baca 200, tulis 403; tombol tambah tidak tampil.
+  - Tamu: diarahkan ke Dashboard, tidak ada menu LKPS, `/api/lkps/*` 403.
+- **Pemeriksaan:** lint 0 galat (30 peringatan, semua di kode asal Ghalib); typecheck; `test:unit` 271/271;
+  `test:integrasi` 144/144; `npm run build` lulus.

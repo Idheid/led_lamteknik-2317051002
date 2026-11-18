@@ -1,5 +1,5 @@
 import { berandaLed, berandaPeran, type Peran } from "@/modules/bersama/peran";
-import type { GrupNav } from "./nav-sidebar";
+import type { GrupNav, ItemNav } from "./nav-sidebar";
 
 /**
  * Menu sidebar per peran (desain form 2, 2 Nov 2026, disesuaikan atas permintaan Adrianne): tombol LKPS | LED di kepala
@@ -46,10 +46,7 @@ export const MENU_LED_ADMIN: GrupNav = {
   ],
 };
 
-export const MENU_LKPS_ADMIN: GrupNav = {
-  label: LABEL_LKPS,
-  item: [{ judul: "Kelengkapan LKPS prodi", href: "/lkps", ikon: "lkps", persis: true }],
-};
+
 
 // ---------------------------------------------------------------- Tim Prodi
 
@@ -63,10 +60,6 @@ export const MENU_LED_TIM: GrupNav = {
   item: [{ judul: "LED prodi", href: "/led", ikon: "proyek", persis: true }],
 };
 
-export const MENU_LKPS_TIM: GrupNav = {
-  label: LABEL_LKPS,
-  item: [{ judul: "Data LKPS", href: "/lkps", ikon: "lkps", persis: true }],
-};
 
 // ---------------------------------------------------------------- Reviewer LPMPP (peran ASESOR)
 
@@ -75,10 +68,47 @@ export const MENU_ASESOR: GrupNav = {
   item: [{ judul: "LED ditugaskan", href: "/led/asesor", ikon: "proyek", persis: true }],
 };
 
-export const MENU_LKPS_ASESOR: GrupNav = {
-  label: LABEL_LKPS,
-  item: [{ judul: "Data LKPS", href: "/lkps", ikon: "lkps", persis: true }],
-};
+
+// ---------------------------------------------------------------- Modul LKPS (Gabung LKPS G5)
+
+/** Kriteria 1–9 modul LKPS; alamat dan ikon dari sidebar kode asal (Achmadghalib725/LKPS_LAM-TEKNIK@c718eff). */
+export const KRITERIA_LKPS: ItemNav[] = [
+  { kode: "K1", judul: "Tata Pamong & Kerjasama", href: "/lkps/kerjasama", ikon: "kerjasama" },
+  { kode: "K2", judul: "Mahasiswa", href: "/lkps/mahasiswa", ikon: "mahasiswa" },
+  { kode: "K3", judul: "Sumber Daya Manusia", href: "/lkps/sdm", ikon: "sdm" },
+  { kode: "K4", judul: "Keuangan & Sarana", href: "/lkps/keuangan", ikon: "keuangan" },
+  { kode: "K5", judul: "Pendidikan", href: "/lkps/pendidikan", ikon: "pendidikan" },
+  { kode: "K6", judul: "Penelitian", href: "/lkps/penelitian", ikon: "penelitian" },
+  { kode: "K7", judul: "PkM", href: "/lkps/pkm", ikon: "pkm" },
+  { kode: "K8", judul: "Luaran & Capaian", href: "/lkps/luaran", ikon: "luaran" },
+  { kode: "K9", judul: "SPMI", href: "/lkps/penjaminan", ikon: "spmi" },
+];
+
+/** Kriteria tambahan dari konfigurasi aktif (nomor urut di luar 1–9), seperti sidebar kode asal. */
+export interface KriteriaMenuLkps {
+  id: string;
+  kode: string;
+  nama: string;
+}
+
+/**
+ * Menu modul LKPS (RENCANA-GABUNG-LKPS G5 butir 3), menggantikan "Data LKPS" dan "Kelengkapan LKPS prodi". Sama untuk
+ * ketiga peran; "Struktur kriteria & tabel" khusus Admin UPPS. Hak ubah tiap halaman diatur lapisan data.
+ */
+export function menuLkps(peran: Exclude<Peran, "TAMU">, tambahan: KriteriaMenuLkps[] = []): GrupNav {
+  return {
+    label: LABEL_LKPS,
+    item: [
+      { judul: "Beranda LKPS", href: "/lkps", ikon: "lkps", persis: true },
+      { judul: "Identitas & tim", href: "/lkps/identitas", ikon: "prodi" },
+      ...KRITERIA_LKPS,
+      ...tambahan.map((k): ItemNav => ({ kode: k.kode.slice(0, 4), judul: k.nama, href: `/lkps/kriteria/${k.id}`, ikon: "bab" })),
+      { judul: "Impor One Data", href: "/lkps/impor", ikon: "impor" },
+      { judul: "Ekspor Excel", href: "/lkps/ekspor", ikon: "ekspor" },
+      ...(peran === "ADMIN" ? [{ judul: "Struktur kriteria & tabel", href: "/lkps/konfigurasi", ikon: "struktur" } satisfies ItemNav] : []),
+    ],
+  };
+}
 
 // ---------------------------------------------------------------- Tamu (Gabung LKPS G1 = Rencana 18 Nov S1)
 
@@ -87,17 +117,20 @@ export const MENU_TAMU: GrupNav = {
   item: [{ judul: "Dashboard akreditasi", href: "/dashboard", ikon: "dasbor" }],
 };
 
-function grupPeran(peran: Exclude<Peran, "TAMU">): { bersama: GrupNav | null; led: GrupNav; lkps: GrupNav } {
-  if (peran === "ADMIN") return { bersama: MENU_BERSAMA_ADMIN, led: MENU_LED_ADMIN, lkps: MENU_LKPS_ADMIN };
-  if (peran === "ASESOR") return { bersama: null, led: MENU_ASESOR, lkps: MENU_LKPS_ASESOR };
-  return { bersama: MENU_BERSAMA_TIM, led: MENU_LED_TIM, lkps: MENU_LKPS_TIM };
+function grupPeran(peran: Exclude<Peran, "TAMU">): { bersama: GrupNav | null; led: GrupNav } {
+  if (peran === "ADMIN") return { bersama: MENU_BERSAMA_ADMIN, led: MENU_LED_ADMIN };
+  if (peran === "ASESOR") return { bersama: null, led: MENU_ASESOR };
+  return { bersama: MENU_BERSAMA_TIM, led: MENU_LED_TIM };
 }
 
-/** Sidebar menurut peran dan modul yang sedang dibuka: Bersama + LED atau Bersama + LKPS. */
-export function menuPeran(peran: Peran, konteks: KonteksMenu): GrupNav[] {
+/**
+ * Sidebar menurut peran dan modul yang sedang dibuka: Bersama + LED atau Bersama + LKPS. `kriteriaLkps`: kriteria
+ * tambahan konfigurasi LKPS aktif (diisi ShellLkps; halaman bersama tanpa daftar ini hanya menampilkan K1–K9).
+ */
+export function menuPeran(peran: Peran, konteks: KonteksMenu, kriteriaLkps: KriteriaMenuLkps[] = []): GrupNav[] {
   if (peran === "TAMU") return [MENU_TAMU];
   const g = grupPeran(peran);
-  const modul = konteks === "lkps" ? g.lkps : g.led;
+  const modul = konteks === "lkps" ? menuLkps(peran, kriteriaLkps) : g.led;
   return g.bersama ? [g.bersama, modul] : [modul];
 }
 

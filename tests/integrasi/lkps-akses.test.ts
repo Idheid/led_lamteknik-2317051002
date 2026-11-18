@@ -6,7 +6,8 @@ import { GalatAkses, type Pengguna } from "@/modules/bersama/akses";
 import { bacaKerjasama, gantiKerjasama } from "@/modules/lkps/data/kerjasama";
 import { bacaKeuangan, simpanLab } from "@/modules/lkps/data/keuangan";
 import { berkasBukti, unggahBukti } from "@/modules/lkps/data/bukti";
-import { prodiAktifLkps } from "@/modules/lkps/data/prodi-aktif";
+import { pilihanProdiLkps, prodiAktifLkps } from "@/modules/lkps/data/prodi-aktif";
+import { kriteriaTambahanAktif, progresLkps } from "@/modules/lkps/data/beranda";
 import { bersihkanDb, buatAdmin, buatTimProdi, imporSeed, penggunaDari } from "./bantu";
 
 /** Gabung LKPS G4 (RENCANA-GABUNG-LKPS G4 butir 7): hak akses lapisan data modul LKPS. */
@@ -83,4 +84,19 @@ test("bukti: unggah per prodi, unduh hanya pembaca prodi itu; rujukan bukti prod
   await assert.rejects(gantiKerjasama(timB, prodiB, { rows: [{ ...kerjasama("Curang"), fileMou: u.url }] }), GalatAkses);
   await gantiKerjasama(timA, prodiA, { rows: [{ ...kerjasama("Dengan MoU"), fileMou: u.url }] });
   assert.equal((await bacaKerjasama(timA, prodiA))[0].fileMou, u.url);
+});
+
+test("G5: pemilih prodi (Admin semua, Asesor hanya yang ditugaskan, Tim Prodi prodinya) dan progres beranda", async () => {
+  const idAdmin = (await pilihanProdiLkps(admin)).map((x) => x.id);
+  assert.ok(idAdmin.includes(prodiA) && idAdmin.includes(prodiB));
+  assert.deepEqual((await pilihanProdiLkps(asesor)).map((x) => x.id), [prodiA]);
+  assert.deepEqual((await pilihanProdiLkps(timB)).map((x) => x.id), [prodiB]);
+  await assert.rejects(pilihanProdiLkps(tamu), GalatAkses);
+  // prodi A punya kerja sama (uji sebelumnya), prodi B punya lab: progres per prodi, tidak tercampur
+  assert.equal((await progresLkps(timA, prodiA))[1], 100);
+  assert.equal((await progresLkps(timB, prodiB))[4], 50);
+  assert.equal((await progresLkps(timB, prodiB))[1], 100);
+  await assert.rejects(progresLkps(asesor, prodiB), GalatAkses);
+  await assert.rejects(progresLkps(timA, prodiB), GalatAkses);
+  assert.ok(Array.isArray(await kriteriaTambahanAktif(asesor)));
 });

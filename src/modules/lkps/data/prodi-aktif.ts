@@ -2,6 +2,8 @@ import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akse
 import { prisma } from "@/modules/bersama/db";
 import { prodiDitugaskanAsesor } from "@/modules/bersama/data/penugasan-asesor";
 import { pastikanBukaLkps } from "@/modules/lkps/domain/akses";
+import { namaJenjang } from "@/modules/bersama/domain/jenjang";
+import { COOKIE_PRODI_LKPS, PESAN_PILIH_PRODI } from "@/modules/lkps/domain/prodi";
 
 /**
  * Prodi aktif modul LKPS (Gabung LKPS G4), pengganti `src/lib/active-prodi.ts` kode asal:
@@ -11,8 +13,7 @@ import { pastikanBukaLkps } from "@/modules/lkps/domain/akses";
  * - belum memilih → null ("Pilih program studi"); tidak jatuh ke prodi pertama di basis data (masalah 8).
  */
 
-export const COOKIE_PRODI_LKPS = "lkps_prodi";
-export const PESAN_PILIH_PRODI = "Pilih program studi terlebih dahulu.";
+export { COOKIE_PRODI_LKPS, PESAN_PILIH_PRODI };
 
 /** Pilihan prodi dari permintaan: `?prodiId=` lebih dulu, lalu cookie `lkps_prodi`. */
 export function pilihanProdiDari(req: Request): string | null {
@@ -47,4 +48,16 @@ export async function prodiAktifWajib(p: Pengguna, req: Request): Promise<string
   const id = await prodiAktifLkps(p, pilihanProdiDari(req));
   if (!id) throw new GalatPengguna(PESAN_PILIH_PRODI);
   return id;
+}
+
+/**
+ * Pilihan di pemilih prodi LKPS (Gabung LKPS G5): Admin UPPS semua prodi, reviewer LPMPP hanya prodi yang LED-nya
+ * ditugaskan, Tim Prodi hanya prodinya (pemilih tidak ditampilkan untuk Tim Prodi).
+ */
+export async function pilihanProdiLkps(p: Pengguna): Promise<{ id: string; label: string }[]> {
+  pastikanBukaLkps(p);
+  const where =
+    p.peran === "ADMIN" ? {} : p.peran === "ASESOR" ? { id: { in: await prodiDitugaskanAsesor(p.id) } } : { id: p.prodiId ?? "-" };
+  const prodi = await prisma.prodi.findMany({ where, orderBy: [{ nama: "asc" }, { jenjang: "asc" }], select: { id: true, nama: true, jenjang: true } });
+  return prodi.map((x) => ({ id: x.id, label: `${namaJenjang(x.jenjang)} ${x.nama}` }));
 }
