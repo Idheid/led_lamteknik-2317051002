@@ -8,6 +8,8 @@ import { bacaKeuangan, simpanLab } from "@/modules/lkps/data/keuangan";
 import { berkasBukti, unggahBukti } from "@/modules/lkps/data/bukti";
 import { pilihanProdiLkps, prodiAktifLkps } from "@/modules/lkps/data/prodi-aktif";
 import { kriteriaTambahanAktif, progresLkps } from "@/modules/lkps/data/beranda";
+import { GalatOneDataMati, sinkronOneData } from "@/modules/lkps/data/onedata/sinkron";
+import { lupakanTokenOneData } from "@/modules/lkps/data/onedata/klien";
 import { bersihkanDb, buatAdmin, buatTimProdi, imporSeed, penggunaDari } from "./bantu";
 
 /** Gabung LKPS G4 (RENCANA-GABUNG-LKPS G4 butir 7): hak akses lapisan data modul LKPS. */
@@ -99,4 +101,46 @@ test("G5: pemilih prodi (Admin semua, Asesor hanya yang ditugaskan, Tim Prodi pr
   await assert.rejects(progresLkps(asesor, prodiB), GalatAkses);
   await assert.rejects(progresLkps(timA, prodiB), GalatAkses);
   assert.ok(Array.isArray(await kriteriaTambahanAktif(asesor)));
+});
+
+test("G6: sinkron One Data mati secara bawaan; menyala (fetch palsu) hanya menulis prodi aktif", async () => {
+  const simpan = { ...process.env };
+  const fetchAsli = globalThis.fetch;
+  try {
+    delete process.env.LKPS_ONEDATA_AKTIF;
+    await assert.rejects(sinkronOneData(timA, prodiA, { domain: "kerjasama" }), GalatOneDataMati);
+    await assert.rejects(sinkronOneData(admin, prodiA, {}), GalatAkses);
+    await assert.rejects(sinkronOneData(asesor, prodiA, {}), GalatAkses);
+    await assert.rejects(sinkronOneData(tamu, prodiA, {}), GalatAkses);
+
+    Object.assign(process.env, {
+      LKPS_ONEDATA_AKTIF: "true", MYUNILA_API_URL: "https://contoh.invalid", MYUNILA_APP_ID: "a", MYUNILA_USERNAME: "u", MYUNILA_PASSWORD: "p",
+    });
+    let login = 0;
+    globalThis.fetch = (async (masukan: string | URL | Request) => {
+      const url = String(masukan);
+      if (url.endsWith("/v1/auth/login")) { login++; return Response.json({ data: { access_token: "t", expires_in: 3600 } }); }
+      if (url.includes("/v1/kerjasama/sms_kerjasama")) {
+        return Response.json({ data: [{ judul_mou: "Riset bersama", nm_sms: "Mitra One Data", create_date: "2026-02-01" }] });
+      }
+      return Response.json({ data: [] });
+    }) as typeof fetch;
+    // prodi uji bernama "Teknik A" tidak ada di pemetaan id_sms → galat pengguna
+    await assert.rejects(sinkronOneData(timA, prodiA, { domain: "kerjasama" }), /belum dipetakan/);
+    await prisma.prodi.update({ where: { id: prodiA }, data: { nama: "Teknik Informatika A" } });
+    const sebelumB = (await bacaKerjasama(timB, prodiB)).map((k) => k.namaLembaga);
+    const hasil = await sinkronOneData(timA, prodiA, { domain: "kerjasama" });
+    assert.ok(hasil.stats.kerjasama >= 1);
+    assert.ok((await bacaKerjasama(timA, prodiA)).every((k) => k.namaLembaga === "Mitra One Data" && k.jenisKerjasama === "N2"));
+    assert.deepEqual((await bacaKerjasama(timB, prodiB)).map((k) => k.namaLembaga), sebelumB);
+    await sinkronOneData(timA, prodiA, { domain: "kerjasama" });
+    assert.equal(login, 1);
+    // One Data kosong untuk mata kuliah → data lama tidak dihapus
+    const hasilMk = await sinkronOneData(timA, prodiA, { domain: "pendidikan" });
+    assert.equal(hasilMk.stats.pendidikan, 0);
+  } finally {
+    process.env = simpan;
+    globalThis.fetch = fetchAsli;
+    lupakanTokenOneData();
+  }
 });

@@ -18,7 +18,8 @@ import {
   Globe2,
 } from 'lucide-react'
 
-export default function HalamanImpor() {
+/** Gabung LKPS G6: `oneDataAktif` dari server (LKPS_ONEDATA_AKTIF + variabel MYUNILA_*); tanpa nilai apa pun. */
+export default function HalamanImpor({ oneDataAktif }: { oneDataAktif: boolean }) {
   const [file, setFile] = useState<File | null>(null)
   const [domain, setDomain] = useState<string>('auto')
   const [loading, setLoading] = useState(false)
@@ -138,10 +139,16 @@ export default function HalamanImpor() {
                 <AlertCircle size={13} />
                 Catatan: API One Data hanya menyediakan metadata teks. Berkas fisik (PDF MoU, SK, Sertifikat, RPS) perlu diunggah manual pada modul masing-masing.
               </p>
+              {!oneDataAktif && (
+                <p role="status" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--lkps-text-secondary)', margin: '6px 0 0 0' }}>
+                  Sinkron One Data belum diaktifkan. Impor berkas di bawah tetap bisa dipakai.
+                </p>
+              )}
             </div>
             <button
               onClick={handleLiveSync}
-              disabled={syncLoading}
+              disabled={syncLoading || !oneDataAktif}
+              title={oneDataAktif ? undefined : 'Sinkron One Data belum diaktifkan'}
               className="btn btn-primary"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 20px' }}
             >

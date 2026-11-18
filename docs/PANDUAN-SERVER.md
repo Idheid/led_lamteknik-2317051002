@@ -182,3 +182,25 @@ Biaya ≈ (masuk ÷ 1.000.000 × harga masukan) + (keluar ÷ 1.000.000 × harga 
 
 **Belum dikerjakan (kemungkinan):** mode *Batch API* untuk menyusun semalam (harga ± separuh, hasil tidak langsung
 tampil). Perlu persetujuan sebelum dibuat.
+
+## 7. Sinkron One Data (myUnila) di modul LKPS
+
+Sinkron One Data di halaman **LKPS → Impor One Data** mati secara bawaan (Gabung LKPS G6). Tombol "Tarik Data Terbaru
+Prodi" nonaktif dengan keterangan "Sinkron One Data belum diaktifkan", dan `POST /api/lkps/onedata/sinkron` membalas
+503. Impor berkas (xlsx/csv/json) tetap bisa dipakai.
+
+Untuk menyalakannya, isi variabel berikut di `.env` (atau `.env.produksi`), lalu mulai ulang web:
+
+| Variabel | Isi |
+|---|---|
+| `LKPS_ONEDATA_AKTIF` | `true` untuk menyalakan; selain itu mati |
+| `MYUNILA_API_URL` | alamat dasar WS API myUnila (tanpa garis miring di akhir) |
+| `MYUNILA_APP_ID` | ID Aplikasi yang terdaftar di myUnila |
+| `MYUNILA_USERNAME` | akun penanggung jawab aplikasi |
+| `MYUNILA_PASSWORD` | kata sandi akun itu |
+
+Bila salah satu kosong, sinkron tetap mati. Tidak ada nilai bawaan di kode. Nilai variabel tidak boleh ditulis di
+dokumen, di-commit, atau dicetak di log. Token login hanya disimpan di memori server, dicek ulang lewat
+`/v1/auth/check-token`, dan tidak pernah dikirim ke browser. Kredensial siapa yang dipakai (aplikasi Adrianne atau
+Ghalib) belum diputuskan.
+

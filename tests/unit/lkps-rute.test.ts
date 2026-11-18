@@ -38,6 +38,7 @@ const TABEL: Record<string, string[]> = {
   impor: ["POST"], // /api/ingestion
   ekspor: ["GET"], // /api/export
   bukti: ["GET", "POST"], // /api/upload (+ unduh baru)
+  "onedata/sinkron": ["POST"], // /api/onedata/sync (G6, mati secara bawaan)
 };
 
 test("tabel rute LKPS lengkap dan rute yang dibuang tidak ada", () => {

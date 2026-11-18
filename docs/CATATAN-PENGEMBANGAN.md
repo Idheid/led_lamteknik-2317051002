@@ -2909,3 +2909,41 @@ G5; ringkasan tiap tahap dikumpulkan di ringkasan akhir G8.
   - Tamu: diarahkan ke Dashboard, tidak ada menu LKPS, `/api/lkps/*` 403.
 - **Pemeriksaan:** lint 0 galat (30 peringatan, semua di kode asal Ghalib); typecheck; `test:unit` 271/271;
   `test:integrasi` 144/144; `npm run build` lulus.
+
+### G6: impor One Data (myUnila) dalam keadaan mati
+
+- **Letak:** `src/modules/lkps/data/onedata/` berisi `konfigurasi.ts`, `klien.ts` (ditulis ulang dari struktur
+  `myunila-client.ts`), `sinkron.ts` (dari `onedata/sync/route.ts`), dan `parser.ts` (G4). Pemetaan nama prodi → id_sms
+  myUnila di `domain/onedata-prodi.ts` (disalin skrip; UUID prodi, bukan kredensial). Rute
+  `POST /api/lkps/onedata/sinkron`.
+- **Konfigurasi hanya dari `.env`, tanpa nilai bawaan:** `LKPS_ONEDATA_AKTIF` (bawaan mati), `MYUNILA_API_URL`,
+  `MYUNILA_APP_ID`, `MYUNILA_USERNAME`, `MYUNILA_PASSWORD`. Nama variabel (tanpa nilai) di `.env.example`,
+  `.env.produksi.example`, dan `docs/PANDUAN-SERVER.md` bagian 7. Isi `myunila-client.ts` kode asal tidak dicetak:
+  strukturnya dibaca lewat skrip yang menyamarkan semua literal string kecuali jalur URL dan nama header.
+- **Mati atau ada variabel kosong:** rute 503 `{ pesan: "Sinkron One Data belum diaktifkan" }`; tombol "Tarik Data
+  Terbaru Prodi" di `/lkps/impor` nonaktif dengan keterangan yang sama (status dihitung di server, hanya boolean yang
+  dikirim ke halaman). Impor berkas tetap bisa dipakai.
+- **Token:** hanya di memori server; tidak dikirim ke browser, tidak dicatat di log, tidak masuk pesan galat (galat
+  hanya memuat kode status; kode asal menyertakan isi respons). Dicek ulang lewat `GET /v1/auth/check-token` paling
+  lambat setiap 5 menit; tidak sah → login ulang; 401 dari endpoint data → token dilupakan. Bentuk respons check-token
+  belum diketahui, jadi status 2xx dianggap sah (perlu dicocokkan dengan dokumentasi WS API).
+- **Perbedaan dari kode asal** (rinci di kepala `sinkron.ts`):
+  - hanya Tim Prodi untuk prodinya; Admin, reviewer, dan Tamu ditolak (asal: siapa pun yang login, prodi ditebak dari
+    nama akun dengan cadangan "S1 Arsitektur");
+  - semua tulis/hapus dibatasi prodi aktif; data lama hanya diganti bila One Data mengembalikan baris;
+  - dibuang karena mengarang data: 5 kohort seleksi mahasiswa baru contoh, 4 penelitian/PkM contoh, penghapusan
+    penelitian lintas prodi menurut nama dosen contoh, tempat kerja 30/60/10 dan kepuasan 3,7 di tracer, cadangan 85%
+    dan 3,2 bulan; tahun tracer = tahun berjalan (asal 2024);
+  - NIDN kosong → `UNILA-SDM-<id_sdm>` tanpa angka acak; kode MK kosong dilewati; `fileMou` tidak diisi (asal: nama PDF
+    yang tidak ada).
+  - Nilai pengisi lain dari kode asal tetap (mis. dosen sinkron dianggap S2, tersertifikasi, jabatan Lektor bila PNS;
+    kerja sama berakhir +3 tahun). Ini asumsi Ghalib yang perlu dikonfirmasi saat kredensial tersedia.
+- **Uji tanpa jaringan** (`fetch` dipalsukan):
+  - unit `tests/unit/lkps-onedata.test.ts`: mati secara bawaan dan bila satu variabel kosong; tidak ada nilai bawaan
+    `process.env.MYUNILA_* ||`; menyala → login sekali lalu token tersimpan dipakai (Bearer); check-token sesudah 5
+    menit, tidak sah → login ulang; galat login tanpa isi respons; rute 503 dan tombol nonaktif;
+  - integrasi `lkps-akses.test.ts`: mati → `GalatOneDataMati` (503); Admin, reviewer, Tamu → `GalatAkses`; menyala →
+    hanya kerja sama prodi A yang diganti, prodi B tetap, login sekali untuk dua sinkron, hasil kosong tidak menghapus.
+- **Hal terbuka:** kredensial WS API siapa yang dipakai (aplikasi Adrianne atau Ghalib) belum diputuskan; bentuk
+  respons `/v1/auth/check-token`; asumsi nilai pengisi di atas.
+- **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 278/278; `test:integrasi` 145/145.
