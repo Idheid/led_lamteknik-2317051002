@@ -5,7 +5,8 @@ sama. Rencana ini dijalankan Claude Code setelah `docs/RENCANA-10NOV.md` (selesa
 
 > **Catatan 18 November 2026:**
 > - Jalankan rencana ini **setelah** `docs/RENCANA-GABUNG-LKPS.md`.
-> - S1 dan S2 dikerjakan di sana sebagai G1 dan G2.
+> - **S1 dan S2 sudah dikerjakan** di Gabung LKPS sebagai G1 (`9d1908f`, peran Tamu) dan G2 (`da8ef11`, dashboard hanya
+>   baca untuk Tamu); jangan dikerjakan ulang.
 > - Rencana ini dilanjutkan **mulai S3**, di branch `tamu-sso` yang dibuat dari `gabung-lkps` (bukan dari
 >   `revisi-31okt`).
 > - Audit S1 juga mencakup halaman dan API modul LKPS hasil penggabungan.

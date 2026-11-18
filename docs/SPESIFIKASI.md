@@ -11,7 +11,16 @@ Layak diajukan), Basis Pengetahuan, rujukan dan Daftar Rujukan di Word, verifika
 target dan capaian, kesiapan dan jadwal kerja mundur, ekspor DRAF, server produksi dan cadangan harian. Revisi 31 Okt
 2026 (masukan Pak Tris 6): peran **Admin UPPS**, **Tim Prodi** (akun per prodi), **Asesor**; 16 prodi FT Unila sudah
 terisi; LED baru berfokus pada TS; Penilaian di depan dengan usulan skor AI; Susun seluruh LED; jadwal hanya pengingat;
-model AI disebut; LKPS PDF per tabel. Rincian di `CATATAN-PENGEMBANGAN.md`.
+model AI disebut; LKPS PDF per tabel. Gabung LKPS 18 Nov 2026: **empat peran** (Admin UPPS, Tim Prodi, Reviewer
+LPMPP = `ASESOR`, dan **Tamu** = `TAMU`, hanya melihat Dashboard akreditasi) dan **modul LKPS** dari repo Ghalib
+(bagian 5a). Rincian di `CATATAN-PENGEMBANGAN.md`.
+
+| Peran | Kode | Ringkas |
+| --- | --- | --- |
+| Admin UPPS | `ADMIN` | akun, prodi, identitas fakultas, instrumen, kunci API, penugasan reviewer; LKPS: baca semua prodi, struktur kriteria & tabel |
+| Tim Prodi | `TIM_PRODI` | menyusun LED prodinya; LKPS: mengisi semua kriteria prodinya |
+| Reviewer LPMPP | `ASESOR` | review dan skor LED yang ditugaskan; LKPS: hanya baca prodi yang LED-nya ditugaskan |
+| Tamu | `TAMU` | hanya Dashboard akreditasi (hanya baca, detail prodi hanya baca); tidak membuka LED dan LKPS |
 
 1. Admin UPPS melengkapi identitas fakultas dan program studi (16 prodi FT Unila sudah terisi), membuat akun Tim Prodi
    per prodi dan akun asesor, mengunggah instrumen per jenjang (Template LED, Matriks Penilaian, Pedoman Penilaian),
@@ -125,6 +134,26 @@ Semua angka disimpan sebagai pengaturan proyek (bisa diubah tanpa mengubah kode)
 - Label TS, TS-1, … disimpan apa adanya; tahun nyata dihitung dari `tsTahunMulai` proyek.
 - Pembaca LKPS dibuat sebagai modul tersendiri supaya kelak bisa diganti dengan membaca basis data sistem LKPS.
 
+## 5a. Modul LKPS (Gabung LKPS, 18 Nov 2026)
+
+- Asal: `Achmadghalib725/LKPS_LAM-TEKNIK@c718eff` (Achmad Ghalib); struktur tabel dipindah tanpa perubahan (model
+  `Lkps*`, terikat ke `Prodi` LED). Panduan pengembang: `src/modules/lkps/README.md`; peta: `docs/GABUNG-LKPS-PETA.md`.
+- Isian per prodi: Kriteria 1 kerja sama (+ MoU), 2 seleksi mahasiswa dan mahasiswa asing, 3 dosen tetap, bimbingan
+  TA, EWMP, luaran dosen, tenaga kependidikan, 4 penggunaan dana dan laboratorium, 5 mata kuliah (+ RPS) dan MBKM,
+  6 penelitian, 7 PkM, 8 IPK, prestasi, efektivitas studi, tracer, luaran mahasiswa, 9 dokumen SPMI; kriteria dan tabel
+  dinamis dari **Struktur kriteria & tabel** (regulasi, kriteria, tabel; isian per prodi di `LkpsIsianTabel`).
+- Identitas: identitas PT/UPPS dan prodi dibaca dari data LED (hanya baca); tim penyusun LKPS diisi di modul ini.
+- Prodi aktif: Tim Prodi selalu prodinya; Admin UPPS dan reviewer memilih lewat pemilih prodi (cookie `lkps_prodi`,
+  diperiksa ulang di server); tanpa pilihan tidak ada data yang tampil.
+- Bukti fisik (PDF, PNG, JPG, XLSX, ≤ 10 MB, dicek dari isi berkas) disimpan di penyimpanan LED per prodi dan diunduh
+  lewat `/api/lkps/bukti` setelah hak baca prodi itu diperiksa.
+- Impor berkas One Data (xlsx/csv/json, pratinjau lalu terapkan) dan ekspor Excel (`exceljs`, templat repo lama).
+- Sinkron One Data (WS API myUnila) **mati secara bawaan**; menyala hanya bila `LKPS_ONEDATA_AKTIF=true` dan variabel
+  `MYUNILA_*` terisi (tanpa nilai bawaan di kode); token hanya di memori server dan dicek ulang lewat
+  `/v1/auth/check-token`. Mati → 503 "Sinkron One Data belum diaktifkan".
+- Simulasi skor (`/api/lkps/computation`): rumus repo lama tanpa perubahan (jumlah bobot 110, maksimum 440).
+- Data modul LKPS **belum dipakai LED**; LED membaca LKPS dari berkas yang diunggah (bagian 5).
+
 ## 6. Spesifikasi ekspor Word
 
 Ekspor mengisi template LEDPS resmi, bukan membuat dokumen baru. Format halaman mengikuti Petunjuk Penulisan LED
@@ -172,14 +201,17 @@ langsung mengalihkan ke beranda peran. Tombol **LKPS | LED** di kepala halaman m
     akun, Kunci API dan model AI;
   - LED: Pantau LED prodi `/led/pantau` (beranda tombol LED), Basis Pengetahuan fakultas, Logo sampul LED
     `/led/logo-sampul`;
-  - LKPS: Kelengkapan LKPS prodi (`/lkps`).
+  - LKPS: Beranda LKPS `/lkps`, Identitas & tim, K1–K9 (+ kriteria tambahan dari konfigurasi aktif), Impor One Data,
+    Ekspor Excel, Struktur kriteria & tabel `/lkps/konfigurasi`; pemilih prodi di atas konten.
 - Tim Prodi:
   - Bersama: Identitas prodi;
   - LED: LED prodi (lalu menu LED ini);
-  - LKPS: Data LKPS (`/lkps` membuka Data LKPS LED aktif selama modul LKPS belum siap; tombol LKPS menyala).
+  - LKPS: Beranda LKPS, Identitas & tim, K1–K9 (+ kriteria tambahan), Impor One Data, Ekspor Excel (prodinya saja,
+    tanpa pemilih prodi). Unggah LKPS untuk LED tetap di Data LKPS proyek LED.
 - Reviewer LPMPP (peran `ASESOR`):
   - LED: LED ditugaskan, lalu Penilaian dan Ringkasan review;
-  - LKPS: Data LKPS (LED yang ditugaskan, ke Penilaian).
+  - LKPS: menu LKPS yang sama dengan Tim Prodi, hanya baca, pemilih prodi berisi prodi yang LED-nya ditugaskan.
+- Tamu (`TAMU`): hanya Dashboard akreditasi dan detail prodi, hanya baca; alamat lain diarahkan ke Dashboard.
 
 Membuka alamat milik peran lain diarahkan ke beranda peran.
 

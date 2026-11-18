@@ -2947,3 +2947,41 @@ G5; ringkasan tiap tahap dikumpulkan di ringkasan akhir G8.
 - **Hal terbuka:** kredensial WS API siapa yang dipakai (aplikasi Adrianne atau Ghalib) belum diputuskan; bentuk
   respons `/v1/auth/check-token`; asumsi nilai pengisi di atas.
 - **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 278/278; `test:integrasi` 145/145.
+
+### G7: penyamaan tampilan (belum dikerjakan)
+
+RENCANA-GABUNG-LKPS G7 meminta bertanya dulu ke Adrianne: dikerjakan sekarang atau diserahkan ke Ghalib setelah
+penggabungan. Pertanyaan itu belum terjawab (pesan terakhir "lanjut hingga selesai" tidak menjawabnya), jadi G7 tidak
+dikerjakan. Halaman LKPS tetap memakai gaya kode asal di `komponen/gaya-lkps.css` (terlingkup `.lkps-klasik`), dan lint
+untuk kode asal tetap dimatikan per berkas. Ditanyakan di ringkasan akhir.
+
+### G8: uji akhir, build, dan dokumentasi
+
+- **Uji jalan empat peran** (build produksi port 3100, akun uji sementara, rinci di
+  `docs/uji/skenario-blackbox-gabung-lkps.md`, 30 langkah, semua lulus):
+  - Tim Prodi: isi satu baris di K1, K6, K4; unggah MoU; ekspor; galat validasi sebagai toast; One Data mati (tombol
+    nonaktif dan redup, 503).
+  - Admin UPPS: pilih prodi lewat pemilih; semua halaman 200; konfigurasi terbuka.
+  - Reviewer: hanya prodi yang ditugaskan, hanya baca.
+  - Tamu: hanya Dashboard.
+  - Tanpa login: `curl /lkps` → 307 ke login, `curl /api/lkps/kerjasama` → 401. Ini menutup catatan G4 bahwa 401
+    hanya diuji lewat fungsi murni.
+- **Perbaikan dari uji jalan:** tombol sinkron One Data yang nonaktif tampak aktif karena gaya kode asal hanya mengubah
+  kursor; kini redup (opacity 0,55) saat mati.
+- **Pembersihan:** akun uji `*.lkps@uji.test`, baris uji (1 kerja sama + berkas MoU, 1 penelitian, 3 penggunaan dana),
+  dan berkas sandi sementara dihapus. Penugasan reviewer LED yang dipinjam untuk uji dikembalikan.
+- **Dokumentasi:**
+  - `src/modules/lkps/README.md` ditulis ulang sebagai panduan untuk Ghalib: menjalankan, letak folder, batas modul,
+    peran dan hak, menambah tabel/model `Lkps*` dan migrasi, uji, alur branch, perbedaan dengan template LKPS 2025.
+  - `CLAUDE.md`: bagian struktur kode.
+  - `docs/SPESIFIKASI.md`: tabel empat peran, bagian 5a Modul LKPS, menu LKPS per peran, Tamu.
+  - `docs/PANDUAN-PENGGUNAAN.md`: bagian D Modul LKPS dan E Tamu.
+  - `docs/GABUNG-LKPS-PETA.md`: versi akhir (bagian 7, status per tahap dan hal terbuka).
+  - `docs/RENCANA-18NOV.md`: S1–S2 sudah dikerjakan di G1–G2; lanjut mulai S3 di branch `tamu-sso` dari `gabung-lkps`.
+- **Temuan dokumentasi:** akun Tamu belum bisa dibuat dari Kelola akun (formulir hanya menawarkan Admin UPPS, Tim
+  Prodi, Reviewer). Peran Tamu ada di skema dan validasi; jalur masuknya direncanakan lewat SSO (Rencana 18 Nov S3).
+- **Pemeriksaan akhir:** lint 0 galat (30 peringatan, semua di kode asal Ghalib); typecheck; `test:unit` 278/278;
+  `test:integrasi` 145/145; `npm run build` lulus (61 halaman; 5 peringatan pelacakan berkas lama di LED/bersama).
+- **Hal terbuka:** G7 (tanya Adrianne); struktur tabel vs template LKPS 2025 (Ghalib dan Pak Tris); sambungan data
+  LKPS ke LED; kredensial dan bentuk respons check-token WS API myUnila; asumsi nilai pengisi sinkron One Data;
+  keamanan repo lama Ghalib; akun Tamu lewat SSO.

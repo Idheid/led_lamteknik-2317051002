@@ -240,11 +240,13 @@ lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
   menyimpan modul terakhir di cookie `modul_terakhir`. Sidebar `menuPeran(peran, "led" | "lkps")` di
   `src/components/shell/menu-peran.ts` selalu Bersama + satu modul, tidak pernah tercampur: `ShellLed`, `ShellLkps`,
   dan halaman bersama (`ShellBersama`: Dashboard, Program studi, Instrumen, akun, Identitas prodi) mengikuti cookie.
-  Menu modul LKPS Ghalib dimasukkan ke grup LKPS saat siap.
+  Grup LKPS = `menuLkps(peran, kriteriaTambahan)` (Gabung LKPS G5). Peran keempat `TAMU` (Gabung LKPS G1) hanya melihat
+  Dashboard akreditasi (`MENU_TAMU`, `bersama/domain/tamu.ts`).
   Dashboard akreditasi: `src/app/dashboard/`, `led/data/dashboard.ts`, `led/domain/dashboard.ts`.
 - **Rute** (`src/app`): `/` (halaman awal), `/login`, `/akun`, `/admin/*` dan `/pengaturan/prodi` (Admin UPPS); LED di
   grup rute `src/app/led/(tim-prodi)/` dan `src/app/led/(admin)/` (lihat bagian revisi 31 Okt 2026); `/led/asesor/*` di
-  `src/app/led/asesor/`; `/lkps` (kerangka, ketiga peran) di `src/app/lkps/`. Route Handler LED di `src/app/api/led/*`;
+  `src/app/led/asesor/`; modul LKPS `/lkps/*` (Admin UPPS, Tim Prodi, reviewer; bukan Tamu) di `src/app/lkps/` dengan
+  Route Handler `src/app/api/lkps/*` (Gabung LKPS G4–G6). Route Handler LED di `src/app/api/led/*`;
   `/api/auth` dan `/api/pemberitahuan` bersama. Aksi review `src/app/led/aksi-review.ts`, aksi lonceng
   `src/app/aksi-pemberitahuan.ts`, aksi kunci `src/app/aksi-kunci.ts`.
 - **Alamat lama** `/proyek/*`, `/proyek/prodi`, `/proyek/kunci-api`, `/pengaturan/kunci-api`, `/asesor/*` diarahkan oleh `redirects()` di
@@ -259,7 +261,13 @@ lokasi baru secara otomatis, tetapi untuk letak pasti pakai daftar ini.
     `src/lib/lkps/`), `ekspor/`, `instrumen/`, `komponen/` (narasi, review, basis-pengetahuan, kesiapan, peta-ts,
     pilih-jenjang, `shell-led.tsx` = `ShellLed`/`ShellMenuLed` + `MENU_LED`, `pemilih-led.tsx`), `validasi.ts` (skema
     instrumen, LED baru, jawaban, tim penyusun), `tampil.ts` (`formatMetrik`).
-  - `lkps/`: kerangka untuk Ghalib (`README.md`, `index.ts` = pintu modul, `komponen/shell-lkps.tsx`).
+  - `lkps/` (Gabung LKPS 18 Nov 2026, kode asal Achmadghalib725/LKPS_LAM-TEKNIK@c718eff; panduan di
+    `src/modules/lkps/README.md`): `domain/` (`akses.ts` matriks hak, `validasi.ts` zod, `hitung.ts` mesin skor,
+    `bukti.ts`, `prodi.ts`, `onedata-prodi.ts`, `templat/`), `data/` (satu berkas per modul kriteria, `akses.ts`,
+    `prodi-aktif.ts`, `beranda.ts`, `impor.ts`, `ekspor.ts`, `bukti.ts`, `onedata/` mati secara bawaan), `komponen/`
+    (halaman klien per modul, `bersama/`, `pemilih-prodi.tsx`, `wajib-prodi.tsx`, `shell-lkps.tsx`, `gaya-lkps.css`
+    di bawah `.lkps-klasik`), `index.ts` (`MODUL_LKPS.siap = true`). Model `Lkps*` di `prisma/schema/lkps.prisma`.
+    LED tetap membaca LKPS dari berkas yang diunggah (`led/data-lkps/`).
   - Komponen tampilan umum tetap di `src/components/` (shadcn/ui, `shell/` = `ShellAplikasi`, `ShellBersama`,
     `ShellPeran`, `menu-peran.ts` dengan menu per peran, lonceng, menu pengguna).
 - **Prisma**: skema dipecah `prisma/schema/{bersama,led,lkps}.prisma` (`prisma.config.ts` → `schema: "prisma/schema"`,

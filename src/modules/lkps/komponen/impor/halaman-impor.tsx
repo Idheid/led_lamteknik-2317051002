@@ -150,7 +150,7 @@ export default function HalamanImpor({ oneDataAktif }: { oneDataAktif: boolean }
               disabled={syncLoading || !oneDataAktif}
               title={oneDataAktif ? undefined : 'Sinkron One Data belum diaktifkan'}
               className="btn btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 20px' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 20px', opacity: oneDataAktif ? 1 : 0.55 }}
             >
               <RefreshCw size={16} className={syncLoading ? 'animate-spin' : ''} />
               {syncLoading ? 'Menghubungkan ke One Data...' : 'Tarik Data Terbaru Prodi'}

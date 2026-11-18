@@ -1,6 +1,6 @@
 # Peta penggabungan modul LKPS (Ghalib) ke led-lamteknik
 
-Gabung LKPS G0 (18 November 2026). Sumber: `Achmadghalib725/LKPS_LAM-TEKNIK@c718eff` (Achmad Ghalib), di-clone ke
+Gabung LKPS G0 (18 November 2026), **versi akhir G8** (status akhir di bagian 7). Sumber: `Achmadghalib725/LKPS_LAM-TEKNIK@c718eff` (Achmad Ghalib), di-clone ke
 `../lkps-ghalib-c718eff` (di luar repo, tidak dijalankan, tidak di-commit). Rencana: `docs/RENCANA-GABUNG-LKPS.md`.
 
 Inventaris: 101 berkas di luar `src/generated/` (± 15.500 baris tanpa `package-lock.json`); belum ada uji otomatis.
@@ -123,7 +123,7 @@ Model tanpa `prodiId` (berlaku untuk seluruh fakultas): `LkpsRegulasi`, `LkpsKri
 |---|---|---|
 | `SUPER_ADMIN`, `ADMIN_UPPS`, `PENANGGUNG_JAWAB` | `ADMIN` (Admin UPPS) | baca semua prodi (lewat pemilih); tulis identitas/tim, konfigurasi; ekspor; **tidak** menulis isian kriteria |
 | `OPERATOR_PRODI` | `TIM_PRODI` | tulis dan baca isian kriteria 1–9, identitas/tim, ekspor, **hanya prodinya** |
-| `ASESOR` / `REVIEWER` | `ASESOR` (Reviewer LPMPP) | baca semua prodi (rancangan Ghalib; ditanyakan di ⏸ G4), ekspor |
+| `ASESOR` / `REVIEWER` | `ASESOR` (Reviewer LPMPP) | baca dan ekspor **hanya prodi yang LED-nya ditugaskan** (keputusan ⏸ G4; rancangan Ghalib: semua prodi) |
 | `GUEST` | `TAMU` | tidak ada akses ke modul LKPS; hanya dashboard akreditasi (G2) |
 
 ## 5. Isian prodi dan identitas Ghalib
@@ -177,3 +177,34 @@ Model tanpa `prodiId` (berlaku untuk seluruh fakultas): `LkpsRegulasi`, `LkpsKri
 3. Perbedaan perilaku lain dari kode asal (impor kerja sama/tracer tanpa tanggal/tahun ditolak, Tim Prodi menyimpan
    tendik, hapus konfigurasi yang sudah diisi ditolak, galat `{ pesan }`) diserahkan ke pengembang; dicatat di
    `docs/CATATAN-PENGEMBANGAN.md` bagian G4.
+
+## 7. Status akhir (G8, 18 Nov 2026)
+
+| Tahap | Commit | Isi |
+|---|---|---|
+| G0 | `75847d2` | peta ini, inventaris, rencana |
+| G1 | `9d1908f` | peran `TAMU` |
+| G2 | `da8ef11` | dashboard akreditasi hanya baca untuk Tamu |
+| G3 | `85064a5` | skema `prisma/schema/lkps.prisma` (model `Lkps*`) |
+| G4 | `6ab49be` | domain, data, dan API `/api/lkps/*` |
+| G5 | `23d4fdc` | halaman `/lkps/*` di kerangka LED, menu, pemilih prodi, gaya terlingkup |
+| G6 | `25d6d8e` | sinkron One Data mati secara bawaan |
+| G7 | – | **belum dikerjakan**: menunggu keputusan Adrianne (dikerjakan sekarang atau diserahkan ke Ghalib); `gaya-lkps.css` tetap ada |
+| G8 | (commit G8) | uji akhir, uji jalan empat peran, dokumentasi |
+
+Masalah bagian 6: nomor 1, 3–14, dan 16 diperbaiki seperti kolom "Perbaikan". Nomor 2 dan 17 tetap hal terbuka
+(repo lama dan struktur tabel). Nomor 15: baris kerja sama kini menyimpan bukti MoU (`berkasLokasi`/`berkasNama`), dan
+uji jalan G8 memastikan bukti itu bisa diunduh lagi.
+
+Rute halaman bagian 3 sudah ada semua (`/lkps`, `/lkps/<modul>`, `/lkps/kriteria/[id]`, `/lkps/identitas`,
+`/lkps/impor`, `/lkps/ekspor`, `/lkps/konfigurasi`). Rute API juga sudah ada semua, termasuk `/api/lkps/onedata/sinkron`.
+
+**Hal terbuka:**
+- G7, penyamaan tampilan dengan komponen shadcn/ui LED: kerjakan sekarang atau serahkan ke Ghalib.
+- Struktur tabel LKPS dibandingkan dengan template LKPS LAM Teknik 2025 (keputusan Ghalib dan Pak Tris).
+- Sambungan data modul LKPS ke LED (adaptor opsional); unggah berkas tetap jalur utama.
+- Kredensial WS API myUnila yang dipakai (aplikasi Adrianne atau Ghalib); bentuk respons `/v1/auth/check-token`;
+  asumsi nilai pengisi sinkron One Data (lihat `CATATAN-PENGEMBANGAN.md` G6).
+- Keamanan repo lama Ghalib (ganti password MyUnila, hapus cookie), dikerjakan Ghalib di repo lamanya.
+- Akun Tamu belum bisa dibuat dari Kelola akun; Tamu direncanakan masuk lewat SSO (Rencana 18 Nov, mulai S3).
+

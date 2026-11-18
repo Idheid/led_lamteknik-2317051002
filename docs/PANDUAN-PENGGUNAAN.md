@@ -1,7 +1,8 @@
 # Panduan penggunaan
 
-Panduan singkat website Akreditasi LAM Teknik (setelah revisi 31 Okt 2026) untuk tiga peran: **Admin UPPS**, **Tim
-Prodi**, dan **Asesor (reviewer)**. Satu instalasi website dipakai satu fakultas (UPPS).
+Panduan singkat website Akreditasi LAM Teknik (setelah revisi 31 Okt 2026 dan Gabung LKPS 18 Nov 2026) untuk empat
+peran: **Admin UPPS**, **Tim Prodi**, **Asesor (reviewer)**, dan **Tamu**. Satu instalasi website dipakai satu
+fakultas (UPPS). Modul LKPS dijelaskan di bagian D, peran Tamu di bagian E.
 
 **Satu aplikasi LED dan LKPS LAM Teknik** (desain form 2, 2 Nov 2026). Setelah login, setiap peran langsung masuk ke
 berandanya: Admin UPPS ke **Dashboard akreditasi**, Tim Prodi ke **LED prodi**, reviewer LPMPP ke **LED ditugaskan**.
@@ -10,8 +11,8 @@ berandanya: Admin UPPS ke **Dashboard akreditasi**, Tim Prodi ke **LED prodi**, 
 - Fitur yang sama untuk keduanya ada di grup sidebar **Bersama (LED & LKPS)** dan selalu tampil, disertai fitur modul
   yang sedang dibuka saja (LED atau LKPS, tidak pernah keduanya). Saat membuka halaman bersama, misalnya Dashboard,
   sidebar tetap menampilkan modul terakhir yang Anda pilih dan keterangan di atas berbunyi "Fitur bersama LED dan LKPS".
-- Selama modul LKPS masih disiapkan, LKPS diunggah sekali sebagai berkas ke LED aktif prodi (menu Data LKPS, tombol
-  LKPS menyala) dan langsung dipakai LED.
+- Modul LKPS (tombol **LKPS**) berisi isian tabel LKPS per prodi (bagian D). LED **tetap** membaca LKPS dari berkas
+  Excel/PDF yang diunggah ke LED aktif prodi (menu Data LKPS di dalam LED); data modul LKPS belum dipakai LED.
 - Peran "Asesor" di aplikasi ini adalah **Reviewer LPMPP** (reviewer internal).
 - Membuka alamat milik peran lain diarahkan ke beranda peran sendiri. Setiap halaman punya kotak **Petunjuk halaman ini** yang bisa
 ditutup.
@@ -368,3 +369,48 @@ menjalankan generate, atau mengekspor.
 5. Di bagian bawah halaman Penilaian: **Layak diajukan** bisa dipilih setelah semua catatan diterima dan semua butir
    diberi skor asesor; ekspor final Tim Prodi lalu terbuka. **Perlu revisi** mengembalikan LED ke Tim Prodi (tulis catatan
    umum bila tidak ada catatan yang masih terbuka). Nilai ini simulasi internal, bukan keputusan LAM Teknik.
+
+---
+
+## D. Modul LKPS
+
+Tombol **LKPS** di kepala halaman membuka modul LKPS (Laporan Kinerja Program Studi), digabung dari aplikasi LKPS Ghalib
+(18 Nov 2026). Menu sidebar grup **LKPS · Laporan Kinerja Prodi**:
+
+- **Beranda LKPS**: progres pengisian setiap kriteria dan tautan ke LED aktif prodi.
+- **Identitas & tim**: identitas institusi dan prodi (diambil dari data LED, hanya baca) dan **tim penyusun LKPS**
+  (bisa diubah).
+- **K1–K9**: isian tabel setiap kriteria, ditambah kriteria lain bila Admin UPPS menambahkannya di Struktur kriteria &
+  tabel.
+- **Impor One Data**: unggah berkas xlsx/csv/json, periksa pratinjau, lalu terapkan. Tombol **Tarik Data Terbaru Prodi**
+  (sinkron langsung dari myUnila) nonaktif dengan keterangan "Sinkron One Data belum diaktifkan" sampai server
+  mengaktifkannya.
+- **Ekspor Excel**: unduh LKPS prodi sebagai berkas .xlsx.
+- **Struktur kriteria & tabel** (Admin UPPS saja): regulasi, kriteria, dan tabel LKPS untuk seluruh fakultas.
+
+| Aksi di modul LKPS | Admin UPPS | Tim Prodi | Asesor | Tamu |
+|---|---|---|---|---|
+| Membuka modul LKPS | Ya, semua prodi (pilih prodi) | Prodinya | Prodi yang LED-nya ditugaskan (pilih prodi) | – |
+| Mengisi dan mengubah isian kriteria, impor, unggah bukti | – | Ya | – | – |
+| Mengubah tim penyusun LKPS | Ya | Ya | – | – |
+| Ekspor Excel | Ya | Ya | Ya | – |
+| Struktur kriteria & tabel | Ya | – | – | – |
+
+1. **Admin UPPS dan Asesor** memilih program studi di kotak **Program studi LKPS** di atas konten. Sebelum memilih,
+   halaman LKPS menampilkan "Pilih program studi". Daftar Asesor hanya berisi prodi yang LED-nya ditugaskan kepadanya.
+2. **Tim Prodi** langsung melihat prodinya. Tombol **Tambah …** membuka formulir; isian yang wajib (mis. tahun, tanggal
+   mulai/berakhir kerja sama) harus diisi. Bila penyimpanan gagal, pesannya muncul di pojok kanan atas.
+3. **Bukti fisik** (mis. MoU kerja sama, RPS): PDF, PNG, JPG, atau XLSX, paling besar 10 MB. Bukti hanya bisa dibuka
+   pengguna yang boleh membaca LKPS prodi itu.
+4. Peran yang hanya membaca melihat kotak **Mode hanya baca** di atas halaman, dan tombol tambah/ubah/hapus tidak tampil.
+5. Untuk menyusun LED, LKPS tetap diunggah di **Data LKPS** LED aktif prodi (menu LED). Beranda LKPS menautkan ke sana.
+
+---
+
+## E. Tamu
+
+Peran **Tamu** (Gabung LKPS G1) hanya melihat **Dashboard akreditasi**: status akreditasi semua prodi dan detail prodi,
+hanya baca. Tamu tidak membuka LED atau LKPS; alamat lain diarahkan ke Dashboard, dan tombol aksi (Catat hasil,
+Ingatkan, Review LPMPP) tidak tampil. Akun Tamu belum bisa dibuat dari Kelola akun: rencananya Tamu masuk lewat SSO
+Unila (Rencana 18 Nov, mulai S3).
+
