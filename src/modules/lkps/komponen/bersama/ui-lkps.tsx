@@ -136,8 +136,8 @@ export function namaDariAlamatBukti(url: string | null | undefined): string | nu
 
 /** Unggah satu bukti ke `/api/lkps/bukti` (prodi aktif); galat tampil sebagai toast lewat kirimLkps. */
 export function UnggahBukti({
-  accept, label = "Unggah berkas", keterangan, onTerunggah,
-}: { accept: string; label?: string; keterangan?: string; onTerunggah: (url: string, nama: string) => void }) {
+  accept, label = "Unggah berkas", keterangan, onTerunggah, ringkas = false,
+}: { accept: string; label?: string; keterangan?: string; onTerunggah: (url: string, nama: string) => void; ringkas?: boolean }) {
   const [sibuk, setSibuk] = useState(false);
   async function unggah(berkas: File | undefined) {
     if (!berkas) return;
@@ -153,6 +153,17 @@ export function UnggahBukti({
       setSibuk(false);
     }
   }
+  const masukan = <input type="file" accept={accept} className="sr-only" onChange={(e) => { void unggah(e.target.files?.[0]); e.target.value = ""; }} />;
+  if (ringkas) {
+    // varian tombol kecil untuk sel tabel
+    return (
+      <label className={cn("inline-flex h-8 w-fit cursor-pointer items-center gap-1.5 rounded-lg border bg-background px-2.5 text-sm font-medium hover:bg-muted has-focus-visible:ring-3 has-focus-visible:ring-ring/50", sibuk && "pointer-events-none opacity-60")}>
+        {sibuk ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Upload className="size-4" aria-hidden />}
+        {sibuk ? "Mengunggah…" : label}
+        {masukan}
+      </label>
+    );
+  }
   return (
     <label
       className={cn(
@@ -163,7 +174,7 @@ export function UnggahBukti({
       {sibuk ? <Loader2 className="size-5 animate-spin text-primary" aria-hidden /> : <Upload className="size-5 text-primary" aria-hidden />}
       <span className="font-medium text-primary">{sibuk ? "Mengunggah…" : label}</span>
       {keterangan && <span className="text-muted-foreground">{keterangan}</span>}
-      <input type="file" accept={accept} className="sr-only" onChange={(e) => { void unggah(e.target.files?.[0]); e.target.value = ""; }} />
+      {masukan}
     </label>
   );
 }
@@ -202,12 +213,12 @@ export function TombolSimpan({ sibuk, onClick, disabled, children }: { sibuk: bo
 
 /** Isian angka bulat di sel tabel (kode asal: NumberInput); kosong/tidak sah → 0. */
 export function InputAngka({
-  value, onChange, label, disabled, min = 0, desimal = false,
-}: { value: number; onChange: (v: number) => void; label: string; disabled?: boolean; min?: number; desimal?: boolean }) {
+  value, onChange, label, disabled, min = 0, desimal = false, className,
+}: { value: number; onChange: (v: number) => void; label: string; disabled?: boolean; min?: number; desimal?: boolean; className?: string }) {
   return (
     <Input
       type="number" min={min} step={desimal ? "any" : 1} inputMode={desimal ? "decimal" : "numeric"} aria-label={label}
-      disabled={disabled} value={value} className="h-8 w-16 min-w-14 px-1.5 text-center tabular-nums"
+      disabled={disabled} value={value} className={cn("h-8 w-16 min-w-14 px-1.5 text-center tabular-nums", className)}
       onChange={(e) => onChange((desimal ? parseFloat(e.target.value) : parseInt(e.target.value)) || 0)}
     />
   );

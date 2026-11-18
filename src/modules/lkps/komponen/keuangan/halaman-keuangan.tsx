@@ -1,470 +1,259 @@
 "use client";
-/* eslint-disable react/no-unescaped-entities -- kode asal Ghalib dipindah apa adanya (Gabung LKPS G5); dirapikan saat G7 */
 
 // Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/app/(dashboard)/keuangan/page.tsx.
-// Gabung LKPS G5: dipindah ke kerangka LED (alamat /api/lkps, galat { pesan }, Header -> JudulHalaman, RoleNotice -> Petunjuk).
+// Gabung LKPS G5: alamat /api/lkps, galat { pesan }. Gabung LKPS G7: dibuat ulang dengan komponen LED (Tabs, Table,
+// Dialog, Field, Select, AlertDialog, toast). Ringkasan dana, kolom tabel 4.a/4.b, isian, dan aksi API (saveDana,
+// saveLab, deleteLab) tidak berubah. Perbedaan: formulir tambah lab tidak lagi terisi contoh angka (asal: 30 jam,
+// 72 m²); urutan baris dana TS-2 → TS.
 
-import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim"
-import { useState, useEffect } from 'react'
-import { JudulHalaman } from "@/components/judul-halaman"
-import IconBadge from "@/modules/lkps/komponen/bersama/ikon-lencana"
-import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran"
-import { Wallet, Coins, Microscope, Zap, Plus, Edit3, Trash2, Save, Loader2, CheckCircle2, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { FlaskConical, Pencil, Plus, Wallet } from "lucide-react";
+import { JudulHalaman } from "@/components/judul-halaman";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran";
+import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim";
+import {
+  Angka, BarisAngka, InputAngka, KartuHitung, KartuTabel, KosongArahan, LencanaTahun, TombolHapus, TombolSimpan,
+} from "@/modules/lkps/komponen/bersama/ui-lkps";
 
 interface DanaRow {
-  id: string
-  tahunSemester: string
-  biayaOperasionalPendidikan: number
-  biayaPenelitianDosen: number
-  biayaPkmDosen: number
-  investasiSdm: number
-  investasiSarana: number
-  investasiPrasarana: number
+  id: string;
+  tahunSemester: string;
+  biayaOperasionalPendidikan: number;
+  biayaPenelitianDosen: number;
+  biayaPkmDosen: number;
+  investasiSdm: number;
+  investasiSarana: number;
+  investasiPrasarana: number;
 }
 
 interface LabRow {
-  id: string
-  namaLab: string
-  jenisPeralatan: string
-  kepemilikan: string
-  kondisi: string
-  jamPenggunaan: number
-  luasRuangan: number
+  id: string;
+  namaLab: string;
+  jenisPeralatan: string;
+  kepemilikan: string;
+  kondisi: string;
+  jamPenggunaan: number;
+  luasRuangan: number;
 }
 
+const URUT_TS = ["TS-2", "TS-1", "TS"];
+const danaKosong = (t: string): DanaRow => ({
+  id: `temp_${t.toLowerCase().replace("-", "")}`, tahunSemester: t, biayaOperasionalPendidikan: 0, biayaPenelitianDosen: 0,
+  biayaPkmDosen: 0, investasiSdm: 0, investasiSarana: 0, investasiPrasarana: 0,
+});
+
+const KOLOM_DANA = [
+  ["biayaOperasionalPendidikan", "Operasional pendidikan"], ["biayaPenelitianDosen", "Penelitian dosen"],
+  ["biayaPkmDosen", "PkM dosen"], ["investasiSdm", "Investasi SDM"], ["investasiSarana", "Investasi sarana"],
+  ["investasiPrasarana", "Investasi prasarana"],
+] as const;
+
+const rupiah = (v: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(v);
+
 export default function HalamanKeuangan() {
-  const { canEdit } = useModulePermission('keuangan')
-  const [danaList, setDanaList] = useState<DanaRow[]>([
-    { id: 'temp_ts2', tahunSemester: 'TS-2', biayaOperasionalPendidikan: 0, biayaPenelitianDosen: 0, biayaPkmDosen: 0, investasiSdm: 0, investasiSarana: 0, investasiPrasarana: 0 },
-    { id: 'temp_ts1', tahunSemester: 'TS-1', biayaOperasionalPendidikan: 0, biayaPenelitianDosen: 0, biayaPkmDosen: 0, investasiSdm: 0, investasiSarana: 0, investasiPrasarana: 0 },
-    { id: 'temp_ts', tahunSemester: 'TS', biayaOperasionalPendidikan: 0, biayaPenelitianDosen: 0, biayaPkmDosen: 0, investasiSdm: 0, investasiSarana: 0, investasiPrasarana: 0 },
-  ])
-  const [labList, setLabList] = useState<LabRow[]>([])
-  const [activeTab, setActiveTab] = useState<'dana' | 'lab'>('dana')
+  const { canEdit } = useModulePermission("keuangan");
+  const [danaList, setDanaList] = useState<DanaRow[]>(URUT_TS.map(danaKosong));
+  const [labList, setLabList] = useState<LabRow[]>([]);
+  const [editingLab, setEditingLab] = useState<LabRow | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [showLabModal, setShowLabModal] = useState(false)
-  const [editingLab, setEditingLab] = useState<LabRow | null>(null)
-
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await kirimLkps("/api/lkps/keuangan");
+      if (res.ok) {
+        const data = (await res.json()) as { dana?: DanaRow[]; lab?: LabRow[] };
+        if (data.dana?.length) setDanaList(URUT_TS.map((t) => data.dana!.find((d) => d.tahunSemester === t) ?? danaKosong(t)));
+        setLabList(data.lab || []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    void fetchData();
+  }, [fetchData]);
 
-  async function fetchData() {
+  const jumlah = (k: keyof DanaRow) => danaList.reduce((a, d) => a + (Number(d[k]) || 0), 0);
+
+  async function aksi(action: string, payload: unknown, sukses: string, tutup?: () => void) {
+    setSaving(true);
     try {
-      const res = await kirimLkps('/api/lkps/keuangan')
+      const res = await kirimLkps("/api/lkps/keuangan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, payload }) });
       if (res.ok) {
-        const data = await res.json()
-        if (data.dana && data.dana.length > 0) {
-          setDanaList(data.dana)
-        }
-        setLabList(data.lab || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch Keuangan data:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Real-time calculations
-  const totalOperasional = danaList.reduce((acc, d) => acc + (d.biayaOperasionalPendidikan || 0), 0)
-  const totalPenelitian = danaList.reduce((acc, d) => acc + (d.biayaPenelitianDosen || 0), 0)
-  const totalPkm = danaList.reduce((acc, d) => acc + (d.biayaPkmDosen || 0), 0)
-
-  async function handleSaveDana() {
-    setSaving(true)
-    try {
-      const res = await kirimLkps('/api/lkps/keuangan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'saveDana', payload: { rows: danaList } }),
-      })
-      if (res.ok) {
-        await fetchData()
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        await fetchData();
+        tutup?.();
+        toast.success(sukses);
       }
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
-  function openAddLab() {
-    setEditingLab({
-      id: `temp_${Date.now()}`,
-      namaLab: '',
-      jenisPeralatan: '',
-      kepemilikan: 'Milik Sendiri',
-      kondisi: 'Baik',
-      jamPenggunaan: 30,
-      luasRuangan: 72,
-    })
-    setShowLabModal(true)
-  }
-
-  function openEditLab(row: LabRow) {
-    setEditingLab({ ...row })
-    setShowLabModal(true)
-  }
-
-  async function handleSaveLab() {
-    if (!editingLab) return
-    setSaving(true)
-    try {
-      const res = await kirimLkps('/api/lkps/keuangan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'saveLab', payload: editingLab }),
-      })
-      if (res.ok) {
-        await fetchData()
-        setShowLabModal(false)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
-      }
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleDeleteLab(id: string) {
-    if (!confirm('Hapus data sarana/laboratorium ini?')) return
-    try {
-      const res = await kirimLkps('/api/lkps/keuangan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'deleteLab', payload: { id } }),
-      })
-      if (res.ok) fetchData()
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
-  function formatRp(val: number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
-  }
+  const ubahDana = (tahun: string, kolom: keyof DanaRow, v: number) => setDanaList((l) => l.map((d) => (d.tahunSemester === tahun ? { ...d, [kolom]: v } : d)));
+  const ubahLab = (p: Partial<LabRow>) => setEditingLab((l) => (l ? { ...l, ...p } : l));
 
   return (
     <>
-      <JudulHalaman judul="Kriteria 4: Keuangan, Sarana & Prasarana" />
-      <div className="page-content animate-fade-in">
-        <div style={{ marginBottom: '24px' }}>
-          <h2 className="section-title">Keuangan, Sarana, dan Prasarana</h2>
-          <p className="section-subtitle">
-            Tabel 4.a–4.c LKPS – Penggunaan dana operasional, penelitian, PkM, serta kecukupan sarana prasarana laboratorium.
-          </p>
-        </div>
+      <JudulHalaman judul="Kriteria 4: Keuangan, Sarana & Prasarana" deskripsi="Tabel 4.a, 4.b, dan 4.c LKPS: penggunaan dana dan sarana laboratorium." />
+      <RoleNotice module="keuangan" />
 
-        <RoleNotice module="keuangan" />
+      <KartuHitung judul="Ringkasan penggunaan dana tridharma" deskripsi="Akumulasi TS-2 sampai TS, dihitung langsung dari Tabel 4.a.">
+        <BarisAngka>
+          <Angka label="Operasional pendidikan" nilai={rupiah(jumlah("biayaOperasionalPendidikan"))} nada="text-blue-700 dark:text-blue-300" />
+          <Angka label="Penelitian dosen" nilai={rupiah(jumlah("biayaPenelitianDosen"))} nada="text-violet-700 dark:text-violet-300" />
+          <Angka label="PkM dosen" nilai={rupiah(jumlah("biayaPkmDosen"))} nada="text-emerald-700 dark:text-emerald-300" />
+        </BarisAngka>
+      </KartuHitung>
 
-        {/* Realtime Summary Card */}
-        <div className="card" style={{ marginBottom: '20px', background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.15)' }}>
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <IconBadge icon={Zap} variant="emerald" size="md" glow />
-              <div>
-                <div className="card-title">Ringkasan Penggunaan Dana Tridharma</div>
-                <div className="card-subtitle">Akumulasi Biaya Operasional (TS-2 s.d TS)</div>
-              </div>
-            </div>
-            <div className="score-display score-excellent">
-              {labList.length} Lab/Studio Terdaftar
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', marginTop: '16px' }}>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--lkps-text-secondary)' }}>Operasional Pendidikan</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>{formatRp(totalOperasional)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--lkps-text-secondary)' }}>Penelitian Dosen</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6' }}>{formatRp(totalPenelitian)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--lkps-text-secondary)' }}>PkM Dosen</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#8b5cf6' }}>{formatRp(totalPkm)}</div>
-            </div>
-          </div>
-        </div>
+      <Tabs defaultValue="dana" className="gap-4">
+        <TabsList>
+          <TabsTrigger value="dana"><Wallet aria-hidden />Tabel 4.a · Penggunaan dana</TabsTrigger>
+          <TabsTrigger value="lab"><FlaskConical aria-hidden />Tabel 4.b & 4.c · Sarana & laboratorium</TabsTrigger>
+        </TabsList>
 
-        {/* Navigation Tabs */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-          <button className={`btn ${activeTab === 'dana' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('dana')}>
-            <Coins size={16} /> Tabel 4.a – Penggunaan Dana
-          </button>
-          <button className={`btn ${activeTab === 'lab' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('lab')}>
-            <Microscope size={16} /> Tabel 4.b & 4.c – Sarana & Laboratorium
-          </button>
-        </div>
-
-        {saved && (
-          <div className="badge badge-emerald" style={{ marginBottom: '16px', fontSize: '13px', padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCircle2 size={16} /> Data Keuangan berhasil disimpan!
-          </div>
-        )}
-
-        {/* Tab 1: Dana */}
-        {activeTab === 'dana' && (
-          <div className="card">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Data Penggunaan Dana (Tabel 4.a LKPS)</div>
-                <div className="card-subtitle">Dalam Rupiah (IDR)</div>
-              </div>
-            </div>
-
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Periode</th>
-                    <th>Operasional Pendidikan</th>
-                    <th>Penelitian Dosen</th>
-                    <th>PkM Dosen</th>
-                    <th>Investasi SDM</th>
-                    <th>Investasi Sarana</th>
-                    <th>Investasi Prasarana</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {danaList.map((d, idx) => (
-                    <tr key={d.id || idx}>
-                      <td style={{ fontWeight: 700, color: 'var(--lkps-accent-blue)' }}>{d.tahunSemester}</td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-input"
-                          style={{ width: '130px' }}
-                          disabled={!canEdit}
-                          value={d.biayaOperasionalPendidikan}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value) || 0
-                            setDanaList(prev => prev.map((item, i) => i === idx ? { ...item, biayaOperasionalPendidikan: val } : item))
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-input"
-                          style={{ width: '130px' }}
-                          disabled={!canEdit}
-                          value={d.biayaPenelitianDosen}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value) || 0
-                            setDanaList(prev => prev.map((item, i) => i === idx ? { ...item, biayaPenelitianDosen: val } : item))
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-input"
-                          style={{ width: '130px' }}
-                          disabled={!canEdit}
-                          value={d.biayaPkmDosen}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value) || 0
-                            setDanaList(prev => prev.map((item, i) => i === idx ? { ...item, biayaPkmDosen: val } : item))
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-input"
-                          style={{ width: '130px' }}
-                          disabled={!canEdit}
-                          value={d.investasiSdm}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value) || 0
-                            setDanaList(prev => prev.map((item, i) => i === idx ? { ...item, investasiSdm: val } : item))
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-input"
-                          style={{ width: '130px' }}
-                          disabled={!canEdit}
-                          value={d.investasiSarana}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value) || 0
-                            setDanaList(prev => prev.map((item, i) => i === idx ? { ...item, investasiSarana: val } : item))
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-input"
-                          style={{ width: '130px' }}
-                          disabled={!canEdit}
-                          value={d.investasiPrasarana}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value) || 0
-                            setDanaList(prev => prev.map((item, i) => i === idx ? { ...item, investasiPrasarana: val } : item))
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {canEdit && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                <button id="btn-save-dana" className="btn btn-primary" onClick={handleSaveDana} disabled={saving}>
-                  {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                  {saving ? 'Menyimpan...' : 'Simpan Data Penggunaan Dana'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab 2: Lab */}
-        {activeTab === 'lab' && (
-          <div className="card">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Sarana & Laboratorium (Tabel 4.b & 4.c LKPS)</div>
-                <div className="card-subtitle">Daftar Ruang Praktikum, Peralatan Utama & Kondisi</div>
-              </div>
-              {canEdit && (
-                <button id="btn-add-lab" className="btn btn-primary" onClick={openAddLab}>
-                  <Plus size={16} />
-                  Tambah Lab / Sarana
-                </button>
-              )}
-            </div>
-
-            {loading ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--lkps-text-secondary)' }}>Memuat data Sarana...</div>
-            ) : labList.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-title">Belum ada data laboratorium</div>
-                <div className="empty-state-desc">Klik "Tambah Lab / Sarana" untuk mendaftarkan ruang laboratorium.</div>
-              </div>
-            ) : (
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Nama Laboratorium / Studio</th>
-                      <th>Peralatan Utama</th>
-                      <th>Kepemilikan</th>
-                      <th>Kondisi</th>
-                      <th>Luas (m²)</th>
-                      <th>Jam Pakai/Minggu</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {labList.map((l, idx) => (
-                      <tr key={l.id}>
-                        <td>{idx + 1}</td>
-                        <td style={{ fontWeight: 600 }}>{l.namaLab}</td>
-                        <td>{l.jenisPeralatan}</td>
-                        <td><span className="badge badge-blue">{l.kepemilikan}</span></td>
-                        <td>
-                          {l.kondisi === 'Baik' ? (
-                            <span className="badge badge-emerald">Baik</span>
-                          ) : (
-                            <span className="badge badge-amber">{l.kondisi}</span>
-                          )}
-                        </td>
-                        <td>{l.luasRuangan} m²</td>
-                        <td>{l.jamPenggunaan} Jam</td>
-                        <td>
-                          {canEdit ? (
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button className="btn btn-secondary btn-sm" onClick={() => openEditLab(l)}>
-                                <Edit3 size={14} /> Edit
-                              </button>
-                              <button className="btn btn-danger btn-sm" onClick={() => handleDeleteLab(l.id)}>
-                                <Trash2 size={14} /> Hapus
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted">–</span>
-                          )}
-                        </td>
-                      </tr>
+        <TabsContent value="dana" className="flex flex-col gap-4">
+          <KartuTabel nomor={4} judul="Tabel 4.a · Penggunaan dana" deskripsi="Dalam rupiah (IDR), per tahun TS-2 sampai TS.">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-6">Periode</TableHead>
+                  {KOLOM_DANA.map(([k, n], i) => <TableHead key={k} className={i === KOLOM_DANA.length - 1 ? "pr-6" : undefined}>{n}</TableHead>)}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {danaList.map((d) => (
+                  <TableRow key={d.tahunSemester}>
+                    <TableCell className="pl-6"><LencanaTahun tahun={d.tahunSemester} /></TableCell>
+                    {KOLOM_DANA.map(([k, n], i) => (
+                      <TableCell key={k} className={i === KOLOM_DANA.length - 1 ? "pr-6" : undefined}>
+                        <InputAngka desimal className="w-32 min-w-28 text-right" label={`${n} ${d.tahunSemester}`} value={d[k]} disabled={!canEdit} onChange={(v) => ubahDana(d.tahunSemester, k, v)} />
+                      </TableCell>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </KartuTabel>
+          {canEdit && (
+            <div className="flex justify-end">
+              <TombolSimpan sibuk={saving} onClick={() => void aksi("saveDana", { rows: danaList }, "Data penggunaan dana tersimpan.")}>Simpan data penggunaan dana</TombolSimpan>
+            </div>
+          )}
+        </TabsContent>
 
-      {/* Lab Modal */}
-      {showLabModal && editingLab && canEdit && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowLabModal(false)}>
-          <div className="modal">
-            <div className="modal-header">
-              <div className="modal-title">{editingLab.id.startsWith('temp_') ? 'Tambah Laboratorium / Sarana' : 'Edit Laboratorium / Sarana'}</div>
-              <button onClick={() => setShowLabModal(false)} style={{ background: 'none', border: 'none', color: 'var(--lkps-text-secondary)', cursor: 'pointer', padding: '4px' }}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Nama Laboratorium / Studio / Ruang Praktikum <span className="required">*</span></label>
-                <input className="form-input" value={editingLab.namaLab} onChange={e => setEditingLab({ ...editingLab, namaLab: e.target.value })} placeholder="Laboratorium Pemrograman & AI" />
+        <TabsContent value="lab">
+          <KartuTabel
+            nomor={4} judul="Tabel 4.b & 4.c · Sarana dan laboratorium" deskripsi="Ruang praktikum, peralatan utama, dan kondisinya."
+            aksi={canEdit && (
+              <Button onClick={() => setEditingLab({ id: `temp_${Date.now()}`, namaLab: "", jenisPeralatan: "", kepemilikan: "Milik Sendiri", kondisi: "Baik", jamPenggunaan: 0, luasRuangan: 0 })}>
+                <Plus aria-hidden />Tambah lab / sarana
+              </Button>
+            )}
+          >
+            {labList.length === 0 ? (
+              <KosongArahan nomor={4} judul={loading ? "Memuat data…" : "Belum ada data laboratorium"}>
+                {!loading && (canEdit ? "Klik Tambah lab / sarana untuk mendaftarkan ruang laboratorium." : "Tim Prodi belum mengisi tabel ini.")}
+              </KosongArahan>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-6">No</TableHead>
+                    <TableHead>Laboratorium / studio</TableHead>
+                    <TableHead>Peralatan utama</TableHead>
+                    <TableHead>Kepemilikan</TableHead>
+                    <TableHead>Kondisi</TableHead>
+                    <TableHead>Luas</TableHead>
+                    <TableHead>Jam pakai/minggu</TableHead>
+                    {canEdit && <TableHead className="pr-6 text-right">Aksi</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {labList.map((l, i) => (
+                    <TableRow key={l.id}>
+                      <TableCell className="pl-6 text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="font-medium">{l.namaLab}</TableCell>
+                      <TableCell className="max-w-56 whitespace-normal">{l.jenisPeralatan}</TableCell>
+                      <TableCell><Badge variant="outline">{l.kepemilikan}</Badge></TableCell>
+                      <TableCell>
+                        <Badge className={l.kondisi === "Baik" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-amber-500/10 text-amber-800 dark:text-amber-300"}>{l.kondisi}</Badge>
+                      </TableCell>
+                      <TableCell className="tabular-nums">{l.luasRuangan} m²</TableCell>
+                      <TableCell className="tabular-nums">{l.jamPenggunaan} jam</TableCell>
+                      {canEdit && (
+                        <TableCell className="pr-6 text-right whitespace-nowrap">
+                          <Button size="icon" variant="ghost" aria-label={`Ubah ${l.namaLab}`} onClick={() => setEditingLab({ ...l })}><Pencil aria-hidden /></Button>
+                          <TombolHapus label={`Hapus ${l.namaLab}`} judul="Hapus data sarana/laboratorium ini?" deskripsi={l.namaLab} onHapus={() => void aksi("deleteLab", { id: l.id }, "Data laboratorium dihapus.")} />
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </KartuTabel>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={Boolean(editingLab) && canEdit} onOpenChange={(b) => !b && setEditingLab(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingLab?.id.startsWith("temp_") ? "Tambah laboratorium / sarana" : "Ubah laboratorium / sarana"}</DialogTitle>
+            <DialogDescription>Nama laboratorium wajib diisi.</DialogDescription>
+          </DialogHeader>
+          {editingLab && (
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="lab-nama">Nama laboratorium / studio / ruang praktikum</FieldLabel>
+                <Input id="lab-nama" value={editingLab.namaLab} onChange={(e) => ubahLab({ namaLab: e.target.value })} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="lab-alat">Jenis peralatan utama</FieldLabel>
+                <Input id="lab-alat" value={editingLab.jenisPeralatan} onChange={(e) => ubahLab({ jenisPeralatan: e.target.value })} />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="lab-milik">Status kepemilikan</FieldLabel>
+                  <Select value={editingLab.kepemilikan} onValueChange={(v) => ubahLab({ kepemilikan: v })}>
+                    <SelectTrigger id="lab-milik" className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["Milik Sendiri", "Sewa / Kerjasama"].map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="lab-kondisi">Kondisi peralatan</FieldLabel>
+                  <Select value={editingLab.kondisi} onValueChange={(v) => ubahLab({ kondisi: v })}>
+                    <SelectTrigger id="lab-kondisi" className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["Baik", "Rusak Ringan", "Rusak Berat"].map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="lab-luas">Luas ruangan (m²)</FieldLabel>
+                  <Input id="lab-luas" type="number" min={0} value={editingLab.luasRuangan} onChange={(e) => ubahLab({ luasRuangan: parseFloat(e.target.value) || 0 })} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="lab-jam">Rata-rata jam pakai per minggu</FieldLabel>
+                  <Input id="lab-jam" type="number" min={0} value={editingLab.jamPenggunaan} onChange={(e) => ubahLab({ jamPenggunaan: parseFloat(e.target.value) || 0 })} />
+                </Field>
               </div>
-              <div className="form-group">
-                <label className="form-label">Jenis Peralatan Utama</label>
-                <input className="form-input" value={editingLab.jenisPeralatan} onChange={e => setEditingLab({ ...editingLab, jenisPeralatan: e.target.value })} placeholder="PC Workstation GPU, Router Cisco, IoT Kit..." />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Status Kepemilikan</label>
-                  <select className="form-select" value={editingLab.kepemilikan} onChange={e => setEditingLab({ ...editingLab, kepemilikan: e.target.value })}>
-                    <option>Milik Sendiri</option>
-                    <option>Sewa / Kerjasama</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Kondisi Peralatan</label>
-                  <select className="form-select" value={editingLab.kondisi} onChange={e => setEditingLab({ ...editingLab, kondisi: e.target.value })}>
-                    <option>Baik</option>
-                    <option>Rusak Ringan</option>
-                    <option>Rusak Berat</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Luas Ruangan (m²)</label>
-                  <input type="number" className="form-input" value={editingLab.luasRuangan} onChange={e => setEditingLab({ ...editingLab, luasRuangan: parseFloat(e.target.value) || 0 })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Rata-rata Jam Pakai / Minggu</label>
-                  <input type="number" className="form-input" value={editingLab.jamPenggunaan} onChange={e => setEditingLab({ ...editingLab, jamPenggunaan: parseFloat(e.target.value) || 0 })} />
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowLabModal(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={handleSaveLab} disabled={saving}>
-                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                {saving ? 'Menyimpan...' : 'Simpan Sarana'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </FieldGroup>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingLab(null)}>Batal</Button>
+            <Button disabled={saving} onClick={() => editingLab && void aksi("saveLab", editingLab, "Data laboratorium tersimpan.", () => setEditingLab(null))}>{saving ? "Menyimpan…" : "Simpan"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
-  )
+  );
 }

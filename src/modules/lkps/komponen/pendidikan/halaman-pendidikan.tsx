@@ -1,548 +1,270 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities -- kode asal Ghalib dipindah apa adanya (Gabung LKPS G5); dirapikan saat G7 */
 
 // Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/app/(dashboard)/pendidikan/page.tsx.
-// Gabung LKPS G5: dipindah ke kerangka LED (alamat /api/lkps, galat { pesan }, Header -> JudulHalaman, RoleNotice -> Petunjuk).
+// Gabung LKPS G5: alamat /api/lkps, galat { pesan }. Gabung LKPS G7: dibuat ulang dengan komponen LED (Tabs, Table,
+// Dialog, Field, AlertDialog, toast). Kartu kurikulum, kolom tabel 5.a.1/5.b, isian, dan aksi API (saveMK, deleteMK,
+// saveMBKM, deleteMBKM) tidak berubah. Perbedaan: formulir tambah tidak lagi terisi contoh data (asal: 2/1 SKS,
+// "CPL-01, CPL-03", mitra "PT Telekomunikasi Indonesia", 20 SKS, "Dosen Pembimbing"); contoh menjadi placeholder.
 
-import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim"
-import { useState, useEffect } from 'react'
-import { JudulHalaman } from "@/components/judul-halaman"
-import IconBadge from "@/modules/lkps/komponen/bersama/ikon-lencana"
-import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran"
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { BookOpen, Pencil, Plus, Rocket } from "lucide-react";
+import { JudulHalaman } from "@/components/judul-halaman";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran";
+import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim";
 import {
-  BookOpen,
-  Rocket,
-  Zap,
-  Plus,
-  Edit3,
-  Trash2,
-  CheckCircle2,
-  X,
-  Save,
-  Loader2,
-  ExternalLink,
-} from 'lucide-react'
+  Angka, BarisAngka, KartuHitung, KartuTabel, KosongArahan, namaDariAlamatBukti, TautanBukti, TombolHapus,
+} from "@/modules/lkps/komponen/bersama/ui-lkps";
 
 interface MKRow {
-  id: string
-  kode: string
-  nama: string
-  sksTeori: number
-  sksPraktikum: number
-  cpl: string
-  linkRps: string | null
-  unitPenyelenggara: string
+  id: string;
+  kode: string;
+  nama: string;
+  sksTeori: number;
+  sksPraktikum: number;
+  cpl: string;
+  linkRps: string | null;
+  fileRps?: string | null;
+  unitPenyelenggara: string;
 }
 
 interface MBKMRow {
-  id: string
-  namaMahasiswa: string
-  nim: string
-  namaMitra: string
-  sksKonversi: number
-  dosenPembimbing: string
-  tahun: number
+  id: string;
+  namaMahasiswa: string;
+  nim: string;
+  namaMitra: string;
+  sksKonversi: number;
+  dosenPembimbing: string;
+  tahun: number;
 }
 
 export default function HalamanPendidikan() {
-  const { canEdit } = useModulePermission('pendidikan')
-  const [mkList, setMkList] = useState<MKRow[]>([])
-  const [mbkmList, setMbkmList] = useState<MBKMRow[]>([])
-  const [activeTab, setActiveTab] = useState<'mk' | 'mbkm'>('mk')
+  const { canEdit } = useModulePermission("pendidikan");
+  const [mkList, setMkList] = useState<MKRow[]>([]);
+  const [mbkmList, setMbkmList] = useState<MBKMRow[]>([]);
+  const [editingMk, setEditingMk] = useState<MKRow | null>(null);
+  const [editingMbkm, setEditingMbkm] = useState<MBKMRow | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [showMkModal, setShowMkModal] = useState(false)
-  const [editingMk, setEditingMk] = useState<MKRow | null>(null)
-
-  const [showMbkmModal, setShowMbkmModal] = useState(false)
-  const [editingMbkm, setEditingMbkm] = useState<MBKMRow | null>(null)
-
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await kirimLkps("/api/lkps/pendidikan");
+      if (res.ok) {
+        const data = await res.json();
+        setMkList(data.mk || []);
+        setMbkmList(data.mbkm || []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    void fetchData();
+  }, [fetchData]);
 
-  async function fetchData() {
+  // Hitungan kode asal (tanpa perubahan)
+  const totalSksTeori = mkList.reduce((a, m) => a + (m.sksTeori || 0), 0);
+  const totalSksPraktikum = mkList.reduce((a, m) => a + (m.sksPraktikum || 0), 0);
+  const totalSks = totalSksTeori + totalSksPraktikum;
+  const persenPraktikum = totalSks > 0 ? (totalSksPraktikum / totalSks) * 100 : 0;
+
+  async function aksi(action: string, payload: unknown, sukses: string, tutup?: () => void) {
+    setSaving(true);
     try {
-      const res = await kirimLkps('/api/lkps/pendidikan')
+      const res = await kirimLkps("/api/lkps/pendidikan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, payload }) });
       if (res.ok) {
-        const data = await res.json()
-        setMkList(data.mk || [])
-        setMbkmList(data.mbkm || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch Pendidikan data:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Realtime calculations
-  const totalSksTeori = mkList.reduce((acc, m) => acc + (m.sksTeori || 0), 0)
-  const totalSksPraktikum = mkList.reduce((acc, m) => acc + (m.sksPraktikum || 0), 0)
-  const totalSks = totalSksTeori + totalSksPraktikum
-  const persenPraktikum = totalSks > 0 ? (totalSksPraktikum / totalSks) * 100 : 0
-
-  function openAddMk() {
-    setEditingMk({
-      id: `temp_${Date.now()}`,
-      kode: '',
-      nama: '',
-      sksTeori: 2,
-      sksPraktikum: 1,
-      cpl: 'CPL-01, CPL-03',
-      linkRps: '',
-      unitPenyelenggara: 'Prodi',
-    })
-    setShowMkModal(true)
-  }
-
-  function openEditMk(row: MKRow) {
-    setEditingMk({ ...row })
-    setShowMkModal(true)
-  }
-
-  async function handleSaveMk() {
-    if (!editingMk) return
-    setSaving(true)
-    try {
-      const res = await kirimLkps('/api/lkps/pendidikan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'saveMK', payload: editingMk }),
-      })
-      if (res.ok) {
-        await fetchData()
-        setShowMkModal(false)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        await fetchData();
+        tutup?.();
+        toast.success(sukses);
       }
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
-  async function handleDeleteMk(id: string) {
-    if (!confirm('Hapus mata kuliah ini?')) return
-    try {
-      const res = await kirimLkps('/api/lkps/pendidikan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'deleteMK', payload: { id } }),
-      })
-      if (res.ok) fetchData()
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
-  function openAddMbkm() {
-    setEditingMbkm({
-      id: `temp_${Date.now()}`,
-      namaMahasiswa: '',
-      nim: '',
-      namaMitra: 'PT Telekomunikasi Indonesia',
-      sksKonversi: 20,
-      dosenPembimbing: 'Dosen Pembimbing',
-      tahun: new Date().getFullYear(),
-    })
-    setShowMbkmModal(true)
-  }
-
-  function openEditMbkm(row: MBKMRow) {
-    setEditingMbkm({ ...row })
-    setShowMbkmModal(true)
-  }
-
-  async function handleSaveMbkm() {
-    if (!editingMbkm) return
-    setSaving(true)
-    try {
-      const res = await kirimLkps('/api/lkps/pendidikan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'saveMBKM', payload: editingMbkm }),
-      })
-      if (res.ok) {
-        await fetchData()
-        setShowMbkmModal(false)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
-      }
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleDeleteMbkm(id: string) {
-    if (!confirm('Hapus data peserta MBKM ini?')) return
-    try {
-      const res = await kirimLkps('/api/lkps/pendidikan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'deleteMBKM', payload: { id } }),
-      })
-      if (res.ok) fetchData()
-    } catch (err) {
-      console.error(err)
-    }
-  }
+  const ubahMk = (p: Partial<MKRow>) => setEditingMk((m) => (m ? { ...m, ...p } : m));
+  const ubahMbkm = (p: Partial<MBKMRow>) => setEditingMbkm((m) => (m ? { ...m, ...p } : m));
+  const kosong = (judul: string, arahan: string) => (
+    <KosongArahan nomor={5} judul={loading ? "Memuat data…" : judul}>{!loading && (canEdit ? arahan : "Tim Prodi belum mengisi tabel ini.")}</KosongArahan>
+  );
+  const aksiBaris = (onUbah: () => void, judul: string, onHapus: () => void, nama: string) => canEdit && (
+    <TableCell className="pr-6 text-right whitespace-nowrap">
+      <Button size="icon" variant="ghost" aria-label={`Ubah ${nama}`} onClick={onUbah}><Pencil aria-hidden /></Button>
+      <TombolHapus label={`Hapus ${nama}`} judul={judul} deskripsi={nama} onHapus={onHapus} />
+    </TableCell>
+  );
 
   return (
     <>
-      <JudulHalaman judul="Kriteria 5: Pendidikan & MBKM" />
-      <div className="page-content animate-fade-in">
-        <div style={{ marginBottom: '24px' }}>
-          <h2 className="section-title">Pendidikan</h2>
-          <p className="section-subtitle">
-            Tabel 5.a–5.b LKPS – Kurikulum, Struktur SKS, Capaian Pembelajaran Lulusan (CPL), Dokumen RPS, dan Kegiatan MBKM.
-          </p>
-        </div>
+      <JudulHalaman judul="Kriteria 5: Pendidikan" deskripsi="Tabel 5.a.1 dan 5.b LKPS: struktur kurikulum dan program MBKM." />
+      <RoleNotice module="pendidikan" />
 
-        <RoleNotice module="pendidikan" />
+      <KartuHitung
+        judul="Struktur kurikulum dan praktikum"
+        deskripsi="Matriks Penilaian Kurikulum Diploma III / Vokasi Teknik; dihitung langsung dari tabel di bawah."
+        skor={<Badge className="h-7 px-2.5 text-sm">Total: {totalSks} SKS</Badge>}
+      >
+        <BarisAngka>
+          <Angka label="SKS teori" nilai={`${totalSksTeori} SKS`} nada="text-blue-700 dark:text-blue-300" />
+          <Angka label="SKS praktikum/lapangan" nilai={`${totalSksPraktikum} SKS (${persenPraktikum.toFixed(1)}%)`} nada="text-emerald-700 dark:text-emerald-300" />
+          <Angka label="Peserta MBKM terdaftar" nilai={mbkmList.length} nada="text-violet-700 dark:text-violet-300" />
+        </BarisAngka>
+      </KartuHitung>
 
-        {/* Realtime Summary Card */}
-        <div className="card" style={{ marginBottom: '20px', background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}>
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <IconBadge color="amber" size="sm">
-                <Zap size={18} strokeWidth={2} />
-              </IconBadge>
-              <div>
-                <div className="card-title">Struktur Kurikulum & Praktikum – Real-time</div>
-                <div className="card-subtitle">Matriks Penilaian Kurikulum Diploma III / Vokasi Teknik</div>
-              </div>
-            </div>
-            <div className="score-display score-excellent">
-              Total: {totalSks} SKS
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--lkps-text-secondary)' }}>SKS Teori</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6' }}>{totalSksTeori} SKS</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--lkps-text-secondary)' }}>SKS Praktikum / Lapangan</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>{totalSksPraktikum} SKS ({persenPraktikum.toFixed(1)}%)</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--lkps-text-secondary)' }}>Peserta MBKM Terdaftar</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#8b5cf6' }}>{mbkmList.length} Mahasiswa</div>
-            </div>
-          </div>
-        </div>
+      <Tabs defaultValue="mk" className="gap-4">
+        <TabsList>
+          <TabsTrigger value="mk"><BookOpen aria-hidden />Tabel 5.a.1 · Kurikulum</TabsTrigger>
+          <TabsTrigger value="mbkm"><Rocket aria-hidden />Tabel 5.b · MBKM</TabsTrigger>
+        </TabsList>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-          {[
-            { key: 'mk', label: 'Tabel 5.a.1 – Struktur Kurikulum & RPS', icon: BookOpen },
-            { key: 'mbkm', label: 'Tabel 5.b – Penyelenggaraan MBKM', icon: Rocket },
-          ].map(tab => {
-            const TabIcon = tab.icon
-            const isActive = activeTab === tab.key
-            return (
-              <button key={tab.key} className={`btn ${isActive ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab(tab.key as any)}>
-                <TabIcon size={16} strokeWidth={1.75} />
-                <span>{tab.label}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {saved && (
-          <div className="badge badge-emerald" style={{ marginBottom: '16px', fontSize: '13px', padding: '8px 14px' }}>
-            <CheckCircle2 size={14} strokeWidth={2} />
-            Data Pendidikan berhasil diperbarui!
-          </div>
-        )}
-
-        {/* Tab 1: Kurikulum */}
-        {activeTab === 'mk' && (
-          <div className="card">
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <IconBadge color="amber" size="md">
-                  <BookOpen size={20} strokeWidth={1.75} />
-                </IconBadge>
-                <div>
-                  <div className="card-title">Struktur Kurikulum (Tabel 5.a.1 LKPS)</div>
-                  <div className="card-subtitle">Total: {mkList.length} Mata Kuliah</div>
-                </div>
-              </div>
-              {canEdit && (
-                <button id="btn-add-mk" className="btn btn-primary" onClick={openAddMk}>
-                  <Plus size={16} strokeWidth={2} />
-                  Tambah Mata Kuliah
-                </button>
-              )}
-            </div>
-
-            {loading ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--lkps-text-secondary)' }}>Memuat data Kurikulum...</div>
-            ) : mkList.length === 0 ? (
-              <div className="empty-state">
-                <IconBadge color="amber" size="lg" style={{ marginBottom: '16px' }}>
-                  <BookOpen size={28} strokeWidth={1.5} />
-                </IconBadge>
-                <div className="empty-state-title">Belum ada data mata kuliah</div>
-                <div className="empty-state-desc">Klik "Tambah Mata Kuliah" untuk menginput struktur kurikulum.</div>
-              </div>
-            ) : (
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Kode MK</th>
-                      <th>Nama Mata Kuliah</th>
-                      <th>Bobot SKS (T/P)</th>
-                      <th>CPL Dipetakan</th>
-                      <th>Unit Penyelenggara</th>
-                      <th>RPS Dokumen</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mkList.map((m, idx) => (
-                      <tr key={m.id}>
-                        <td>{idx + 1}</td>
-                        <td style={{ fontWeight: 700, color: 'var(--lkps-accent-blue)' }}>{m.kode}</td>
-                        <td style={{ fontWeight: 600 }}>{m.nama}</td>
-                        <td>{m.sksTeori} / {m.sksPraktikum} SKS</td>
-                        <td><span className="badge badge-purple">{m.cpl}</span></td>
-                        <td>{m.unitPenyelenggara}</td>
-                        <td>
-                          {m.linkRps ? (
-                            <a href={m.linkRps} target="_blank" rel="noreferrer" className="badge badge-emerald" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <span>Lihat RPS</span>
-                              <ExternalLink size={10} strokeWidth={2} />
-                            </a>
-                          ) : (
-                            <span className="badge badge-amber" style={{ fontSize: '11px' }}>Berkas belum diinputkan</span>
-                          )}
-                        </td>
-                        <td>
-                          {canEdit ? (
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button className="btn btn-secondary btn-sm" onClick={() => openEditMk(m)}>
-                                <Edit3 size={13} strokeWidth={1.75} />
-                              </button>
-                              <button className="btn btn-danger btn-sm" onClick={() => handleDeleteMk(m.id)}>
-                                <Trash2 size={13} strokeWidth={1.75} />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted">–</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+        <TabsContent value="mk">
+          <KartuTabel
+            nomor={5} judul="Tabel 5.a.1 · Struktur kurikulum" deskripsi={`${mkList.length} mata kuliah`}
+            aksi={canEdit && (
+              <Button onClick={() => setEditingMk({ id: `temp_${Date.now()}`, kode: "", nama: "", sksTeori: 0, sksPraktikum: 0, cpl: "", linkRps: "", unitPenyelenggara: "Prodi" })}>
+                <Plus aria-hidden />Tambah mata kuliah
+              </Button>
             )}
-          </div>
-        )}
-
-        {/* Tab 2: MBKM */}
-        {activeTab === 'mbkm' && (
-          <div className="card">
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <IconBadge color="purple" size="md">
-                  <Rocket size={20} strokeWidth={1.75} />
-                </IconBadge>
-                <div>
-                  <div className="card-title">Penyelenggaraan MBKM (Tabel 5.b LKPS)</div>
-                  <div className="card-subtitle">Magang Industri, Pertukaran Pelajar, Riset</div>
-                </div>
-              </div>
-              {canEdit && (
-                <button id="btn-add-mbkm" className="btn btn-primary" onClick={openAddMbkm}>
-                  <Plus size={16} strokeWidth={2} />
-                  Tambah Peserta MBKM
-                </button>
-              )}
-            </div>
-
-            {loading ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--lkps-text-secondary)' }}>Memuat data MBKM...</div>
-            ) : mbkmList.length === 0 ? (
-              <div className="empty-state">
-                <IconBadge color="purple" size="lg" style={{ marginBottom: '16px' }}>
-                  <Rocket size={28} strokeWidth={1.5} />
-                </IconBadge>
-                <div className="empty-state-title">Belum ada data peserta MBKM</div>
-                <div className="empty-state-desc">Klik "Tambah Peserta MBKM" untuk menginput data mahasiswa.</div>
-              </div>
-            ) : (
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Nama Mahasiswa</th>
-                      <th>NIM</th>
-                      <th>Nama Mitra MBKM</th>
-                      <th>SKS Konversi</th>
-                      <th>Dosen Pembimbing</th>
-                      <th>Tahun</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mbkmList.map((mb, idx) => (
-                      <tr key={mb.id}>
-                        <td>{idx + 1}</td>
-                        <td style={{ fontWeight: 600 }}>{mb.namaMahasiswa}</td>
-                        <td>{mb.nim}</td>
-                        <td><span className="badge badge-blue">{mb.namaMitra}</span></td>
-                        <td style={{ fontWeight: 600, color: 'var(--lkps-accent-emerald)' }}>{mb.sksKonversi} SKS</td>
-                        <td>{mb.dosenPembimbing}</td>
-                        <td>{mb.tahun}</td>
-                        <td>
-                          {canEdit ? (
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button className="btn btn-secondary btn-sm" onClick={() => openEditMbkm(mb)}>
-                                <Edit3 size={13} strokeWidth={1.75} />
-                              </button>
-                              <button className="btn btn-danger btn-sm" onClick={() => handleDeleteMbkm(mb.id)}>
-                                <Trash2 size={13} strokeWidth={1.75} />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted">–</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          >
+            {mkList.length === 0 ? kosong("Belum ada data mata kuliah", "Klik Tambah mata kuliah untuk mengisi struktur kurikulum.") : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-6">No</TableHead>
+                    <TableHead>Kode</TableHead>
+                    <TableHead>Mata kuliah</TableHead>
+                    <TableHead>SKS (T/P)</TableHead>
+                    <TableHead>CPL dipetakan</TableHead>
+                    <TableHead>Unit penyelenggara</TableHead>
+                    <TableHead>RPS</TableHead>
+                    {canEdit && <TableHead className="pr-6 text-right">Aksi</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mkList.map((m, i) => {
+                    const rps = m.linkRps || m.fileRps || null;
+                    return (
+                      <TableRow key={m.id}>
+                        <TableCell className="pl-6 text-muted-foreground">{i + 1}</TableCell>
+                        <TableCell className="font-mono text-sm">{m.kode}</TableCell>
+                        <TableCell className="font-medium">{m.nama}</TableCell>
+                        <TableCell className="whitespace-nowrap tabular-nums">{m.sksTeori} / {m.sksPraktikum} SKS</TableCell>
+                        <TableCell>{m.cpl ? <Badge variant="secondary" className="whitespace-normal">{m.cpl}</Badge> : "–"}</TableCell>
+                        <TableCell>{m.unitPenyelenggara}</TableCell>
+                        <TableCell><TautanBukti url={rps} nama={m.linkRps ? "Lihat RPS" : namaDariAlamatBukti(m.fileRps)} /></TableCell>
+                        {aksiBaris(() => setEditingMk({ ...m, linkRps: m.linkRps ?? "" }), "Hapus mata kuliah ini?", () => void aksi("deleteMK", { id: m.id }, "Mata kuliah dihapus."), m.nama)}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             )}
-          </div>
-        )}
-      </div>
+          </KartuTabel>
+        </TabsContent>
 
-      {/* MK Modal */}
-      {showMkModal && editingMk && canEdit && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowMkModal(false)}>
-          <div className="modal">
-            <div className="modal-header">
-              <div className="modal-title">{editingMk.id.startsWith('temp_') ? 'Tambah Mata Kuliah' : 'Edit Mata Kuliah'}</div>
-              <button onClick={() => setShowMkModal(false)} style={{ background: 'none', border: 'none', color: 'var(--lkps-text-secondary)', cursor: 'pointer' }}>
-                <X size={20} strokeWidth={1.75} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Kode Mata Kuliah <span className="required">*</span></label>
-                  <input className="form-input" value={editingMk.kode} onChange={e => setEditingMk({ ...editingMk, kode: e.target.value })} placeholder="TKN1201" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Nama Mata Kuliah <span className="required">*</span></label>
-                  <input className="form-input" value={editingMk.nama} onChange={e => setEditingMk({ ...editingMk, nama: e.target.value })} placeholder="Pemrograman Web Lanjut" />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">SKS Teori</label>
-                  <input type="number" className="form-input" value={editingMk.sksTeori} onChange={e => setEditingMk({ ...editingMk, sksTeori: parseFloat(e.target.value) || 0 })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">SKS Praktikum</label>
-                  <input type="number" className="form-input" value={editingMk.sksPraktikum} onChange={e => setEditingMk({ ...editingMk, sksPraktikum: parseFloat(e.target.value) || 0 })} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Pemetaan Capaian Pembelajaran (CPL)</label>
-                <input className="form-input" value={editingMk.cpl} onChange={e => setEditingMk({ ...editingMk, cpl: e.target.value })} placeholder="CPL-01, CPL-04, CPL-07" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Link Dokumen RPS (Google Drive / PDF)</label>
-                <input className="form-input" value={editingMk.linkRps || ''} onChange={e => setEditingMk({ ...editingMk, linkRps: e.target.value })} placeholder="https://drive.google.com/..." />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowMkModal(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={handleSaveMk} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="spin" size={16} strokeWidth={2} />
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save size={16} strokeWidth={1.75} />
-                    Simpan MK
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        <TabsContent value="mbkm">
+          <KartuTabel
+            nomor={5} judul="Tabel 5.b · Penyelenggaraan MBKM" deskripsi="Magang industri, pertukaran pelajar, dan riset."
+            aksi={canEdit && (
+              <Button onClick={() => setEditingMbkm({ id: `temp_${Date.now()}`, namaMahasiswa: "", nim: "", namaMitra: "", sksKonversi: 0, dosenPembimbing: "", tahun: new Date().getFullYear() })}>
+                <Plus aria-hidden />Tambah peserta MBKM
+              </Button>
+            )}
+          >
+            {mbkmList.length === 0 ? kosong("Belum ada data peserta MBKM", "Klik Tambah peserta MBKM untuk mengisi data mahasiswa.") : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-6">No</TableHead>
+                    <TableHead>Mahasiswa</TableHead>
+                    <TableHead>NIM</TableHead>
+                    <TableHead>Mitra MBKM</TableHead>
+                    <TableHead>SKS konversi</TableHead>
+                    <TableHead>Dosen pembimbing</TableHead>
+                    <TableHead>Tahun</TableHead>
+                    {canEdit && <TableHead className="pr-6 text-right">Aksi</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mbkmList.map((b, i) => (
+                    <TableRow key={b.id}>
+                      <TableCell className="pl-6 text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="font-medium">{b.namaMahasiswa}</TableCell>
+                      <TableCell className="tabular-nums">{b.nim}</TableCell>
+                      <TableCell><Badge variant="outline">{b.namaMitra}</Badge></TableCell>
+                      <TableCell className="tabular-nums">{b.sksKonversi} SKS</TableCell>
+                      <TableCell>{b.dosenPembimbing}</TableCell>
+                      <TableCell className="tabular-nums">{b.tahun}</TableCell>
+                      {aksiBaris(() => setEditingMbkm({ ...b }), "Hapus peserta MBKM ini?", () => void aksi("deleteMBKM", { id: b.id }, "Peserta MBKM dihapus."), b.namaMahasiswa)}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </KartuTabel>
+        </TabsContent>
+      </Tabs>
 
-      {/* MBKM Modal */}
-      {showMbkmModal && editingMbkm && canEdit && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowMbkmModal(false)}>
-          <div className="modal">
-            <div className="modal-header">
-              <div className="modal-title">{editingMbkm.id.startsWith('temp_') ? 'Tambah Peserta MBKM' : 'Edit Peserta MBKM'}</div>
-              <button onClick={() => setShowMbkmModal(false)} style={{ background: 'none', border: 'none', color: 'var(--lkps-text-secondary)', cursor: 'pointer' }}>
-                <X size={20} strokeWidth={1.75} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Nama Mahasiswa <span className="required">*</span></label>
-                  <input className="form-input" value={editingMbkm.namaMahasiswa} onChange={e => setEditingMbkm({ ...editingMbkm, namaMahasiswa: e.target.value })} placeholder="Ahmad Ghalib" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">NIM <span className="required">*</span></label>
-                  <input className="form-input" value={editingMbkm.nim} onChange={e => setEditingMbkm({ ...editingMbkm, nim: e.target.value })} placeholder="2015061001" />
-                </div>
+      <Dialog open={Boolean(editingMk) && canEdit} onOpenChange={(b) => !b && setEditingMk(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingMk?.id.startsWith("temp_") ? "Tambah mata kuliah" : "Ubah mata kuliah"}</DialogTitle>
+            <DialogDescription>Kode dan nama mata kuliah wajib diisi.</DialogDescription>
+          </DialogHeader>
+          {editingMk && (
+            <FieldGroup>
+              <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
+                <Field><FieldLabel htmlFor="mk-kode">Kode</FieldLabel><Input id="mk-kode" placeholder="TIF101" value={editingMk.kode} onChange={(e) => ubahMk({ kode: e.target.value })} /></Field>
+                <Field><FieldLabel htmlFor="mk-nama">Nama mata kuliah</FieldLabel><Input id="mk-nama" value={editingMk.nama} onChange={(e) => ubahMk({ nama: e.target.value })} /></Field>
+                <Field><FieldLabel htmlFor="mk-t">SKS teori</FieldLabel><Input id="mk-t" type="number" min={0} step={0.5} value={editingMk.sksTeori} onChange={(e) => ubahMk({ sksTeori: parseFloat(e.target.value) || 0 })} /></Field>
+                <Field><FieldLabel htmlFor="mk-p">SKS praktikum</FieldLabel><Input id="mk-p" type="number" min={0} step={0.5} value={editingMk.sksPraktikum} onChange={(e) => ubahMk({ sksPraktikum: parseFloat(e.target.value) || 0 })} /></Field>
               </div>
-              <div className="form-group">
-                <label className="form-label">Nama Mitra Penyelenggara MBKM</label>
-                <input className="form-input" value={editingMbkm.namaMitra} onChange={e => setEditingMbkm({ ...editingMbkm, namaMitra: e.target.value })} placeholder="PT PLN (Persero) Indonesia" />
+              <Field><FieldLabel htmlFor="mk-cpl">Pemetaan capaian pembelajaran (CPL)</FieldLabel><Input id="mk-cpl" placeholder="Contoh: CPL-01, CPL-03" value={editingMk.cpl} onChange={(e) => ubahMk({ cpl: e.target.value })} /></Field>
+              <Field><FieldLabel htmlFor="mk-rps">Tautan dokumen RPS</FieldLabel><Input id="mk-rps" type="url" placeholder="https://drive.google.com/…" value={editingMk.linkRps ?? ""} onChange={(e) => ubahMk({ linkRps: e.target.value })} /></Field>
+            </FieldGroup>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMk(null)}>Batal</Button>
+            <Button disabled={saving} onClick={() => editingMk && void aksi("saveMK", editingMk, "Mata kuliah tersimpan.", () => setEditingMk(null))}>{saving ? "Menyimpan…" : "Simpan"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editingMbkm) && canEdit} onOpenChange={(b) => !b && setEditingMbkm(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingMbkm?.id.startsWith("temp_") ? "Tambah peserta MBKM" : "Ubah peserta MBKM"}</DialogTitle>
+            <DialogDescription>Semua isian wajib diisi.</DialogDescription>
+          </DialogHeader>
+          {editingMbkm && (
+            <FieldGroup>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field><FieldLabel htmlFor="mbkm-nama">Nama mahasiswa</FieldLabel><Input id="mbkm-nama" value={editingMbkm.namaMahasiswa} onChange={(e) => ubahMbkm({ namaMahasiswa: e.target.value })} /></Field>
+                <Field><FieldLabel htmlFor="mbkm-nim">NIM</FieldLabel><Input id="mbkm-nim" value={editingMbkm.nim} onChange={(e) => ubahMbkm({ nim: e.target.value })} /></Field>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">SKS Konversi</label>
-                  <input type="number" className="form-input" value={editingMbkm.sksKonversi} onChange={e => setEditingMbkm({ ...editingMbkm, sksKonversi: parseFloat(e.target.value) || 0 })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Dosen Pembimbing Lapangan</label>
-                  <input className="form-input" value={editingMbkm.dosenPembimbing} onChange={e => setEditingMbkm({ ...editingMbkm, dosenPembimbing: e.target.value })} placeholder="Nama DPL" />
-                </div>
+              <Field><FieldLabel htmlFor="mbkm-mitra">Mitra penyelenggara MBKM</FieldLabel><Input id="mbkm-mitra" placeholder="Contoh: PT PLN (Persero)" value={editingMbkm.namaMitra} onChange={(e) => ubahMbkm({ namaMitra: e.target.value })} /></Field>
+              <div className="grid gap-4 sm:grid-cols-[8rem_1fr_7rem]">
+                <Field><FieldLabel htmlFor="mbkm-sks">SKS konversi</FieldLabel><Input id="mbkm-sks" type="number" min={0} value={editingMbkm.sksKonversi} onChange={(e) => ubahMbkm({ sksKonversi: parseFloat(e.target.value) || 0 })} /></Field>
+                <Field><FieldLabel htmlFor="mbkm-dpl">Dosen pembimbing lapangan</FieldLabel><Input id="mbkm-dpl" value={editingMbkm.dosenPembimbing} onChange={(e) => ubahMbkm({ dosenPembimbing: e.target.value })} /></Field>
+                <Field><FieldLabel htmlFor="mbkm-tahun">Tahun</FieldLabel><Input id="mbkm-tahun" type="number" value={editingMbkm.tahun} onChange={(e) => ubahMbkm({ tahun: parseInt(e.target.value) || 0 })} /></Field>
               </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowMbkmModal(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={handleSaveMbkm} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="spin" size={16} strokeWidth={2} />
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save size={16} strokeWidth={1.75} />
-                    Simpan MBKM
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </FieldGroup>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMbkm(null)}>Batal</Button>
+            <Button disabled={saving} onClick={() => editingMbkm && void aksi("saveMBKM", editingMbkm, "Peserta MBKM tersimpan.", () => setEditingMbkm(null))}>{saving ? "Menyimpan…" : "Simpan"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
-  )
+  );
 }
-
