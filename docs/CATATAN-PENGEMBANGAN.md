@@ -2958,7 +2958,7 @@ untuk kode asal tetap dimatikan per berkas. Ditanyakan di ringkasan akhir.
 ### G8: uji akhir, build, dan dokumentasi
 
 - **Uji jalan empat peran** (build produksi port 3100, akun uji sementara, rinci di
-  `docs/uji/skenario-blackbox-gabung-lkps.md`, 30 langkah, semua lulus):
+  `docs/uji/skenario-blackbox-gabung-lkps.md`, 26 langkah, semua lulus):
   - Tim Prodi: isi satu baris di K1, K6, K4; unggah MoU; ekspor; galat validasi sebagai toast; One Data mati (tombol
     nonaktif dan redup, 503).
   - Admin UPPS: pilih prodi lewat pemilih; semua halaman 200; konfigurasi terbuka.
