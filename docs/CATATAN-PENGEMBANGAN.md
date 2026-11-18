@@ -3045,3 +3045,58 @@ berwarna per kriteria. Dikerjakan per kelompok dengan ⏸ di setiap kelompok.
   langsung berubah, tautan MoU di tabel 200; K2 isi MA reguler TS 150 → tersimpan, RMD 15,00; K3 tambah dosen tetap,
   tambah dan hapus tendik lewat dialog konfirmasi, kategori luaran 3.b.6 terpilih otomatis dengan label isian sitasi.
 - **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 278/278; `test:integrasi` 145/145.
+
+### G7 kelompok 3–7: kriteria 4–9, kriteria dinamis, impor/ekspor, konfigurasi; penutup G7
+
+Adrianne menulis "lanjut hingga selesai" sesudah ⏸ kelompok 2, jadi kelompok 3–7 dikerjakan berurutan tanpa berhenti.
+Pola sama dengan kelompok 2 (blok `ui-lkps.tsx`); rumus dan aksi API tidak berubah.
+
+- **Kelompok 3 (K4–K6):**
+  - K4: Tabs dana/lab, isian rupiah lebar, Dialog lab.
+  - K5: Tabs kurikulum/MBKM, dua Dialog, tautan RPS lewat `TautanBukti`.
+  - K6 dan K7 isinya sama di kode asal (beda teks dan API), jadi digabung ke satu komponen
+    `penelitian/penelitian-dosen.tsx` dengan dua pembungkus.
+  - Formulir tambah tanpa contoh data karangan (lab 30 jam/72 m²; MK 2/1 SKS dan "CPL-01, CPL-03"; MBKM mitra
+    "PT Telekomunikasi Indonesia", 20 SKS).
+- **Kelompok 4 (K7–K9):**
+  - K8: IPK awal 0 (asal: angka contoh 2,75/3,25/3,85 dst. yang bisa ikut tersimpan). Saat tracer kosong, halaman tidak
+    lagi bertuliskan "Data Tracer Study Terhubung / form aktif" (tidak ada formulir tracer), tetapi menunjuk Impor One
+    Data. Data efektivitas studi tetap tidak ditampilkan, seperti kode asal.
+  - **K9:** daftar awal kode asal menandai keenam dokumen SPMI "Tersedia" dengan nomor SK ("SK Dekan No.
+    102/UN26/2024") dan tautan spmi.unila.ac.id karangan, yang ikut tersimpan bila Simpan ditekan. Kini "Tidak ada",
+    kosong.
+  - K9: berkas dokumen diunggah sebagai PDF bukti prodi (`UnggahBukti` varian ringkas). Isian URL bebas kode asal
+    selalu ditolak lapisan data sejak G4.
+  - Skor K9 tetap rumus asal: 4 bila 100%, selainnya 3 "Baik" walau 0%. Dicatat untuk Ghalib.
+- **Kelompok 5 (kriteria dinamis):**
+  - Tautan ke `/lkps` dan `/lkps/konfigurasi` (asal: `/dashboard`, `/konfigurasi`).
+  - Isian, tambah/hapus baris, dan tombol simpan hanya untuk Tim Prodi (asal: tombol simpan bawah dan isian aktif untuk
+    peran baca).
+  - Remah roti dan Skeleton saat memuat.
+- **Kelompok 6 (impor/ekspor):**
+  - Impor: sinkron One Data tetap tombol (keputusan Adrianne: tidak realtime), pratinjau 3 baris sebagai tabel (asal:
+    JSON mentah), `.xls` tidak ditawarkan (pembaca G4: xlsx/csv/json), tombol tulis hanya Tim Prodi.
+  - Ekspor: galat lewat toast; teks "format baku … siap diajukan ke LAM Teknik" dilunakkan (templat ekspor milik modul
+    ini, bukan templat LKPS 2025 yang dibaca LED).
+- **Kelompok 7 (konfigurasi):**
+  - Card, Table, Dialog regulasi/kriteria/tabel/ketentuan, AlertDialog templat dan hapus (hapus regulasi asal:
+    `confirm()`), toast pengganti spanduk.
+  - Tombol "Templat baku" dan "Regulasi baru" pindah ke kartu versi regulasi.
+  - "Buka halaman" menuju `/lkps/...` (asal: `/kerjasama` dst.).
+  - Sesudah simpan, `router.refresh()` supaya sidebar kriteria tambahan ikut berubah.
+  - Fungsi ubah status kriteria/tabel kode asal yang tidak dipakai tampilannya tidak dibawa; status tetap lewat formulir.
+- **Sidebar:** kode kriteria tambahan menjadi `K{nomor urut}` (asal: 4 huruf pertama kode bebas, mis. "Krit").
+- **Penutup G7:**
+  - `komponen/gaya-lkps.css`, `bersama/ikon-lencana.tsx`, dan pembungkus `.lkps-klasik` di layout dihapus. Semua
+    halaman LKPS memakai komponen LED.
+  - Semua `eslint-disable` kode asal hilang. Uji `lkps-halaman.test.ts` kini memeriksa tidak ada lagi kelas CSS kode
+    asal, `var(--lkps-*)`, `eslint-disable`, `confirm()`, atau `alert()` di komponen LKPS.
+  - Lint tinggal 1 peringatan, di `domain/hitung.ts` kode asal yang tidak diubah.
+- **Uji jalan G7** (build produksi, akun uji):
+  - Tim Prodi: K4 simpan dana (ringkasan Rp 250.000.000) dan tambah lab; K7 tambah PkM (jenis PkM, tidak masuk K6);
+    K9 centang dokumen + unggah PDF + simpan (1/6, PDF 200, tanpa data karangan); semua halaman lain tampil.
+  - Admin: konfigurasi tambah kriteria K10 sementara + tabel 10.1; "Buka halaman" semua ke `/lkps/…`; halaman K10
+    hanya baca; sidebar "K10".
+  - Tim Prodi: isi baris K10 dan simpan → tersimpan per prodi.
+  - K10 sementara dan isiannya dihapus sesudah uji.
+- **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 278/278; `test:integrasi` 145/145; build lulus.

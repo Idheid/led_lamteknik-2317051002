@@ -34,6 +34,8 @@ test("menu LKPS: kriteria tambahan konfigurasi aktif masuk sesudah K9", () => {
   const i9 = item.findIndex((i) => i.href === "/lkps/penjaminan");
   assert.equal(item[i9 + 1].href, "/lkps/kriteria/k10");
   assert.equal(menuPeran("ASESOR", "lkps", [{ id: "x", kode: "K10", nama: "X" }])[0].item.some((i) => i.href === "/lkps/kriteria/x"), true);
+  // kode bebas yang panjang diganti K{nomor urut}
+  assert.equal(menuLkps("TIM_PRODI", [{ id: "k11", kode: "Kriteria 11", nama: "Y", nomorUrut: 11 }]).item.find((i) => i.href === "/lkps/kriteria/k11")?.kode, "K11");
 });
 
 test("setiap menu LKPS punya halaman di src/app/lkps", () => {
@@ -52,31 +54,20 @@ test("halaman klien LKPS hanya memanggil /api/lkps dan tidak memakai sesi/izin k
   }
 });
 
-test("gaya-lkps.css: semua selektor di bawah .lkps-klasik, variabel berawalan --lkps-, tanpa @import", () => {
-  const css = readFileSync(join(komponen, "gaya-lkps.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-  assert.doesNotMatch(css, /@import|:root|(^|[\s,}])(body|html)\s*[{,]/);
-  // definisi variabel hanya --lkps-*
-  for (const m of css.matchAll(/(^|[;{\s])--([\w-]+)\s*:/g)) assert.ok(m[2].startsWith("lkps-"), m[2]);
-  // setiap aturan (bukan @media/@keyframes atau isi keyframes) diawali .lkps-klasik
-  let dalamKeyframes = 0;
-  for (const kepala of css.matchAll(/([^{}]+)\{/g)) {
-    const sel = kepala[1].trim();
-    if (sel.startsWith("@keyframes")) {
-      assert.match(sel, /@keyframes lkps-/);
-      dalamKeyframes = 1;
-      continue;
-    }
-    if (sel.startsWith("@media")) continue;
-    if (dalamKeyframes && /^(from|to|\d+%)/.test(sel)) continue;
-    dalamKeyframes = 0;
-    for (const s of sel.split(",")) assert.ok(s.trim().startsWith(".lkps-klasik"), s);
+test("G7: gaya kode asal dihapus; halaman LKPS hanya memakai komponen LED", () => {
+  assert.equal(existsSync(join(komponen, "gaya-lkps.css")), false);
+  assert.equal(existsSync(join(komponen, "bersama/ikon-lencana.tsx")), false);
+  const kelasAsal = /className=["'`{][^"'`]*(card|btn|badge|page-content|form-input|form-select|section-title|empty-state|data-table|table-container|modal-[a-z]+|score-[a-z]+|icon-badge)/;
+  for (const f of berkasTsx(komponen)) {
+    const isi = readFileSync(f, "utf8");
+    assert.doesNotMatch(isi, kelasAsal, f);
+    assert.doesNotMatch(isi, /var\(--lkps-|lkps-klasik|eslint-disable|confirm\(|alert\(/, f);
   }
 });
 
-test("layout LKPS: gaya hanya diimpor di layout LKPS, konten dibungkus .lkps-klasik, pemilih prodi untuk Admin/reviewer", () => {
+test("layout LKPS: pemilih prodi untuk Admin/reviewer, tanpa gaya kode asal", () => {
   const layout = readFileSync(join(akar, "src/app/lkps/layout.tsx"), "utf8");
-  assert.match(layout, /import "@\/modules\/lkps\/komponen\/gaya-lkps\.css"/);
-  assert.match(layout, /className="lkps-klasik/);
+  assert.doesNotMatch(layout, /gaya-lkps|lkps-klasik/);
   assert.match(layout, /p\.peran !== "TIM_PRODI" && <PemilihProdi/);
   const rootLayout = readFileSync(join(akar, "src/app/layout.tsx"), "utf8");
   assert.doesNotMatch(rootLayout, /gaya-lkps/);

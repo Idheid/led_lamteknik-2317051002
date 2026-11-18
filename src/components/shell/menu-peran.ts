@@ -89,6 +89,8 @@ export interface KriteriaMenuLkps {
   id: string;
   kode: string;
   nama: string;
+  /** Nomor urut kriteria di regulasi; kode menu menjadi `K{nomorUrut}` (kode bebas seperti "Kriteria 10" terlalu panjang). */
+  nomorUrut?: number;
 }
 
 /**
@@ -102,7 +104,9 @@ export function menuLkps(peran: Exclude<Peran, "TAMU">, tambahan: KriteriaMenuLk
       { judul: "Beranda LKPS", href: "/lkps", ikon: "lkps", persis: true },
       { judul: "Identitas & tim", href: "/lkps/identitas", ikon: "prodi" },
       ...KRITERIA_LKPS,
-      ...tambahan.map((k): ItemNav => ({ kode: k.kode.slice(0, 4), judul: k.nama, href: `/lkps/kriteria/${k.id}`, ikon: "bab" })),
+      ...tambahan.map((k): ItemNav => ({
+        kode: k.nomorUrut !== undefined ? `K${k.nomorUrut}` : k.kode.slice(0, 4), judul: k.nama, href: `/lkps/kriteria/${k.id}`, ikon: "bab",
+      })),
       { judul: "Impor One Data", href: "/lkps/impor", ikon: "impor" },
       { judul: "Ekspor Excel", href: "/lkps/ekspor", ikon: "ekspor" },
       ...(peran === "ADMIN" ? [{ judul: "Struktur kriteria & tabel", href: "/lkps/konfigurasi", ikon: "struktur" } satisfies ItemNav] : []),
