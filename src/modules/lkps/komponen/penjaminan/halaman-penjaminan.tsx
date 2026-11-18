@@ -1,232 +1,161 @@
 "use client";
-/* eslint-disable react-hooks/immutability -- kode asal Ghalib dipindah apa adanya (Gabung LKPS G5); dirapikan saat G7 */
 
 // Kode asal: Achmadghalib725/LKPS_LAM-TEKNIK@c718eff (Achmad Ghalib), src/app/(dashboard)/penjaminan/page.tsx.
-// Gabung LKPS G5: dipindah ke kerangka LED (alamat /api/lkps, galat { pesan }, Header -> JudulHalaman, RoleNotice -> Petunjuk).
+// Gabung LKPS G5: alamat /api/lkps, galat { pesan }. Gabung LKPS G7: dibuat ulang dengan komponen LED (Table, Checkbox,
+// Input, Badge, toast). Daftar enam jenis dokumen, hitungan kelengkapan, rumus skor, dan aksi saveDokumen tidak berubah.
+// Perbedaan:
+// - daftar awal (belum ada data) tidak lagi berisi data karangan: kode asal menandai keenam dokumen "Tersedia" dengan
+//   nomor SK ("SK Dekan No. 102/UN26/2024") dan tautan contoh yang ikut tersimpan bila Simpan ditekan; kini "Tidak ada",
+//   keterangan dan berkas kosong;
+// - berkas dokumen diunggah sebagai PDF bukti prodi (G4: `fileDokumen` harus bukti LKPS), bukan URL bebas; tombol
+//   "Lihat Berkas PDF" kode asal membuka spmi.unila.ac.id bila berkas kosong, kini tertulis "Belum diunggah".
 
-import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim"
-import { useState, useEffect } from 'react'
-import { JudulHalaman } from "@/components/judul-halaman"
-import IconBadge from "@/modules/lkps/komponen/bersama/ikon-lencana"
-import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran"
-import { ShieldCheck, CheckCircle2, Save, Loader2, CheckCheck, ExternalLink, FileText } from 'lucide-react'
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { CheckCheck } from "lucide-react";
+import { JudulHalaman } from "@/components/judul-halaman";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import RoleNotice, { useModulePermission } from "@/modules/lkps/komponen/bersama/pemberitahuan-peran";
+import { kirimLkps } from "@/modules/lkps/komponen/bersama/kirim";
+import {
+  KartuHitung, KartuTabel, LencanaSkor, namaDariAlamatBukti, TautanBukti, TombolSimpan, UnggahBukti,
+} from "@/modules/lkps/komponen/bersama/ui-lkps";
 
 interface DokumenSpmiRow {
-  id: string
-  jenisDokumen: string
-  tersedia: boolean
-  fileDokumen: string | null
-  keterangan: string
+  id: string;
+  jenisDokumen: string;
+  tersedia: boolean;
+  fileDokumen: string | null;
+  keterangan: string;
 }
 
-const defaultDokumen: DokumenSpmiRow[] = [
-  { id: 'temp_1', jenisDokumen: 'Kebijakan SPMI Institusi & UPPS', tersedia: true, fileDokumen: 'https://spmi.unila.ac.id/kebijakan', keterangan: 'SK Dekan No. 102/UN26/2024' },
-  { id: 'temp_2', jenisDokumen: 'Manual SPMI (PPEPP)', tersedia: true, fileDokumen: 'https://spmi.unila.ac.id/manual', keterangan: 'Manual Penetapan, Pelaksanaan, Evaluasi, Pengendalian, Peningkatan' },
-  { id: 'temp_3', jenisDokumen: 'Standar SPMI (Pendidikan, Penelitian, PkM)', tersedia: true, fileDokumen: 'https://spmi.unila.ac.id/standar', keterangan: '24 Standar Nasional Dikti + 8 Standar Tambahan' },
-  { id: 'temp_4', jenisDokumen: 'Formulir SPMI & Checklist Monev', tersedia: true, fileDokumen: 'https://spmi.unila.ac.id/formulir', keterangan: 'Form Audit Internal & Evaluasi Dosen' },
-  { id: 'temp_5', jenisDokumen: 'Laporan Lunas Audit Mutu Internal (AMI)', tersedia: true, fileDokumen: 'https://spmi.unila.ac.id/laporan-ami', keterangan: 'Laporan AMI Siklus Terakhir (TS)' },
-  { id: 'temp_6', jenisDokumen: 'Bukti Rapat Tinjauan Manajemen (RTM)', tersedia: true, fileDokumen: 'https://spmi.unila.ac.id/rtm', keterangan: 'Notulen & Daftar Hadir RTM' },
-]
+const JENIS_DOKUMEN = [
+  "Kebijakan SPMI Institusi & UPPS",
+  "Manual SPMI (PPEPP)",
+  "Standar SPMI (Pendidikan, Penelitian, PkM)",
+  "Formulir SPMI & Checklist Monev",
+  "Laporan Lunas Audit Mutu Internal (AMI)",
+  "Bukti Rapat Tinjauan Manajemen (RTM)",
+];
+const daftarAwal = (): DokumenSpmiRow[] => JENIS_DOKUMEN.map((j, i) => ({ id: `temp_${i + 1}`, jenisDokumen: j, tersedia: false, fileDokumen: null, keterangan: "" }));
 
 export default function HalamanPenjaminan() {
-  const { canEdit } = useModulePermission('penjaminan')
-  const [list, setList] = useState<DokumenSpmiRow[]>(defaultDokumen)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const { canEdit } = useModulePermission("penjaminan");
+  const [list, setList] = useState<DokumenSpmiRow[]>(daftarAwal());
+  const [saving, setSaving] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    const res = await kirimLkps("/api/lkps/penjaminan");
+    if (!res.ok) return;
+    const data = (await res.json()) as DokumenSpmiRow[];
+    if (data?.length) setList(data.map((d) => ({ ...d, keterangan: d.keterangan ?? "" })));
+  }, []);
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    const id = setTimeout(() => void fetchData(), 0);
+    return () => clearTimeout(id);
+  }, [fetchData]);
 
-  async function fetchData() {
+  // Hitungan dan skor kode asal (tanpa perubahan)
+  const kelengkapan = list.filter((d) => d.tersedia).length;
+  const persenTersedia = list.length > 0 ? (kelengkapan / list.length) * 100 : 0;
+  const skor = persenTersedia === 100 ? { skor: 4, label: "Unggul" } : { skor: 3, label: "Baik" };
+
+  const ubah = (i: number, p: Partial<DokumenSpmiRow>) => setList((l) => l.map((d, j) => (j === i ? { ...d, ...p } : d)));
+
+  async function simpan() {
+    setSaving(true);
     try {
-      const res = await kirimLkps('/api/lkps/penjaminan')
+      const res = await kirimLkps("/api/lkps/penjaminan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "saveDokumen", payload: { rows: list } }),
+      });
       if (res.ok) {
-        const data = await res.json()
-        if (data && data.length > 0) {
-          setList(data)
-        }
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const kelengkapan = list.filter(d => d.tersedia).length
-  const persenTersedia = list.length > 0 ? (kelengkapan / list.length) * 100 : 0
-
-  async function handleSave() {
-    setSaving(true)
-    try {
-      const res = await kirimLkps('/api/lkps/penjaminan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'saveDokumen', payload: { rows: list } }),
-      })
-      if (res.ok) {
-        await fetchData()
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        await fetchData();
+        toast.success("Checklist SPMI tersimpan.");
       }
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
   return (
     <>
-      <JudulHalaman judul="Kriteria 9: Penjaminan Mutu Internal (SPMI)" />
-      <div className="page-content animate-fade-in">
-        <div style={{ marginBottom: '24px' }}>
-          <h2 className="section-title">Sistem Penjaminan Mutu Internal (SPMI)</h2>
-          <p className="section-subtitle">
-            Tabel 9.a & 9.b LKPS – Kelengkapan Dokumen Kebijakan SPMI, Manual, Standar, Formulir, Laporan AMI, dan Siklus PPEPP.
-          </p>
-        </div>
+      <JudulHalaman
+        judul="Kriteria 9: Penjaminan Mutu Internal (SPMI)"
+        deskripsi="Tabel 9.a dan 9.b LKPS: kelengkapan dokumen kebijakan, manual, standar, formulir SPMI, laporan AMI, dan siklus PPEPP."
+      />
+      <RoleNotice module="penjaminan" />
 
-        <RoleNotice module="penjaminan" />
+      <KartuHitung
+        judul="Kelengkapan SPMI dan AMI"
+        deskripsi="Siklus penetapan, pelaksanaan, evaluasi, pengendalian, peningkatan (PPEPP); dihitung langsung dari checklist."
+        skor={<LencanaSkor skor={skor.skor} label={skor.label} />}
+      >
+        <p className="flex items-center gap-2 text-sm">
+          <CheckCheck className="size-4 text-emerald-600" aria-hidden />
+          Dokumen tersedia: <strong className="tabular-nums">{kelengkapan} / {list.length} dokumen ({persenTersedia.toFixed(0)}%)</strong>
+        </p>
+      </KartuHitung>
 
-        {/* Realtime Score Card */}
-        <div className="card" style={{ marginBottom: '20px', background: 'rgba(20,184,166,0.05)', borderColor: 'rgba(20,184,166,0.15)' }}>
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <IconBadge icon={ShieldCheck} variant="teal" size="md" glow />
-              <div>
-                <div className="card-title">Evaluasi Kelengkapan SPMI & AMI – Real-time</div>
-                <div className="card-subtitle">Siklus Penetapan, Pelaksanaan, Evaluasi, Pengendalian, Peningkatan (PPEPP)</div>
-              </div>
-            </div>
-            <div className="score-display score-excellent">
-              Skor SPMI: {persenTersedia === 100 ? '4.0 (Unggul)' : '3.0 (Baik)'}
-            </div>
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--lkps-text-secondary)', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCheck size={16} className="text-emerald-400" />
-            Dokumen Sahih Terverifikasi: <strong>{kelengkapan} / {list.length} Dokumen ({persenTersedia.toFixed(0)}%)</strong>
-          </div>
-        </div>
-
-        {saved && (
-          <div className="badge badge-emerald" style={{ marginBottom: '16px', fontSize: '13px', padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCircle2 size={16} /> Data Penjaminan Mutu berhasil disimpan!
-          </div>
-        )}
-
-        <div className="card">
-          <div className="card-header">
-            <div>
-              <div className="card-title">Checklist Dokumen & Bukti SPMI (Tabel 9 LKPS)</div>
-              <div className="card-subtitle">Verifikasi ketersediaan dan tautan berkas fisik PDF</div>
-            </div>
-          </div>
-
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>No</th>
-                  <th>Jenis Dokumen SPMI / Audit</th>
-                  <th>Ketersediaan</th>
-                  <th>Keterangan / Nomor SK</th>
-                  <th>Status File PDF</th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((row, idx) => (
-                  <tr key={row.id || idx}>
-                    <td>{idx + 1}</td>
-                    <td style={{ fontWeight: 600 }}>{row.jenisDokumen}</td>
-                    <td>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: canEdit ? 'pointer' : 'default' }}>
-                        <input
-                          type="checkbox"
-                          disabled={!canEdit}
-                          checked={row.tersedia}
-                          onChange={e => {
-                            const val = e.target.checked
-                            setList(prev => prev.map((item, i) => i === idx ? { ...item, tersedia: val } : item))
-                          }}
-                        />
-                        {row.tersedia ? (
-                          <span className="badge badge-emerald">Tersedia</span>
-                        ) : (
-                          <span className="badge badge-rose">Tidak Ada</span>
-                        )}
-                      </label>
-                    </td>
-                    <td>
-                      <input
-                        className="form-input"
-                        disabled={!canEdit}
-                        value={row.keterangan || ''}
-                        onChange={e => {
-                          const val = e.target.value
-                          setList(prev => prev.map((item, i) => i === idx ? { ...item, keterangan: val } : item))
-                        }}
-                        placeholder="Nomor SK / Catatan..."
+      <KartuTabel nomor={9} judul="Checklist dokumen dan bukti SPMI (Tabel 9 LKPS)" deskripsi="Tandai dokumen yang tersedia dan unggah berkas PDF-nya.">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">No</TableHead>
+              <TableHead>Jenis dokumen SPMI / audit</TableHead>
+              <TableHead>Ketersediaan</TableHead>
+              <TableHead className="min-w-56">Keterangan / nomor SK</TableHead>
+              <TableHead className="pr-6">Berkas PDF</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {list.map((d, i) => (
+              <TableRow key={d.id || i}>
+                <TableCell className="pl-6 text-muted-foreground">{i + 1}</TableCell>
+                <TableCell className="max-w-64 font-medium whitespace-normal">{d.jenisDokumen}</TableCell>
+                <TableCell>
+                  <label className="flex items-center gap-2">
+                    <Checkbox
+                      checked={d.tersedia} disabled={!canEdit} aria-label={`${d.jenisDokumen} tersedia`}
+                      onCheckedChange={(v) => ubah(i, { tersedia: v === true })}
+                    />
+                    {d.tersedia
+                      ? <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">Tersedia</Badge>
+                      : <Badge className="bg-destructive/10 text-destructive">Tidak ada</Badge>}
+                  </label>
+                </TableCell>
+                <TableCell>
+                  {canEdit
+                    ? <Input aria-label={`Keterangan ${d.jenisDokumen}`} placeholder="Nomor SK / catatan" value={d.keterangan} onChange={(e) => ubah(i, { keterangan: e.target.value })} />
+                    : d.keterangan || "–"}
+                </TableCell>
+                <TableCell className="pr-6">
+                  <div className="flex min-w-40 flex-col items-start gap-2">
+                    <TautanBukti url={d.fileDokumen} nama={namaDariAlamatBukti(d.fileDokumen)} />
+                    {canEdit && (
+                      <UnggahBukti
+                        ringkas accept="application/pdf,.pdf" label={d.fileDokumen ? "Ganti PDF" : "Unggah PDF"}
+                        onTerunggah={(url) => ubah(i, { fileDokumen: url })}
                       />
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <a
-                          href={row.fileDokumen || 'https://spmi.unila.ac.id'}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn btn-secondary btn-sm"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            color: 'var(--lkps-accent-blue)',
-                            background: 'rgba(79,142,247,0.12)',
-                            border: '1px solid rgba(79,142,247,0.3)',
-                            textDecoration: 'none',
-                            fontWeight: 600,
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            width: 'fit-content',
-                            fontSize: '12px'
-                          }}
-                          title="Klik untuk membuka/melihat dokumen PDF secara langsung"
-                        >
-                          <FileText size={14} />
-                          <span>Lihat Berkas PDF</span>
-                          <ExternalLink size={12} />
-                        </a>
-                        {canEdit && (
-                          <input
-                            className="form-input"
-                            style={{ fontSize: '11px', padding: '4px 8px', maxWidth: '240px' }}
-                            value={row.fileDokumen || ''}
-                            onChange={e => {
-                              const val = e.target.value
-                              setList(prev => prev.map((item, i) => i === idx ? { ...item, fileDokumen: val } : item))
-                            }}
-                            placeholder="Link URL PDF / SPMI UNILA..."
-                          />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </KartuTabel>
 
-          {canEdit && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-              <button id="btn-save-spmi" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                {saving ? 'Menyimpan...' : 'Simpan Checklist SPMI'}
-              </button>
-            </div>
-          )}
+      {canEdit && (
+        <div className="flex justify-end">
+          <TombolSimpan sibuk={saving} onClick={() => void simpan()}>Simpan checklist SPMI</TombolSimpan>
         </div>
-      </div>
+      )}
     </>
-  )
+  );
 }
-
