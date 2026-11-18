@@ -177,6 +177,8 @@ async function dokumenUntukAsesor(p: Pengguna, id: string) {
  * bersama fakultas: hanya Admin UPPS yang mengubah; Tim Prodi ikut membaca bila `baca`.
  */
 export async function dokumenMilik(p: Pengguna, id: string, opsi: { baca?: boolean } = {}) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const d = await prisma.dokumen.findUnique({ where: { id } });
   if (!d) throw new GalatPengguna("Dokumen tidak ditemukan.");
   if (d.proyekId) await ambilProyek(p, d.proyekId, { baca: opsi.baca && p.peran === "ADMIN" });
@@ -291,6 +293,8 @@ export async function simpanKoreksiOcr(p: Pengguna, id: string, masukan: unknown
 
 /** Isi berkas asli untuk diunduh/ditampilkan (byte sama persis dengan unggahan). */
 export async function berkasDokumen(p: Pengguna, id: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   // asesor membaca gambar yang disisipkan di narasi LED yang ditugaskan kepadanya (revisi 22 Okt 2026)
   const d = p.peran === "ASESOR" ? await dokumenUntukAsesor(p, id) : await dokumenMilik(p, id, { baca: true });
   return { dokumen: d, isi: await bacaBerkas(d.lokasi) };

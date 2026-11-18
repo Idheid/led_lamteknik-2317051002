@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
 import { ambilPengguna } from "@/modules/bersama/sesi";
 import { pesanGalatZod } from "@/modules/bersama/validasi";
+import { tamuDitolak } from "@/modules/bersama/domain/tamu";
 
 export type HasilAksi<T = null> = { ok: true; data: T } | { ok: false; pesan: string };
 
@@ -18,10 +19,13 @@ function kodePrisma(e: unknown): string | null {
  */
 export async function jalankanAksi<T>(
   fn: (p: Pengguna) => Promise<T>,
-  opsi: { bolehBelumGantiSandi?: boolean } = {},
+  opsi: { bolehBelumGantiSandi?: boolean; bolehTamu?: boolean } = {},
 ): Promise<HasilAksi<T>> {
   const p = await ambilPengguna();
   if (!p) return { ok: false, pesan: "Sesi Anda berakhir. Silakan masuk lagi." };
+  // Gabung LKPS G1: Tamu hanya melihat dashboard; semua aksi ditolak kecuali yang ditandai (ganti kata sandi sendiri).
+  // Lapisan data tetap memeriksa peran sendiri; ini lapis kedua.
+  if (tamuDitolak(p.peran, opsi)) return { ok: false, pesan: new GalatAkses().message };
   if (p.wajibGantiSandi && !opsi.bolehBelumGantiSandi) {
     return { ok: false, pesan: "Ganti kata sandi Anda terlebih dahulu (menu akun)." };
   }

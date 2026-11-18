@@ -101,6 +101,8 @@ const skemaJadwal = z.object({
 
 /** Tim Prodi mengisi batas pengajuan dan (opsional) mengubah tanggal tonggak; tonggak kosong = dihitung mundur otomatis. */
 export async function simpanJadwal(p: Pengguna, proyekId: string, masukan: z.input<typeof skemaJadwal>) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const data = skemaJadwal.parse(masukan);
   const proyek = await ambilProyekUbah(p, proyekId);
   const jadwal = Object.fromEntries(Object.entries(data.jadwal).filter(([, v]) => v));

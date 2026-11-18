@@ -68,9 +68,10 @@ export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Te
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
           <SidebarTrigger className="-ml-1" aria-label="Ciutkan atau buka sidebar" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
-          <PindahModul hrefLed={berandaLed(pengguna.peran)} modulBersama={modul} />
+          {/* Gabung LKPS G1: Tamu hanya melihat dashboard, tanpa pindah modul dan pemberitahuan */}
+          {pengguna.peran !== "TAMU" && <PindahModul hrefLed={berandaLed(pengguna.peran)} modulBersama={modul} />}
           <span className="ml-auto flex items-center gap-1">
-            <Lonceng />
+            {pengguna.peran !== "TAMU" && <Lonceng />}
             <MenuPengguna nama={pengguna.nama} email={pengguna.email} peran={LABEL_PERAN[pengguna.peran]} />
           </span>
         </header>

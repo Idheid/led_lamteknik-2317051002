@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
 import { sumberLkps } from "@/modules/led/data/sumber-lkps";
-import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, type Pengguna, pastikanPeran } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { nilaiButirAngka, type NilaiButir } from "@/modules/led/domain/butir-angka";
@@ -50,6 +50,8 @@ const skemaNilaiManual = z.object({
 
 /** Simpan (atau hapus bila nilai kosong) nilai hasil hitung manual satu butir angka. */
 export async function simpanNilaiManual(p: Pengguna, proyekId: string, masukan: { butirKode: string; nilai: string; keterangan?: string | null }) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const data = skemaNilaiManual.parse(masukan);
   const proyek = await ambilProyekUbah(p, proyekId);
   const butir = await prisma.butirPenilaian.findFirst({ where: { versiId: proyek.versiId, jenjang: proyek.jenjang, kode: data.butirKode } });

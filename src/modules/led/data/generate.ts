@@ -3,7 +3,7 @@ import { kalimatMenahan, type PemeriksaanT8 } from "@/modules/led/domain/periksa
 import { kunciKalimat, pecahKalimat } from "@/modules/led/domain/verifikasi";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatAkses, GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { GalatAkses, GalatPengguna, type Pengguna, pastikanPeran } from "@/modules/bersama/akses";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { pengaturanLlm, ringkasanKunci } from "@/modules/bersama/data/kunci-api";
@@ -367,6 +367,8 @@ export async function pulihkanVersi(p: Pengguna, versiId: string) {
 
 /** Bandingkan dua versi sub-bagian yang sama (diff kata). */
 export async function bandingkanVersi(p: Pengguna, versiLamaId: string, versiBaruId: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const [lama, baru] = await Promise.all([versiMilik(p, versiLamaId), versiMilik(p, versiBaruId)]);
   if (lama.bagianDrafId !== baru.bagianDrafId) throw new GalatPengguna("Hanya versi dari sub-bagian yang sama yang bisa dibandingkan.");
   return {

@@ -226,6 +226,8 @@ const PESAN_AKSI: Record<AksiCatatan, string> = {
  * Terima, atau Buka lagi dengan balasan wajib.
  */
 export async function ubahStatusCatatan(p: Pengguna, catatanId: string, aksi: AksiCatatan, isi = "") {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const { c, proyek } = await catatanMilik(p, catatanId);
   const peran = p.peran === "ASESOR" ? "ASESOR" : "PJ";
   if (peran === "PJ") {
@@ -271,6 +273,8 @@ export async function hapusCatatan(p: Pengguna, catatanId: string) {
 
 /** Bandingkan versi saat catatan dibuat dengan versi saat ditandai diperbaiki (atau versi aktif sekarang). */
 export async function bandingkanCatatan(p: Pengguna, catatanId: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const { c, proyek } = await catatanMilik(p, catatanId);
   const sesudah = c.versiPerbaikanId ?? (await teksAktif(proyek.id, [c.subBagianKode])).get(c.subBagianKode)?.versiId;
   if (!c.versiAwalId || !sesudah) throw new GalatPengguna("Versi untuk dibandingkan tidak tersedia.");

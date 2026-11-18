@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, type Pengguna, pastikanPeran } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { ANTREAN, kirimTugas } from "@/modules/bersama/antrean";
@@ -52,6 +52,8 @@ export async function daftarBerkasLkps(p: Pengguna, proyekId: string) {
 
 /** Proses ulang berkas (misalnya setelah worker mati atau TS proyek diubah). */
 export async function bacaUlangLkps(p: Pengguna, berkasId: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const b = await berkasMilik(p, berkasId);
   await prisma.berkasLKPS.update({ where: { id: b.id }, data: { status: "diunggah", pesan: null } });
   await kirimTugas(ANTREAN.lkps, { berkasId: b.id });
@@ -65,6 +67,8 @@ async function berkasMilik(p: Pengguna, berkasId: string) {
 }
 
 export async function jadikanAktif(p: Pengguna, berkasId: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const b = await berkasMilik(p, berkasId);
   if (b.status !== "dibaca") throw new GalatPengguna("Hanya berkas yang sudah terbaca yang bisa dijadikan sumber data.");
   await prisma.$transaction([
@@ -74,6 +78,8 @@ export async function jadikanAktif(p: Pengguna, berkasId: string) {
 }
 
 export async function hapusBerkasLkps(p: Pengguna, berkasId: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const b = await berkasMilik(p, berkasId);
   await prisma.berkasLKPS.delete({ where: { id: b.id } });
   await hapusBerkas(b.lokasi);
@@ -133,6 +139,8 @@ const skemaBaris = z.array(z.object({
 
 /** Koreksi manual satu tabel (terutama hasil PDF). Menandai tabel sudah dikoreksi dan dicek. */
 export async function simpanKoreksiTabel(p: Pengguna, tabelId: string, barisMasukan: unknown, sudahDicek: boolean) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const t = await prisma.tabelLKPS.findUnique({ where: { id: tabelId }, include: { berkas: true } });
   if (!t) throw new GalatPengguna("Tabel tidak ditemukan.");
   await ambilProyek(p, t.berkas.proyekId);
@@ -157,6 +165,8 @@ export async function simpanKoreksiTabel(p: Pengguna, tabelId: string, barisMasu
 }
 
 export async function ambilTabel(p: Pengguna, tabelId: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const t = await prisma.tabelLKPS.findUnique({ where: { id: tabelId }, include: { berkas: true } });
   if (!t) return null;
   const proyek = await ambilProyek(p, t.berkas.proyekId);

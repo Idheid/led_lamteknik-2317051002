@@ -43,7 +43,8 @@ export const auth = betterAuth({
     admin({
       ac,
       roles: peranAkses,
-      defaultRole: "TIM_PRODI",
+      // Gabung LKPS G1: akun yang dibuat tanpa peran mendapat hak paling kecil (pembuatan oleh admin selalu menyebut peran)
+      defaultRole: "TAMU",
       adminRoles: ["ADMIN"],
       bannedUserMessage: "Akun Anda dinonaktifkan. Hubungi Admin UPPS.",
     }),

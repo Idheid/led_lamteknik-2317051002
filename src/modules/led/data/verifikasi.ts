@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, type Pengguna, pastikanPeran } from "@/modules/bersama/akses";
 import { ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { bacaDokumen, paragrafBersumber, type RujukanPeriksa } from "@/modules/led/domain/narasi";
@@ -74,6 +74,8 @@ export async function periksaDenganAi(p: Pengguna, proyekId: string, subBagianKo
  * belum diunggah) dengan alasan. Kalimat terkonfirmasi tidak lagi menahan ekspor final.
  */
 export async function konfirmasiKalimat(p: Pengguna, proyekId: string, subBagianKode: string, teks: string, alasan: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const a = alasan.trim();
   if (a.length < 10) throw new GalatPengguna("Tulis alasan konfirmasi (paling sedikit 10 karakter).");
   const { proyek, v, periksa } = await versiAktif(p, proyekId, subBagianKode);

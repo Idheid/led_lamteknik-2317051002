@@ -1,4 +1,4 @@
-import type { Peran } from "@/modules/bersama/peran";
+import { berandaLed, berandaPeran, type Peran } from "@/modules/bersama/peran";
 import type { GrupNav } from "./nav-sidebar";
 
 /**
@@ -80,7 +80,14 @@ export const MENU_LKPS_ASESOR: GrupNav = {
   item: [{ judul: "Data LKPS", href: "/lkps", ikon: "lkps", persis: true }],
 };
 
-function grupPeran(peran: Peran): { bersama: GrupNav | null; led: GrupNav; lkps: GrupNav } {
+// ---------------------------------------------------------------- Tamu (Gabung LKPS G1 = Rencana 18 Nov S1)
+
+export const MENU_TAMU: GrupNav = {
+  label: "Akreditasi",
+  item: [{ judul: "Dashboard akreditasi", href: "/dashboard", ikon: "dasbor" }],
+};
+
+function grupPeran(peran: Exclude<Peran, "TAMU">): { bersama: GrupNav | null; led: GrupNav; lkps: GrupNav } {
   if (peran === "ADMIN") return { bersama: MENU_BERSAMA_ADMIN, led: MENU_LED_ADMIN, lkps: MENU_LKPS_ADMIN };
   if (peran === "ASESOR") return { bersama: null, led: MENU_ASESOR, lkps: MENU_LKPS_ASESOR };
   return { bersama: MENU_BERSAMA_TIM, led: MENU_LED_TIM, lkps: MENU_LKPS_TIM };
@@ -88,18 +95,11 @@ function grupPeran(peran: Peran): { bersama: GrupNav | null; led: GrupNav; lkps:
 
 /** Sidebar menurut peran dan modul yang sedang dibuka: Bersama + LED atau Bersama + LKPS. */
 export function menuPeran(peran: Peran, konteks: KonteksMenu): GrupNav[] {
+  if (peran === "TAMU") return [MENU_TAMU];
   const g = grupPeran(peran);
   const modul = konteks === "lkps" ? g.lkps : g.led;
   return g.bersama ? [g.bersama, modul] : [modul];
 }
 
-/** Beranda LED menurut peran (tombol LED): Admin UPPS Pantau LED prodi, reviewer LED ditugaskan, Tim Prodi LED prodinya. */
-export function berandaLed(peran: Peran): string {
-  if (peran === "ADMIN") return "/led/pantau";
-  return peran === "ASESOR" ? "/led/asesor" : "/led";
-}
-
-/** Halaman awal setelah login: Admin UPPS ke Dashboard akreditasi (bersama), peran lain ke beranda LED. */
-export function berandaPeran(peran: Peran): string {
-  return peran === "ADMIN" ? "/dashboard" : berandaLed(peran);
-}
+// beranda disatukan di @/modules/bersama/peran (Gabung LKPS G1); diekspor ulang untuk pemakai lama
+export { berandaLed, berandaPeran };

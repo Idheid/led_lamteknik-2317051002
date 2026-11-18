@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
-import { GalatAkses, GalatPengguna, pastikanAdmin, type Pengguna } from "@/modules/bersama/akses";
+import { GalatAkses, GalatPengguna, pastikanAdmin, type Pengguna, pastikanPeran } from "@/modules/bersama/akses";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { AKTIF } from "@/modules/bersama/data/organisasi";
 import { beritahu } from "@/modules/bersama/data/pemberitahuan";
@@ -65,6 +65,8 @@ async function arsipkanLed(tx: Parameters<Parameters<typeof prisma.$transaction>
  * LED prodinya yang memenuhi syarat, menunggu konfirmasi Admin UPPS.
  */
 export async function catatHasilAkreditasi(p: Pengguna, masukan: MasukanHasilAkreditasi, berkas?: { nama: string; isi: Buffer } | null) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const data = skemaHasilAkreditasi.parse(masukan);
   const admin = p.peran === "ADMIN";
   if (!admin && !(p.peran === "TIM_PRODI" && p.prodiId === data.prodiId)) throw new GalatAkses("Hasil akreditasi hanya dicatat Admin UPPS atau Tim Prodi prodi itu.");
@@ -143,6 +145,8 @@ export async function tolakHasilAkreditasi(p: Pengguna, riwayatId: string, alasa
 
 /** Berkas SK (Admin UPPS, atau Tim Prodi prodi itu). */
 export async function berkasSkAkreditasi(p: Pengguna, riwayatId: string) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const r = await prisma.riwayatAkreditasi.findUnique({ where: { id: riwayatId } });
   if (!r) throw new GalatPengguna("Riwayat tidak ditemukan.");
   if (p.peran === "TIM_PRODI" ? p.prodiId !== r.prodiId : p.peran !== "ADMIN") throw new GalatAkses();

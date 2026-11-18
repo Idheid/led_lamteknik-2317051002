@@ -228,6 +228,8 @@ export async function halamanBagian(p: Pengguna, proyekId: string, kodeBagian: s
 }
 
 export async function simpanJawaban(p: Pengguna, masukan: { proyekId: string; subBagianKode: string; isi: string }) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const data = skemaJawabanForm.parse(masukan);
   const proyek = await ambilProyekUbah(p, data.proyekId);
   const sub = await prisma.subBagian.findFirst({ where: { kode: data.subBagianKode, bagian: { versiId: proyek.versiId } } });

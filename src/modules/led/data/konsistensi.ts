@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { type Pengguna } from "@/modules/bersama/akses";
+import { type Pengguna, pastikanPeran } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { nilaiButirUntukProyek } from "@/modules/led/data/nilai-butir";
@@ -53,6 +53,8 @@ const skema = z.object({ kunci: z.string().trim().min(1).max(200), alasan: z.str
 
 /** Beri (atau hapus, bila kosong) alasan untuk satu perbedaan angka yang disengaja. */
 export async function simpanAlasanKonsistensi(p: Pengguna, proyekId: string, masukan: z.input<typeof skema>) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const data = skema.parse(masukan);
   const proyek = await ambilProyekUbah(p, proyekId);
   const lama = (proyek.alasanKonsistensi ?? {}) as Record<string, string>;

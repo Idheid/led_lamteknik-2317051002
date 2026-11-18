@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/modules/bersama/db";
 import { sumberLkps } from "@/modules/led/data/sumber-lkps";
-import { GalatPengguna, type Pengguna } from "@/modules/bersama/akses";
+import { GalatPengguna, type Pengguna, pastikanPeran } from "@/modules/bersama/akses";
 import { ambilProyek, ambilProyekUbah } from "@/modules/led/data/proyek";
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { nilaiButirUntukProyek } from "@/modules/led/data/nilai-butir";
@@ -80,6 +80,8 @@ const skemaTarget = z.object({
 
 /** Simpan target satu butir angka; target kosong menghapusnya. */
 export async function simpanTarget(p: Pengguna, proyekId: string, masukan: z.input<typeof skemaTarget>) {
+  // Gabung LKPS G1: peran diperiksa sebelum validasi dan pencarian (Tamu ditolak dengan GalatAkses)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const data = skemaTarget.parse(masukan);
   const proyek = await ambilProyekUbah(p, proyekId);
   const butir = await prisma.butirPenilaian.findFirst({ where: { versiId: proyek.versiId, jenjang: proyek.jenjang, kode: data.butirKode } });

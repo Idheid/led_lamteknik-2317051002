@@ -160,7 +160,9 @@ Model tanpa `prodiId` (berlaku untuk seluruh fakultas): `LkpsRegulasi`, `LkpsKri
 | 16 | `DosenTetap.nidn @unique` global: dosen yang sama tidak bisa dicatat di dua prodi | usul `@@unique([prodiId, nidn])` (**konfirmasi**) |
 | 17 | Struktur tabel mengikuti LKPS lama (sheet 2a1 = seleksi mahasiswa, 3a1 = dosen tetap, 4a = penggunaan dana), bukan template LAM Teknik 2025 yang dibaca LED | tidak diubah (keputusan Ghalib dan Pak Tris); dicatat di `src/modules/lkps/README.md` |
 
-## Butuh konfirmasi di ⏸ G0
+## Keputusan Adrianne di ⏸ G0 (18 Nov 2026): keempatnya disetujui
+
+(sebelumnya: "Butuh konfirmasi di ⏸ G0")
 
 1. Model baru `LkpsIsianTabel` untuk isian kriteria dinamis per prodi (masalah 11). Tanpa ini, isian kriteria dinamis
    satu prodi menimpa prodi lain.

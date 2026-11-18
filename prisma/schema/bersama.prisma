@@ -24,6 +24,8 @@ enum Peran {
   ADMIN
   TIM_PRODI
   ASESOR
+  // Gabung LKPS G1 (= Rencana 18 Nov S1): hanya melihat dashboard akreditasi; peran bawaan akun tanpa peran
+  TAMU
 }
 
 model User {

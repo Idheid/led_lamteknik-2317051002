@@ -2692,3 +2692,48 @@ dijalankan). G1–G2 = S1–S2 `docs/RENCANA-18NOV.md`.
 - Isi berkas kredensial MyUnila dan `cookies_admin.txt` tidak dibaca ke catatan ini dan tidak disalin.
 - Pemeriksaan G0: lint dan typecheck lulus; `test:unit` 244/244; `test:integrasi` 130/130 (setelah Docker Desktop
   dipulihkan dua kali dengan cara ganti nama folder soket; mesin sempat restart sendiri sekali sebelum stabil).
+- Keputusan di ⏸ G0 (Adrianne, 18 Nov): (1) model baru `LkpsIsianTabel` per prodi untuk isian kriteria dinamis;
+  (2) `LkpsDosenTetap` `@@unique([prodiId, nidn])`; (3) `prodiId` wajib juga di `LkpsBimbinganTa` dan `LkpsEwmp`;
+  (4) `jenisProgram` diturunkan dari jenjang, `jumlahMahasiswaAktif` tidak dibuat.
+
+### G1: peran Tamu (= Rencana 18 Nov S1)
+
+- Enum `Peran` + `TAMU` (migrasi `20261118090000_peran_tamu`). `peran.ts`: `LABEL_PERAN.TAMU = "Tamu"`,
+  `peranAkses.TAMU = ac.newRole({})` (tanpa hak plugin admin). Plugin admin `defaultRole: "TAMU"`.
+- Beranda disatukan: `berandaPeran` dan `berandaLed` hanya di `@/modules/bersama/peran`; `menu-peran.ts` mengekspor
+  ulang. ADMIN dan TAMU → `/dashboard`, TIM_PRODI → `/led`, ASESOR → `/led/asesor`. Sebelumnya `peran.berandaPeran`
+  selalu `/` lalu halaman `/` mengalihkan lagi.
+- `MENU_TAMU` (hanya "Dashboard akreditasi"); `menuPeran("TAMU", …)` = `[MENU_TAMU]`. Tombol LKPS | LED dan lonceng tidak
+  dirender untuk Tamu.
+- Lapis kedua di luar rencana: `jalankanAksi` dan `jalankanRute` menolak Tamu (403) lewat `tamuDitolak()` di
+  `domain/tamu.ts`, kecuali aksi bertanda `bolehTamu` (hanya ganti kata sandi sendiri).
+- Urutan pemeriksaan: 19 fungsi data LED yang memvalidasi masukan atau mencari baris sebelum memeriksa peran kini memanggil
+  `pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR")` di baris pertama (sebelumnya Tamu mendapat "tidak ditemukan" atau
+  galat validasi, bukan `GalatAkses`; tidak ada kebocoran data karena pemeriksaan proyek tetap berjalan sesudahnya).
+  Pemberitahuan (`daftarPemberitahuan`, `tandaiDibaca`) kini menolak Tamu.
+- Admin boleh menurunkan akun menjadi Tamu lewat Ubah peran (`skemaUbahPeran` menerima `TAMU`).
+- Dashboard: layout `wajibPeran("ADMIN", "TAMU")`; untuk Tamu halaman sementara hanya menampilkan keterangan tanpa
+  memuat data (isi dashboard Tamu di G2). Detail prodi `/dashboard/prodi/[id]` tetap `wajibAdmin` (Tamu dialihkan).
+
+| Pintu masuk | Penjaga | Tamu |
+| --- | --- | --- |
+| `/` | `wajibLogin` → `berandaPeran` | dialihkan ke `/dashboard` |
+| `/dashboard` (layout + halaman) | `wajibPeran("ADMIN", "TAMU")` | boleh; halaman tanpa data peka (G2) |
+| `/dashboard/prodi/[id]` | `wajibAdmin` | dialihkan ke `/dashboard` (keputusan S2 poin 5 di G2) |
+| `/lkps` (layout + halaman) | `wajibPeran("ADMIN", "TIM_PRODI", "ASESOR")` (sebelumnya `wajibLogin`) | dialihkan ke `/dashboard` |
+| `/admin/**`, `/pengaturan/**`, `/led/(admin)/**` | `wajibAdmin` | dialihkan ke `/dashboard` |
+| `/led`, `/led/(tim-prodi)/**`, `/led/identitas-prodi` | `wajibTimProdi` | dialihkan ke `/dashboard` |
+| `/led/asesor/**` | `wajibPeran("ASESOR", "ADMIN")` / `wajibAsesor` | dialihkan ke `/dashboard` |
+| `/akun/ganti-sandi` | `wajibLogin` | boleh (akun bersandi); diatur S4 untuk akun SSO |
+| `/login` | tanpa sesi | sudah login → `/dashboard` |
+| 11 berkas aksi server (± 105 aksi) | `jalankanAksi` + lapisan data | ditolak, kecuali `aksiGantiSandi` |
+| `aksiIngatkanTimProdi` | `jalankanAksi` + `pastikanAdmin` | ditolak |
+| 15 rute `src/app/api/**` (selain `auth`) | `jalankanRute` + lapisan data | 403 |
+| `/api/auth/[...all]` | Better Auth | login/keluar biasa |
+| Fungsi lapisan data (± 160, dicari otomatis) | `pastikan*` di awal | `GalatAkses` (selain `gantiKataSandiSendiri`, `catatAktivitas`) |
+
+- Uji: `tests/unit/tamu.test.ts` (5: peran/beranda, menu, `tamuDitolak`, struktur — setiap rute lewat
+  `jalankanRute`, setiap aksi lewat `jalankanAksi`, hanya `akun/aksi.ts` `bolehTamu`; hanya `/` dan ganti sandi
+  ber-`wajibLogin`), `tests/integrasi/akses-tamu.test.ts` (3: semua fungsi data menolak Tamu, dicari otomatis sehingga
+  fungsi modul LKPS baru di G4 ikut teruji). Uji akses ditaruh di berkas baru, bukan di `akses.test.ts`.
+- Pemeriksaan: lint, typecheck; `test:unit` 249/249; `test:integrasi` 133/133.

@@ -12,5 +12,5 @@ export async function aksiGantiSandi(masukan: MasukanGantiSandi) {
   return jalankanAksi(async (p) => {
     await gantiKataSandiSendiri(p, masukan, h);
     return berandaPeran(p.peran);
-  }, { bolehBelumGantiSandi: true });
+  }, { bolehBelumGantiSandi: true, bolehTamu: true });
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Award, ClipboardCheck, FileSearch, LayoutDashboard } from "lucide-react";
-import { wajibAdmin } from "@/modules/bersama/sesi";
+import { wajibPeran } from "@/modules/bersama/sesi";
 import { ambilFakultas } from "@/modules/bersama/data/organisasi";
 import { LABEL_STATUS_AKUN } from "@/modules/bersama/domain/akreditasi";
 import { dataDashboard, type BarisDashboard } from "@/modules/led/data/dashboard";
@@ -9,6 +9,7 @@ import { jumlahPerTab, LABEL_STATUS_LPMPP, LABEL_TAB, masukTab, type TabDashboar
 import { formatAngka } from "@/modules/bersama/domain/teks";
 import { JudulHalaman } from "@/components/judul-halaman";
 import { Petunjuk } from "@/components/petunjuk";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,7 +80,18 @@ function Baris({ b }: { b: BarisDashboard }) {
  * seluruh program studi, dengan tab Semua Prodi, Prioritas Re-akreditasi, Sudah Unggul, dan Dalam Review LPMPP.
  */
 export default async function HalamanDashboard({ searchParams }: PageProps<"/dashboard">) {
-  const p = await wajibAdmin();
+  const p = await wajibPeran("ADMIN", "TAMU");
+  // Gabung LKPS G1: isi dashboard Tamu (tanpa data peka) dikerjakan di G2; sampai itu Tamu tidak memuat data apa pun
+  if (p.peran === "TAMU") {
+    return (
+      <>
+        <JudulHalaman judul="Dashboard akreditasi" deskripsi="Anda masuk sebagai Tamu." />
+        <Alert>
+          <AlertDescription>Anda masuk sebagai Tamu. Untuk menyusun LKPS/LED atau mereview, minta Admin UPPS memberi peran.</AlertDescription>
+        </Alert>
+      </>
+    );
+  }
   const { tab: tabMentah } = (await searchParams) as { tab?: string };
   const tab: TabDashboard = TAB.includes(tabMentah as TabDashboard) ? (tabMentah as TabDashboard) : "semua";
   const [baris, fakultas] = await Promise.all([dataDashboard(p), ambilFakultas()]);

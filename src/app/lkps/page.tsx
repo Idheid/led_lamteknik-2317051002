@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FileSpreadsheet } from "lucide-react";
-import { wajibLogin } from "@/modules/bersama/sesi";
+import { wajibPeran } from "@/modules/bersama/sesi";
 import { daftarProyek } from "@/modules/led/data/proyek";
 import { dataDashboard } from "@/modules/led/data/dashboard";
 import { ledAsesor } from "@/modules/led/data/review";
@@ -27,7 +27,7 @@ const SEMENTARA = "Modul LKPS (isian tabel, impor/ekspor Excel, PDF per tabel) s
  * Saat modul LKPS siap, halaman ini diganti berandanya.
  */
 export default async function HalamanLkps() {
-  const p = await wajibLogin();
+  const p = await wajibPeran("ADMIN", "TIM_PRODI", "ASESOR");
 
   if (p.peran === "TIM_PRODI") {
     const aktif = (await daftarProyek(p)).find((x) => !x.diarsipkanPada);

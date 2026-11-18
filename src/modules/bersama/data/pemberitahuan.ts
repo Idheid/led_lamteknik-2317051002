@@ -1,5 +1,5 @@
 import { prisma } from "@/modules/bersama/db";
-import type { Pengguna } from "@/modules/bersama/akses";
+import { pastikanPeran, type Pengguna } from "@/modules/bersama/akses";
 
 /**
  * Pemberitahuan di ikon lonceng (dipakai semua modul). Modul mengirim pemberitahuan lewat beritahu(); tautan diisi
@@ -12,6 +12,8 @@ export async function beritahu(userIds: (string | null | undefined)[], data: { p
 }
 
 export async function daftarPemberitahuan(p: Pengguna) {
+  // Gabung LKPS G1: Tamu tidak memakai pemberitahuan (lonceng tidak dirender untuk Tamu)
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   const [belumDibaca, daftar] = await Promise.all([
     prisma.pemberitahuan.count({ where: { userId: p.id, dibaca: false } }),
     prisma.pemberitahuan.findMany({ where: { userId: p.id }, orderBy: { createdAt: "desc" }, take: 15 }),
@@ -24,5 +26,6 @@ export async function daftarPemberitahuan(p: Pengguna) {
 
 /** Tandai satu pemberitahuan (atau semua, id null) sudah dibaca. */
 export async function tandaiDibaca(p: Pengguna, id: string | null) {
+  pastikanPeran(p, "ADMIN", "TIM_PRODI", "ASESOR");
   await prisma.pemberitahuan.updateMany({ where: { userId: p.id, dibaca: false, ...(id ? { id } : {}) }, data: { dibaca: true } });
 }
