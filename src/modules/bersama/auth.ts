@@ -7,6 +7,7 @@ import { prisma } from "@/modules/bersama/db";
 import { ac, peranAkses } from "@/modules/bersama/peran";
 import { catatLoginGagal, hapusLoginGagal, statusKunciLogin } from "@/modules/bersama/data/login-gagal";
 import { KODE_LOGIN_TERKUNCI, pesanTerkunci } from "@/modules/bersama/domain/login-gagal";
+import { ssoUnila } from "@/modules/bersama/sso/plugin";
 
 const JALUR_MASUK_EMAIL = "/sign-in/email";
 
@@ -36,6 +37,10 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
+    // Rencana 18 Nov S5: sesi dari SSO Unila (diisi plugin ssoUnila, bukan dari masukan pengguna)
+    additionalFields: {
+      lewatSso: { type: "boolean", required: false, input: false, defaultValue: false },
+    },
   },
   user: {
     additionalFields: {
@@ -44,7 +49,7 @@ export const auth = betterAuth({
       prodiId: { type: "string", required: false, input: false },
     },
   },
-  // L3 (2 Nov 2026): catat login terakhir setiap kali sesi baru dibuat (masuk dengan kata sandi)
+  // L3 (2 Nov 2026): catat login terakhir setiap kali sesi baru dibuat (kata sandi atau SSO)
   databaseHooks: {
     session: {
       create: {
@@ -86,6 +91,7 @@ export const auth = betterAuth({
       adminRoles: ["ADMIN"],
       bannedUserMessage: "Akun Anda dinonaktifkan. Hubungi Admin UPPS.",
     }),
+    ssoUnila(),
     nextCookies(),
   ],
 });

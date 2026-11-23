@@ -41,7 +41,9 @@ test("pembungkus aksi dan rute menolak Tamu kecuali ditandai bolehTamu", () => {
 test("setiap rute API lewat jalankanRute dan setiap aksi server lewat jalankanAksi (penjaga Tamu berlaku)", () => {
   const akar = process.cwd();
   const rute = berkas(join(akar, "src/app/api"), (f) => /route\.ts$/.test(f))
-    .filter((f) => !/[\\/]auth[\\/]\[\.\.\.all\][\\/]/.test(f));
+    .filter((f) => !/[\\/]auth[\\/]\[\.\.\.all\][\\/]/.test(f))
+    // Rencana 18 Nov S5: rute SSO dipakai sebelum login (tanpa sesi), seperti handler Better Auth
+    .filter((f) => !/[\\/]api[\\/]sso[\\/]/.test(f));
   assert.ok(rute.length > 10);
   for (const f of rute) assert.match(readFileSync(f, "utf8"), /jalankanRute\(/, relative(akar, f));
 

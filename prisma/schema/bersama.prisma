@@ -74,6 +74,8 @@ model Session {
   ipAddress String?
   userAgent String?
   impersonatedBy String? // plugin admin Better Auth (tidak dipakai)
+  /// Rencana 18 Nov S5: sesi dibuat lewat SSO Unila (S6: keluar juga dari SSO).
+  lewatSso  Boolean  @default(false)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

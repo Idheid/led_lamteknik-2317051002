@@ -204,3 +204,30 @@ dokumen, di-commit, atau dicetak di log. Token login hanya disimpan di memori se
 `/v1/auth/check-token`, dan tidak pernah dikirim ke browser. Kredensial siapa yang dipakai (aplikasi Adrianne atau
 Ghalib) belum diputuskan.
 
+
+## 8. Login SSO Unila (API Manajemen Akses)
+
+Login SSO mati secara bawaan (Rencana 18 Nov S3/S5). Tombol "Masuk dengan SSO Unila" di halaman masuk hanya tampil
+dan rute `/api/sso/*` hanya berjalan bila `SSO_AKTIF=true`. Login email dan kata sandi tetap berjalan seperti biasa.
+
+| Variabel | Isi |
+|---|---|
+| `SSO_AKTIF` | `true`/`false` (bawaan `false`) |
+| `SSO_MODE` | `akses` (bawaan). `tiruan` hanya untuk pengembangan dan ditolak bila `NODE_ENV=production` |
+| `SSO_APP_KEY` | `app_key` Manajemen Akses (rahasia) |
+| `SSO_URL_MULAI` | bawaan `https://akses.unila.ac.id/api/live/v1/auth/login/sso` |
+| `SSO_URL_KEMBALI` | URL absolut alamat kembali, misalnya `https://<domain>/api/sso/kembali` |
+| `SSO_URL_KELUAR` | URL keluar SSO (S6) |
+| `SSO_DOMAIN_EMAIL_DITOLAK` | domain email mahasiswa, dipisah koma |
+
+Nilai variabel tidak boleh ditulis di dokumen, di-commit, atau dicetak di log.
+
+**Status 23 November 2026:** penyedia Access belum dikonfigurasi karena `docs/SSO-AKSES-CATATAN.md` belum berisi
+parameter, cara validasi, dan atribut dari dokumentasi Access. Dengan `SSO_MODE=akses`, tombol SSO mengembalikan
+pengguna ke halaman masuk dengan pesan "Masuk lewat SSO gagal". Jadi di server produksi biarkan `SSO_AKTIF=false`
+sampai penyedia Access selesai.
+
+**Mencoba di laptop pengembangan** (penyedia tiruan, `npm run dev`): isi `SSO_AKTIF=true` dan `SSO_MODE=tiruan` di
+`.env`, lalu klik "Masuk dengan SSO Unila". Halaman `/api/sso/tiruan` menampilkan empat pengguna palsu (dosen
+terdaftar, dosen belum terdaftar, mahasiswa, akun SSO nonaktif) dan formulir pengguna lain. Agar "Dosen terdaftar"
+cocok dengan suatu akun, isi UNILA ID `dosen.tiruan` pada akun itu di Kelola akun.

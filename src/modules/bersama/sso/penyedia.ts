@@ -13,3 +13,31 @@ export function caraMasukAkun(akun: { providerId: string }[]): { sandi: boolean;
 export function labelCaraMasuk(c: { sandi: boolean; sso: boolean }): string {
   return c.sandi && c.sso ? "Sandi dan SSO" : c.sso ? "SSO" : c.sandi ? "Sandi" : "-";
 }
+
+/**
+ * Hasil login SSO yang sudah dinormalkan penyedia (Rencana 18 Nov S5). `status` dinormalkan penyedia menjadi
+ * "dosen", "tendik", "mahasiswa", atau nilai lain apa adanya; `username` (UNILA ID) huruf kecil.
+ */
+export interface HasilSso {
+  username: string;
+  nama: string;
+  email: string | null;
+  aktif: boolean;
+  status: string | null;
+}
+
+/** Penyedia SSO: Access (sungguhan) atau tiruan (pengembangan dan uji). */
+export interface PenyediaSso {
+  /** Alamat untuk memulai login di penyedia, membawa `state`. */
+  urlMasuk(state: string): string;
+  /**
+   * Baca dan validasi kiriman di alamat kembali. Penyedia Access memvalidasi kiriman server-ke-server, bukan sekadar
+   * membaca query. Mengembalikan `state` bila penyedia meneruskannya. Galat = login gagal (`sso_gagal`).
+   */
+  bacaHasil(permintaan: Request): Promise<{ hasil: HasilSso; state: string | null }>;
+  /** Alamat keluar dari SSO, lalu kembali ke `kembaliKe` (S6). */
+  urlKeluar(kembaliKe: string): string;
+}
+
+/** Galat penyedia SSO; pesannya untuk log server, bukan untuk pengguna. */
+export class GalatSso extends Error {}

@@ -3210,3 +3210,66 @@ LKPS hasil penggabungan (`akses-tamu.test.ts` otomatis menguji setiap fungsi dat
   menyimpan "Tamu.S4.Baru" sebagai `tamu.s4.baru`.
 - **Hasil:** lint 0 galat (1 peringatan lama `lkps/domain/hitung.ts`), typecheck lulus, unit 285/285, integrasi
   152/152, build lulus.
+
+### S5: login SSO dengan penyedia tiruan (23 Nov 2026) ⏸
+
+- **Status `docs/SSO-AKSES-CATATAN.md`:** masih kerangka kosong. Parameter mulai, alamat kembali, validasi
+  server-ke-server, nama atribut, domain email mahasiswa, dan URL keluar belum diketahui. Sesuai rencana:
+  `sso/akses.ts` hanya melempar "Penyedia Access belum dikonfigurasi" (tanpa menebak parameter), dan semua alur diuji
+  dengan penyedia tiruan.
+- **Modul `src/modules/bersama/sso/`:**
+  - `konfigurasi.ts`: `konfigurasiSso(env)`. `SSO_MODE` bawaan `akses`; `tiruan` dilempar galat bila
+    `NODE_ENV=production`.
+  - `penyedia.ts`: `HasilSso`, `PenyediaSso`, `GalatSso`. `bacaHasil` juga mengembalikan `state` (bila penyedia
+    meneruskannya); `status` dinormalkan penyedia (`dosen`/`tendik`/`mahasiswa`).
+  - `aturan.ts`: `putuskan` murni dengan urutan rencana (nonaktif → mahasiswa → dinonaktifkan → masuk → Tamu).
+  - `tiruan.ts`: empat persona dan tiket bertanda HMAC (`BETTER_AUTH_SECRET`, 2 menit) yang meniru validasi
+    server-ke-server: tiket yang diubah atau kedaluwarsa ditolak.
+  - `state.ts`: state 32 byte acak, perbandingan waktu konstan, `tujuanAman` (juga menolak `/api/` dan `/\`).
+  - `data.ts`: pencocokan akun, Tamu baru, Account `sso-unila`, pemberitahuan admin, log.
+  - `plugin.ts`: plugin `ssoUnila()`.
+- **Rute:**
+  - `GET /api/sso/mulai`: cookie `sso_state`/`sso_ke` (httpOnly, `SameSite=Lax`, Secure di produksi, 10 menit,
+    path `/api/sso`).
+  - `GET|POST /api/sso/kembali`.
+  - `/api/sso/tiruan`: GET menampilkan pilihan; POST membuat tiket lalu mengalihkan (303) ke alamat kembali. Mati (404)
+    di produksi, saat SSO mati, atau saat mode bukan tiruan.
+  - Semua galat berujung di `/login?galat=<kode>` (state salah dan tiket tidak sah → `sso_gagal`).
+- **Sesi:** endpoint `masukSsoUnila` bertanda `metadata.SERVER_ONLY` (better-call tidak memasangnya di router HTTP;
+  diuji: POST `/api/auth/sso-unila/masuk` → 404). Endpoint memanggil `internalAdapter.createSession` lalu
+  `setSessionCookie`, dan rute menyalin `Set-Cookie` dari `returnHeaders` ke respons pengalihan (cookie tidak ditulis
+  manual).
+  - Kolom `session.lewatSso` (migrasi `20261123110000_sesi_lewat_sso`) dan `session.additionalFields.lewatSso`.
+  - **Beda dari rencana / Better Auth 1.7.7:** `createSession(userId, false, { lewatSso: true })` tidak cukup, karena
+    nilai bawaan isian tambahan (`false`) menimpa override. Perlu argumen keempat `overrideAll = true`.
+  - Hook `session.create` (login terakhir) dan penolakan akun dinonaktifkan dari plugin admin tetap berjalan.
+  - Lama sesi sama dengan login biasa (7 hari, pembaruan harian); keputusan menunggu ⏸.
+- **Tamu baru:**
+  - Akun: `role TAMU`, `emailVerified`, `wajibGantiSandi false`, Account `sso-unila` tanpa sandi.
+  - Email: email SSO, atau `<username>@sso.invalid` bila email itu sudah dipakai akun lain.
+  - Pemberitahuan ke semua Admin UPPS aktif: "Tamu baru masuk lewat SSO: <nama>.", tautan `/admin/akun?saring=tamu`.
+- **Pencocokan lewat email:** akun tanpa UNILA ID dengan email sama (huruf kecil) dicocokkan, lalu UNILA ID-nya diisi.
+  Saklar `COCOKKAN_LEWAT_EMAIL` di `data.ts`; menunggu keputusan Adrianne di ⏸.
+- **Log:** `masuk_sso` (`tamuBaru`, `lewatEmail`) dan `sso_ditolak` (`kode`), tanpa email atau UNILA ID. Kode `state`
+  untuk state salah.
+- **Keterbatasan yang dicatat:**
+  - Bila Access mengirim alamat kembali sebagai POST lintas situs, cookie `SameSite=Lax` tidak ikut terkirim dan
+    pemeriksaan state akan gagal. Cara Access memanggil alamat kembali dan apakah `state` diteruskan menunggu
+    SSO-AKSES-CATATAN bagian 2; bila perlu, pemeriksaan state disesuaikan di sana.
+  - Rute SSO dikecualikan dari uji penjaga Tamu (`tamu.test.ts`) karena dipakai sebelum login, sama seperti handler
+    Better Auth.
+- **Uji:**
+  - `tests/unit/sso.test.ts` (6): semua cabang `putuskan`, konfigurasi, state/tujuan, tiket tiruan, Access belum
+    dikonfigurasi, dan penanda rute.
+  - `tests/integrasi/sso.test.ts` (8), memanggil handler rute sungguhan:
+    - dosen terdaftar masuk dengan perannya (tujuan `ke`, `lewatSso`, Account, login terakhir, log tanpa UNILA ID);
+    - dosen baru menjadi Tamu dengan pemberitahuan sekali;
+    - email bentrok memakai `@sso.invalid`;
+    - pencocokan lewat email;
+    - mahasiswa, SSO nonaktif, domain ditolak, dan akun dinonaktifkan ditolak tanpa akun atau sesi;
+    - state salah dan tiket palsu ditolak; `SSO_AKTIF=false` → `sso_mati`; mode akses → `sso_gagal`;
+    - endpoint sesi tidak lewat HTTP; halaman tiruan (state di-escape, persona tak dikenal 400).
+- **Demo browser:** belum dijalankan. Penyedia tiruan hanya hidup di `next dev`, dan sudah ada server `next dev` lain
+  di port 3000 (bukan dari sesi ini) sehingga dev server kedua ditolak Next.js. Keempat jenis pengguna sudah
+  dijalankan lewat rute sungguhan di uji integrasi.
+- **Hasil:** lint 0 galat (1 peringatan lama), typecheck lulus, unit 291/291, integrasi 160/160, build lulus.
