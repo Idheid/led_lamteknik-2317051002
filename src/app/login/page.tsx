@@ -35,12 +35,20 @@ export default async function HalamanLogin({ searchParams }: PageProps<"/login">
       <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-foreground/10 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         {aset.latar || aset.logo ? (
           <aside
-            className="relative flex min-h-48 items-center justify-center overflow-hidden bg-primary bg-cover bg-center md:min-h-[32rem]"
-            style={aset.latar ? { backgroundImage: `url(${aset.latar})` } : undefined}
+            className="relative flex min-h-48 items-center justify-center overflow-hidden bg-primary md:min-h-[32rem]"
             aria-label="Akreditasi LAM Teknik"
           >
-            {/* lapisan tipis supaya logo tetap menonjol di atas foto */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25" aria-hidden />
+            {/* foto latar diburamkan dan diredam abu (permintaan Adrianne 23 Nov 2026) supaya fokus ke logo; scale-110 agar
+                tepi yang ikut buram tidak terlihat */}
+            {aset.latar && (
+              <div
+                data-latar-login
+                className="absolute inset-0 scale-110 bg-cover bg-center blur-[6px] grayscale-[35%]"
+                style={{ backgroundImage: `url(${aset.latar})` }}
+                aria-hidden
+              />
+            )}
+            <div className="absolute inset-0 bg-slate-900/35" aria-hidden />
             {aset.logo && (
               <div className="relative flex size-32 items-center justify-center rounded-full bg-white p-4 shadow-lg ring-4 ring-white/50 md:size-44 md:p-6">
                 {/* eslint-disable-next-line @next/next/no-img-element -- berkas lokal kecil di public/login, ukurannya tetap */}

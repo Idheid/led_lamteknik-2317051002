@@ -3382,3 +3382,11 @@ diisi dari dokumentasi Access):
 - Pemeriksaan NIP SSO terhadap data dosen (transkrip 7 baris 874) belum ada; saat ini cocok lewat UNILA ID yang diisi
   admin. Bisa ditambah setelah atribut NIP dari Access diketahui.
 - Branch `tamu-sso` belum di-push.
+
+### Sesudah ⏸ S7: foto latar diburamkan (23 Nov 2026)
+
+- Permintaan Adrianne: foto latar terlalu jernih sehingga logo tidak menonjol. Foto sekarang ada di lapisan sendiri
+  (`blur-[6px]`, `grayscale-[35%]`, `scale-110` supaya tepi buram tidak terlihat), ditambah lapisan `bg-slate-900/35`.
+  Dicek di build produksi.
+- Tombol "Masuk dengan SSO Unila" memang tidak tampil bila `SSO_AKTIF` tidak `true` (bawaan mati, KF-L3). Tangkapan
+  layar Adrianne berasal dari server dev dengan `.env` tanpa `SSO_AKTIF`.
