@@ -4,6 +4,7 @@ import { GalatAkses, GalatPengguna, pastikanAdmin, pastikanProdiSendiri, type Pe
 import { catatAktivitas } from "@/modules/bersama/data/log";
 import { terapkanRiwayatTerbaru } from "@/modules/bersama/data/akreditasi";
 import type { Peran } from "@/modules/bersama/peran";
+import { PENYEDIA_SANDI } from "@/modules/bersama/sso/penyedia";
 import {
   skemaAkun,
   skemaAkunTimProdi,
@@ -12,13 +13,14 @@ import {
   skemaAturUlangSandi,
   skemaIdentitasProdi,
   skemaProdi,
-  skemaUbahNamaAkun,
+  skemaUbahIdentitasAkun,
   skemaUbahPeranAkun,
   type MasukanAkun,
   type MasukanAkunTimProdi,
   type MasukanFakultas,
   type MasukanGantiSandi,
   type MasukanProdi,
+  type MasukanUbahIdentitasAkun,
   type MasukanUbahPeranAkun,
 } from "@/modules/bersama/validasi";
 
@@ -164,9 +166,26 @@ export async function daftarAkun(p: Pengguna) {
     orderBy: [{ role: "asc" }, { name: "asc" }],
     select: {
       id: true, name: true, email: true, role: true, banned: true, createdAt: true, wajibGantiSandi: true, loginTerakhir: true,
+      usernameSso: true,
       prodi: { select: { id: true, nama: true, jenjang: true } },
+      // S4: kolom "Cara masuk" (credential = sandi, sso-unila = SSO)
+      accounts: { select: { providerId: true } },
     },
   });
+}
+
+/** S4: UNILA ID unik (tidak dicatat ke log; data pribadi SSO hanya di tabel User/Account). */
+async function pastikanUsernameSsoBaru(usernameSso: string | null, kecuali?: string) {
+  if (!usernameSso) return;
+  const dipakai = await prisma.user.findUnique({ where: { usernameSso }, select: { id: true } });
+  if (dipakai && dipakai.id !== kecuali) throw new GalatPengguna("UNILA ID ini sudah dipakai akun lain.");
+}
+
+function galatUnikUsernameSso(e: unknown): never {
+  const kode = (e as { code?: string }).code;
+  const target = JSON.stringify((e as { meta?: unknown }).meta ?? "");
+  if (kode === "P2002" && /usernameSso/.test(target)) throw new GalatPengguna("UNILA ID ini sudah dipakai akun lain.");
+  throw e;
 }
 
 async function pastikanEmailBaru(email: string) {
@@ -185,11 +204,20 @@ async function pastikanProdiAda(prodiId: string) {
 }
 
 /** Buat akun baru (wajib ganti sandi saat login pertama). */
-async function buatAkun(p: Pengguna, peran: Peran, data: { nama: string; email: string; kataSandi: string }, prodiId: string | null) {
+async function buatAkun(
+  p: Pengguna, peran: Peran, data: { nama: string; email: string; kataSandi: string; usernameSso: string | null }, prodiId: string | null,
+) {
   await pastikanEmailBaru(data.email);
+  await pastikanUsernameSsoBaru(data.usernameSso);
   const hasil = await auth.api.createUser({ body: { email: data.email, password: data.kataSandi, name: data.nama, role: peran } });
-  await prisma.user.update({ where: { id: hasil.user.id }, data: { wajibGantiSandi: true, prodiId } });
-  await catatAktivitas(p, "buat", "akun", hasil.user.id, { email: data.email, peran, prodiId });
+  await prisma.user
+    .update({ where: { id: hasil.user.id }, data: { wajibGantiSandi: true, prodiId, usernameSso: data.usernameSso } })
+    .catch(async (e) => {
+      // UNILA ID direbut akun lain di sela pemeriksaan: batalkan akun yang baru dibuat
+      await prisma.user.delete({ where: { id: hasil.user.id } });
+      galatUnikUsernameSso(e);
+    });
+  await catatAktivitas(p, "buat", "akun", hasil.user.id, { email: data.email, peran, prodiId, unilaId: Boolean(data.usernameSso) });
   return hasil.user;
 }
 
@@ -231,17 +259,24 @@ export async function ambilAkun(p: Pengguna, userId: string) {
   pastikanAdmin(p);
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, role: true, prodiId: true, banned: true },
+    select: { id: true, name: true, email: true, role: true, prodiId: true, banned: true, usernameSso: true },
   });
 }
 
-/** Perbaikan 1 Nov 2026 (P1): Admin UPPS mengganti nama akun (mis. akun lama bernama "Penanggung Jawab TI"). */
-export async function ubahNamaAkun(p: Pengguna, userId: string, nama: string) {
+/**
+ * Admin UPPS mengganti nama akun (perbaikan 1 Nov 2026 P1, mis. akun lama bernama "Penanggung Jawab TI") dan UNILA ID
+ * (Rencana 18 Nov S4). UNILA ID unik; kosong = akun tidak bisa masuk
+ * lewat SSO dengan pencocokan UNILA ID. Nilai UNILA ID tidak dicatat ke log aktivitas, hanya ada/tidaknya perubahan.
+ */
+export async function ubahIdentitasAkun(p: Pengguna, userId: string, masukan: MasukanUbahIdentitasAkun) {
   pastikanAdmin(p);
-  const data = skemaUbahNamaAkun.parse({ nama });
+  const data = skemaUbahIdentitasAkun.parse(masukan);
   const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  await prisma.user.update({ where: { id: userId }, data: { name: data.nama } });
-  await catatAktivitas(p, "ubah_nama", "akun", userId, { lama: u.name, baru: data.nama });
+  await pastikanUsernameSsoBaru(data.usernameSso, userId);
+  await prisma.user.update({ where: { id: userId }, data: { name: data.nama, usernameSso: data.usernameSso } }).catch(galatUnikUsernameSso);
+  await catatAktivitas(p, "ubah_identitas", "akun", userId, {
+    lama: u.name, baru: data.nama, unilaIdDiubah: u.usernameSso !== data.usernameSso, adaUnilaId: Boolean(data.usernameSso),
+  });
 }
 
 /**
@@ -290,7 +325,7 @@ export async function aturUlangKataSandi(p: Pengguna, masukan: { userId: string;
   if (data.userId === p.id) throw new GalatPengguna("Ganti kata sandi Anda sendiri lewat menu akun (perlu kata sandi lama).");
   const ctx = await auth.$context;
   const hash = await ctx.password.hash(data.kataSandi);
-  const akun = await prisma.account.findFirst({ where: { userId: data.userId, providerId: "credential" } });
+  const akun = await prisma.account.findFirst({ where: { userId: data.userId, providerId: PENYEDIA_SANDI } });
   if (!akun) throw new GalatPengguna("Akun ini tidak memakai login email dan kata sandi.");
   await prisma.$transaction([
     prisma.account.update({ where: { id: akun.id }, data: { password: hash } }),
@@ -320,6 +355,7 @@ export async function hapusAkun(p: Pengguna, userId: string) {
  * `headers` = header permintaan pengguna (sesi aktif).
  */
 export async function gantiKataSandiSendiri(p: Pengguna, masukan: MasukanGantiSandi, headers: Headers) {
+  if (p.punyaSandi === false) throw new GalatPengguna("Akun ini masuk lewat SSO Unila dan tidak memakai kata sandi.");
   const data = skemaGantiSandi.parse(masukan);
   try {
     await auth.api.changePassword({ body: { currentPassword: data.sandiLama, newPassword: data.sandiBaru, revokeOtherSessions: true }, headers });

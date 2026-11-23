@@ -6,7 +6,7 @@ import { auth } from "@/modules/bersama/auth";
 import { GalatAkses, GalatPengguna } from "@/modules/bersama/akses";
 import {
   aturAktifAkun, aturUlangKataSandi, buatAkunAdmin, buatAkunAsesor, buatAkunTimProdi, gantiKataSandiSendiri, hapusAkun,
-  ubahNamaAkun, ubahPeranAkun,
+  ubahIdentitasAkun, ubahPeranAkun,
 } from "@/modules/bersama/data/organisasi";
 import { buatProyek, daftarProyek } from "@/modules/led/data/proyek";
 import { daftarKunci, tambahKunci } from "@/modules/bersama/data/kunci-api";
@@ -103,7 +103,7 @@ test("Perbaikan 1 Nov (P1): Admin UPPS mengubah nama dan peran akun; Tim Prodi w
   const prodi = await prisma.prodi.findFirstOrThrow({ where: { nama: "Teknik Elektro" } });
   // akun PJ lama yang dimigrasi menjadi Admin UPPS (keputusan B2)
   const pjLama = await penggunaDari((await buatAkunAdmin(admin, { nama: "Penanggung Jawab TI", email: "pj.ti@uji.test", kataSandi: "SandiPjTi#123" })).id);
-  await ubahNamaAkun(admin, pjLama.id, "Tim Prodi Teknik Elektro");
+  await ubahIdentitasAkun(admin, pjLama.id, { nama: "Tim Prodi Teknik Elektro" });
   assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: pjLama.id } })).name, "Tim Prodi Teknik Elektro");
 
   // Admin → Tim Prodi: wajib prodi; sesi dicabut
@@ -130,7 +130,7 @@ test("Perbaikan 1 Nov (P1): Admin UPPS mengubah nama dan peran akun; Tim Prodi w
   // tidak bisa mengubah peran sendiri; Tim Prodi tidak bisa mengubah peran
   await assert.rejects(ubahPeranAkun(admin, admin.id, { peran: "ASESOR" }), /peran akun sendiri/);
   await assert.rejects(ubahPeranAkun(tim, admin.id, { peran: "ASESOR" }), GalatAkses);
-  await assert.rejects(ubahNamaAkun(tim, admin.id, "X"), GalatAkses);
+  await assert.rejects(ubahIdentitasAkun(tim, admin.id, { nama: "X" }), GalatAkses);
 });
 
 test("Perbaikan 1 Nov (P1): perubahan peran ditolak bila Admin UPPS aktif tinggal satu", async () => {

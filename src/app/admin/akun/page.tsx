@@ -13,6 +13,8 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AksiBarisAkun } from "./komponen";
+import { caraMasukAkun, labelCaraMasuk } from "@/modules/bersama/sso/penyedia";
+import { saringAkun } from "./saring";
 
 export const metadata: Metadata = { title: "Kelola akun" };
 
@@ -50,10 +52,12 @@ export default async function HalamanAkun({ searchParams }: PageProps<"/admin/ak
   const p = await wajibAdmin();
   const [semuaAkun, cadangan, daftar] = await Promise.all([daftarAkun(p), statusCadangan(p), daftarProdi(p)]);
   const prodi = daftar.map((x) => ({ id: x.id, label: `${namaJenjang(x.jenjang)} ${x.nama}` }));
-  // L3: saringan prodi dari Pantau LED (?prodi=...)
-  const { prodi: saring } = (await searchParams) as { prodi?: string };
+  // L3: saringan prodi dari Pantau LED (?prodi=...); S4: penyaring "Tamu baru" (?saring=tamu)
+  const { prodi: saring, saring: jenis } = (await searchParams) as { prodi?: string; saring?: string };
   const prodiSaring = saring ? prodi.find((x) => x.id === saring) : undefined;
-  const akun = prodiSaring ? semuaAkun.filter((a) => a.prodi?.id === prodiSaring.id) : semuaAkun;
+  const tamuSaja = jenis === "tamu" && !prodiSaring;
+  const akun = saringAkun(semuaAkun, { prodiId: prodiSaring?.id, tamu: tamuSaja });
+  const jumlahTamu = semuaAkun.filter((a) => a.role === "TAMU").length;
   return (
     <>
       <JudulHalaman
@@ -68,9 +72,27 @@ export default async function HalamanAkun({ searchParams }: PageProps<"/admin/ak
           "Berikan kata sandi sementara; pengguna wajib menggantinya saat login pertama.",
           "Saat anggota tim berganti: buat akun Tim Prodi pengganti, lalu nonaktifkan akun lama. Akun yang pindah prodi: menu baris, Pindah program studi.",
           "Atur ulang kata sandi bila pengguna lupa. Akun sendiri tidak bisa dinonaktifkan atau dihapus.",
+          "Isi UNILA ID (opsional) supaya pemilik akun bisa masuk lewat SSO Unila. Dosen/tendik yang masuk SSO tanpa akun menjadi Tamu; lihat penyaring Tamu baru lalu Ubah peran bila perlu.",
         ]}
       />
       <StatusCadangan status={cadangan} />
+      {!prodiSaring && (
+        <nav aria-label="Penyaring akun" className="flex flex-wrap gap-2">
+          <Button asChild size="sm" variant={tamuSaja ? "outline" : "secondary"}>
+            <Link href="/admin/akun" aria-current={tamuSaja ? undefined : "page"}>Semua akun ({semuaAkun.length})</Link>
+          </Button>
+          <Button asChild size="sm" variant={tamuSaja ? "secondary" : "outline"}>
+            <Link href="/admin/akun?saring=tamu" aria-current={tamuSaja ? "page" : undefined}>Tamu baru ({jumlahTamu})</Link>
+          </Button>
+        </nav>
+      )}
+      {tamuSaja && (
+        <p className="text-sm text-muted-foreground">
+          Akun Tamu, terbaru di atas. Tamu hanya melihat dashboard. Bila pemiliknya dosen atau tendik yang menyusun LED,
+          buka menu baris lalu Ubah peran (Tim Prodi wajib memilih program studi).
+          {akun.length === 0 && " Belum ada akun Tamu."}
+        </p>
+      )}
       {prodiSaring && (
         <p className="text-sm">
           Akun {prodiSaring.label} saja. <Link className="text-primary hover:underline" href="/admin/akun">Tampilkan semua akun</Link>
@@ -84,6 +106,7 @@ export default async function HalamanAkun({ searchParams }: PageProps<"/admin/ak
                 <TableHead className="pl-4">Nama</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Peran</TableHead>
+                <TableHead>Cara masuk</TableHead>
                 <TableHead>Program studi</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Dibuat</TableHead>
@@ -92,26 +115,30 @@ export default async function HalamanAkun({ searchParams }: PageProps<"/admin/ak
               </TableRow>
             </TableHeader>
             <TableBody>
-              {akun.map((a) => (
+              {akun.map((a) => {
+                const cara = caraMasukAkun(a.accounts);
+                return (
                 <TableRow key={a.id}>
                   <TableCell className="pl-4 font-medium">{a.name}</TableCell>
                   <TableCell>{a.email}</TableCell>
                   <TableCell>{LABEL_PERAN[a.role as Peran]}</TableCell>
+                  <TableCell className="text-muted-foreground">{labelCaraMasuk(cara)}</TableCell>
                   <TableCell className="text-muted-foreground">{a.prodi ? `${namaJenjang(a.prodi.jenjang)} ${a.prodi.nama}` : "-"}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {a.banned ? <Badge variant="destructive">Nonaktif</Badge> : <Badge variant="secondary">Aktif</Badge>}
-                      {a.wajibGantiSandi && !a.banned && <Badge variant="outline">Belum ganti sandi</Badge>}
+                      {a.wajibGantiSandi && cara.sandi && !a.banned && <Badge variant="outline">Belum ganti sandi</Badge>}
                       {a.id === p.id && <Badge variant="outline">Anda</Badge>}
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{fmtTanggal.format(a.createdAt)}</TableCell>
                   <TableCell className="text-muted-foreground">{a.loginTerakhir ? fmtTanggal.format(a.loginTerakhir) : "belum pernah"}</TableCell>
                   <TableCell className="pr-4 text-right">
-                    {a.id !== p.id && <AksiBarisAkun id={a.id} nama={a.name} email={a.email} aktif={!a.banned} prodiId={a.role === "TIM_PRODI" ? a.prodi?.id ?? null : undefined} prodi={prodi} />}
+                    {a.id !== p.id && <AksiBarisAkun id={a.id} nama={a.name} email={a.email} aktif={!a.banned} prodiId={a.role === "TIM_PRODI" ? a.prodi?.id ?? null : undefined} prodi={prodi} punyaSandi={cara.sandi} />}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

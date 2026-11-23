@@ -49,7 +49,7 @@ export function FormTambahAkun({ prodi, prodiAwal = "" }: { prodi: PilihanProdi[
   const { sibuk, jalankan } = useAksi();
   const form = useForm<MasukanAkun>({
     resolver: zodResolver(skemaAkun),
-    defaultValues: { nama: "", email: "", kataSandi: "" },
+    defaultValues: { nama: "", email: "", kataSandi: "", usernameSso: "" },
   });
   const kirim = form.handleSubmit((nilai) => {
     if (peran === "TIM_PRODI" && !prodiId) {
@@ -130,6 +130,18 @@ export function FormTambahAkun({ prodi, prodiAwal = "" }: { prodi: PilihanProdi[
             )}
           />
         </div>
+        <Controller
+          name="usernameSso"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid} className="md:max-w-sm">
+              <FieldLabel htmlFor="akun-unila-id">UNILA ID (untuk login SSO)</FieldLabel>
+              <Input {...field} value={field.value ?? ""} id="akun-unila-id" autoComplete="off" placeholder="Opsional" aria-invalid={fieldState.invalid} />
+              <FieldDescription>Username SSO Unila pemilik akun. Kosongkan bila akun hanya masuk dengan email dan kata sandi.</FieldDescription>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
         <Button type="submit" size="lg" className="w-fit" disabled={sibuk}>
           <IkonSibuk sibuk={sibuk} />
           Buat akun
@@ -139,8 +151,10 @@ export function FormTambahAkun({ prodi, prodiAwal = "" }: { prodi: PilihanProdi[
   );
 }
 
-export function AksiBarisAkun({ id, nama, email, aktif, prodiId, prodi }: {
+export function AksiBarisAkun({ id, nama, email, aktif, prodiId, prodi, punyaSandi = true }: {
   id: string; nama: string; email: string; aktif: boolean;
+  /** S4: akun tanpa kredensial sandi (masuk lewat SSO saja) tidak punya kata sandi untuk diatur ulang. */
+  punyaSandi?: boolean;
   /** Prodi akun Tim Prodi; undefined untuk Admin UPPS dan Asesor (tidak bisa dipindah). */
   prodiId?: string | null;
   prodi: PilihanProdi[];
@@ -159,15 +173,17 @@ export function AksiBarisAkun({ id, nama, email, aktif, prodiId, prodi }: {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link href={`/admin/akun/${id}/nama`}><PenLine aria-hidden />Ubah nama</Link>
+            <Link href={`/admin/akun/${id}/nama`}><PenLine aria-hidden />Ubah nama dan UNILA ID</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href={`/admin/akun/${id}/peran`}><UserCog aria-hidden />Ubah peran</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setDialog("sandi")}>
-            <KeyRound aria-hidden />
-            Atur ulang kata sandi
-          </DropdownMenuItem>
+          {punyaSandi && (
+            <DropdownMenuItem onSelect={() => setDialog("sandi")}>
+              <KeyRound aria-hidden />
+              Atur ulang kata sandi
+            </DropdownMenuItem>
+          )}
           {prodiId !== undefined && (
             <DropdownMenuItem onSelect={() => { setProdiBaru(prodiId ?? ""); setDialog("pindah"); }}>
               <ArrowRightLeft aria-hidden />

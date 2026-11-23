@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { jalankanAksi } from "@/modules/bersama/aksi";
 import * as org from "@/modules/bersama/data/organisasi";
 import * as pengaturan from "@/modules/bersama/data/pengaturan";
-import type { MasukanAkun, MasukanAkunTimProdi, MasukanUbahPeranAkun } from "@/modules/bersama/validasi";
+import type { MasukanAkun, MasukanAkunTimProdi, MasukanUbahIdentitasAkun, MasukanUbahPeranAkun } from "@/modules/bersama/validasi";
 
 // ---------------------------------------------------------------- Akun (Admin UPPS)
 
@@ -14,8 +14,8 @@ export async function aksiBuatTimProdi(masukan: MasukanAkunTimProdi) {
   return r;
 }
 
-export async function aksiUbahNamaAkun(userId: string, nama: string) {
-  const r = await jalankanAksi((p) => org.ubahNamaAkun(p, userId, nama).then(() => null));
+export async function aksiUbahIdentitasAkun(userId: string, masukan: MasukanUbahIdentitasAkun) {
+  const r = await jalankanAksi((p) => org.ubahIdentitasAkun(p, userId, masukan).then(() => null));
   revalidatePath("/admin/akun");
   return r;
 }

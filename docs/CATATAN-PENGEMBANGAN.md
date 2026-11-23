@@ -3177,3 +3177,36 @@ LKPS hasil penggabungan (`akses-tamu.test.ts` otomatis menguji setiap fungsi dat
   gelap tipis) + logo dalam lingkaran putih; nama aplikasi pindah ke atas form. Bila keduanya tidak ada: panel biru S3.
 - Berkas logo dan foto belum tersedia di repo atau di komputer ini; menunggu Adrianne (logo resmi LAM Teknik dan foto
   yang boleh dipakai). Tata letak dicek dengan gambar pengganti sementara (dihapus, tidak di-commit) di 1440 dan 390 px.
+
+### S4: UNILA ID di akun dan Tamu baru di Kelola akun (23 Nov 2026)
+
+- **Model:** `User.usernameSso String? @unique` (UNILA ID), migrasi `20261123100000_username_sso` (baris `DROP INDEX`
+  HNSW/BM25 dari `migrate diff` dibuang seperti biasa).
+- **Validasi** (`validasi.ts`, `usernameSso`): opsional, dipangkas, huruf kecil, kosong = `null`, maksimal 64 karakter,
+  hanya huruf/angka/titik/garis bawah/tanda hubung. Keputusan sendiri (rencana tidak menyebut format): format resmi
+  UNILA ID belum ada di `SSO-AKSES-CATATAN.md`; aturan ini longgar untuk NPM, NIP, atau username dan bisa dipersempit
+  di S5 bila dokumen akses menyebut formatnya.
+- **Unik:** `pastikanUsernameSsoBaru` sebelum simpan, ditambah tangkapan P2002 bila dua admin menyimpan bersamaan (akun
+  yang baru dibuat dibatalkan). Pesan: "UNILA ID ini sudah dipakai akun lain."
+- **Kelola akun:**
+  - Tambah akun: isian "UNILA ID (untuk login SSO)" untuk semua peran.
+  - "Ubah nama" menjadi "Ubah nama dan UNILA ID" (`ubahIdentitasAkun`, menggantikan `ubahNamaAkun`; aksi log
+    `ubah_identitas`).
+  - Kolom "Cara masuk": Sandi, SSO, atau Sandi dan SSO dari `Account.providerId` (`credential` / `sso-unila`;
+    `src/modules/bersama/sso/penyedia.ts`).
+  - Penyaring "Semua akun (n)" | "Tamu baru (n)" (`?saring=tamu`, `saring.ts`): akun Tamu, terbaru di atas, dengan
+    petunjuk memakai Ubah peran. Ubah peran tidak diubah; Tim Prodi tetap wajib prodi.
+  - Akun tanpa sandi: menu baris tanpa "Atur ulang kata sandi" dan tanpa lencana "Belum ganti sandi".
+- **Akun tanpa kata sandi:** `ambilPengguna` menghitung `Account` credential (satu kueri per permintaan, di-cache) →
+  `Pengguna.punyaSandi`. Bila false: menu pengguna tanpa "Ganti kata sandi", `/akun/ganti-sandi` mengalihkan ke beranda
+  peran, `gantiKataSandiSendiri` menolak, dan `wajibGantiSandi` diabaikan (tidak ada sandi lama untuk diganti).
+- **Data pribadi:** nilai UNILA ID tidak masuk log aktivitas, hanya `unilaId`/`adaUnilaId`/`unilaIdDiubah` (boolean).
+  Log `buat` akun tetap mencatat email seperti sebelumnya (akun buatan admin, bukan data SSO).
+- **Uji:** `tests/unit/akun-unila-id.test.ts` (3), `tests/integrasi/akun-unila-id.test.ts` (4): UNILA ID unik dan
+  dinormalkan, log tanpa UNILA ID, Tamu muncul di penyaring terurut terbaru, Cara masuk, Tamu → Tim Prodi wajib prodi,
+  akun hanya-SSO tidak bisa ganti/atur ulang sandi. `akun.test.ts` memakai `ubahIdentitasAkun`.
+- **Cek browser** (build produksi, port 3100, akun uji sementara admin + Tamu hanya-SSO, dihapus sesudahnya): penyaring
+  Tamu baru menampilkan Tamu dengan Cara masuk "SSO"; menu barisnya tanpa Atur ulang kata sandi; Ubah nama dan UNILA ID
+  menyimpan "Tamu.S4.Baru" sebagai `tamu.s4.baru`.
+- **Hasil:** lint 0 galat (1 peringatan lama `lkps/domain/hitung.ts`), typecheck lulus, unit 285/285, integrasi
+  152/152, build lulus.

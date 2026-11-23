@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/modules/bersama/auth";
 import type { Pengguna } from "@/modules/bersama/akses";
 import { PERAN, berandaPeran, type Peran } from "@/modules/bersama/peran";
+import { prisma } from "@/modules/bersama/db";
+import { PENYEDIA_SANDI } from "@/modules/bersama/sso/penyedia";
 
 export const HALAMAN_GANTI_SANDI = "/akun/ganti-sandi";
 
@@ -16,10 +18,13 @@ export const ambilPengguna = cache(async (): Promise<Pengguna | null> => {
   if (u.banned) return null;
   const peran = PERAN.includes(u.role as Peran) ? (u.role as Peran) : null;
   if (!peran) return null;
+  const sandi = await prisma.account.count({ where: { userId: u.id, providerId: PENYEDIA_SANDI } });
   return {
     id: u.id, nama: u.name, email: u.email, peran,
     prodiId: typeof u.prodiId === "string" ? u.prodiId : null,
-    wajibGantiSandi: Boolean(u.wajibGantiSandi),
+    // akun tanpa sandi tidak bisa dipaksa ganti sandi (tidak ada sandi lama)
+    wajibGantiSandi: sandi > 0 && Boolean(u.wajibGantiSandi),
+    punyaSandi: sandi > 0,
   };
 });
 

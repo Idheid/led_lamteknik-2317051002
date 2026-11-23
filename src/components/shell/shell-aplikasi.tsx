@@ -72,7 +72,7 @@ export async function ShellAplikasi({ pengguna, grup, judul = "Akreditasi LAM Te
           {pengguna.peran !== "TAMU" && <PindahModul hrefLed={berandaLed(pengguna.peran)} modulBersama={modul} />}
           <span className="ml-auto flex items-center gap-1">
             {pengguna.peran !== "TAMU" && <Lonceng />}
-            <MenuPengguna nama={pengguna.nama} email={pengguna.email} peran={LABEL_PERAN[pengguna.peran]} />
+            <MenuPengguna nama={pengguna.nama} email={pengguna.email} peran={LABEL_PERAN[pengguna.peran]} punyaSandi={pengguna.punyaSandi !== false} />
           </span>
         </header>
         <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">{children}</div>

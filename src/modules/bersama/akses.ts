@@ -10,6 +10,11 @@ export interface Pengguna {
   prodiId: string | null;
   /** Akun baru atau sandi diatur ulang: wajib mengganti kata sandi sebelum memakai aplikasi. */
   wajibGantiSandi?: boolean;
+  /**
+   * Rencana 18 Nov S4: akun punya kredensial email + kata sandi. False untuk akun yang hanya masuk lewat SSO (Tamu dari
+   * SSO): menu "Ganti kata sandi" disembunyikan. undefined dianggap true (pengguna buatan uji).
+   */
+  punyaSandi?: boolean;
 }
 
 /** Galat hak akses; pesan aman ditampilkan ke pengguna. */

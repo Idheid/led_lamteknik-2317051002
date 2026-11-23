@@ -19,7 +19,7 @@ export default async function HalamanAwal() {
   // akun Tim Prodi tanpa prodi (data lama): jangan dialihkan ke /led yang mengembalikan ke sini
   return (
     <main className="mx-auto flex min-h-svh max-w-xl flex-col justify-center gap-4 p-6">
-      <div className="flex justify-end"><MenuPengguna nama={p.nama} email={p.email} peran={LABEL_PERAN[p.peran]} /></div>
+      <div className="flex justify-end"><MenuPengguna nama={p.nama} email={p.email} peran={LABEL_PERAN[p.peran]} punyaSandi={p.punyaSandi !== false} /></div>
       <Alert>
         <AlertTitle>Akun belum terhubung ke program studi</AlertTitle>
         <AlertDescription>Minta Admin UPPS memilih program studi untuk akun Anda di Kelola akun (Ubah peran).</AlertDescription>

@@ -85,11 +85,25 @@ export type MasukanProdi = z.input<typeof skemaProdi>;
 
 const kataSandi = z.string().min(8, "Kata sandi minimal 8 karakter.").max(128, "Kata sandi terlalu panjang.");
 
+/**
+ * UNILA ID (Rencana 18 Nov S4): username SSO Unila, opsional. Disimpan huruf kecil dan dipangkas; kosong = null.
+ * Hanya huruf, angka, titik, garis bawah, dan tanda hubung (NPM/NIP/username), maksimal 64 karakter.
+ */
+export const usernameSso = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(64, "UNILA ID terlalu panjang.")
+  .refine((v) => v === "" || /^[a-z0-9._-]+$/.test(v), "UNILA ID hanya boleh huruf, angka, titik, garis bawah, atau tanda hubung.")
+  .nullish()
+  .transform((v) => (v ? v : null));
+
 /** Akun Admin UPPS atau Asesor (tidak terikat prodi). */
 export const skemaAkun = z.object({
   nama: teksWajib("Nama", 120),
   email: z.string().trim().toLowerCase().email("Format email tidak valid."),
   kataSandi,
+  usernameSso,
 });
 export type MasukanAkun = z.input<typeof skemaAkun>;
 
@@ -100,7 +114,9 @@ export const skemaAkunTimProdi = skemaAkun.extend({
 export type MasukanAkunTimProdi = z.input<typeof skemaAkunTimProdi>;
 
 /** Perbaikan 1 Nov 2026 (P1): ubah nama dan peran akun oleh Admin UPPS. Tim Prodi wajib memilih program studi. */
-export const skemaUbahNamaAkun = z.object({ nama: teksWajib("Nama", 120) });
+/** Ubah nama akun (P1) dan UNILA ID (Rencana 18 Nov S4): halaman "Ubah nama dan UNILA ID". */
+export const skemaUbahIdentitasAkun = z.object({ nama: teksWajib("Nama", 120), usernameSso });
+export type MasukanUbahIdentitasAkun = z.input<typeof skemaUbahIdentitasAkun>;
 export const skemaUbahPeranAkun = z.object({
   peran: z.enum(["ADMIN", "TIM_PRODI", "ASESOR", "TAMU"]),
   prodiId: z.string().trim().nullish(),

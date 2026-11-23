@@ -8,19 +8,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IkonSibuk, useAksi } from "@/components/aksi-klien";
 import type { Peran } from "@/modules/bersama/peran";
-import { aksiUbahNamaAkun, aksiUbahPeranAkun } from "../../aksi";
+import { aksiUbahIdentitasAkun, aksiUbahPeranAkun } from "../../aksi";
 import { PERAN_BARU, type PilihanProdi } from "../komponen";
 
-/** Ubah nama akun (perbaikan 1 Nov 2026, P1). */
-export function FormUbahNama({ id, awal }: { id: string; awal: string }) {
+/** Ubah nama dan UNILA ID akun (perbaikan 1 Nov 2026 P1; UNILA ID: Rencana 18 Nov S4). */
+export function FormUbahIdentitas({ id, namaAwal, unilaIdAwal }: { id: string; namaAwal: string; unilaIdAwal: string | null }) {
   const router = useRouter();
   const { sibuk, jalankan } = useAksi();
-  const [nama, setNama] = useState(awal);
+  const [nama, setNama] = useState(namaAwal);
+  const [unilaId, setUnilaId] = useState(unilaIdAwal ?? "");
+  const tidakBerubah = nama.trim() === namaAwal && unilaId.trim().toLowerCase() === (unilaIdAwal ?? "");
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        jalankan(() => aksiUbahNamaAkun(id, nama), { sukses: "Nama akun diperbarui.", lalu: () => router.push("/admin/akun") });
+        jalankan(() => aksiUbahIdentitasAkun(id, { nama, usernameSso: unilaId }), { sukses: "Akun diperbarui.", lalu: () => router.push("/admin/akun") });
       }}
     >
       <FieldGroup>
@@ -28,8 +30,13 @@ export function FormUbahNama({ id, awal }: { id: string; awal: string }) {
           <FieldLabel htmlFor="ubah-nama">Nama</FieldLabel>
           <Input id="ubah-nama" value={nama} onChange={(e) => setNama(e.target.value)} />
         </Field>
-        <Button type="submit" className="w-fit" disabled={sibuk || !nama.trim() || nama.trim() === awal}>
-          <IkonSibuk sibuk={sibuk} />Simpan nama
+        <Field>
+          <FieldLabel htmlFor="ubah-unila-id">UNILA ID (untuk login SSO)</FieldLabel>
+          <Input id="ubah-unila-id" value={unilaId} onChange={(e) => setUnilaId(e.target.value)} autoComplete="off" placeholder="Opsional" />
+          <FieldDescription>Username SSO Unila pemilik akun. Kosongkan bila akun tidak masuk lewat SSO.</FieldDescription>
+        </Field>
+        <Button type="submit" className="w-fit" disabled={sibuk || !nama.trim() || tidakBerubah}>
+          <IkonSibuk sibuk={sibuk} />Simpan
         </Button>
       </FieldGroup>
     </form>

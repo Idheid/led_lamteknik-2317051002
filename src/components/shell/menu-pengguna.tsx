@@ -14,7 +14,11 @@ function inisial(nama: string): string {
 }
 
 /** Menu pengguna di kanan atas, di samping lonceng (revisi 26 Okt 2026; sebelumnya di bawah sidebar). */
-export function MenuPengguna({ nama, email, peran }: { nama: string; email: string; peran: string }) {
+export function MenuPengguna({ nama, email, peran, punyaSandi = true }: {
+  nama: string; email: string; peran: string;
+  /** S4: akun yang hanya masuk lewat SSO tidak punya kata sandi untuk diganti. */
+  punyaSandi?: boolean;
+}) {
   const router = useRouter();
   async function keluar() {
     await authClient.signOut();
@@ -37,12 +41,14 @@ export function MenuPengguna({ nama, email, peran }: { nama: string; email: stri
           <div className="text-xs text-muted-foreground">{peran}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/akun/ganti-sandi">
-            <KeyRound aria-hidden />
-            Ganti kata sandi
-          </Link>
-        </DropdownMenuItem>
+        {punyaSandi && (
+          <DropdownMenuItem asChild>
+            <Link href="/akun/ganti-sandi">
+              <KeyRound aria-hidden />
+              Ganti kata sandi
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onSelect={keluar}>
           <LogOut aria-hidden />
           Keluar
