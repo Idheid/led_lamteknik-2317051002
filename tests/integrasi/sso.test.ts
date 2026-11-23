@@ -10,6 +10,8 @@ import { PENYEDIA_SSO, type HasilSso } from "@/modules/bersama/sso/penyedia";
 import { GET as mulai } from "@/app/api/sso/mulai/route";
 import { GET as kembaliGet, POST as kembaliPost } from "@/app/api/sso/kembali/route";
 import { GET as tiruanGet, POST as tiruanPost } from "@/app/api/sso/tiruan/route";
+import { POST as keluar } from "@/app/api/sso/keluar/route";
+import { GET as tiruanKeluar } from "@/app/api/sso/tiruan/keluar/route";
 import { bersihkanDb, buatAdmin, imporSeed, siapkanFakultas } from "./bantu";
 
 /** Rencana 18 Nov S5: login SSO lewat rute sungguhan dengan penyedia tiruan. */
@@ -213,4 +215,59 @@ test("SSO tiruan: halaman pilihan dan formulir pengguna lain menuju alamat kemba
     body: new URLSearchParams({ persona: "toString", state: "s1" }).toString(),
   }));
   assert.equal(salah.status, 400);
+});
+
+/** Cookie dari Set-Cookie (nama=nilai) untuk permintaan berikutnya. */
+const jadikanCookie = (setCookie: string[]) => setCookie.map((c) => c.split(";")[0]).join("; ");
+
+async function keluarDengan(cookie: string) {
+  const r = await keluar(new NextRequest(`${ASAL}/api/sso/keluar`, { method: "POST", headers: { cookie, origin: ASAL } }));
+  assert.equal(r.status, 200);
+  return { alamat: ((await r.json()) as { alamat: string }).alamat, setCookie: r.headers.getSetCookie() };
+}
+
+test("S6: keluar dari sesi SSO → sesi terhapus dan diarahkan ke alamat keluar SSO dengan kembali ke /login", async () => {
+  const r = await loginSso(persona("dosen-baru"));
+  const u = await prisma.user.findUniqueOrThrow({ where: { usernameSso: "dosen.baru.tiruan" } });
+  await prisma.session.deleteMany({ where: { userId: u.id } });
+  const r2 = await loginSso(persona("dosen-baru"));
+  assert.equal(r.sesi && r2.sesi, true);
+  assert.equal(await prisma.session.count({ where: { userId: u.id } }), 1);
+
+  const k = await keluarDengan(jadikanCookie(r2.cookie));
+  const tujuan = new URL(k.alamat, ASAL);
+  assert.equal(tujuan.pathname, "/api/sso/tiruan/keluar");
+  assert.equal(tujuan.searchParams.get("kembali"), `${ASAL}/login`);
+  assert.equal(await prisma.session.count({ where: { userId: u.id } }), 0, "sesi aplikasi terhapus");
+  assert.ok(k.setCookie.some((c) => /session_token=;|session_token=.*Max-Age=0/i.test(c)), "cookie sesi dihapus");
+
+  // halaman keluar tiruan kembali ke login; alamat luar diabaikan
+  const t = await tiruanKeluar(new NextRequest(new URL(k.alamat, ASAL)));
+  assert.equal(t.headers.get("location"), `${ASAL}/login?keluar=sso`);
+  const jahat = await tiruanKeluar(new NextRequest(`${ASAL}/api/sso/tiruan/keluar?kembali=${encodeURIComponent("https://jahat.test/x")}`));
+  assert.equal(jahat.headers.get("location"), `${ASAL}/login?keluar=sso`);
+});
+
+test("S6: keluar dari login kata sandi → sesi terhapus, ke /login (tanpa SSO); tanpa sesi tetap /login", async () => {
+  await buatAkunAsesor(admin, { nama: "Reviewer Sandi", email: "reviewer.sandi@uji.test", kataSandi: "SandiRev#123" });
+  const masuk = await auth.api.signInEmail({ body: { email: "reviewer.sandi@uji.test", password: "SandiRev#123" }, returnHeaders: true });
+  const userId = masuk.response.user.id;
+  assert.equal(await prisma.session.count({ where: { userId } }), 1);
+  const k = await keluarDengan(jadikanCookie(masuk.headers.getSetCookie()));
+  assert.equal(k.alamat, "/login");
+  assert.equal(await prisma.session.count({ where: { userId } }), 0);
+  assert.equal((await keluarDengan("")).alamat, "/login");
+});
+
+test("S6: penyedia Access belum dikonfigurasi → sesi SSO tetap terhapus, ke /login", async () => {
+  const r = await loginSso(persona("dosen-terdaftar"));
+  const sebelum = await prisma.session.count({ where: { lewatSso: true } });
+  process.env.SSO_MODE = "akses";
+  try {
+    const k = await keluarDengan(jadikanCookie(r.cookie));
+    assert.equal(k.alamat, "/login");
+    assert.equal(await prisma.session.count({ where: { lewatSso: true } }), sebelum - 1);
+  } finally {
+    process.env.SSO_MODE = "tiruan";
+  }
 });

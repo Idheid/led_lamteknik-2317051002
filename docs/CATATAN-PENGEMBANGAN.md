@@ -3302,3 +3302,27 @@ diisi dari dokumentasi Access):
 - Mahasiswa ditolak di aplikasi lewat status atau email "@student" (baris 389–393).
 - Endpoint `…/auth/login/sso` metode POST dengan app key sebagai parameter (baris 283).
 - Keluar harus menghapus cookie SSO juga (baris 327–331), dipakai di S6.
+
+### S6: keluar dari aplikasi dan SSO (23 Nov 2026)
+
+- **Rute `POST /api/sso/keluar`:**
+  - Membaca sesi lalu `auth.api.signOut` (sesi dihapus, cookie dihapus lewat header Better Auth).
+  - Sesi `lewatSso` → `{ alamat: penyedia.urlKeluar(<origin>/login) }`; login biasa atau tanpa sesi → `/login`.
+  - Bila penyedia Access belum dikonfigurasi, sesi aplikasi tetap terhapus dan tujuannya `/login`; sesi SSO di
+    browser belum bisa dimatikan sampai URL keluar Access diketahui (SSO-AKSES-CATATAN bagian 5).
+  - Ini setara `SSO::cookieClear()` contoh PHP (transkrip Pak Tris 8 baris 327–331: sesi SSO menempel di browser,
+    sehingga keluar dari aplikasi saja membuat "Masuk dengan SSO" langsung masuk ke akun sebelumnya).
+- **Menu pengguna "Keluar":** memanggil rute itu lalu `window.location.assign(alamat)` (muat penuh, karena alamat SSO
+  ada di luar aplikasi). Bila rute gagal, cadangannya `authClient.signOut()` lalu `/login`.
+- **Tiruan:** `urlKeluar` → `/api/sso/tiruan/keluar?kembali=…`, yang kembali ke `/login?keluar=sso` (hanya alamat di
+  aplikasi ini; alamat luar diganti `/login`). Mati di produksi.
+- **Uji:**
+  - `sso.test.ts` (+3): keluar dari sesi SSO (sesi terhapus, cookie dihapus, alamat keluar tiruan dengan kembali
+    `/login`, alamat luar diabaikan); keluar dari login kata sandi (`/login`, sesi terhapus); tanpa sesi; Access belum
+    dikonfigurasi.
+  - `tests/unit/sso.test.ts` (+1): menu memakai rute dan muat penuh.
+- **Cek browser** (build produksi, port 3100, akun admin uji sementara, dihapus sesudahnya): Keluar → POST
+  `/api/sso/keluar` 200 → `/login`, dan `get-session` null.
+- **Uji manual dengan SSO asli** (rencana S6 butir 3: setelah keluar, "Masuk dengan SSO Unila" meminta UNILA ID lagi):
+  **belum bisa**, menunggu penyedia Access dan URL keluarnya.
+- **Hasil:** lint 0 galat (1 peringatan lama), typecheck lulus, unit 292/292, integrasi 163/163, build lulus.

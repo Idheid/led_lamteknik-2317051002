@@ -91,6 +91,6 @@ export const penyediaTiruan: PenyediaSso = {
     if (!tiket) throw new GalatSso("Tiket tiruan tidak ada.");
     return { hasil: bacaTiketTiruan(tiket), state: isian.get("state") };
   },
-  // S6 mengisi halaman keluar tiruan; sementara langsung kembali
-  urlKeluar: (kembaliKe) => kembaliKe,
+  // S6: tiruan tidak punya sesi SSO; halaman keluar tiruan langsung kembali dengan penanda ?keluar=sso
+  urlKeluar: (kembaliKe) => `/api/sso/tiruan/keluar?kembali=${encodeURIComponent(kembaliKe)}`,
 };

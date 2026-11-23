@@ -82,3 +82,13 @@ test("rute SSO: tiruan mati di produksi; endpoint sesi hanya server; sesi tidak 
   assert.doesNotMatch(kembali, /session_token|cookies\.set\(/);
   for (const r of ["mulai", "kembali", "tiruan"]) assert.ok(existsSync(join(akar, `src/app/api/sso/${r}/route.ts`)), r);
 });
+
+test("S6: tombol Keluar memakai /api/sso/keluar dan berpindah penuh; tiruan memberi alamat keluar tiruan", async () => {
+  const menu = readFileSync(join(akar, "src/components/shell/menu-pengguna.tsx"), "utf8");
+  assert.match(menu, /fetch\("\/api\/sso\/keluar", \{ method: "POST" \}\)/);
+  assert.match(menu, /window\.location\.assign\(tujuan\)/);
+  assert.match(menu, /await authClient\.signOut\(\)/, "cadangan bila rute gagal");
+  const { penyediaTiruan } = await import("../../src/modules/bersama/sso/tiruan");
+  assert.equal(penyediaTiruan.urlKeluar("http://x.test/login"), "/api/sso/tiruan/keluar?kembali=http%3A%2F%2Fx.test%2Flogin");
+  assert.match(readFileSync(join(akar, "src/app/api/sso/tiruan/keluar/route.ts"), "utf8"), /process\.env\.NODE_ENV !== "production"/);
+});

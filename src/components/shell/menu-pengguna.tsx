@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, KeyRound, LogOut } from "lucide-react";
 import { authClient } from "@/modules/bersama/auth-client";
@@ -19,11 +18,21 @@ export function MenuPengguna({ nama, email, peran, punyaSandi = true }: {
   /** S4: akun yang hanya masuk lewat SSO tidak punya kata sandi untuk diganti. */
   punyaSandi?: boolean;
 }) {
-  const router = useRouter();
+  /**
+   * Rencana 18 Nov S6: server menghapus sesi lalu memberi alamat tujuan. Sesi dari SSO → alamat keluar SSO (sesi SSO di
+   * browser ikut mati); login biasa → /login. Bila rute gagal, keluar lewat Better Auth seperti sebelumnya.
+   */
   async function keluar() {
-    await authClient.signOut();
-    router.replace("/login");
-    router.refresh();
+    let tujuan = "/login";
+    try {
+      const r = await fetch("/api/sso/keluar", { method: "POST" });
+      if (!r.ok) throw new Error(String(r.status));
+      tujuan = ((await r.json()) as { alamat?: string }).alamat ?? "/login";
+    } catch {
+      await authClient.signOut();
+    }
+    // muat penuh: alamat keluar SSO ada di luar aplikasi, dan data halaman sebelumnya ikut dibuang
+    window.location.assign(tujuan);
   }
   return (
     <DropdownMenu>
