@@ -13,14 +13,38 @@ target dan capaian, kesiapan dan jadwal kerja mundur, ekspor DRAF, server produk
 terisi; LED baru berfokus pada TS; Penilaian di depan dengan usulan skor AI; Susun seluruh LED; jadwal hanya pengingat;
 model AI disebut; LKPS PDF per tabel. Gabung LKPS 18 Nov 2026: **empat peran** (Admin UPPS, Tim Prodi, Reviewer
 LPMPP = `ASESOR`, dan **Tamu** = `TAMU`, hanya melihat Dashboard akreditasi) dan **modul LKPS** dari repo Ghalib
-(bagian 5a). Rincian di `CATATAN-PENGEMBANGAN.md`.
+(bagian 5a). Rencana 18 Nov 2026 (dikerjakan 23 Nov): **login dua pilihan** (email + kata sandi, atau SSO Unila) dan
+akun **Tamu** otomatis dari SSO (bagian 1a). Rincian di `CATATAN-PENGEMBANGAN.md`.
 
 | Peran | Kode | Ringkas |
 | --- | --- | --- |
 | Admin UPPS | `ADMIN` | akun, prodi, identitas fakultas, instrumen, kunci API, penugasan reviewer; LKPS: baca semua prodi, struktur kriteria & tabel |
 | Tim Prodi | `TIM_PRODI` | menyusun LED prodinya; LKPS: mengisi semua kriteria prodinya |
 | Reviewer LPMPP | `ASESOR` | review dan skor LED yang ditugaskan; LKPS: hanya baca prodi yang LED-nya ditugaskan |
-| Tamu | `TAMU` | hanya Dashboard akreditasi (hanya baca, detail prodi hanya baca); tidak membuka LED dan LKPS |
+| Tamu | `TAMU` | hanya Dashboard akreditasi (hanya baca, detail prodi hanya baca); tidak membuka LED dan LKPS; dibuat otomatis saat dosen/tendik belum terdaftar masuk lewat SSO, tanpa kata sandi |
+
+### 1a. Masuk ke sistem (Rencana 18 Nov 2026)
+
+Kebutuhan fungsional:
+
+| Kode | Kebutuhan | Pelaku |
+| --- | --- | --- |
+| KF-L1 | Masuk dengan email dan kata sandi (akun dibuat Admin UPPS; tanpa pendaftaran mandiri) | Semua peran |
+| KF-L2 | Tiga kali gagal dalam 5 menit untuk satu email → terkunci 5 menit, dengan peringatan dan tombol Masuk nonaktif; email dicatat sebagai sha256 di `LogLoginGagal` | Sistem |
+| KF-L3 | Masuk dengan SSO Unila, hanya bila `SSO_AKTIF=true` (tombol tersembunyi bila mati) | Dosen, tendik |
+| KF-L4 | Akun dicocokkan hanya lewat UNILA ID (`User.usernameSso` = username SSO), tidak lewat email; SSO tidak mengubah peran | Sistem |
+| KF-L5 | Pengguna SSO yang belum terdaftar dibuatkan akun Tamu (tanpa sandi, Account `sso-unila`), lalu Admin UPPS diberi tahu | Sistem |
+| KF-L6 | Tolak: akun SSO tidak aktif, mahasiswa (status atau domain email `SSO_DOMAIN_EMAIL_DITOLAK`), akun aplikasi dinonaktifkan; tanpa membuat akun | Sistem |
+| KF-L7 | Sesi dari SSO 8 jam tanpa perpanjangan (berakhir saat browser ditutup); login kata sandi 7 hari | Sistem |
+| KF-L8 | Keluar menghapus sesi aplikasi; sesi dari SSO juga diarahkan ke alamat keluar SSO | Semua peran |
+| KF-L9 | Kelola akun: UNILA ID opsional dan unik, kolom Cara masuk (Sandi/SSO), penyaring Tamu baru, Ubah peran Tamu | Admin UPPS |
+| KF-L10 | Dashboard Tamu hanya baca: tanpa tombol aksi (Catat hasil, Ingatkan, Review LPMPP) dan tanpa email akun; alamat lain dialihkan ke Dashboard | Tamu |
+
+Alur SSO: `/api/sso/mulai` (state acak di cookie httpOnly 10 menit) → penyedia SSO → `/api/sso/kembali` (validasi
+kiriman oleh penyedia, cocokkan state, `putuskan`) → sesi Better Auth lewat plugin `ssoUnila` (endpoint hanya server).
+Penyedia: API Access Unila (`SSO_MODE=akses`, belum dikonfigurasi karena menunggu dokumentasi UPA TIK) atau tiruan
+(`SSO_MODE=tiruan`, hanya pengembangan/uji, ditolak di produksi). Data pribadi SSO (UNILA ID, email) hanya di tabel
+`User` dan `Account`; log tidak memuatnya.
 
 1. Admin UPPS melengkapi identitas fakultas dan program studi (16 prodi FT Unila sudah terisi), membuat akun Tim Prodi
    per prodi dan akun asesor, mengunggah instrumen per jenjang (Template LED, Matriks Penilaian, Pedoman Penilaian),
@@ -218,7 +242,7 @@ Membuka alamat milik peran lain diarahkan ke beranda peran.
 | Menu | Isi | Peran |
 | --- | --- | --- |
 | Halaman awal `/` | Langsung ke beranda peran (Dashboard akreditasi, LED prodi, LED ditugaskan) | Semua |
-| Kelola akun | Tambah akun di halaman sendiri `/admin/akun/tambah` (Tim Prodi wajib memilih prodi; satu prodi boleh beberapa akun), kolom program studi; menu baris: Ubah nama, Ubah peran (sesi akun dicabut, tercatat di log; admin tidak bisa mengubah peran sendiri; minimal satu Admin UPPS aktif), pindah prodi, atur ulang sandi, nonaktifkan, hapus; status cadangan terakhir | Admin UPPS |
+| Kelola akun | Tambah akun di halaman sendiri `/admin/akun/tambah` (Tim Prodi wajib memilih prodi; satu prodi boleh beberapa akun; UNILA ID opsional), kolom program studi dan Cara masuk, penyaring Semua akun / Tamu baru; menu baris: Ubah nama dan UNILA ID, Ubah peran (sesi akun dicabut, tercatat di log; admin tidak bisa mengubah peran sendiri; minimal satu Admin UPPS aktif), pindah prodi, atur ulang sandi, nonaktifkan, hapus; status cadangan terakhir | Admin UPPS |
 | Halaman muka & identitas (`/led/[id]/halaman-muka`) | Pratinjau halaman muka dan tabel identitas pengusul (dihitung sama dengan ekspor, `barisIdentitas`), tanda asal data per baris (institusi, Program studi, riwayat akreditasi, Identitas prodi), daftar Masih kosong (termasuk logo), form data prodi (tersimpan ke Identitas prodi), ringkasan tim penyusun | Tim Prodi |
 | Logo sampul LED (`/led/logo-sampul`, modul LED) | Unggah/ganti/hapus logo perguruan tinggi (PNG/JPEG, ≥ 100 × 100 piksel, ≤ 2 MB), pratinjau halaman muka; ekspor Word mengganti bentuk "Logo Perguruan Tinggi" template dengan gambar ini (ukuran muat di kotak asal, rasio tetap, di tengah) | Admin UPPS |
 | Identitas institusi (`/pengaturan/institusi`) | Perguruan tinggi, UPPS, status PT (pilihan sheet Menu LKPS), alamat, kota, kode pos, telepon, SK pendirian PT (nomor, tanggal, pejabat); dipakai identitas pengusul LED dan sheet Menu LKPS | Admin UPPS |
@@ -255,7 +279,9 @@ aksi menghapus/menimpa.
   membacanya; Google meminta tidak mengirim data pribadi/rahasia. Layanan berbayar tidak memakai data untuk itu.
   Untuk data asli prodi: kunci berbayar, atau samarkan data pribadi sebelum dikirim (usulan U-03).
 - Yang dikirim ke LLM hanya potongan dan tabel yang relevan untuk sub-bagian yang sedang disusun.
-- Kata sandi di-hash (Better Auth). Data antarprodi terpisah (filter `prodiId`). Jejak audit di `LogAktivitas`.
+- Kata sandi di-hash (Better Auth). Login gagal dibatasi (KF-L2). SSO: state acak dengan pembanding waktu konstan,
+  tujuan sesudah login hanya jalur di dalam aplikasi, endpoint pembuat sesi `SERVER_ONLY`, `app_key` hanya di `.env`.
+  Data antarprodi terpisah (filter `prodiId`). Jejak audit di `LogAktivitas`.
 
 ## 9. Kebutuhan non-fungsional
 

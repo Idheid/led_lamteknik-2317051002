@@ -227,6 +227,25 @@ parameter, cara validasi, dan atribut dari dokumentasi Access. Dengan `SSO_MODE=
 pengguna ke halaman masuk dengan pesan "Masuk lewat SSO gagal". Jadi di server produksi biarkan `SSO_AKTIF=false`
 sampai penyedia Access selesai.
 
+**Mendaftarkan website ke Manajemen Akses (UPA TIK)** sebelum menyalakan SSO di server:
+
+1. Minta `app_key` aplikasi ke admin Manajemen Akses UPA TIK (sama seperti ID Aplikasi WS API). Simpan hanya di
+   `.env.produksi` sebagai `SSO_APP_KEY`; jangan dikirim lewat chat atau di-commit.
+2. Daftarkan **alamat kembali** website: `https://<domain>/api/sso/kembali` (domain sesuai `BETTER_AUTH_URL`, HTTPS).
+   Isi alamat yang sama di `SSO_URL_KEMBALI`.
+3. Tanyakan dan catat di `docs/SSO-AKSES-CATATAN.md` (bagian 1–5): metode dan parameter `auth/login/sso`, cara Access
+   mengirim hasil ke alamat kembali (GET/POST, apakah `state` diteruskan), endpoint validasi server-ke-server, nama
+   atribut (username, nama, email, status aktif, status dosen/karyawan/mahasiswa), domain email mahasiswa, dan URL keluar
+   SSO.
+4. Setelah berkas itu lengkap, penyedia Access (`src/modules/bersama/sso/akses.ts`) dikerjakan, lalu baru
+   `SSO_AKTIF=true` dengan `SSO_MODE=akses`.
+5. Uji di server: dosen terdaftar, dosen belum terdaftar (menjadi Tamu), mahasiswa (ditolak), dan keluar lalu masuk
+   lagi (harus diminta UNILA ID lagi). Daftar lengkapnya di `docs/uji/skenario-blackbox-tamu-sso.md`.
+
+Akun yang sudah ada dicocokkan **hanya lewat UNILA ID** (kolom di Kelola akun), tidak lewat email. Sebelum SSO
+dinyalakan, Admin UPPS sebaiknya mengisi UNILA ID (NIP/username SSO) akun dosen yang sudah ada, supaya mereka tidak
+masuk sebagai Tamu. Sesi dari SSO berlaku 8 jam.
+
 **Mencoba di laptop pengembangan** (penyedia tiruan, `npm run dev`): isi `SSO_AKTIF=true` dan `SSO_MODE=tiruan` di
 `.env`, lalu klik "Masuk dengan SSO Unila". Halaman `/api/sso/tiruan` menampilkan empat pengguna palsu (dosen
 terdaftar, dosen belum terdaftar, mahasiswa, akun SSO nonaktif) dan formulir pengguna lain. Agar "Dosen terdaftar"

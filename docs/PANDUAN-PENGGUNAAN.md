@@ -17,10 +17,24 @@ berandanya: Admin UPPS ke **Dashboard akreditasi**, Tim Prodi ke **LED prodi**, 
 - Membuka alamat milik peran lain diarahkan ke beranda peran sendiri. Setiap halaman punya kotak **Petunjuk halaman ini** yang bisa
 ditutup.
 
+**Masuk** (Rencana 18 Nov 2026): halaman masuk punya dua pilihan.
+
+- **Email dan kata sandi**: akun yang dibuat Admin UPPS. Tiga kali salah kata sandi dalam 5 menit mengunci email itu
+  selama 5 menit (peringatan kuning "Terlalu banyak percobaan"). Bila lupa kata sandi, hubungi Admin UPPS.
+- **Masuk dengan SSO Unila** (hanya tampil bila SSO diaktifkan di server): untuk dosen dan tenaga kependidikan dengan
+  akun SSO Unila. Aplikasi mencari akun yang UNILA ID-nya sama dengan username SSO:
+  - ada → masuk ke akun itu dengan perannya (SSO tidak pernah mengubah peran);
+  - tidak ada → dibuatkan akun **Tamu** (hanya melihat Dashboard), dan Admin UPPS mendapat pemberitahuan;
+  - mahasiswa, akun SSO yang tidak aktif, atau akun yang dinonaktifkan admin ditolak dengan pesan di halaman masuk.
+
+  Sesi dari SSO berlaku 8 jam dan berakhir saat browser ditutup. **Keluar** dari aplikasi juga mengeluarkan Anda dari
+  SSO Unila, sehingga orang berikutnya di komputer yang sama harus memasukkan UNILA ID-nya sendiri.
+
 **Pemasangan pertama**: selama website belum punya admin, halaman login menampilkan formulir **Buat akun admin
 pertama**. 16 program studi FT Unila langsung terisi. Setelah itu semua akun dibuat Admin UPPS; tidak ada pendaftaran
 mandiri. Akun baru dan akun yang kata sandinya diatur ulang **wajib mengganti kata sandi** saat login pertama. Setiap
-pengguna bisa mengganti kata sandinya sendiri lewat menu akun (pojok kanan atas) → **Ganti kata sandi**.
+pengguna yang masuk dengan kata sandi bisa menggantinya lewat menu akun (pojok kanan atas) → **Ganti kata sandi**. Akun
+yang hanya masuk lewat SSO tidak punya kata sandi, jadi menu ini tidak tampil.
 
 Ikon **lonceng** (Tim Prodi dan asesor) menampilkan pemberitahuan review: catatan revisi baru, catatan yang sudah
 diperbaiki atau diterima, balasan, pengajuan review, dan keputusan asesor. Pemberitahuan untuk sebuah LED sampai ke
@@ -87,16 +101,28 @@ formulir prodi, isi **Alasan koreksi**; koreksi itu tercatat sebagai riwayat "Ko
 ### 2. Kelola akun
 
 - Klik **Tambah akun** (halaman sendiri), pilih peran (**Tim Prodi**, **Asesor (reviewer)**, atau **Admin UPPS**), lalu
-  isi nama, email, dan kata sandi awal, lalu **Buat akun**; Anda kembali ke Kelola akun dengan pesan berhasil. Akun **Tim
+  isi nama, email, kata sandi awal, dan (opsional) **UNILA ID (untuk login SSO)**, lalu **Buat akun**; Anda kembali ke Kelola akun dengan pesan berhasil. Akun **Tim
   Prodi wajib memilih program studi**; satu prodi boleh punya beberapa akun (setiap anggota tim login sendiri dan
   menyusun LED yang sama).
-- Menu baris akun → **Ubah nama** atau **Ubah peran**. Pilihan peran sama dengan Tambah akun; Tim Prodi wajib memilih
+- **UNILA ID** adalah username SSO Unila pemilik akun (untuk dosen biasanya NIP). Isi supaya pemilik akun bisa masuk
+  lewat "Masuk dengan SSO Unila" ke akun ini. Satu UNILA ID hanya untuk satu akun; huruf besar/kecil disamakan. Akun
+  tanpa UNILA ID tidak dicocokkan lewat email: pemiliknya yang masuk lewat SSO akan menjadi Tamu baru.
+- Kolom **Cara masuk**: **Sandi**, **SSO**, atau **Sandi dan SSO** (akun yang pernah masuk lewat SSO).
+- Menu baris akun → **Ubah nama dan UNILA ID** atau **Ubah peran**. Pilihan peran sama dengan Tambah akun; Tim Prodi wajib memilih
   prodi, dan prodi dikosongkan bila peran bukan Tim Prodi. Akun yang diubah keluar dari semua perangkat dan perubahan
   tercatat di Log aktivitas. Contoh: akun lama yang tampil sebagai Admin UPPS tetapi sebenarnya anggota tim prodi diubah
   menjadi Tim Prodi lewat **Ubah peran**.
 - Kolom **Program studi** menunjukkan prodi setiap akun Tim Prodi. Anggota yang pindah prodi: menu baris → **Pindah
   program studi** (akun itu keluar dari semua perangkat).
-- **Lupa kata sandi**: menu baris akun → **Atur ulang kata sandi**; pemilik akun wajib menggantinya saat login.
+- **Lupa kata sandi**: menu baris akun → **Atur ulang kata sandi**; pemilik akun wajib menggantinya saat login. Menu ini
+  tidak ada untuk akun yang hanya masuk lewat SSO.
+- **Tamu baru dari SSO**: klik penyaring **Tamu baru** (akun Tamu, terbaru di atas; lonceng admin juga memberi tahu
+  "Tamu baru masuk lewat SSO: <nama>."). Bila pemiliknya dosen atau tendik yang perlu bekerja di aplikasi, menu baris →
+  **Ubah peran** → pilih Tim Prodi (wajib program studi), Asesor, atau Admin UPPS → **Simpan peran**. Pemilik akun
+  keluar dari semua perangkat dan masuk lagi dengan peran baru.
+- **Dosen yang sudah punya akun tetapi menjadi Tamu** (karena UNILA ID akunnya belum diisi): isi UNILA ID di akun lama
+  lewat **Ubah nama dan UNILA ID**, setelah akun Tamu itu dihapus lebih dulu (menu baris → Hapus akun), karena satu
+  UNILA ID hanya boleh dipakai satu akun.
 - **Pergantian anggota tim**: buat akun Tim Prodi baru, lalu nonaktifkan akun lama. LED dan riwayat versi milik prodi,
   jadi tidak ada yang hilang.
 - Admin tidak bisa menonaktifkan, menghapus, atau mengubah peran akunnya sendiri; minimal ada satu Admin UPPS aktif.
@@ -411,6 +437,10 @@ Tombol **LKPS** di kepala halaman membuka modul LKPS (Laporan Kinerja Program St
 
 Peran **Tamu** (Gabung LKPS G1) hanya melihat **Dashboard akreditasi**: status akreditasi semua prodi dan detail prodi,
 hanya baca. Tamu tidak membuka LED atau LKPS; alamat lain diarahkan ke Dashboard, dan tombol aksi (Catat hasil,
-Ingatkan, Review LPMPP) tidak tampil. Akun Tamu belum bisa dibuat dari Kelola akun: rencananya Tamu masuk lewat SSO
-Unila (Rencana 18 Nov, mulai S3).
+Ingatkan, Review LPMPP) tidak tampil, begitu pula alamat email akun.
+
+Akun Tamu dibuat otomatis saat dosen atau tenaga kependidikan yang belum terdaftar **masuk dengan SSO Unila**
+(Rencana 18 Nov 2026). Tamu tidak punya kata sandi; menu akunnya hanya **Keluar**. Tamu yang perlu mengisi data
+(misalnya anggota tim penyusun) meminta Admin UPPS memberi peran lewat Kelola akun → **Tamu baru** → **Ubah peran**
+(lihat bagian A.2).
 

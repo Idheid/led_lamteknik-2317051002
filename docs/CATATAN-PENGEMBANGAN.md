@@ -3338,3 +3338,47 @@ diisi dari dokumentasi Access):
   Uji `login-sso.test.ts` memeriksa berkas dan matcher.
 - Dicek di browser (build produksi, port 3100) pada lebar desktop dan 375 px: foto memenuhi panel kiri, dan logo ada di
   lingkaran putih.
+
+### S7: uji black-box, panduan, dan dokumentasi (23 Nov 2026) ⏸
+
+- **Uji black-box** `docs/uji/skenario-blackbox-tamu-sso.md`: 12 skenario B1–B12, semua L.
+  - B1–B3 dan B5–B12: `next dev` dengan SSO tiruan. Port 3000 sudah dipakai `next dev` lain (bukan dari sesi ini),
+    jadi uji dijalankan di git worktree sementara `../led-uji-s7` (commit a59b544) dengan junction `node_modules` dan
+    `next dev --webpack` (Turbopack menolak symlink di luar akar proyek). Worktree dan junction dihapus sesudahnya;
+    `node_modules` utama utuh.
+  - B4: build produksi dengan `SSO_AKTIF=false`.
+  - Akun uji sementara, Tamu hasil uji, pemberitahuan, log, dan hitungan login gagal dihapus sesudahnya. Pemeriksaan
+    basis data sebelum dihapus: 0 akun untuk mahasiswa dan SSO nonaktif; Tamu menjadi Tim Prodi dengan prodi;
+    pemberitahuan admin "Tamu baru masuk lewat SSO: Dosen Tiruan Baru." bertautan `/admin/akun?saring=tamu`; log
+    `sso_ditolak` hanya berisi kode.
+  - Belum bisa diuji: B12a (keluar lalu SSO meminta UNILA ID lagi) dan semua skenario dengan Access asli.
+- **Panduan penggunaan:** halaman masuk dua pilihan, SSO (cocok lewat UNILA ID, Tamu, tolakan, sesi 8 jam, keluar dari
+  SSO), Kelola akun (UNILA ID, Cara masuk, Tamu baru, Ubah peran Tamu, dosen yang terlanjur menjadi Tamu), dan bagian E
+  Tamu.
+- **Panduan server bagian 8:** pendaftaran ke Manajemen Akses UPA TIK (app_key, alamat kembali, isian
+  SSO-AKSES-CATATAN, urutan menyalakan), dan isi UNILA ID akun lama sebelum SSO dinyalakan.
+- **Spesifikasi:** bagian 1a "Masuk ke sistem" (KF-L1–KF-L10, alur SSO), peran Tamu, baris Kelola akun, keamanan.
+- **Hasil akhir:** lint 0 galat (1 peringatan lama `lkps/domain/hitung.ts`), typecheck lulus, unit 293/293,
+  integrasi 163/163, build lulus.
+
+### Ringkasan akhir Rencana 18 November 2026 (S1–S7)
+
+| Tahap | Isi | Commit |
+|---|---|---|
+| S1–S2 | Peran Tamu dan dashboard hanya baca (dikerjakan di Gabung LKPS G1–G2) | – |
+| S3 | Halaman masuk dua pilihan, batas 3 kali gagal; foto gedung FT Unila dan logo LAM Teknik | a1a8d0f, 8f07722, a59b544 |
+| S4 | UNILA ID, kolom Cara masuk, penyaring Tamu baru, akun tanpa sandi | 90442f0 |
+| S5 | SSO dengan penyedia tiruan, plugin sesi Better Auth, Tamu otomatis; keputusan: cocok hanya lewat UNILA ID, sesi 8 jam | 7bc4b4c, ee70f13 |
+| S6 | Keluar dari aplikasi dan SSO | 295d2e1 |
+| S7 | Uji black-box, panduan, spesifikasi | (commit ini) |
+
+**Keterbatasan dan yang masih menunggu UPA TIK:**
+- Penyedia Access belum dikonfigurasi: `docs/SSO-AKSES-CATATAN.md` belum terisi (parameter mulai, cara alamat kembali
+  dipanggil dan apakah `state` diteruskan, validasi server-ke-server, nama atribut, domain email mahasiswa, URL keluar),
+  dan `app_key` belum ada. Sampai itu, `SSO_AKTIF=false` di produksi.
+- Bila Access memanggil alamat kembali dengan POST lintas situs, cookie `sso_state` (`SameSite=Lax`) tidak terkirim;
+  pemeriksaan state perlu disesuaikan setelah caranya diketahui.
+- Uji manual keluar SSO asli (B12a) dan seluruh skenario SSO dengan Access asli.
+- Pemeriksaan NIP SSO terhadap data dosen (transkrip 7 baris 874) belum ada; saat ini cocok lewat UNILA ID yang diisi
+  admin. Bisa ditambah setelah atribut NIP dari Access diketahui.
+- Branch `tamu-sso` belum di-push.
