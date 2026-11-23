@@ -3273,3 +3273,32 @@ LKPS hasil penggabungan (`akses-tamu.test.ts` otomatis menguji setiap fungsi dat
   di port 3000 (bukan dari sesi ini) sehingga dev server kedua ditolak Next.js. Keempat jenis pengguna sudah
   dijalankan lewat rute sungguhan di uji integrasi.
 - **Hasil:** lint 0 galat (1 peringatan lama), typecheck lulus, unit 291/291, integrasi 160/160, build lulus.
+
+### Keputusan ⏸ S5 (Adrianne, 23 Nov 2026)
+
+1. **Pencocokan akun:** Adrianne meminta mengikuti transkrip audio (dikoreksi bila salah). Transkrip Pak Tris tidak
+   menyebut pencocokan lewat email; yang disebut hanya username/NIP:
+   - `Pa tris 7 full transkrip.txt` baris 874: "*Username* itu ada di aplikasi nggak? Kalau ada, berarti *login*.
+     Kalau nggak ada, dibuatin." Lalu NIP SSO dicocokkan dengan NIP di data dosen.
+   - `Pa tris 8 full transkrip.txt` baris 314: "apakah *username* SSO itu ada di tabel *user*. Kalau ada, buat
+     *session* di aplikasi."
+   - `Pa tris 8 full transkrip.txt` baris 974: "NIP SSO ada enggak di database? Kalau ada berarti *auto-login*."
+
+   Jadi langkah pencocokan lewat email (rencana S5 butir 5) **dihapus**: akun dicari hanya lewat `usernameSso`
+   (UNILA ID; untuk dosen diisi NIP/username SSO oleh Admin UPPS di Kelola akun). Akun lama tanpa UNILA ID yang masuk
+   lewat SSO menjadi Tamu baru dengan email `<username>@sso.invalid` (email aslinya sudah dipakai akun lama); admin
+   lalu mengisi UNILA ID akun lama dan menghapus Tamu itu. Diuji di `sso.test.ts`.
+2. **Lama sesi SSO: 8 jam**, tanpa perpanjangan. `createSession(…, dontRememberMe=true, { lewatSso, expiresAt: +8 jam },
+   overrideAll=true)` dan `setSessionCookie(…, true)`. Better Auth melewati pembaruan sesi bila cookie `dont_remember`
+   ada, jadi sesi berakhir tepat 8 jam sesudah masuk. Cookie sesi juga berakhir saat browser ditutup. Login kata sandi
+   tetap 7 hari. Transkrip 8 baris 271 menyebut sesi SSO Unila sendiri hanya 15 menit, sehingga aplikasi perlu sesi
+   sendiri; ini sudah begitu.
+3. **Logo dan foto latar:** Adrianne meminta dicarikan lewat Chrome (lihat bagian berikutnya).
+
+Catatan dari transkrip yang relevan untuk penyedia Access (belum ditulis ke `SSO-AKSES-CATATAN.md`, karena berkas itu
+diisi dari dokumentasi Access):
+- Atribut SSO: username, nama pengguna, email, status aktif (transkrip 8 baris 245); status berisi dosen, karyawan,
+  mahasiswa (baris 378–389).
+- Mahasiswa ditolak di aplikasi lewat status atau email "@student" (baris 389–393).
+- Endpoint `…/auth/login/sso` metode POST dengan app key sebagai parameter (baris 283).
+- Keluar harus menghapus cookie SSO juga (baris 327–331), dipakai di S6.

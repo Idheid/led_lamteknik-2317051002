@@ -50,9 +50,14 @@ async function loginSso(hasil: HasilSso, opsi: { ke?: string; stateLain?: string
     }));
   const lokasi = new URL(r2.headers.get("location")!);
   const setCookie = r2.headers.getSetCookie();
-  return { status: r2.status, jalur: lokasi.pathname + lokasi.search, sesi: setCookie.some((c) => /session_token=[^;]+/.test(c) && !/Max-Age=0/i.test(c)) };
+  return {
+    status: r2.status, jalur: lokasi.pathname + lokasi.search,
+    sesi: setCookie.some((c) => /session_token=[^;]+/.test(c) && !/Max-Age=0/i.test(c)),
+    cookie: setCookie.filter((c) => !/Max-Age=0/i.test(c)),
+  };
 }
 
+const ringkas = ({ status, jalur, sesi }: { status: number; jalur: string; sesi: boolean }) => ({ status, jalur, sesi });
 const persona = (k: KunciPersona): HasilSso => ({ ...PERSONA_TIRUAN[k].hasil });
 
 test("SSO: dosen terdaftar masuk dengan perannya ke tujuan; sesi lewatSso; Account sso-unila; log tanpa UNILA ID", async () => {
@@ -67,6 +72,17 @@ test("SSO: dosen terdaftar masuk dengan perannya ke tujuan; sesi lewatSso; Accou
   assert.deepEqual(u.accounts.map((a) => a.providerId).sort(), ["credential", PENYEDIA_SSO]);
   assert.equal(u.sessions.length, 1);
   assert.equal(u.sessions[0].lewatSso, true);
+  // keputusan ⏸ S5: sesi SSO 8 jam, tidak diperpanjang saat dipakai
+  const sisaJam = (u.sessions[0].expiresAt.getTime() - Date.now()) / 3_600_000;
+  assert.ok(sisaJam > 7.9 && sisaJam <= 8, `sisa ${sisaJam} jam`);
+  assert.ok(r.cookie.some((c) => /dont_remember=/.test(c)), "cookie dont_remember (tanpa perpanjangan)");
+  const jamSesi = r.cookie.map((c) => c.split(";")[0]).join("; ");
+  // sesi tampak tua (dibuat 2 hari lalu, batas pembaruan harian lewat) → tetap tidak diperpanjang
+  await prisma.session.update({ where: { id: u.sessions[0].id }, data: { createdAt: new Date(Date.now() - 2 * 86_400_000), updatedAt: new Date(Date.now() - 2 * 86_400_000) } });
+  const sesi = await auth.api.getSession({ headers: new Headers({ cookie: jamSesi }) });
+  assert.equal(sesi?.user.id, tim.id);
+  const sesudah = await prisma.session.findUniqueOrThrow({ where: { id: u.sessions[0].id } });
+  assert.equal(sesudah.expiresAt.getTime(), u.sessions[0].expiresAt.getTime(), "tidak diperpanjang");
   assert.ok(u.loginTerakhir, "hook session.create tetap mengisi login terakhir");
   const log = await prisma.logAktivitas.findFirstOrThrow({ where: { aksi: "masuk_sso", objekId: tim.id } });
   assert.doesNotMatch(JSON.stringify(log.detail), /dosen\.tiruan|@/);
@@ -101,19 +117,26 @@ test("SSO: email SSO sudah dipakai akun ber-UNILA ID lain → Tamu memakai <user
   assert.equal((await prisma.user.findUniqueOrThrow({ where: { usernameSso: "orang.lain" } })).email, "orang.lain@sso.invalid");
 });
 
-test("SSO: akun tanpa UNILA ID dicocokkan lewat email lalu UNILA ID-nya diisi (menunggu konfirmasi ⏸ S5)", async () => {
+test("SSO: akun tanpa UNILA ID TIDAK dicocokkan lewat email (keputusan ⏸ S5) → masuk sebagai Tamu baru", async () => {
   const a = await buatAkunAsesor(admin, { nama: "Reviewer Email", email: "reviewer.email@unila.ac.id", kataSandi: "SandiRev#123" });
   const r = await loginSso({ username: "reviewer.email", nama: "Reviewer Email", email: "Reviewer.Email@unila.ac.id", aktif: true, status: "dosen" });
-  assert.equal(r.sesi, true);
+  assert.equal(r.jalur, "/dashboard");
   const u = await prisma.user.findUniqueOrThrow({ where: { id: a.id } });
-  assert.deepEqual([u.role, u.usernameSso], ["ASESOR", "reviewer.email"]);
+  assert.deepEqual([u.role, u.usernameSso], ["ASESOR", null], "akun lama tidak disentuh");
+  const tamu = await prisma.user.findUniqueOrThrow({ where: { usernameSso: "reviewer.email" } });
+  assert.deepEqual([tamu.role, tamu.email], ["TAMU", "reviewer.email@sso.invalid"]);
+  // setelah admin mengisi UNILA ID yang benar di akun lama (Tamu dihapus dulu), SSO masuk ke akun lama
+  await prisma.user.delete({ where: { id: tamu.id } });
+  await prisma.user.update({ where: { id: a.id }, data: { usernameSso: "reviewer.email" } });
+  await loginSso({ username: "reviewer.email", nama: "Reviewer Email", email: null, aktif: true, status: "dosen" });
+  assert.equal(await prisma.session.count({ where: { userId: a.id, lewatSso: true } }), 1);
 });
 
 test("SSO: mahasiswa, akun SSO nonaktif, dan akun aplikasi nonaktif ditolak tanpa membuat akun atau sesi", async () => {
   const sebelum = await prisma.user.count();
   const sesiSebelum = await prisma.session.count();
-  assert.deepEqual(await loginSso(persona("mahasiswa")), { status: 303, jalur: "/login?galat=sso_mahasiswa", sesi: false });
-  assert.deepEqual(await loginSso(persona("nonaktif")), { status: 303, jalur: "/login?galat=sso_nonaktif", sesi: false });
+  assert.deepEqual(ringkas(await loginSso(persona("mahasiswa"))), { status: 303, jalur: "/login?galat=sso_mahasiswa", sesi: false });
+  assert.deepEqual(ringkas(await loginSso(persona("nonaktif"))), { status: 303, jalur: "/login?galat=sso_nonaktif", sesi: false });
   // domain email mahasiswa dari konfigurasi
   process.env.SSO_DOMAIN_EMAIL_DITOLAK = "students.unila.ac.id";
   try {
@@ -135,7 +158,7 @@ test("SSO: mahasiswa, akun SSO nonaktif, dan akun aplikasi nonaktif ditolak tanp
 
 test("SSO: state salah atau tiket palsu ditolak; SSO mati → sso_mati; penyedia Access belum dikonfigurasi → sso_gagal", async () => {
   const sebelum = await prisma.user.count();
-  assert.deepEqual(await loginSso(persona("dosen-baru"), { stateLain: "state-lain" }), { status: 303, jalur: "/login?galat=sso_gagal", sesi: false });
+  assert.deepEqual(ringkas(await loginSso(persona("dosen-baru"), { stateLain: "state-lain" })), { status: 303, jalur: "/login?galat=sso_gagal", sesi: false });
   const palsu = await kembaliPost(new NextRequest(`${ASAL}/api/sso/kembali`, {
     method: "POST",
     headers: { cookie: "sso_state=abc", "content-type": "application/x-www-form-urlencoded" },

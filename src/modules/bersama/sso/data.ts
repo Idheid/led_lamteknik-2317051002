@@ -13,29 +13,19 @@ import type { KodeGalatSso } from "./pesan";
  * dan Account; log aktivitas tidak memuat email atau UNILA ID.
  */
 
-/**
- * Pencocokan lewat email untuk akun yang belum punya UNILA ID (rencana S5 butir 5). MENUNGGU KONFIRMASI Adrianne di
- * ⏸ S5; bila tidak disetujui, ubah ke false (uji `sso.test.ts` ikut menyesuaikan).
- */
-export const COCOKKAN_LEWAT_EMAIL = true;
-
 const AKTIF = { OR: [{ banned: false }, { banned: null }] };
 
 interface AkunDitemukan extends AkunCocok {
   role: string | null;
-  usernameSso: string | null;
 }
 
-/** Cari akun: UNILA ID dulu; bila tidak ada, email (huruf kecil) pada akun yang belum punya UNILA ID. */
-export async function cariAkunSso(hasil: HasilSso): Promise<{ akun: AkunDitemukan | null; lewatEmail: boolean }> {
-  const pilih = { id: true, banned: true, role: true, usernameSso: true } as const;
-  const lewatUsername = await prisma.user.findUnique({ where: { usernameSso: hasil.username }, select: pilih });
-  if (lewatUsername) return { akun: lewatUsername, lewatEmail: false };
-  if (COCOKKAN_LEWAT_EMAIL && hasil.email) {
-    const lewatEmail = await prisma.user.findFirst({ where: { email: hasil.email.toLowerCase(), usernameSso: null }, select: pilih });
-    if (lewatEmail) return { akun: lewatEmail, lewatEmail: true };
-  }
-  return { akun: null, lewatEmail: false };
+/**
+ * Cari akun lewat UNILA ID saja (`usernameSso` = username SSO). Keputusan Adrianne di ⏸ S5 (23 Nov 2026), sesuai arahan
+ * Pak Tris (transkrip 7 dan 8): "Username itu ada di aplikasi nggak? Kalau ada, berarti login." Tidak ada pencocokan
+ * lewat email; UNILA ID akun lama diisi admin di Kelola akun.
+ */
+export async function cariAkunSso(hasil: HasilSso): Promise<AkunDitemukan | null> {
+  return prisma.user.findUnique({ where: { usernameSso: hasil.username }, select: { id: true, banned: true, role: true } });
 }
 
 async function pastikanAccountSso(userId: string, username: string) {
@@ -75,7 +65,7 @@ export type HasilProsesSso =
 
 /** Putuskan lalu jalankan: tolak (tanpa membuat akun), masuk, atau buat Tamu lalu masuk. Sesi dibuat pemanggil. */
 export async function prosesSso(hasil: HasilSso, konfigurasi: { domainEmailDitolak: string[] }): Promise<HasilProsesSso> {
-  const { akun, lewatEmail } = await cariAkunSso(hasil);
+  const akun = await cariAkunSso(hasil);
   const k = putuskan(hasil, akun, konfigurasi);
   if (k.jenis === "tolak") {
     await catatSsoDitolak(k.kode, akun?.id ?? null);
@@ -83,13 +73,12 @@ export async function prosesSso(hasil: HasilSso, konfigurasi: { domainEmailDitol
   }
   if (k.jenis === "buatTamu") {
     const userId = await buatTamu(hasil);
-    await catatAktivitas(penggunaLog(userId, "TAMU"), "masuk_sso", "akun", userId, { tamuBaru: true, lewatEmail: false });
+    await catatAktivitas(penggunaLog(userId, "TAMU"), "masuk_sso", "akun", userId, { tamuBaru: true });
     return { jenis: "masuk", userId, peran: "TAMU", tamuBaru: true };
   }
-  if (lewatEmail) await prisma.user.update({ where: { id: k.userId }, data: { usernameSso: hasil.username } });
   await pastikanAccountSso(k.userId, hasil.username);
   const peran = akun?.role ?? null;
-  await catatAktivitas(penggunaLog(k.userId, peran), "masuk_sso", "akun", k.userId, { tamuBaru: false, lewatEmail });
+  await catatAktivitas(penggunaLog(k.userId, peran), "masuk_sso", "akun", k.userId, { tamuBaru: false });
   return { jenis: "masuk", userId: k.userId, peran, tamuBaru: false };
 }
 
