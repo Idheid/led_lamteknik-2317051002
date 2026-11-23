@@ -39,7 +39,7 @@ export function FormAdminPertama() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full bg-transparent py-0 ring-0 [--card-spacing:0]">
       <CardHeader>
         <CardTitle>Buat akun admin pertama</CardTitle>
         <CardDescription>Website baru dipasang dan belum punya admin. Akun ini (Admin UPPS) dipakai untuk membuat akun Tim Prodi dan asesor.</CardDescription>

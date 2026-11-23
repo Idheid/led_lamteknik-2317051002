@@ -283,6 +283,18 @@ model LogAktivitas {
   createdAt DateTime @default(now())
 }
 
+/// Rencana 18 Nov S3: login gagal untuk batas 3 kali dalam 5 menit (meniru LoginController contoh Pak Ihsan).
+/// `kunci` = SHA-256 email yang dinormalisasi; email asli tidak disimpan.
+model LogLoginGagal {
+  id     String   @id @default(cuid())
+  kunci  String
+  ip     String?
+  alasan String
+  waktu  DateTime @default(now())
+
+  @@index([kunci, waktu])
+}
+
 // ----------------------------------------------------------------- Cadangan
 
 /// Revisi 22 Okt 2026: riwayat cadangan harian (basis data dan folder unggahan). Admin hanya melihat yang terakhir.

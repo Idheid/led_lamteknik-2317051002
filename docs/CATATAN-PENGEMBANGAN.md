@@ -3115,3 +3115,54 @@ Pola sama dengan kelompok 2 (blok `ui-lkps.tsx`); rumus dan aksi API tidak berub
   - catatan rumus untuk Ghalib: RK di halaman K1 berbeda dengan mesin hitung; skor K9 di halaman bernilai 3 walau 0%;
     NDTPS kartu K1/K2 manual; jumlah bobot 110 (maksimum 440);
   - keamanan repo lama Ghalib; akun Tamu lewat SSO (Rencana 18 Nov, mulai S3 di branch `tamu-sso`).
+
+## Rencana 18 November 2026
+
+Rencana `docs/RENCANA-18NOV.md` (peran Tamu dan login SSO Unila), dilanjutkan 23 Nov 2026 di branch `tamu-sso` dari
+`gabung-lkps`.
+
+### S1–S2: sudah dikerjakan di Gabung LKPS G1–G2
+
+Peran Tamu (G1, `9d1908f`) dan dashboard hanya baca untuk Tamu (G2, `da8ef11`), termasuk audit halaman/aksi/API modul
+LKPS hasil penggabungan (`akses-tamu.test.ts` otomatis menguji setiap fungsi data). Diperiksa masih sesuai: uji `tamu`,
+`akses-tamu`, `dashboard`, dan `lkps-akses` lulus di awal branch ini.
+
+### S3: halaman login dua pilihan dan batas login gagal
+
+- **Tampilan** (Figma "Revisi 18 Nov", bingkai L1–L3, dibaca lewat Figma MCP): kartu dua kolom di layar lebar, satu
+  kolom di ponsel.
+  - Kiri: panel biru identitas aplikasi (ikon aplikasi, "Akreditasi LAM Teknik", keterangan dengan nama fakultas dari
+    Identitas institusi, ringkasan cara masuk, "UPPS {fakultas} · {perguruan tinggi}"); tanpa foto atau logo.
+  - Kanan: form masuk. Di bawah kartu: "Akun dibuat oleh Admin UPPS. Lupa kata sandi? Hubungi Admin UPPS …".
+  - Form admin pertama tetap sama, hanya bingkai kartunya dilepas supaya pas di kolom kanan.
+- **Tombol SSO:** pemisah "atau", tombol "Masuk dengan SSO Unila" ke `/api/sso/mulai` (meneruskan `?ke=` yang aman),
+  dan keterangan untuk dosen/tendik. Tampil hanya bila `SSO_AKTIF=true` (`bersama/sso/konfigurasi.ts`; bawaan mati;
+  nama variabel di `.env.example`). Rute `/api/sso/mulai` dibuat di S5.
+- **Pesan galat SSO** `?galat=<kode>` dipetakan ke teks tetap di `bersama/sso/pesan.ts` (5 kode rencana). Kode lain,
+  termasuk HTML atau nama properti objek seperti `toString`, tidak menampilkan apa pun.
+- **Batas login gagal** (meniru `LoginController` Pak Ihsan: 3 kali, 300 detik):
+  - model `LogLoginGagal` (`kunci` = SHA-256 email yang dinormalisasi, `ip`, `alasan`, `waktu`), migrasi
+    `20261123090000_log_login_gagal`. Email asli dan kata sandi tidak disimpan.
+  - Aturan murni `bersama/domain/login-gagal.ts`: 3 kegagalan atau lebih dalam 300 detik terakhir → terkunci sampai
+    kegagalan tertua di jendela itu berumur 300 detik. Percobaan yang ditolak tidak dicatat. Login berhasil menghapus
+    hitungan.
+  - Hook Better Auth 1.7.7 di `auth.ts` (`hooks.before`/`hooks.after` dengan `createAuthMiddleware`, path
+    `/sign-in/email`): `before` melempar `APIError("TOO_MANY_REQUESTS", { message, code: "LOGIN_TERKUNCI" })`;
+    `after` membaca `ctx.context.returned` (APIError 401 → dicatat; berhasil → dihapus). Akun dinonaktifkan (403)
+    tidak dihitung. Sintaks sesuai rencana.
+  - **Temuan:** Better Auth sendiri punya batas laju untuk `/sign-in/email` di produksi (3 permintaan per 10 detik,
+    juga 429). Form login hanya menampilkan peringatan "Terlalu banyak percobaan … N menit" dan menonaktifkan tombol
+    Masuk bila kodenya `LOGIN_TERKUNCI`. Batas laju bawaan cukup ditampilkan sebagai "Tunggu beberapa detik".
+- **Uji:**
+  - unit `tests/unit/login-sso.test.ts`: aturan kunci (terkunci, sisa detik, bebas lagi sesudah 5 menit dengan waktu
+    dipalsukan, kegagalan lama diabaikan), pesan menit, pesan galat SSO, saklar `SSO_AKTIF` dan tombol SSO bersyarat;
+  - integrasi `tests/integrasi/login-gagal.test.ts`: tiga kali salah → percobaan keempat (walau benar) 429
+    `LOGIN_TERKUNCI`; kunci berupa hash; email huruf besar/berspasi tetap terkunci; log dimundurkan 301 detik → bisa
+    masuk dan hitungan terhapus; login berhasil di tengah mengosongkan hitungan.
+- **Uji jalan** (build produksi port 3100, `SSO_AKTIF=true` hanya untuk proses itu):
+  - 1440 px: L1 sesuai; `?galat=sso_mahasiswa` → pesan L2; `?galat=<b>apa</b>` → tidak ada pesan;
+  - email fiktif, 3 kali salah dengan jeda > 10 detik, percobaan keempat → "Terlalu banyak percobaan. Coba lagi dalam
+    5 menit." dan tombol Masuk nonaktif (L3);
+  - 390 px: satu kolom, tanpa geser mendatar.
+  - Log uji dihapus dari basis data dev.
+- **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 282/282; `test:integrasi` 148/148; build lulus.

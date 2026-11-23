@@ -2,8 +2,23 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
+import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
 import { prisma } from "@/modules/bersama/db";
 import { ac, peranAkses } from "@/modules/bersama/peran";
+import { catatLoginGagal, hapusLoginGagal, statusKunciLogin } from "@/modules/bersama/data/login-gagal";
+import { KODE_LOGIN_TERKUNCI, pesanTerkunci } from "@/modules/bersama/domain/login-gagal";
+
+const JALUR_MASUK_EMAIL = "/sign-in/email";
+
+function emailDari(body: unknown): string | null {
+  const e = (body as { email?: unknown } | undefined)?.email;
+  return typeof e === "string" && e.trim() ? e : null;
+}
+
+function ipDari(headers: Headers | undefined): string | null {
+  const xf = headers?.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return xf || headers?.get("x-real-ip") || null;
+}
 
 /**
  * Better Auth: email + kata sandi, sesi di basis data.
@@ -38,6 +53,29 @@ export const auth = betterAuth({
         },
       },
     },
+  },
+  // Rencana 18 Nov S3: batas login gagal (3 kali dalam 5 menit per email), meniru LoginController contoh Pak Ihsan.
+  // Hook sesuai dokumentasi Better Auth 1.7: `before` menolak saat terkunci, `after` membaca `ctx.context.returned`
+  // (APIError 401 = email/kata sandi salah → dicatat; berhasil → hitungan dihapus). Akun dinonaktifkan (403) tidak dihitung.
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== JALUR_MASUK_EMAIL) return;
+      const email = emailDari(ctx.body);
+      if (!email) return;
+      const s = await statusKunciLogin(email);
+      if (s.terkunci) throw new APIError("TOO_MANY_REQUESTS", { message: pesanTerkunci(s.sisaDetik), code: KODE_LOGIN_TERKUNCI });
+    }),
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== JALUR_MASUK_EMAIL) return;
+      const email = emailDari(ctx.body);
+      if (!email) return;
+      const hasil = ctx.context.returned;
+      if (isAPIError(hasil)) {
+        if (hasil.statusCode === 401) await catatLoginGagal(email, ipDari(ctx.headers), "email_atau_sandi_salah");
+        return;
+      }
+      await hapusLoginGagal(email);
+    }),
   },
   plugins: [
     admin({
