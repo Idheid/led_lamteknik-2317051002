@@ -4,8 +4,9 @@ import { join } from "node:path";
 
 /**
  * Aset panel kiri halaman masuk (permintaan Adrianne 23 Nov 2026, mengikuti tata letak apps.unila.ac.id: foto latar +
- * logo dalam lingkaran). Berkas diletakkan admin server di `public/login/`; tidak di-commit sebelum Adrianne
- * memberikannya. Bila tidak ada, halaman memakai panel biru identitas aplikasi (desain S3).
+ * logo dalam lingkaran). Berkas di `public/login/`: `logo-lam-teknik.png` (logo resmi dari lamteknik.or.id) dan
+ * `latar.webp` (foto gedung Fakultas Teknik Unila dari Adrianne), keduanya 23 Nov 2026. Bila tidak ada, halaman memakai
+ * panel biru identitas aplikasi (desain S3). `.webp`/`.jpeg` dikecualikan dari proxy login (src/proxy.ts).
  */
 const NAMA = {
   logo: ["logo-lam-teknik.svg", "logo-lam-teknik.png", "logo-lam-teknik.webp"],

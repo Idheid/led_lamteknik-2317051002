@@ -54,3 +54,17 @@ test("saklar SSO: hanya SSO_AKTIF=true; tombol SSO dirender hanya bila aktif", (
   assert.doesNotMatch(halaman + form + aset, /https?:\/\/[^"'\s]*\.(png|jpe?g|svg|webp)/i);
   assert.match(halaman, /aset\.latar \|\| aset\.logo \? \(/);
 });
+
+test("S3 tambahan: logo dan foto latar ada, dan semua jenis gambarnya tidak dialihkan proxy ke /login", async () => {
+  const { existsSync: ada } = await import("node:fs");
+  const { join: gabung } = await import("node:path");
+  const { config } = await import("../../src/proxy");
+  const akar = gabung(__dirname, "..", "..");
+  assert.ok(ada(gabung(akar, "public/login/logo-lam-teknik.png")));
+  assert.ok(ada(gabung(akar, "public/login/latar.webp")));
+  const pola = new RegExp(`^${config.matcher[0]}$`);
+  for (const f of ["/login/latar.webp", "/login/latar.jpg", "/login/latar.jpeg", "/login/logo-lam-teknik.png", "/login/logo-lam-teknik.svg"]) {
+    assert.equal(pola.test(f), false, f);
+  }
+  for (const h of ["/dashboard", "/admin/akun", "/login"]) assert.equal(pola.test(h), true, h);
+});

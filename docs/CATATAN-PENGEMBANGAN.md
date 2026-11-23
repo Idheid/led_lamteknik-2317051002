@@ -3326,3 +3326,15 @@ diisi dari dokumentasi Access):
 - **Uji manual dengan SSO asli** (rencana S6 butir 3: setelah keluar, "Masuk dengan SSO Unila" meminta UNILA ID lagi):
   **belum bisa**, menunggu penyedia Access dan URL keluarnya.
 - **Hasil:** lint 0 galat (1 peringatan lama), typecheck lulus, unit 292/292, integrasi 163/163, build lulus.
+
+### S3 tambahan (lanjutan): logo dan foto latar terpasang (23 Nov 2026)
+
+- Logo: `public/login/logo-lam-teknik.png`, logo resmi persegi dari `https://lamteknik.or.id/assets/brand/logo-png-kotak.-png.png`
+  (PNG 1200×1200, ± 152 KB), dicari lewat Chrome dan diunduh atas persetujuan Adrianne.
+- Foto latar: `public/login/latar.webp`, foto gedung Fakultas Teknik Unila (Jurusan Teknik Sipil) dari Adrianne
+  (WebP 1024×768, ± 169 KB).
+- **Perbaikan:** matcher `src/proxy.ts` hanya mengecualikan `png|jpg|svg|ico`, sehingga `/login/latar.webp` tanpa sesi
+  dialihkan ke `/login` (HTML) dan foto tidak tampil. Matcher sekarang mengecualikan `png|jpe?g|webp|gif|svg|ico`.
+  Uji `login-sso.test.ts` memeriksa berkas dan matcher.
+- Dicek di browser (build produksi, port 3100) pada lebar desktop dan 375 px: foto memenuhi panel kiri, dan logo ada di
+  lingkaran putih.
