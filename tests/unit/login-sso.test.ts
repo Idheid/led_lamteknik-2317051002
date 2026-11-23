@@ -48,6 +48,9 @@ test("saklar SSO: hanya SSO_AKTIF=true; tombol SSO dirender hanya bila aktif", (
   const halaman = readFileSync(join(akar, "src/app/login/page.tsx"), "utf8");
   assert.match(halaman, /const sso = ssoAktif\(\);/);
   assert.match(halaman, /galatSso=\{pesanGalatSso\(galat\)\}/);
-  // halaman login tidak memakai logo Unila/LAM Teknik
-  assert.doesNotMatch(halaman + form, /<img|<Image|next\/image|logo-sampul|\.(png|jpe?g|svg)/i);
+  // 23 Nov 2026: foto latar dan logo LAM Teknik hanya dari public/login (tanpa gambar dari situs lain), dengan cadangan
+  const aset = readFileSync(join(akar, "src/app/login/aset.ts"), "utf8");
+  assert.match(aset, /"public", "login"/);
+  assert.doesNotMatch(halaman + form + aset, /https?:\/\/[^"'\s]*\.(png|jpe?g|svg|webp)/i);
+  assert.match(halaman, /aset\.latar \|\| aset\.logo \? \(/);
 });

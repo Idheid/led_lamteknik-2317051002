@@ -3166,3 +3166,14 @@ LKPS hasil penggabungan (`akses-tamu.test.ts` otomatis menguji setiap fungsi dat
   - 390 px: satu kolom, tanpa geser mendatar.
   - Log uji dihapus dari basis data dev.
 - **Pemeriksaan:** lint 0 galat; typecheck; `test:unit` 282/282; `test:integrasi` 148/148; build lulus.
+
+### S3 tambahan: foto latar dan logo LAM Teknik di halaman masuk (permintaan Adrianne 23 Nov 2026)
+
+- Adrianne meminta kolom kiri mengikuti tata letak `apps.unila.ac.id/auth/login` (tangkapan layar 17 Nov): foto latar
+  penuh dan logo dalam lingkaran putih, tanpa teks, dengan isi LAM Teknik. Ini mengganti aturan rencana S3 "tanpa foto
+  gedung, tanpa logo LAM Teknik".
+- `src/app/login/aset.ts` mencari `public/login/latar.(jpg|jpeg|webp|png)` dan
+  `public/login/logo-lam-teknik.(svg|png|webp)`. Bila salah satu ada: kolom kiri = foto latar (`bg-cover`, lapisan
+  gelap tipis) + logo dalam lingkaran putih; nama aplikasi pindah ke atas form. Bila keduanya tidak ada: panel biru S3.
+- Berkas logo dan foto belum tersedia di repo atau di komputer ini; menunggu Adrianne (logo resmi LAM Teknik dan foto
+  yang boleh dipakai). Tata letak dicek dengan gambar pengganti sementara (dihapus, tidak di-commit) di 1440 dan 390 px.
